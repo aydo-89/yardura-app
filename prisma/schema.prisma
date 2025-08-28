@@ -1,0 +1,199 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User accounts with authentication
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  address       String?
+  city          String?
+  zipCode       String?
+  role          UserRole  @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Sales rep specific fields
+  salesRepId    String?   // ID of the sales rep who signed them up
+  commissionRate Float?   // Commission rate for this sales rep
+
+  accounts      Account[]
+  sessions      Session[]
+  dogs          Dog[]
+  serviceVisits ServiceVisit[]
+  dataReadings  DataReading[]
+  referrals     User[]           @relation("SalesRepReferrals")
+  salesRep      User?            @relation("SalesRepReferrals", fields: [salesRepId], references: [id])
+  earnedCommissions Commission[]  @relation("CommissionSalesRep")
+  receivedCommissions Commission[] @relation("CommissionCustomer")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Dog profiles
+model Dog {
+  id           String   @id @default(cuid())
+  name         String
+  breed        String?
+  age          Int?
+  weight       Float?
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataReadings DataReading[]
+}
+
+// Service visits
+model ServiceVisit {
+  id              String   @id @default(cuid())
+  userId          String?
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  status          ServiceStatus @default(SCHEDULED)
+  serviceType     ServiceType
+  yardSize        YardSize
+  dogsServiced    Int
+  accountNumber   String?  // For linking Raspberry Pi data
+  notes           String?
+  deodorize       Boolean  @default(false)
+  litterService   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User?         @relation(fields: [userId], references: [id])
+  dataReadings    DataReading[]
+  commissions     Commission[]
+}
+
+// Data readings from Raspberry Pi
+model DataReading {
+  id             String   @id @default(cuid())
+  userId         String?
+  dogId          String?
+  serviceVisitId String?
+  timestamp      DateTime @default(now())
+  weight         Float?   // Waste weight in grams
+  volume         Float?   // Waste volume in ml
+  color          String?  // Color analysis (RGB values)
+  consistency    String?  // Texture/consistency analysis
+  temperature    Float?   // Temperature reading
+  methaneLevel   Float?   // Methane sensor reading
+  location       String?  // GPS coordinates if mobile
+  deviceId       String   // Raspberry Pi device identifier
+  accountNumber  String?  // For anonymous data collection
+
+  user         User?         @relation(fields: [userId], references: [id])
+  dog          Dog?          @relation(fields: [dogId], references: [id])
+  serviceVisit ServiceVisit? @relation(fields: [serviceVisitId], references: [id])
+}
+
+// Global eco statistics
+model GlobalStats {
+  id                   String   @id @default("global")
+  totalWasteDiverted  Float    @default(0) // in lbs
+  totalMethaneAvoided Float    @default(0) // in ft³
+  totalUsers          Int      @default(0)
+  totalDogs           Int      @default(0)
+  totalServiceVisits  Int      @default(0)
+  updatedAt           DateTime @updatedAt
+}
+
+// Commission tracking for sales reps
+model Commission {
+  id            String   @id @default(cuid())
+  salesRepId    String   // Sales rep who earned the commission
+  customerId    String   // Customer who generated the commission
+  serviceVisitId String  // Service visit that generated commission
+  amount        Float    // Commission amount
+  status        CommissionStatus @default(PENDING)
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salesRep      User         @relation("CommissionSalesRep", fields: [salesRepId], references: [id])
+  customer      User         @relation("CommissionCustomer", fields: [customerId], references: [id])
+  serviceVisit  ServiceVisit @relation(fields: [serviceVisitId], references: [id])
+
+  @@unique([salesRepId, serviceVisitId])
+}
+
+// Enums
+enum UserRole {
+  CUSTOMER
+  SALES_REP
+  ADMIN
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum ServiceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  REGULAR
+  ONE_TIME
+  SPRING_CLEANUP
+  DEODORIZATION
+}
+
+enum YardSize {
+  SMALL    // < 1/4 acre
+  MEDIUM   // 1/4 - 1/2 acre
+  LARGE    // 1/2 - 1 acre
+  XLARGE   // > 1 acre
+}

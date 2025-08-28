@@ -1,0 +1,111 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
+import { UserRole } from '@prisma/client'
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Check if user is a sales rep
+    const salesRep = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true, commissionRate: true }
+    })
+
+    if (!salesRep || salesRep.role !== UserRole.SALES_REP) {
+      return NextResponse.json(
+        { error: 'Only sales reps can create customer accounts' },
+        { status: 403 }
+      )
+    }
+
+    const {
+      name,
+      email,
+      password,
+      phone,
+      address,
+      city,
+      zipCode
+    } = await request.json()
+
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { error: 'Name, email, and password are required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if customer already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    })
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'Customer with this email already exists' },
+        { status: 400 }
+      )
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12)
+
+    // Create customer account with sales rep reference
+    const customer = await prisma.user.create({
+      data: {
+        name,
+        email,
+        phone,
+        address,
+        city,
+        zipCode,
+        role: UserRole.CUSTOMER,
+        salesRepId: session.user.id,
+        // Create a direct password account
+        accounts: {
+          create: {
+            type: 'credentials',
+            provider: 'credentials',
+            providerAccountId: email,
+            access_token: hashedPassword,
+          }
+        }
+      }
+    })
+
+    // Create a welcome commission record (0 amount, just for tracking)
+    await prisma.commission.create({
+      data: {
+        salesRepId: session.user.id,
+        customerId: customer.id,
+        serviceVisitId: '', // Will be updated when first service is completed
+        amount: 0,
+        status: 'PENDING',
+      }
+    })
+
+    return NextResponse.json({
+      message: 'Customer created successfully',
+      customerId: customer.id,
+      salesRepId: session.user.id
+    })
+
+  } catch (error) {
+    console.error('Customer signup error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
