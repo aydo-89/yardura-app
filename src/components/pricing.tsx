@@ -12,13 +12,14 @@ import {
   projectedMonthlyCents,
   formatPrice,
   getFrequencyDisplayName,
-  type Frequency
+  type Frequency,
+  type DogCount
 } from "@/lib/priceEstimator";
 
 interface PricingCardProps {
   title: string;
   description: string;
-  dogs: number;
+  dogs: DogCount;
   frequency: Frequency;
   yardSize: 'small' | 'medium' | 'large' | 'xl';
   popular?: boolean;

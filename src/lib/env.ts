@@ -84,20 +84,71 @@ const validateSupabase = (env: Record<string, string | undefined>) => {
 function getValidatedEnv() {
   try {
     // Parse and validate environment variables
-    const parsed = envSchema.parse(process.env);
+    const parsed = envSchema.safeParse(process.env);
 
-    // Additional validation rules
-    validateEmailConfig(process.env);
-    validateGoogleOAuth(process.env);
-    validateSupabase(process.env);
-
-    return parsed;
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const errorMessages = error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-      throw new Error(`Environment validation failed:\n${errorMessages.join('\n')}`);
+    if (!parsed.success) {
+      // In development, log and continue with partial env to avoid hard 500s
+      if (process.env.NODE_ENV !== 'production') {
+        const messages = parsed.error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
+        console.warn('[env] Development env validation warnings:\n' + messages.join('\n'))
+        // Provide minimal required defaults to keep app running locally
+        const fallback = {
+          DATABASE_URL: process.env.DATABASE_URL || 'postgresql://user:pass@localhost:5432/db',
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder',
+          STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
+          STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder',
+          NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+          NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_',
+          EMAIL_FROM: process.env.EMAIL_FROM || 'dev@example.com',
+          EMAIL_SERVER_HOST: process.env.EMAIL_SERVER_HOST,
+          EMAIL_SERVER_PORT: process.env.EMAIL_SERVER_PORT as any,
+          EMAIL_SERVER_USER: process.env.EMAIL_SERVER_USER,
+          EMAIL_SERVER_PASSWORD: process.env.EMAIL_SERVER_PASSWORD,
+          RESEND_API_KEY: process.env.RESEND_API_KEY,
+          GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+          GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+          NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          ADMIN_EMAILS: process.env.ADMIN_EMAILS,
+        }
+        // Skip strict email provider validation in dev
+        try { validateGoogleOAuth(process.env) } catch {}
+        try { validateSupabase(process.env) } catch {}
+        return fallback as any
+      }
+      // Production: throw with detailed message
+      const errorMessages = parsed.error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
+      throw new Error(`Environment validation failed:\n${errorMessages.join('\n')}`)
     }
 
+    // Additional validation rules
+    try { validateEmailConfig(process.env) } catch (e) {
+      if (process.env.NODE_ENV === 'production') throw e
+      console.warn('[env] Skipping email provider validation in development')
+    }
+    try { validateGoogleOAuth(process.env) } catch (e) {
+      if (process.env.NODE_ENV === 'production') throw e
+    }
+    try { validateSupabase(process.env) } catch (e) {
+      if (process.env.NODE_ENV === 'production') throw e
+    }
+
+    return parsed.data;
+  } catch (error) {
+    // Fallback to a minimal env in dev so routes don’t 500
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[env] Non-Zod error during env validation in development:', error)
+      return {
+        DATABASE_URL: process.env.DATABASE_URL || 'postgresql://user:pass@localhost:5432/db',
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder',
+        STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
+        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder',
+        NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_',
+        EMAIL_FROM: process.env.EMAIL_FROM || 'dev@example.com',
+        ADMIN_EMAILS: process.env.ADMIN_EMAILS || '',
+      } as any
+    }
     throw error;
   }
 }
