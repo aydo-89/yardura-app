@@ -5,6 +5,29 @@ export type Frequency = 'weekly' | 'biweekly' | 'twice-weekly';
 export type YardSize = 'small' | 'medium' | 'large' | 'xl';
 export type DogCount = 1 | 2 | 3 | 4;
 
+export interface QuoteInput {
+  dogs: DogCount;
+  yardSize: YardSize;
+  frequency: Frequency;
+  addOns?: {
+    deodorize?: boolean;
+    litter?: boolean;
+  };
+  contact?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  address?: string;
+  schedulePref?: {
+    day?: string;
+  };
+  consent?: {
+    stoolPhotosOptIn?: boolean;
+    terms?: boolean;
+  };
+}
+
 // Base pricing in cents (medium yard, weekly)
 const BASE_PRICES: Record<DogCount, number> = {
   1: 2000, // $20.00
@@ -168,6 +191,61 @@ export function getYardSizeDisplayName(yardSize: YardSize): string {
     default:
       return 'Medium';
   }
+}
+
+/**
+ * Calculate complete price breakdown for display
+ */
+export function calculatePrice(input: {
+  dogs: DogCount;
+  yardSize: YardSize;
+  frequency: Frequency;
+  addons?: { deodorize?: boolean; litter?: boolean };
+}) {
+  const perVisitCents = estimatePerVisitCents(input.dogs, input.yardSize, input.frequency);
+  const monthlyCents = projectedMonthlyCents(perVisitCents, input.frequency, input.addons || {});
+  const visitsPerMonth = visitsPerMonth(input.frequency);
+
+  return {
+    perVisit: perVisitCents,
+    monthly: monthlyCents,
+    visitsPerMonth,
+    total: perVisitCents,
+    breakdown: getPricingBreakdown(input.dogs, input.yardSize, input.frequency, input.addons || {}).breakdown,
+  };
+}
+
+/**
+ * Get yard size options for UI
+ */
+export function getYardSizeOptions() {
+  return [
+    { value: 'small', label: 'Small (< 2,500 sq ft)', description: 'Compact urban lot' },
+    { value: 'medium', label: 'Medium (2,500-5,000 sq ft)', description: 'Standard suburban home' },
+    { value: 'large', label: 'Large (5,000-10,000 sq ft)', description: 'Spacious property' },
+    { value: 'xl', label: 'XL (> 10,000 sq ft)', description: 'Large estate or multiple lots' },
+  ];
+}
+
+/**
+ * Get frequency options for UI
+ */
+export function getFrequencyOptions() {
+  return [
+    { value: 'weekly', label: 'Weekly Service', description: 'Most popular - consistent cleanliness' },
+    { value: 'biweekly', label: 'Every Other Week', description: 'Cost-effective for lighter needs' },
+    { value: 'twice-weekly', label: 'Twice Weekly', description: 'Maximum cleanliness' },
+  ];
+}
+
+/**
+ * Get add-on options for UI
+ */
+export function getAddonOptions() {
+  return [
+    { value: 'deodorize', label: 'Deodorize & Sanitize', price: 500, description: 'Professional sanitizing treatment' },
+    { value: 'litter', label: 'Litter Box Service', price: 500, description: 'Complete litter box maintenance' },
+  ];
 }
 
 // Export constants for external use

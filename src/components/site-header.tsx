@@ -107,7 +107,6 @@ export default function SiteHeader() {
           {/* Primary CTA */}
           <a
             href="/quote" data-analytics="cta_quote"
-            data-analytics="header_get_quote"
             className="px-6 py-2 rounded-xl bg-accent text-white hover:bg-accent/90 transition font-semibold shadow-soft focus:ring-2 focus:ring-accent focus:outline-none"
           >
             Get My Quote
@@ -140,7 +139,6 @@ export default function SiteHeader() {
           {/* Primary CTA */}
           <a
             href="/quote" data-analytics="cta_quote"
-            data-analytics="header_get_quote_mobile"
             className="px-4 py-2 rounded-xl bg-accent text-white font-semibold shadow-soft focus:ring-2 focus:ring-accent focus:outline-none"
           >
             Get Quote
@@ -189,7 +187,6 @@ export default function SiteHeader() {
             <div className="pt-3 border-t">
               <a
                 href="/quote" data-analytics="cta_quote"
-                data-analytics="mobile_menu_get_quote"
                 className="block px-3 py-3 rounded-xl bg-accent text-white hover:bg-accent/90 transition shadow-soft text-center font-semibold focus:ring-2 focus:ring-accent focus:outline-none"
                 onClick={handleMenuClose}
               >

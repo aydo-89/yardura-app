@@ -40,10 +40,10 @@ function QuotePageClient() {
   const [quoteData, setQuoteData] = useState<Partial<QuoteInput>>({
     dogs: 1,
     frequency: 'weekly',
-    addons: {},
+    addOns: {},
     consent: { stoolPhotosOptIn: false, terms: false }
   });
-  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof QuoteInput | 'auth', string[]>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [estimatedPrice, setEstimatedPrice] = useState<any>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -55,11 +55,11 @@ function QuotePageClient() {
         dogs: quoteData.dogs,
         yardSize: quoteData.yardSize,
         frequency: quoteData.frequency,
-        addons: quoteData.addons
+        addons: quoteData.addOns
       });
       setEstimatedPrice(price.breakdown);
     }
-  }, [quoteData.dogs, quoteData.yardSize, quoteData.frequency, quoteData.addons]);
+  }, [quoteData.dogs, quoteData.yardSize, quoteData.frequency, quoteData.addOns]);
 
   // Load quote data from localStorage if resuming
   useEffect(() => {
@@ -117,10 +117,14 @@ function QuotePageClient() {
   }, [currentStep]);
 
   const updateQuoteData = (field: keyof QuoteInput, value: any) => {
-    setQuoteData(prev => ({ ...prev, [field]: value }));
+    setQuoteData((prev: Partial<QuoteInput>) => ({ ...prev, [field]: value }));
     // Clear errors for this field
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: [] }));
+      setErrors((prev: Partial<Record<keyof QuoteInput, string[]>>) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
 
@@ -129,11 +133,9 @@ function QuotePageClient() {
     const newErrors: Record<string, string[]> = {};
 
     if (currentStep === 0) {
-      if (!quoteData.dogs || !quoteData.yardSize || !quoteData.frequency) {
-        if (!quoteData.dogs) newErrors.dogs = ['Please select number of dogs'];
-        if (!quoteData.yardSize) newErrors.yardSize = ['Please select yard size'];
-        if (!quoteData.frequency) newErrors.frequency = ['Please select service frequency'];
-      }
+      if (!quoteData.dogs) newErrors.dogs = ['Please select number of dogs'];
+      if (!quoteData.yardSize) newErrors.yardSize = ['Please select yard size'];
+      if (!quoteData.frequency) newErrors.frequency = ['Please select service frequency'];
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -156,10 +158,10 @@ function QuotePageClient() {
     // Final validation
     const newErrors: Record<string, string[]> = {};
 
-    if (!quoteData.contact?.name) newErrors.name = ['Name is required'];
-    if (!quoteData.contact?.email) newErrors.email = ['Email is required'];
-    if (!quoteData.contact?.phone) newErrors.phone = ['Phone is required'];
-    if (!quoteData.consent?.terms) newErrors.terms = ['You must accept the terms'];
+    if (!quoteData.contact?.name) newErrors.contact = ['Name is required'];
+    if (!quoteData.contact?.email) newErrors.contact = [...(newErrors.contact || []), 'Email is required'];
+    if (!quoteData.contact?.phone) newErrors.contact = [...(newErrors.contact || []), 'Phone is required'];
+    if (!quoteData.consent?.terms) newErrors.consent = ['You must accept the terms'];
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -383,10 +385,10 @@ function StepContact({ quoteData, updateQuoteData, errors }: any) {
           <Input
             id="name"
             value={quoteData.contact?.name || ''}
-            onChange={(e) => updateQuoteData('contact', { ...quoteData.contact, name: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateQuoteData('contact', { ...quoteData.contact, name: e.target.value })}
             placeholder="John Smith"
           />
-          {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name[0]}</p>}
+          {errors.contact && <p className="text-sm text-red-600 mt-1">{errors.contact.find(e => e.includes('Name')) || ''}</p>}
         </div>
 
         <div>
@@ -395,10 +397,10 @@ function StepContact({ quoteData, updateQuoteData, errors }: any) {
             id="email"
             type="email"
             value={quoteData.contact?.email || ''}
-            onChange={(e) => updateQuoteData('contact', { ...quoteData.contact, email: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateQuoteData('contact', { ...quoteData.contact, email: e.target.value })}
             placeholder="john@example.com"
           />
-          {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email[0]}</p>}
+          {errors.contact && <p className="text-sm text-red-600 mt-1">{errors.contact.find(e => e.includes('Email')) || ''}</p>}
         </div>
 
         <div>
@@ -407,10 +409,10 @@ function StepContact({ quoteData, updateQuoteData, errors }: any) {
             id="phone"
             type="tel"
             value={quoteData.contact?.phone || ''}
-            onChange={(e) => updateQuoteData('contact', { ...quoteData.contact, phone: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateQuoteData('contact', { ...quoteData.contact, phone: e.target.value })}
             placeholder="(612) 555-0123"
           />
-          {errors.phone && <p className="text-sm text-red-600 mt-1">{errors.phone[0]}</p>}
+          {errors.contact && <p className="text-sm text-red-600 mt-1">{errors.contact.find(e => e.includes('Phone')) || ''}</p>}
         </div>
 
         <div>
@@ -418,7 +420,7 @@ function StepContact({ quoteData, updateQuoteData, errors }: any) {
           <Input
             id="address"
             value={quoteData.address || ''}
-            onChange={(e) => updateQuoteData('address', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateQuoteData('address', e.target.value)}
             placeholder="123 Main St, Minneapolis, MN"
           />
         </div>
@@ -497,7 +499,7 @@ function StepAccount({ quoteData, updateQuoteData, errors }: any) {
               </p>
             </div>
           </div>
-          {errors.terms && <p className="text-sm text-red-600 mt-1">{errors.terms[0]}</p>}
+          {errors.consent && <p className="text-sm text-red-600 mt-1">{errors.consent[0]}</p>}
         </div>
 
         <div className="p-4 bg-green-50 rounded-lg">
