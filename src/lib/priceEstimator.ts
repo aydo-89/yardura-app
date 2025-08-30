@@ -1,314 +1,181 @@
-// Pure pricing logic for Yardura quote system
-// No external API calls - all calculations are local
+// Pricing estimator for Yardura dog waste removal services
+// Based on competitor research and positioning strategy
 
+export type Frequency = 'weekly' | 'biweekly' | 'twice-weekly';
 export type YardSize = 'small' | 'medium' | 'large' | 'xl';
-export type Frequency = 'weekly' | 'biweekly';
-export type AddonType = 'deodorize' | 'litterBox';
+export type DogCount = 1 | 2 | 3 | 4;
 
-export interface QuoteInput {
-  address: string;
-  city?: string;
-  zip?: string;
-  dogs: 1 | 2 | 3 | 4;
-  yardSize: YardSize;
-  frequency: Frequency;
-  addons: { [key in AddonType]?: boolean };
-  notes?: string;
-  contact?: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  schedulePref?: {
-    day?: string;
-    window?: string;
-  };
-  consent?: {
-    stoolPhotosOptIn: boolean;
-    terms: boolean;
-  };
-}
-
-export interface PriceBreakdown {
-  basePrice: number;
-  dogMultiplier: number;
-  sizeMultiplier: number;
-  frequencyMultiplier: number;
-  addonsTotal: number;
-  total: number;
-  firstVisitPrice: number; // Initial clean + first service
-  monthlyEstimate: number; // Approximate monthly cost
-}
-
-export interface EstimatorResult {
-  breakdown: PriceBreakdown;
-  formatted: {
-    total: string;
-    firstVisit: string;
-    monthly: string;
-  };
-  description: string;
-}
-
-// Base pricing per visit (weekly rates)
-const BASE_PRICING: Record<YardSize, number> = {
-  small: 25,    // < 2,500 sq ft
-  medium: 35,   // 2,500-5,000 sq ft
-  large: 45,    // 5,000-10,000 sq ft
-  xl: 60,       // > 10,000 sq ft
+// Base pricing in cents (medium yard, weekly)
+const BASE_PRICES: Record<DogCount, number> = {
+  1: 2000, // $20.00
+  2: 2400, // $24.00
+  3: 2800, // $28.00
+  4: 3200, // $32.00
 };
 
-// Dog multipliers (percentage increase per additional dog)
-const DOG_MULTIPLIERS = [1, 1.2, 1.4, 1.6]; // 1 dog, 2 dogs, 3 dogs, 4 dogs
+// Yard size adders in cents
+const YARD_ADDERS: Record<YardSize, number> = {
+  small: 0,
+  medium: 0,
+  large: 400,  // +$4.00
+  xl: 800,     // +$8.00
+};
 
 // Frequency multipliers
 const FREQUENCY_MULTIPLIERS: Record<Frequency, number> = {
-  weekly: 1,
-  biweekly: 0.95, // 5% discount for bi-weekly
+  'weekly': 1.0,
+  'biweekly': 1.25,     // Higher per-visit due to accumulation
+  'twice-weekly': 0.9,  // Slight discount for route density
 };
 
-// Add-on pricing
-const ADDON_PRICING: Record<AddonType, number> = {
-  deodorize: 15,
-  litterBox: 10,
+// Add-on prices in cents
+const ADD_ON_PRICES = {
+  deodorize: 500,  // +$5.00
+  litter: 500,     // +$5.00
 };
 
-// First visit/initial clean pricing (one-time)
-const FIRST_VISIT_PRICING: Record<YardSize, number> = {
-  small: 75,
-  medium: 95,
-  large: 125,
-  xl: 175,
-};
-
-// Service area premium (cities with higher cost of living)
-const PREMIUM_CITIES = [
-  'minneapolis', 'st paul', 'edina', 'bloomington',
-  'wayzata', 'hopkins', 'minnetonka', 'plymouth'
-];
+// Initial clean multiplier (one-time)
+const INITIAL_CLEAN_MULTIPLIER = 2.5;
+const INITIAL_CLEAN_MINIMUM = 8900; // $89.00 minimum
 
 /**
- * Calculate pricing for a quote
+ * Calculate per-visit price in cents
  */
-export function calculatePrice(input: Partial<QuoteInput>): EstimatorResult {
-  const {
-    dogs = 1,
-    yardSize = 'medium',
-    frequency = 'weekly',
-    addons = {},
-    address = '',
-    city = ''
-  } = input;
+export function estimatePerVisitCents(
+  dogs: DogCount,
+  yardSize: YardSize,
+  frequency: Frequency
+): number {
+  const basePrice = BASE_PRICES[dogs];
+  const yardAdder = YARD_ADDERS[yardSize];
+  const multiplier = FREQUENCY_MULTIPLIERS[frequency];
 
-  // Base price calculation
-  const basePrice = BASE_PRICING[yardSize];
+  return Math.round((basePrice + yardAdder) * multiplier);
+}
 
-  // Dog multiplier
-  const dogMultiplier = DOG_MULTIPLIERS[dogs - 1] || 1;
+/**
+ * Calculate visits per month based on frequency
+ */
+export function visitsPerMonth(frequency: Frequency): number {
+  switch (frequency) {
+    case 'twice-weekly':
+      return 8;
+    case 'weekly':
+      return 4;
+    case 'biweekly':
+      return 2;
+    default:
+      return 4;
+  }
+}
 
-  // Size multiplier (already built into base pricing)
-  const sizeMultiplier = 1;
+/**
+ * Calculate projected monthly cost in cents
+ */
+export function projectedMonthlyCents(
+  perVisitCents: number,
+  frequency: Frequency,
+  addOns: { deodorize?: boolean; litter?: boolean } = {}
+): number {
+  const addOnCents = (addOns.deodorize ? ADD_ON_PRICES.deodorize : 0) +
+                     (addOns.litter ? ADD_ON_PRICES.litter : 0);
 
-  // Frequency multiplier
-  const frequencyMultiplier = FREQUENCY_MULTIPLIERS[frequency];
+  return (perVisitCents + addOnCents) * visitsPerMonth(frequency);
+}
 
-  // Add-ons total
-  const addonsTotal = Object.entries(addons).reduce((total, [addon, selected]) => {
-    if (selected && addon in ADDON_PRICING) {
-      return total + ADDON_PRICING[addon as AddonType];
-    }
-    return total;
-  }, 0);
+/**
+ * Calculate initial clean cost in cents
+ */
+export function initialCleanCents(
+  perVisitCents: number,
+  addOns: { deodorize?: boolean; litter?: boolean } = {}
+): number {
+  const addOnCents = (addOns.deodorize ? ADD_ON_PRICES.deodorize : 0) +
+                     (addOns.litter ? ADD_ON_PRICES.litter : 0);
 
-  // City premium (if applicable)
-  const cityLower = (city || address.split(',').pop() || '').toLowerCase().trim();
-  const isPremiumArea = PREMIUM_CITIES.some(premium =>
-    cityLower.includes(premium) || premium.includes(cityLower)
-  );
-  const premiumMultiplier = isPremiumArea ? 1.1 : 1;
+  const baseInitialClean = Math.round((perVisitCents + addOnCents) * INITIAL_CLEAN_MULTIPLIER);
+  return Math.max(baseInitialClean, INITIAL_CLEAN_MINIMUM);
+}
 
-  // Calculate per-visit total
-  const perVisitTotal = Math.round(
-    (basePrice * dogMultiplier * frequencyMultiplier + addonsTotal) * premiumMultiplier
-  );
-
-  // First visit pricing
-  const firstVisitBase = FIRST_VISIT_PRICING[yardSize];
-  const firstVisitTotal = Math.round(
-    (firstVisitBase * dogMultiplier + addonsTotal) * premiumMultiplier
-  );
-
-  // Monthly estimate (4 weeks average)
-  const visitsPerMonth = frequency === 'weekly' ? 4 : 2;
-  const monthlyEstimate = Math.round(perVisitTotal * visitsPerMonth * 1.05); // +5% for taxes/fees
-
-  const breakdown: PriceBreakdown = {
-    basePrice,
-    dogMultiplier,
-    sizeMultiplier,
-    frequencyMultiplier,
-    addonsTotal,
-    total: perVisitTotal,
-    firstVisitPrice: firstVisitTotal,
-    monthlyEstimate
-  };
-
-  const formatted = {
-    total: formatPrice(perVisitTotal),
-    firstVisit: formatPrice(firstVisitTotal),
-    monthly: formatPrice(monthlyEstimate)
-  };
-
-  const description = generatePriceDescription(input, breakdown);
+/**
+ * Get pricing breakdown for display
+ */
+export function getPricingBreakdown(
+  dogs: DogCount,
+  yardSize: YardSize,
+  frequency: Frequency,
+  addOns: { deodorize?: boolean; litter?: boolean } = {}
+) {
+  const perVisitCents = estimatePerVisitCents(dogs, yardSize, frequency);
+  const monthlyCents = projectedMonthlyCents(perVisitCents, frequency, addOns);
+  const initialCleanCentsValue = initialCleanCents(perVisitCents, addOns);
+  const visitsPerMonth = visitsPerMonth(frequency);
 
   return {
-    breakdown,
-    formatted,
-    description
+    perVisitCents,
+    monthlyCents,
+    initialCleanCents: initialCleanCentsValue,
+    visitsPerMonth,
+    breakdown: {
+      basePrice: BASE_PRICES[dogs],
+      yardAdder: YARD_ADDERS[yardSize],
+      frequencyMultiplier: FREQUENCY_MULTIPLIERS[frequency],
+      addOnCents: (addOns.deodorize ? ADD_ON_PRICES.deodorize : 0) +
+                  (addOns.litter ? ADD_ON_PRICES.litter : 0),
+    }
   };
 }
 
 /**
- * Format price as currency string
+ * Format cents to currency string
  */
-export function formatPrice(amount: number): string {
+export function formatPrice(cents: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount);
+  }).format(cents / 100);
 }
 
 /**
- * Generate human-readable price description
+ * Get frequency display name
  */
-function generatePriceDescription(input: Partial<QuoteInput>, breakdown: PriceBreakdown): string {
-  const { dogs = 1, yardSize, frequency, addons = {} } = input;
-  const activeAddons = Object.entries(addons).filter(([, selected]) => selected).length;
-
-  let description = `${frequency === 'weekly' ? 'Weekly' : 'Bi-weekly'} service`;
-
-  if (dogs > 1) {
-    description += ` for ${dogs} dogs`;
+export function getFrequencyDisplayName(frequency: Frequency): string {
+  switch (frequency) {
+    case 'weekly':
+      return 'Weekly';
+    case 'biweekly':
+      return 'Every Other Week';
+    case 'twice-weekly':
+      return 'Twice Weekly';
+    default:
+      return 'Weekly';
   }
-
-  if (activeAddons > 0) {
-    description += ` + ${activeAddons} add-on${activeAddons > 1 ? 's' : ''}`;
-  }
-
-  if (breakdown.frequencyMultiplier < 1) {
-    description += ` (${Math.round((1 - breakdown.frequencyMultiplier) * 100)}% discount for bi-weekly)`;
-  }
-
-  return description;
 }
 
 /**
- * Validate quote input
+ * Get yard size display name
  */
-export function validateQuoteInput(input: Partial<QuoteInput>): Record<string, string[]> {
-  const errors: Record<string, string[]> = {};
-
-  // Address validation
-  if (!input.address?.trim()) {
-    errors.address = ['Address is required'];
-  } else if (input.address.trim().length < 10) {
-    errors.address = ['Please enter a complete address'];
+export function getYardSizeDisplayName(yardSize: YardSize): string {
+  switch (yardSize) {
+    case 'small':
+      return 'Small';
+    case 'medium':
+      return 'Medium';
+    case 'large':
+      return 'Large';
+    case 'xl':
+      return 'Extra Large';
+    default:
+      return 'Medium';
   }
-
-  // Dogs validation
-  if (!input.dogs || input.dogs < 1 || input.dogs > 4) {
-    errors.dogs = ['Please select 1-4 dogs'];
-  }
-
-  // Yard size validation
-  if (!input.yardSize) {
-    errors.yardSize = ['Please select yard size'];
-  }
-
-  // Frequency validation
-  if (!input.frequency) {
-    errors.frequency = ['Please select service frequency'];
-  }
-
-  // Contact validation (if provided)
-  if (input.contact) {
-    if (!input.contact.name?.trim()) {
-      errors['contact.name'] = ['Name is required'];
-    }
-
-    if (!input.contact.email?.trim()) {
-      errors['contact.email'] = ['Email is required'];
-    } else if (!isValidEmail(input.contact.email)) {
-      errors['contact.email'] = ['Please enter a valid email'];
-    }
-
-    if (!input.contact.phone?.trim()) {
-      errors['contact.phone'] = ['Phone is required'];
-    } else if (!isValidPhone(input.contact.phone)) {
-      errors['contact.phone'] = ['Please enter a valid phone number'];
-    }
-  }
-
-  return errors;
 }
 
-/**
- * Email validation
- */
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim());
-}
-
-/**
- * Phone validation (basic US format)
- */
-function isValidPhone(phone: string): boolean {
-  const phoneRegex = /^\(?[\d\s\-\(\)]{10,}$/;
-  const cleanPhone = phone.replace(/[^\d]/g, '');
-  return phoneRegex.test(phone) && cleanPhone.length >= 10;
-}
-
-/**
- * Get yard size options with descriptions
- */
-export function getYardSizeOptions() {
-  return [
-    { value: 'small', label: 'Small', description: '< 2,500 sq ft', price: BASE_PRICING.small },
-    { value: 'medium', label: 'Medium', description: '2,500-5,000 sq ft', price: BASE_PRICING.medium },
-    { value: 'large', label: 'Large', description: '5,000-10,000 sq ft', price: BASE_PRICING.large },
-    { value: 'xl', label: 'XL', description: '> 10,000 sq ft', price: BASE_PRICING.xl }
-  ];
-}
-
-/**
- * Get addon options
- */
-export function getAddonOptions() {
-  return [
-    {
-      id: 'deodorize',
-      label: 'Deodorize & Sanitize',
-      description: 'Pet-safe enzymatic spray',
-      price: ADDON_PRICING.deodorize
-    },
-    {
-      id: 'litterBox',
-      label: 'Litter Box Service',
-      description: 'Clean and maintain outdoor litter areas',
-      price: ADDON_PRICING.litterBox
-    }
-  ];
-}
-
-/**
- * Get frequency options
- */
-export function getFrequencyOptions() {
-  return [
-    { value: 'weekly', label: 'Weekly', description: 'Every 7 days', discount: 0 },
-    { value: 'biweekly', label: 'Bi-weekly', description: 'Every 14 days', discount: 5 }
-  ];
-}
+// Export constants for external use
+export {
+  BASE_PRICES,
+  YARD_ADDERS,
+  FREQUENCY_MULTIPLIERS,
+  ADD_ON_PRICES,
+  INITIAL_CLEAN_MULTIPLIER,
+  INITIAL_CLEAN_MINIMUM,
+};
