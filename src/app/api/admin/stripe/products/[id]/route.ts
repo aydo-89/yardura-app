@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { stripe } from '@/lib/stripe'
@@ -11,7 +11,7 @@ function isAdmin(email?: string | null) {
   return !!email && adminEmails.includes(email.toLowerCase())
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions as any) as { user?: { email?: string } } | null
   if (!isAdmin(session?.user?.email)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json(product)
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions as any) as { user?: { email?: string } } | null
   if (!isAdmin(session?.user?.email)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
