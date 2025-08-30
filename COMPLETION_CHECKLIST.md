@@ -89,3 +89,5 @@ Once you've completed the above steps, your Stripe integration will be fully fun
 - ✅ Only charges for completed services
 - ✅ Provides easy service management
 - ✅ Scales with your business growth
+
+

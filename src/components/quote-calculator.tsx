@@ -120,7 +120,7 @@ export default function QuoteCalculator() {
 
       <div className="mt-4 pt-4 border-t border-brand-200">
         <a
-          href="#quote"
+          href="/quote" data-analytics="cta_quote"
           className="block w-full text-center px-6 py-3 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition font-semibold shadow-soft"
         >
           Get Your Custom Quote

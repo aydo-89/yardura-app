@@ -1,39 +1,121 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
+import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
 import { Leaf, Shield, ShieldCheck, Sparkles, Star, MapPin, Users } from "lucide-react";
+import Image from "next/image";
+import { track } from "@/lib/analytics";
+import Reveal from "@/components/Reveal";
+import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import { splitHeadline, dur, ease, spring, magneticHover } from "@/lib/motion/presets";
 
 export default function Hero() {
+  const heroRef = useRef<HTMLElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  });
+
+  const { prefersReducedMotion } = useReducedMotionSafe();
+
+  // Parallax transforms for background elements
+  const blob1Y = useTransform(scrollYProgress, [0, 1], [0, -50]);
+  const blob2Y = useTransform(scrollYProgress, [0, 1], [0, -30]);
+  const blob3Y = useTransform(scrollYProgress, [0, 1], [0, -70]);
+
+  // Magnetic hover effect
+  const buttonX = useSpring(useTransform(mouseX, [0, 1920], [-3, 3]), spring.soft);
+  const buttonY = useSpring(useTransform(mouseY, [0, 1080], [-3, 3]), spring.soft);
+
+  // Handle mouse movement for magnetic effect
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isHovered) return;
+    mouseX.set(e.clientX);
+    mouseY.set(e.clientY);
+  };
+
   return (
-    <section className="bg-gradient-to-br from-brand-50 via-white to-brand-100 border-b relative overflow-hidden">
-      {/* Enhanced background pattern */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22%237BB369%22%20fill-opacity%3D%220.1%22%3E%3Cpath%20d%3D%22M20%2020c0-5.5-4.5-10-10-10s-10%204.5-10%2010%204.5%2010%2010%2010%2010-4.5%2010-10zm-2%200c0%204.4-3.6%208-8%208s-8-3.6-8-8%203.6-8%208-8%208%203.6%208%208z%22/%3E%3C/g%3E%3C/svg%3E')]"></div>
+    <section ref={heroRef} className="bg-gradient-to-br from-accent-soft/60 via-white to-accent-soft/30 border-b relative overflow-hidden">
+      {/* Enhanced background pattern with subtle animation */}
+      <div className="absolute inset-0 opacity-15">
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22%237BB369%22%20fill-opacity%3D%220.08%22%3E%3Cpath%20d%3D%22M30%2030c0-8.3-6.7-15-15-15s-15%206.7-15%2015%206.7%2015%2015%2015%2015-6.7%2015-15zm-3%200c0%206.6-5.4%2012-12%2012s-12-5.4-12-12%205.4-12%2012-12%2012%205.4%2012%2012z%22/%3E%3C/g%3E%3C/svg%3E')]"
+             style={{
+               animation: prefersReducedMotion ? 'none' : 'pulse 8s infinite'
+             }} />
       </div>
 
-      {/* Branded background overlay */}
-      {/* Branded background moved to quote section */}
+      {/* Parallax floating gradient orbs */}
+      <motion.div
+        className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-br from-accent/20 to-accent-soft/40 rounded-full blur-xl"
+        style={{
+          y: prefersReducedMotion ? 0 : blob1Y,
+          opacity: 0.6
+        }}
+      />
+      <motion.div
+        className="absolute bottom-32 left-16 w-24 h-24 bg-gradient-to-br from-accent-soft/30 to-accent/15 rounded-full blur-lg"
+        style={{
+          y: prefersReducedMotion ? 0 : blob2Y,
+          opacity: 0.4
+        }}
+      />
+      <motion.div
+        className="absolute top-1/2 left-1/4 w-16 h-16 bg-gradient-to-br from-accent/25 to-accent-soft/50 rounded-full blur-md"
+        style={{
+          y: prefersReducedMotion ? 0 : blob3Y,
+          opacity: 0.3
+        }}
+      />
 
-      {/* Floating elements for visual interest */}
-      <div className="absolute top-10 right-10 w-20 h-20 bg-brand-200 rounded-full opacity-30 animate-pulse"></div>
-      <div className="absolute bottom-20 left-10 w-16 h-16 bg-brand-300 rounded-full opacity-20 animate-bounce" style={{animationDuration: '3s'}}></div>
-
-      <div className="container py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center relative z-10">
-        <div>
+      <div className="container py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center relative z-10" onMouseMove={handleMouseMove}>
+        <Reveal>
+          <div>
           {/* Trust signals - realistic messaging */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex items-center gap-1 text-brand-600">
+          <motion.div
+            className="flex items-center gap-2 mb-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: dur.base, ease: ease.emphasized }}
+          >
+            <div className="flex items-center gap-1 text-accent">
               <Shield className="size-4" />
             </div>
             <span className="text-sm text-slate-600">Licensed • Insured • Eco-friendly • Twin Cities Local</span>
-          </div>
+          </motion.div>
 
-          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight md:leading-[1.25] text-ink">
-            Poop-free yard.{' '}
-            <span className="inline-flex items-center gap-2 align-middle">
-              <span className="bg-gradient-to-r from-brand-600 to-brand-800 bg-clip-text text-transparent pb-1">Smarter Insights</span>
-            </span>
-            . Less landfill.
-          </h1>
+          {/* Split headline reveal */}
+          <motion.div
+            className="text-4xl md:text-5xl font-extrabold leading-tight md:leading-[1.25] text-ink"
+            variants={splitHeadline.container}
+            initial="initial"
+            animate="animate"
+          >
+            <motion.span
+              className="block"
+              variants={splitHeadline.line}
+            >
+              Clean yard.{' '}
+              <motion.span
+                className="inline-flex items-center gap-2 align-middle"
+                variants={splitHeadline.line}
+              >
+                <span className="bg-gradient-to-r from-accent to-accent/80 bg-clip-text text-transparent pb-1">
+                  Smarter Insights.
+                </span>
+              </motion.span>
+            </motion.span>
+            <motion.span
+              className="block"
+              variants={splitHeadline.line}
+              transition={{ delay: 0.1 }}
+            >
+              Less landfill.
+            </motion.span>
+          </motion.div>
           <p className="mt-4 text-lg text-slate-600">
             Yardura is the Twin Cities' tech-enabled, eco-friendly dog waste removal service.
             Weekly scooping at market pricing — plus smart trend alerts on your pup's poop health:
@@ -46,15 +128,48 @@ export default function Hero() {
             <span className="text-sm font-medium">Serving South Minneapolis, Richfield, Edina, Bloomington. Coming soon to St. Cloud!</span>
           </div>
 
-          {/* Enhanced CTAs with urgency */}
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a href="#quote" className="px-6 py-3 rounded-xl bg-ink text-white shadow-soft hover:bg-brand-800 font-semibold transition-all duration-200 hover:scale-105">
-              Get My Quote
-            </a>
-            <a href="#how" className="px-6 py-3 rounded-xl border border-brand-300 hover:bg-brand-100 font-semibold transition-all duration-200">
+          {/* Enhanced CTAs with magnetic hover and shimmer */}
+          <motion.div
+            className="mt-6 flex flex-wrap gap-3"
+            onHoverStart={() => setIsHovered(true)}
+            onHoverEnd={() => setIsHovered(false)}
+          >
+            <motion.a
+              href="/quote"
+              data-analytics="hero_get_quote"
+              className="relative px-6 py-3 rounded-xl bg-accent text-white font-semibold shadow-soft overflow-hidden group"
+              style={{
+                x: prefersReducedMotion ? 0 : buttonX,
+                y: prefersReducedMotion ? 0 : buttonY,
+              }}
+              whileHover={{
+                scale: 1.02,
+                boxShadow: "0 8px 25px rgba(0,0,0,0.15)"
+              }}
+              whileTap={{ scale: 0.98 }}
+              transition={spring.snappy}
+            >
+              {/* Shimmer effect */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                initial={{ x: '-100%' }}
+                whileHover={{ x: '100%' }}
+                transition={{ duration: 1.2, ease: 'easeInOut' }}
+              />
+              <span className="relative z-10">Get My Quote</span>
+            </motion.a>
+
+            <motion.a
+              href="#how"
+              data-analytics="hero_how_it_works"
+              className="px-6 py-3 rounded-xl border border-accent hover:bg-accent-soft font-semibold transition-all duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={spring.snappy}
+            >
               How it works
-            </a>
-          </div>
+            </motion.a>
+          </motion.div>
 
           {/* Trust indicators */}
           <div className="mt-6 grid grid-cols-3 gap-3 text-sm">
@@ -87,16 +202,23 @@ export default function Hero() {
             </div>
           </div>
         </div>
+        </Reveal>
 
-        <div className="relative">
-          <div className="rounded-2xl border shadow-soft p-4 bg-white relative overflow-hidden">
-            <img
-              src="/modern_yard.png"
-              alt="Modern clean yard with lush green grass and beautiful landscaping"
-              className="rounded-xl w-full h-auto object-cover"
-              style={{ maxHeight: '400px' }}
-            />
-          </div>
+        <Reveal delay={0.2}>
+          <div className="relative">
+            <div className="rounded-2xl border shadow-soft p-4 bg-white relative overflow-hidden">
+              <Image
+                src="/modern_yard.png"
+                alt="Clean Minneapolis yard after professional dog waste removal service - lush green grass and beautiful landscaping"
+                width={600}
+                height={400}
+                className="rounded-xl w-full h-auto object-cover"
+                priority // LCP optimization
+                placeholder="blur"
+                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAoACgDASIAAhEBAxEB/8QAFwAAAwEAAAAAAAAAAAAAAAAAAAMEB//EACUQAAIBAwMEAwEBAAAAAAAAAAECAwAEEQUSITFBURNhcZEigf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8A4+iiigAooooAKKKKACiiigD/2Q=="
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            </div>
 
           {/* Enhanced stats card */}
           <div className="absolute -bottom-5 -left-5 bg-white rounded-xl border shadow-soft p-4">
@@ -108,21 +230,22 @@ export default function Hero() {
           </div>
 
           {/* Service guarantee badge */}
-          <div className="absolute -top-3 -right-3 bg-brand-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+          <div className="absolute -top-3 -right-3 bg-accent text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
             100% Satisfaction Guaranteed
           </div>
-        </div>
+          </div>
+        </Reveal>
       </div>
 
                         {/* Bottom trust bar */}
                   <div className="bg-white/80 border-t">
                     <div className="container py-4">
-                      <div className="flex items-center justify-center gap-6 text-xs text-slate-500">
+                      <div className="flex items-center justify-center gap-6 text-xs text-muted">
                         <span>🛡️ Licensed & insured</span>
                         <span>•</span>
                         <span>💚 Eco-friendly service</span>
                         <span>•</span>
-                        <span>📱 Smart health insights (coming soon)</span>
+                        <span>📱 Smart health insights</span>
                         <span>•</span>
                         <span>🏠 Twin Cities local</span>
                       </div>

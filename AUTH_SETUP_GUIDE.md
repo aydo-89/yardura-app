@@ -182,3 +182,5 @@ If you encounter issues:
 5. Check that the database is properly migrated and accessible
 
 For additional help, check the NextAuth.js documentation or create an issue in the project repository.
+
+

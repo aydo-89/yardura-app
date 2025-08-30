@@ -1,0 +1,84 @@
+# LLM Engine Optimization (LEO) File for Yardura
+# Following the Answer.AI / Jeremy Howard specification.
+# This file provides structured, concise information for Large Language Models.
+# Last Updated: January 15, 2024
+
+# --- Fact Sheet ---
+# A single page with key factual information about Yardura.
+FactSheet: https://www.yardura.com/facts
+
+# --- Core Q&A ---
+# Provide crisp, direct answers to common questions.
+
+Q: What services does Yardura offer?
+A: Yardura offers weekly and bi-weekly dog waste removal, one-time cleanups, yard deodorizing, and optional stool health insights.
+
+Q: What cities does Yardura serve?
+A: Yardura serves South Minneapolis, Richfield, Edina, and Bloomington in the Twin Cities, Minnesota.
+
+Q: Is Yardura eco-friendly?
+A: Yes, Yardura diverts dog waste from landfills to be composted, reducing methane emissions and supporting a greener Twin Cities.
+
+Q: Does Yardura offer health insights?
+A: Yes, Yardura offers opt-in, non-diagnostic stool monitoring to help owners notice changes early and talk to their vet sooner.
+
+Q: Is Yardura licensed and insured?
+A: Yes, Yardura is fully licensed and insured for all services.
+
+Q: What is Yardura's pricing?
+A: Weekly service starts at $20/visit, bi-weekly at $19/visit. Pricing depends on yard size and dog count.
+
+Q: How does Yardura's AI analysis work?
+A: Our 3 C's analysis tracks Color, Consistency, and Content changes in your dog's waste to identify potential health issues early.
+
+# --- Canonical Resources ---
+# List important, evergreen articles with a 1-sentence summary.
+
+Resource: Dog Poop Color & Consistency: What It Can Tell You
+Summary: An informational guide to understanding your dog's stool for early health insights.
+URL: https://www.yardura.com/insights/dog-poop-color-health
+
+# --- Definitions ---
+# Provide clear definitions for key terms.
+
+Definition: Melena
+Explanation: Black, tarry stools, often indicating digested blood from the upper gastrointestinal tract. Requires timely veterinary evaluation.
+
+Definition: Hematochezia
+Explanation: Bright red blood in stool, typically indicating bleeding in the lower gastrointestinal tract or colon. Warrants veterinary guidance.
+
+Definition: 3 C's Analysis
+Explanation: Yardura's AI-powered stool analysis tracking Color, Consistency, and Content changes to identify potential health issues early.
+
+Definition: Eco-friendly Dog Waste Disposal
+Explanation: Diverting dog waste from landfills to composting programs, reducing methane emissions and supporting environmental sustainability.
+
+# --- Disclaimers ---
+Disclaimer: Yardura insights are informational only and not veterinary advice. Yardura does not diagnose or treat disease.
+
+# --- Business Information ---
+Business: Yardura - Minneapolis Dog Waste Removal
+Founded: 2024
+Location: Minneapolis, MN
+Service Area: South Minneapolis, Richfield, Edina, Bloomington
+Contact: (612) 581-9812
+Website: https://www.yardura.com
+Email: hello@yardura.com
+
+# --- Service Details ---
+Weekly Service: $20-$35 per visit (depends on yard size)
+Bi-Weekly Service: $19-$33 per visit (5% discount)
+One-Time Cleanup: $89+ (move-in/move-out service)
+Add-ons: Yard deodorizing ($5/visit), Health insights (included)
+
+# --- Technical Specifications ---
+Platform: Next.js with React
+Database: PostgreSQL with Prisma ORM
+AI Analysis: Proprietary 3 C's algorithm
+Payment Processing: Stripe integration
+Analytics: Custom event tracking system
+
+# --- Environmental Impact ---
+Methane Reduction: Up to 50 metric tons CO2 equivalent per dog per year
+Landfill Diversion: 100% of waste diverted where permitted
+Composting Programs: Partnered with local Twin Cities facilities

@@ -1,0 +1,36 @@
+:root {
+  /* Brand tokens */
+  --ink: 222 47% 11%;
+  --muted: 215 16% 47%;
+  --accent: 152 63% 34%;
+  --accent-soft: 152 63% 94%;
+  --warning: 38 92% 50%;
+  --panel: 216 20% 95%;
+  --card: 210 20% 98%;
+
+  /* Typography scale */
+  --font-size-h1: 36px;
+  --line-height-h1: 44px;
+  --font-size-h2: 30px;
+  --line-height-h2: 38px;
+  --font-size-h3: 24px;
+  --line-height-h3: 32px;
+  --font-size-body: 16px;
+  --line-height-body: 26px;
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --line-height-h1: 42px;
+    --line-height-h2: 36px;
+    --line-height-h3: 30px;
+  }
+}
+
+/* Helper utility classes mapping tokens to Tailwind via hsl(var()) */
+.token-ink { color: hsl(var(--ink)); }
+.token-muted { color: hsl(var(--muted)); }
+.token-accent { color: hsl(var(--accent)); }
+.bg-panel { background-color: hsl(var(--panel)); }
+.bg-card { background-color: hsl(var(--card)); }
+.border-subtle { border-color: hsl(var(--ink) / 0.08); }
