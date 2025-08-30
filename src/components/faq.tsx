@@ -26,7 +26,31 @@ const faqSchema = {
       "name": "How does pricing work?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "We match local market pricing and show example rates in the calculator. Final price is confirmed after the first visit or initial clean if needed."
+        "text": "We use a transparent pricing matrix starting at $20/weekly for 1 dog (medium yard). Price increases with dog count ($4 each additional dog) and yard size. Eco diversion and basic health insights are included at no extra cost."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why is every-other-week service more expensive per visit?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "EOW service costs 25% more per visit because two weeks of waste accumulation requires longer service time and creates less route efficiency. However, your monthly total is lower due to fewer visits."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is eco diversion an extra fee?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No, eco diversion is included in our base pricing. It's part of our core mission and differentiates us from competitors who may charge extra for composting or responsible disposal."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are health insights extra?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Basic health insights (3 C's monitoring) are included at no extra cost. A premium Insights Plus tier may be available later for advanced analytics, export features, and priority support."
       }
     },
     {
@@ -98,7 +122,7 @@ export default function FAQ() {
           <AccordionItem value="item-3">
             <AccordionTrigger>How does pricing work?</AccordionTrigger>
             <AccordionContent>
-              We match local market pricing and show example rates in the calculator. Final price is confirmed after the first visit or initial clean if needed.
+              We use a transparent pricing matrix starting at $20/weekly for 1 dog (medium yard). Price increases with dog count ($4 each additional dog) and yard size. Eco diversion and basic health insights are included at no extra cost.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-4">
@@ -108,27 +132,45 @@ export default function FAQ() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-5">
-            <AccordionTrigger>What are the “health insights” and data opt-in?</AccordionTrigger>
+            <AccordionTrigger>What are the "health insights" and data opt-in?</AccordionTrigger>
             <AccordionContent>
-              If you opt in, we collect anonymized stool photos and notes to build baselines for the 3 C’s (Color, Content, Consistency). Alerts are informational only and not veterinary advice.
+              If you opt in, we collect anonymized stool photos and notes to build baselines for the 3 C's (Color, Content, Consistency). Alerts are informational only and not veterinary advice.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-6">
+            <AccordionTrigger>Why is every-other-week service more expensive per visit?</AccordionTrigger>
+            <AccordionContent>
+              EOW service costs 25% more per visit because two weeks of waste accumulation requires longer service time and creates less route efficiency. However, your monthly total is lower due to fewer visits.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-7">
+            <AccordionTrigger>Is eco diversion an extra fee?</AccordionTrigger>
+            <AccordionContent>
+              No, eco diversion is included in our base pricing. It's part of our core mission and differentiates us from competitors who may charge extra for composting or responsible disposal.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-8">
+            <AccordionTrigger>Are health insights extra?</AccordionTrigger>
+            <AccordionContent>
+              Basic health insights (3 C's monitoring) are included at no extra cost. A premium Insights Plus tier may be available later for advanced analytics, export features, and priority support.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-9">
             <AccordionTrigger>How does the eco program work?</AccordionTrigger>
             <AccordionContent>
               We’re piloting composting/conditioning routes to keep waste out of landfills and reduce methane. Your dashboard will estimate impact as the program expands.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-7">
-            <AccordionTrigger>What if there’s snow or bad weather?</AccordionTrigger>
+          <AccordionItem value="item-10">
+            <AccordionTrigger>What if there's snow or bad weather?</AccordionTrigger>
             <AccordionContent>
-              We scoop in most weather. In heavy snowfall or unsafe conditions, we’ll reschedule and catch up on the next visit.
+              We scoop in most weather. In heavy snowfall or unsafe conditions, we'll reschedule and catch up on the next visit.
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-8">
+          <AccordionItem value="item-11">
             <AccordionTrigger>How do I get started?</AccordionTrigger>
             <AccordionContent>
-              Click “Get My Quote”, fill in your details and preferences, and we’ll confirm schedule and price by text/email.
+              Click "Get My Quote", fill in your details and preferences, and we'll confirm schedule and price by text/email.
             </AccordionContent>
           </AccordionItem>
         </Accordion>

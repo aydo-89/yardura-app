@@ -4,6 +4,7 @@ import Differentiators from "@/components/Differentiators";
 import WhyItMatters from "@/components/WhyItMatters";
 import Insights from "@/components/insights";
 import HowItWorks from "@/components/services";
+import Pricing from "@/components/pricing";
 import QuoteTeaser from "@/components/QuoteTeaser";
 import Eco from "@/components/eco";
 import Testimonials from "@/components/testimonials";
@@ -36,6 +37,7 @@ export default function Page() {
         <WhyItMatters/>
         <Insights/>
         <HowItWorks/>
+        <Pricing/>
         <QuoteTeaser/>
         <Eco/>
         <Testimonials/>
