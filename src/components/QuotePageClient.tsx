@@ -388,7 +388,7 @@ function StepContact({ quoteData, updateQuoteData, errors }: any) {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateQuoteData('contact', { ...quoteData.contact, name: e.target.value })}
             placeholder="John Smith"
           />
-          {errors.contact && <p className="text-sm text-red-600 mt-1">{errors.contact.find(e => e.includes('Name')) || ''}</p>}
+          {errors.contact && <p className="text-sm text-red-600 mt-1">{errors.contact.find((e: string) => e.includes('Name')) || ''}</p>}
         </div>
 
         <div>
@@ -400,7 +400,7 @@ function StepContact({ quoteData, updateQuoteData, errors }: any) {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateQuoteData('contact', { ...quoteData.contact, email: e.target.value })}
             placeholder="john@example.com"
           />
-          {errors.contact && <p className="text-sm text-red-600 mt-1">{errors.contact.find(e => e.includes('Email')) || ''}</p>}
+          {errors.contact && <p className="text-sm text-red-600 mt-1">{errors.contact.find((e: string) => e.includes('Email')) || ''}</p>}
         </div>
 
         <div>
@@ -412,7 +412,7 @@ function StepContact({ quoteData, updateQuoteData, errors }: any) {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateQuoteData('contact', { ...quoteData.contact, phone: e.target.value })}
             placeholder="(612) 555-0123"
           />
-          {errors.contact && <p className="text-sm text-red-600 mt-1">{errors.contact.find(e => e.includes('Phone')) || ''}</p>}
+          {errors.contact && <p className="text-sm text-red-600 mt-1">{errors.contact.find((e: string) => e.includes('Phone')) || ''}</p>}
         </div>
 
         <div>
