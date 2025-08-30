@@ -78,8 +78,7 @@ const nextConfig = {
   // Compression
   compress: true,
 
-  // Reduce bundle size
-  swcMinify: true,
+  // Reduce bundle size (Next.js 15: swcMinify is always enabled; option removed)
 };
 
 module.exports = withBundleAnalyzer(nextConfig);

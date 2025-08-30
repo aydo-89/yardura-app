@@ -1,5 +1,7 @@
 import { ImageResponse } from 'next/og';
 
+import React from 'react';
+
 // Font loading for OG images
 const loadFonts = async () => {
   const [interRegular, interBold] = await Promise.all([
