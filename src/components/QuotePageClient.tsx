@@ -259,11 +259,49 @@ const PricingSummary = ({ pricing, frequency, currentStep, quoteData }: { pricin
                       Deodorize & Sanitize
                       {quoteData.addOns.deodorizeMode === 'first-visit' && ' (First visit only)'}
                       {quoteData.addOns.deodorizeMode === 'each-visit' && ' (Each visit)'}
+                      {quoteData.addOns.deodorizeMode === 'every-other' && ' (Every other visit)'}
+                      {quoteData.addOns.deodorizeMode === 'onetime' && ' (One-time service)'}
                     </span>
                     <span>
-                      +$5
+                      {quoteData.addOns.deodorizeMode === 'every-other' ? '+$12.50' : '+$25'}
                       {quoteData.addOns.deodorizeMode === 'first-visit' && ' one-time'}
                       {quoteData.addOns.deodorizeMode === 'each-visit' && ' per visit'}
+                      {quoteData.addOns.deodorizeMode === 'every-other' && ' per visit'}
+                      {quoteData.addOns.deodorizeMode === 'onetime' && ' one-time'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Spray Deck Add-on */}
+                {quoteData.addOns?.sprayDeck && (
+                  <div className="flex justify-between items-center text-xs text-gray-600">
+                    <span>
+                      Spray Deck/Patio
+                      {quoteData.addOns.sprayDeckMode === 'first-visit' && ' (First visit only)'}
+                      {quoteData.addOns.sprayDeckMode === 'each-visit' && ' (Each visit)'}
+                      {quoteData.addOns.sprayDeckMode === 'onetime' && ' (One-time service)'}
+                    </span>
+                    <span>
+                      +$12
+                      {quoteData.addOns.sprayDeckMode === 'first-visit' && ' one-time'}
+                      {quoteData.addOns.sprayDeckMode === 'each-visit' && ' per visit'}
+                      {quoteData.addOns.sprayDeckMode === 'onetime' && ' one-time'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Divert from Landfill Add-on */}
+                {quoteData.addOns?.divertMode && quoteData.addOns.divertMode !== 'none' && (
+                  <div className="flex justify-between items-center text-xs text-gray-600">
+                    <span>
+                      🌱 Divert from Landfill
+                      {quoteData.addOns.divertMode === '50' && ' (50% diversion)'}
+                      {quoteData.addOns.divertMode === '100' && ' (100% diversion)'}
+                    </span>
+                    <span>
+                      {quoteData.addOns.divertMode === '50' && '+$2'}
+                      {quoteData.addOns.divertMode === '100' && '+$6'}
+                      {quoteData.frequency === 'onetime' ? ' one-time' : ' per visit'}
                     </span>
                   </div>
                 )}
@@ -1462,47 +1500,243 @@ function StepCustomization({ quoteData, updateQuoteData, errors, estimatedPrice 
 
                 {/* Radio buttons for deodorize mode */}
                 <div className="space-y-2">
+                  {quoteData.frequency === 'onetime' ? (
+                    // For one-time services, just show yes/no
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="deodorize-yes"
+                          name="deodorize-mode"
+                          checked={quoteData.addOns?.deodorize}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, deodorize: true, deodorizeMode: 'onetime' })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="deodorize-yes" className="text-sm cursor-pointer">
+                          Yes (+$25 one-time)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="deodorize-none-onetime"
+                          name="deodorize-mode"
+                          checked={!quoteData.addOns?.deodorize}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, deodorize: false, deodorizeMode: undefined })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="deodorize-none-onetime" className="text-sm cursor-pointer">
+                          No deodorizing
+                        </Label>
+                      </div>
+                    </>
+                  ) : (
+                    // For recurring services, show frequency options
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="deodorize-first-visit"
+                          name="deodorize-mode"
+                          checked={quoteData.addOns?.deodorizeMode === 'first-visit'}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, deodorize: true, deodorizeMode: 'first-visit' })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="deodorize-first-visit" className="text-sm cursor-pointer">
+                          First visit only (+$25 one-time)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="deodorize-each-visit"
+                          name="deodorize-mode"
+                          checked={quoteData.addOns?.deodorizeMode === 'each-visit'}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, deodorize: true, deodorizeMode: 'each-visit' })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="deodorize-each-visit" className="text-sm cursor-pointer">
+                          Each visit (+$25 per visit)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="deodorize-every-other"
+                          name="deodorize-mode"
+                          checked={quoteData.addOns?.deodorizeMode === 'every-other'}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, deodorize: true, deodorizeMode: 'every-other' })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="deodorize-every-other" className="text-sm cursor-pointer">
+                          Every other visit (+$12.50 per visit)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="deodorize-none"
+                          name="deodorize-mode"
+                          checked={!quoteData.addOns?.deodorize}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, deodorize: false, deodorizeMode: undefined })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="deodorize-none" className="text-sm cursor-pointer">
+                          No deodorizing
+                        </Label>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Spray Deck/Patio Add-on */}
+              <div className="p-4 border-2 rounded-lg hover:bg-accent/5 transition-all duration-200 hover:border-accent/30 hover:shadow-sm">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <Label className="font-semibold text-foreground">Spray Deck/Patio</Label>
+                    <p className="text-sm text-muted-foreground">Spray deck/patio with water and eco-friendly deodorizer for complete odor elimination</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-accent">+$12</div>
+                    <div className="text-xs text-muted-foreground">per visit</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {quoteData.frequency === 'onetime' ? (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="spray-yes"
+                          name="spray-mode"
+                          checked={quoteData.addOns?.sprayDeck}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, sprayDeck: true, sprayDeckMode: 'onetime' })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="spray-yes" className="text-sm cursor-pointer">
+                          Yes (+$12 one-time)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="spray-none-onetime"
+                          name="spray-mode"
+                          checked={!quoteData.addOns?.sprayDeck}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, sprayDeck: false, sprayDeckMode: undefined })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="spray-none-onetime" className="text-sm cursor-pointer">
+                          No deck/patio spraying
+                        </Label>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="spray-first-visit"
+                          name="spray-mode"
+                          checked={quoteData.addOns?.sprayDeckMode === 'first-visit'}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, sprayDeck: true, sprayDeckMode: 'first-visit' })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="spray-first-visit" className="text-sm cursor-pointer">
+                          First visit only (+$12 one-time)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="spray-each-visit"
+                          name="spray-mode"
+                          checked={quoteData.addOns?.sprayDeckMode === 'each-visit'}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, sprayDeck: true, sprayDeckMode: 'each-visit' })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="spray-each-visit" className="text-sm cursor-pointer">
+                          Each visit (+$12 per visit)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="spray-none"
+                          name="spray-mode"
+                          checked={!quoteData.addOns?.sprayDeck}
+                          onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, sprayDeck: false, sprayDeckMode: undefined })}
+                          className="text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor="spray-none" className="text-sm cursor-pointer">
+                          No deck/patio spraying
+                        </Label>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Divert from Landfill Add-on */}
+              <div className="p-4 border-2 rounded-lg hover:bg-accent/5 transition-all duration-200 hover:border-accent/30 hover:shadow-sm">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <Label className="font-semibold text-foreground">🌱 Divert from Landfill</Label>
+                    <p className="text-sm text-muted-foreground">Eco-friendly waste diversion - track your environmental impact on your dashboard</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground">+$2-6 per visit</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <input
                       type="radio"
-                      id="deodorize-first-visit"
-                      name="deodorize-mode"
-                      checked={quoteData.addOns?.deodorizeMode === 'first-visit'}
-                      onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, deodorize: true, deodorizeMode: 'first-visit' })}
+                      id="divert-none"
+                      name="divert-mode"
+                      checked={!quoteData.addOns?.divertMode || quoteData.addOns?.divertMode === 'none'}
+                      onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, divertMode: 'none' })}
                       className="text-accent focus:ring-accent"
                     />
-                    <Label htmlFor="deodorize-first-visit" className="text-sm cursor-pointer">
-                      First visit only (+$5 one-time)
+                    <Label htmlFor="divert-none" className="text-sm cursor-pointer">
+                      Leave in my bin (standard)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
                       type="radio"
-                      id="deodorize-each-visit"
-                      name="deodorize-mode"
-                      checked={quoteData.addOns?.deodorizeMode === 'each-visit'}
-                      onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, deodorize: true, deodorizeMode: 'each-visit' })}
+                      id="divert-50"
+                      name="divert-mode"
+                      checked={quoteData.addOns?.divertMode === '50'}
+                      onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, divertMode: '50' })}
                       className="text-accent focus:ring-accent"
                     />
-                    <Label htmlFor="deodorize-each-visit" className="text-sm cursor-pointer">
-                      Each visit (+$5 per visit)
+                    <Label htmlFor="divert-50" className="text-sm cursor-pointer">
+                      Divert 50% (+$2 per visit)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
                       type="radio"
-                      id="deodorize-none"
-                      name="deodorize-mode"
-                      checked={!quoteData.addOns?.deodorize}
-                      onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, deodorize: false, deodorizeMode: undefined })}
+                      id="divert-100"
+                      name="divert-mode"
+                      checked={quoteData.addOns?.divertMode === '100'}
+                      onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, divertMode: '100' })}
                       className="text-accent focus:ring-accent"
                     />
-                    <Label htmlFor="deodorize-none" className="text-sm cursor-pointer">
-                      No deodorizing
+                    <Label htmlFor="divert-100" className="text-sm cursor-pointer">
+                      Divert 100% (+$6 per visit)
                     </Label>
                   </div>
                 </div>
+                <div className="mt-3 p-2 bg-green-50 rounded text-xs text-green-700">
+                  💚 Track your environmental impact on your dashboard: lbs diverted, methane avoided, compost created
+                </div>
               </div>
+
             </div>
           </div>
 
@@ -1514,8 +1748,11 @@ function StepCustomization({ quoteData, updateQuoteData, errors, estimatedPrice 
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-green-800">🌱 Eco-Friendly by Default</p>
-                <p className="text-sm text-green-700 mt-1">Premium biodegradable waste bags are included with every service at no extra cost.</p>
+                <p className="text-sm font-medium text-green-800">🌱 Eco-Friendly Practices Included</p>
+                <p className="text-sm text-green-700 mt-1">
+                  Premium biodegradable/compostable waste bags, eco-friendly deodorizing treatments,
+                  and waste diversion options included. Track your environmental impact on your dashboard.
+                </p>
               </div>
             </div>
           </div>

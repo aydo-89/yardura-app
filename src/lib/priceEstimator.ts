@@ -35,7 +35,10 @@ export interface QuoteInput {
   // Add-ons and services
   addOns?: {
     deodorize?: boolean;
-    deodorizeMode?: 'first-visit' | 'each-visit';
+    deodorizeMode?: 'first-visit' | 'each-visit' | 'every-other' | 'onetime';
+    sprayDeck?: boolean;
+    sprayDeckMode?: 'first-visit' | 'each-visit' | 'onetime';
+    divertMode?: 'none' | '50' | '100';
   };
 
   // Cleanup timing
@@ -119,7 +122,10 @@ const FREQUENCY_MULTIPLIERS: Record<Frequency, number> = {
 
 // Add-on prices in cents
 const ADD_ON_PRICES = {
-  deodorize: 500,  // +$5.00 every other visit
+  deodorize: 2500,  // +$25.00 (DoodyCalls pricing)
+  sprayDeck: 1200,  // +$12.00 (DoodyCalls pricing)
+  divert50: 200,    // +$2.00 per visit for 50% diversion
+  divert100: 600,   // +$6.00 per visit for 100% diversion
 };
 
 // One-time service base pricing (competitive with $89-100 market)
@@ -387,12 +393,42 @@ export function calculatePrice(input: {
   if (input.addons?.deodorize && (input.addons as any).deodorizeMode) {
     if ((input.addons as any).deodorizeMode === 'each-visit') {
       deodorizePerVisitCost = ADD_ON_PRICES.deodorize;
+    } else if ((input.addons as any).deodorizeMode === 'every-other') {
+      deodorizePerVisitCost = Math.round(ADD_ON_PRICES.deodorize / 2); // $12.50 per visit
     } else if ((input.addons as any).deodorizeMode === 'first-visit') {
+      deodorizeOneTimeCost = ADD_ON_PRICES.deodorize;
+    } else if ((input.addons as any).deodorizeMode === 'onetime') {
       deodorizeOneTimeCost = ADD_ON_PRICES.deodorize;
     }
   }
 
-  const addOnCostPerVisit = deodorizePerVisitCost;
+  // Calculate spray deck add-on cost based on mode
+  let sprayDeckPerVisitCost = 0;
+  let sprayDeckOneTimeCost = 0;
+
+  if ((input as any).addons?.sprayDeck && (input as any).addons?.sprayDeckMode) {
+    if ((input as any).addons?.sprayDeckMode === 'each-visit') {
+      sprayDeckPerVisitCost = ADD_ON_PRICES.sprayDeck;
+    } else if ((input as any).addons?.sprayDeckMode === 'first-visit') {
+      sprayDeckOneTimeCost = ADD_ON_PRICES.sprayDeck;
+    } else if ((input as any).addons?.sprayDeckMode === 'onetime') {
+      sprayDeckOneTimeCost = ADD_ON_PRICES.sprayDeck;
+    }
+  }
+
+  // Calculate divert from landfill add-on cost based on mode
+  let divertPerVisitCost = 0;
+  let divertOneTimeCost = 0;
+
+  if ((input as any).addons?.divertMode && (input as any).addons?.divertMode !== 'none') {
+    if ((input as any).addons?.divertMode === '50') {
+      divertPerVisitCost = ADD_ON_PRICES.divert50;
+    } else if ((input as any).addons?.divertMode === '100') {
+      divertPerVisitCost = ADD_ON_PRICES.divert100;
+    }
+  }
+
+  const addOnCostPerVisit = deodorizePerVisitCost + sprayDeckPerVisitCost + divertPerVisitCost;
   const perVisitCents = basePerVisitCents + addOnCostPerVisit + additionalAreaCostPerVisit;
   const monthlyCents = projectedMonthlyCents(basePerVisitCents + addOnCostPerVisit + additionalAreaCostPerVisit, input.frequency, input.addons || {});
   const visitsPerMonthValue = visitsPerMonth(input.frequency);
@@ -433,6 +469,18 @@ export function calculatePrice(input: {
 
     // Add deodorize cost based on mode for one-time service
     oneTimeCents += deodorizeOneTimeCost;
+
+    // Add spray deck cost based on mode for one-time service
+    oneTimeCents += sprayDeckOneTimeCost;
+
+    // Add divert cost for one-time service (only for one-time services, recurring gets per-visit)
+    if ((input as any).addons?.divertMode && (input as any).addons?.divertMode !== 'none') {
+      if ((input as any).addons?.divertMode === '50') {
+        oneTimeCents += ADD_ON_PRICES.divert50;
+      } else if ((input as any).addons?.divertMode === '100') {
+        oneTimeCents += ADD_ON_PRICES.divert100;
+      }
+    }
 
     // Add additional area costs for one-time service
     oneTimeCents += additionalAreaCostOneTime;
