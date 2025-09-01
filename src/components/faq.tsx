@@ -42,7 +42,7 @@ const faqSchema = {
       "name": "Is eco diversion an extra fee?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Basic eco-friendly disposal is included in our core service at no extra cost - we always use biodegradable plastic bags and eco-friendly deodorizing practices, leaving waste in your bin. Premium diversion options (50% or 100% diversion) are available for +$2-$6 per visit to fund expansion of our eco-program."
+        "text": "Basic eco-friendly disposal is included in our core service at no extra cost - we always use biodegradable plastic bags and eco-friendly deodorizing practices, leaving waste in your bin. Premium take away options (25%, 50%, or 100% diversion) are available for +$1-$6 per visit to fund expansion of our eco-program."
       }
     },
     {

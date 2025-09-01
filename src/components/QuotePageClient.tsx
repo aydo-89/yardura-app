@@ -294,11 +294,15 @@ const PricingSummary = ({ pricing, frequency, currentStep, quoteData }: { pricin
                 {quoteData.addOns?.divertMode && quoteData.addOns.divertMode !== 'none' && (
                   <div className="flex justify-between items-center text-xs text-gray-600">
                     <span>
-                      🌱 Divert from Landfill
-                      {quoteData.addOns.divertMode === '50' && ' (50% diversion)'}
-                      {quoteData.addOns.divertMode === '100' && ' (100% diversion)'}
+                      🌱 Take away
+                      {quoteData.addOns.divertMode === 'takeaway' && ' (standard)'}
+                      {quoteData.addOns.divertMode === '25' && ' - divert 25%'}
+                      {quoteData.addOns.divertMode === '50' && ' - divert 50%'}
+                      {quoteData.addOns.divertMode === '100' && ' - divert 100%'}
                     </span>
                     <span>
+                      {quoteData.addOns.divertMode === 'takeaway' && '+$3'}
+                      {quoteData.addOns.divertMode === '25' && '+$1'}
                       {quoteData.addOns.divertMode === '50' && '+$2'}
                       {quoteData.addOns.divertMode === '100' && '+$6'}
                       {quoteData.frequency === 'onetime' ? ' one-time' : ' per visit'}
@@ -1687,7 +1691,7 @@ function StepCustomization({ quoteData, updateQuoteData, errors, estimatedPrice 
                     <p className="text-sm text-muted-foreground">Eco-friendly waste diversion - track your environmental impact on your dashboard</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs text-muted-foreground">+$2-6 per visit</div>
+                    <div className="text-xs text-muted-foreground">+$1-6 per visit</div>
                   </div>
                 </div>
 
@@ -1702,7 +1706,33 @@ function StepCustomization({ quoteData, updateQuoteData, errors, estimatedPrice 
                       className="text-accent focus:ring-accent"
                     />
                     <Label htmlFor="divert-none" className="text-sm cursor-pointer">
-                      Leave in my bin (standard)
+                      Leave in bin
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="divert-takeaway"
+                      name="divert-mode"
+                      checked={quoteData.addOns?.divertMode === 'takeaway'}
+                      onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, divertMode: 'takeaway' })}
+                      className="text-accent focus:ring-accent"
+                    />
+                    <Label htmlFor="divert-takeaway" className="text-sm cursor-pointer">
+                      Take away (+$3 per visit)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="divert-25"
+                      name="divert-mode"
+                      checked={quoteData.addOns?.divertMode === '25'}
+                      onChange={() => updateQuoteData('addOns', { ...quoteData.addOns, divertMode: '25' })}
+                      className="text-accent focus:ring-accent"
+                    />
+                    <Label htmlFor="divert-25" className="text-sm cursor-pointer">
+                      Take away - divert 25% (+$1 per visit)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1715,7 +1745,7 @@ function StepCustomization({ quoteData, updateQuoteData, errors, estimatedPrice 
                       className="text-accent focus:ring-accent"
                     />
                     <Label htmlFor="divert-50" className="text-sm cursor-pointer">
-                      Divert 50% (+$2 per visit)
+                      Take away - divert 50% (+$2 per visit)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1728,7 +1758,7 @@ function StepCustomization({ quoteData, updateQuoteData, errors, estimatedPrice 
                       className="text-accent focus:ring-accent"
                     />
                     <Label htmlFor="divert-100" className="text-sm cursor-pointer">
-                      Divert 100% (+$6 per visit)
+                      Take away - divert 100% (+$6 per visit)
                     </Label>
                   </div>
                 </div>

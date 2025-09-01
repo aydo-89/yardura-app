@@ -124,6 +124,8 @@ const FREQUENCY_MULTIPLIERS: Record<Frequency, number> = {
 const ADD_ON_PRICES = {
   deodorize: 2500,  // +$25.00 (DoodyCalls pricing)
   sprayDeck: 1200,  // +$12.00 (DoodyCalls pricing)
+  takeaway: 300,    // +$3.00 per visit for basic take away (DoodyCalls pricing)
+  divert25: 100,    // +$1.00 per visit for 25% diversion
   divert50: 200,    // +$2.00 per visit for 50% diversion
   divert100: 600,   // +$6.00 per visit for 100% diversion
 };
@@ -421,7 +423,11 @@ export function calculatePrice(input: {
   let divertOneTimeCost = 0;
 
   if ((input as any).addons?.divertMode && (input as any).addons?.divertMode !== 'none') {
-    if ((input as any).addons?.divertMode === '50') {
+    if ((input as any).addons?.divertMode === 'takeaway') {
+      divertPerVisitCost = ADD_ON_PRICES.takeaway;
+    } else if ((input as any).addons?.divertMode === '25') {
+      divertPerVisitCost = ADD_ON_PRICES.divert25;
+    } else if ((input as any).addons?.divertMode === '50') {
       divertPerVisitCost = ADD_ON_PRICES.divert50;
     } else if ((input as any).addons?.divertMode === '100') {
       divertPerVisitCost = ADD_ON_PRICES.divert100;
@@ -475,7 +481,11 @@ export function calculatePrice(input: {
 
     // Add divert cost for one-time service (only for one-time services, recurring gets per-visit)
     if ((input as any).addons?.divertMode && (input as any).addons?.divertMode !== 'none') {
-      if ((input as any).addons?.divertMode === '50') {
+      if ((input as any).addons?.divertMode === 'takeaway') {
+        oneTimeCents += ADD_ON_PRICES.takeaway;
+      } else if ((input as any).addons?.divertMode === '25') {
+        oneTimeCents += ADD_ON_PRICES.divert25;
+      } else if ((input as any).addons?.divertMode === '50') {
         oneTimeCents += ADD_ON_PRICES.divert50;
       } else if ((input as any).addons?.divertMode === '100') {
         oneTimeCents += ADD_ON_PRICES.divert100;
