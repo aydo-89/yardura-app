@@ -42,7 +42,7 @@ const faqSchema = {
       "name": "Is eco diversion an extra fee?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No, eco diversion is included in our base pricing. It's part of our core mission and differentiates us from competitors who may charge extra for composting or responsible disposal."
+        "text": "Basic eco-friendly disposal is included in our core service at no extra cost - we always use biodegradable plastic bags and eco-friendly deodorizing practices, leaving waste in your bin. Premium diversion options (50% or 100% diversion) are available for +$2-$6 per visit to fund expansion of our eco-program."
       }
     },
     {
@@ -74,7 +74,15 @@ const faqSchema = {
       "name": "How does the eco program work?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "We're piloting composting/conditioning routes to keep waste out of landfills and reduce methane. Your dashboard will estimate impact as the program expands."
+        "text": "We’re piloting composting/conditioning routes to keep waste out of landfills and reduce methane. Your dashboard will estimate impact as the program expands."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why do you charge for premium diversion options?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Premium diversion options (50% or 100% diversion) require additional processing, transportation, and infrastructure. These charges help fund expansion of our eco-program while keeping our core service affordable. All diversion levels provide dashboard tracking of your environmental impact, but premium options maximize methane reduction and compost creation."
       }
     },
     {
@@ -146,7 +154,7 @@ export default function FAQ() {
           <AccordionItem value="item-7">
             <AccordionTrigger>Is eco diversion an extra fee?</AccordionTrigger>
             <AccordionContent>
-              No, eco diversion is included in our base pricing. It's part of our core mission and differentiates us from competitors who may charge extra for composting or responsible disposal.
+              Basic eco-friendly disposal is included in our core service at no extra cost - we always use biodegradable plastic bags and eco-friendly deodorizing practices, leaving waste in your bin. Premium diversion options (50% or 100% diversion) are available for +$2-$6 per visit to fund expansion of our eco-program.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-8">
@@ -159,6 +167,12 @@ export default function FAQ() {
             <AccordionTrigger>How does the eco program work?</AccordionTrigger>
             <AccordionContent>
               We’re piloting composting/conditioning routes to keep waste out of landfills and reduce methane. Your dashboard will estimate impact as the program expands.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-9.5">
+            <AccordionTrigger>Why do you charge for premium diversion options?</AccordionTrigger>
+            <AccordionContent>
+              Premium diversion options (50% or 100% diversion) require additional processing, transportation, and infrastructure. These charges help fund expansion of our eco-program while keeping our core service affordable. All diversion levels provide dashboard tracking of your environmental impact, but premium options maximize methane reduction and compost creation.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-10">

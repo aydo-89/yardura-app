@@ -22,8 +22,9 @@ export default function Eco() {
             Our Eco Impact
           </h2>
           <p className="text-slate-700 max-w-3xl mx-auto">
-            Every dog produces ~250+ lbs of waste per year. Instead of landfills, we're pioneering eco-friendly disposal
-            that reduces methane emissions and creates nutrient-rich compost. Join us in making a difference!
+            Every dog produces ~250+ lbs of waste per year. By default, we leave waste in your bin using
+            biodegradable plastic bags and eco-friendly deodorizing practices. Premium diversion options
+            help fund expansion of our eco-program while providing maximum environmental impact.
           </p>
         </div>
 
@@ -92,8 +93,12 @@ export default function Eco() {
 
           {/* Fine print */}
           <div className="mt-6 pt-6 border-t border-accent/10">
-            <p className="text-xs text-muted text-center">
+            <p className="text-xs text-muted text-center mb-2">
               Diversion where permitted; pilots and conditioning methods vary by jurisdiction.
+            </p>
+            <p className="text-xs text-muted text-center">
+              💚 Our core service always includes biodegradable bags and eco-friendly deodorizing. Premium diversion options (+$2-6/visit) fund expansion of our eco-program.
+              All diversion options provide dashboard tracking of your environmental impact.
             </p>
           </div>
         </div>

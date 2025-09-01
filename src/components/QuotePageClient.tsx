@@ -1750,8 +1750,8 @@ function StepCustomization({ quoteData, updateQuoteData, errors, estimatedPrice 
               <div>
                 <p className="text-sm font-medium text-green-800">🌱 Eco-Friendly Practices Included</p>
                 <p className="text-sm text-green-700 mt-1">
-                  Premium biodegradable/compostable waste bags, eco-friendly deodorizing treatments,
-                  and waste diversion options included. Track your environmental impact on your dashboard.
+                  Biodegradable bags and eco-friendly deodorizing practices included with every service.
+                  Premium waste diversion options available to maximize your environmental impact.
                 </p>
               </div>
             </div>

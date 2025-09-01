@@ -12,7 +12,7 @@ export default function Services() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Reveal delay={0.1}>
           <Card className="rounded-2xl border border-accent/20 bg-gradient-to-br from-white to-accent-soft/20 shadow-soft hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1">
           <CardHeader className="pb-4">
@@ -40,10 +40,10 @@ export default function Services() {
             <CardTitle className="text-xl">Deodorize & Sanitize</CardTitle>
           </CardHeader>
           <CardContent className="text-muted">
-            <p className="mb-3">Pet-safe enzymatic spray to neutralize odors and reduce pathogens. Great for families with kids or after GI upset.</p>
+            <p className="mb-3">Professional-grade deodorizing treatment. Choose frequency: first visit only ($25), each visit ($25), or every other visit ($12.50).</p>
             <div className="flex items-center gap-2 text-sm text-accent font-medium">
               <Clock className="size-4" />
-              <span>Add-on service</span>
+              <span>Add-on service: $12.50-$25</span>
             </div>
           </CardContent>
         </Card>
@@ -55,16 +55,34 @@ export default function Services() {
             <div className="size-12 bg-accent-soft rounded-xl flex items-center justify-center mb-3">
               <Recycle className="size-6 text-accent" />
             </div>
-            <CardTitle className="text-xl">Eco Compost Pilot</CardTitle>
+            <CardTitle className="text-xl">Premium Waste Diversion</CardTitle>
           </CardHeader>
           <CardContent className="text-muted">
-            <p className="mb-3">We divert waste from landfills whenever possible via composting/conditioning pilots and track your methane offset.</p>
+            <p className="mb-3">Go beyond basic eco-friendly disposal. Choose 50% diversion (+$2/visit) or 100% diversion (+$6/visit) with dashboard impact tracking.</p>
             <div className="flex items-center gap-2 text-sm text-accent font-medium">
               <Leaf className="size-4" />
-              <span>Eco-friendly</span>
+              <span>Add-on service: $2-$6</span>
             </div>
           </CardContent>
         </Card>
+        </Reveal>
+
+        <Reveal delay={0.4}>
+          <Card className="rounded-2xl border border-accent/20 bg-gradient-to-br from-white to-accent-soft/20 shadow-soft hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1">
+            <CardHeader className="pb-4">
+              <div className="size-12 bg-accent-soft rounded-xl flex items-center justify-center mb-3">
+                <SprayCan className="size-6 text-accent" />
+              </div>
+              <CardTitle className="text-xl">Spray Deck/Patio</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted">
+              <p className="mb-3">Spray deck/patio with eco-friendly deodorizer for complete odor elimination. Choose frequency options for comprehensive odor control.</p>
+              <div className="flex items-center gap-2 text-sm text-accent font-medium">
+                <Clock className="size-4" />
+                <span>Add-on service: $12</span>
+              </div>
+            </CardContent>
+          </Card>
         </Reveal>
       </div>
 
@@ -72,7 +90,7 @@ export default function Services() {
 
       {/* Service guarantees */}
       <div className="mt-12 grid md:grid-cols-2 gap-6">
-        <Reveal delay={0.4}>
+        <Reveal delay={0.5}>
           <div className="bg-gradient-to-br from-white to-accent-soft/20 rounded-2xl border border-accent/20 p-6 shadow-soft hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
             <div className="flex items-center gap-3 mb-3">
               <div className="size-10 bg-accent-soft rounded-xl flex items-center justify-center">
@@ -86,7 +104,7 @@ export default function Services() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.5}>
+        <Reveal delay={0.6}>
           <div className="bg-gradient-to-br from-white to-accent-soft/20 rounded-2xl border border-accent/20 p-6 shadow-soft hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
             <div className="flex items-center gap-3 mb-3">
               <div className="size-10 bg-accent-soft rounded-xl flex items-center justify-center">
