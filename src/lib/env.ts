@@ -129,7 +129,7 @@ function getValidatedEnv() {
         // Provide minimal required defaults to keep app running locally
         const fallback = {
           DATABASE_URL: process.env.DATABASE_URL || 'postgresql://user:pass@localhost:5432/db',
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder',
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_stripe_publishable_key_here',
           STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
           STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder',
           NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
@@ -176,7 +176,7 @@ function getValidatedEnv() {
         console.warn('[env] Non-Zod error during env validation in development:', error)
         return {
           DATABASE_URL: process.env.DATABASE_URL || 'postgresql://user:pass@localhost:5432/db',
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder',
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_stripe_publishable_key_here',
           STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
           STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder',
           NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',

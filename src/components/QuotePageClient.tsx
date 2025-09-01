@@ -82,7 +82,7 @@ const PricingSummary = ({ pricing, frequency, currentStep, quoteData }: { pricin
                 className="flex items-center gap-2 text-accent hover:text-accent-dark"
               >
                 <Phone className="size-4" />
-                <span>Call 1-888-915-9273</span>
+                <span>Call 1-888-915-YARD</span>
               </a>
               <a
                 href="/contact"
@@ -319,7 +319,7 @@ const PricingSummary = ({ pricing, frequency, currentStep, quoteData }: { pricin
           <strong>Questions about your quote?</strong>
         </p>
         <p className="text-xs text-blue-700">
-          Call us at <a href="tel:1-888-915-9273" className="text-blue-600 hover:underline">1-888-915-9273</a> or{' '}
+          Call us at <a href="tel:1-888-915-9273" className="text-blue-600 hover:underline">1-888-915-YARD</a> or{' '}
           <a href="/contact" className="text-blue-600 hover:underline">request more information</a>
         </p>
       </div>

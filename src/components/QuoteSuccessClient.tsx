@@ -260,7 +260,7 @@ export default function QuoteSuccessClient() {
                   <Phone className="size-5 text-accent" />
                   <div>
                     <p className="text-sm font-medium">Call Us</p>
-                    <p className="text-xs text-muted">(888) 915-9273</p>
+                    <p className="text-xs text-muted">(888) 915-YARD</p>
                   </div>
                 </div>
 
@@ -333,7 +333,7 @@ export default function QuoteSuccessClient() {
                       </Link>
                       <Link href="tel:+18889159273">
                         <Button variant="outline">
-                          Call (888) 915-9273
+                          Call (888) 915-YARD
                         </Button>
                       </Link>
                     </>

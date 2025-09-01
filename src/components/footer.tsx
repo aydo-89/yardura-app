@@ -48,7 +48,7 @@ export default function Footer() {
 
           <div>
             <div className="font-semibold mb-3">Contact & Legal</div>
-            <p><a href="tel:+18889159273" className="hover:text-accent transition-colors">(888) 915-9273</a></p>
+            <p><a href="tel:+18889159273" className="hover:text-accent transition-colors">(888) 915-YARD</a></p>
             <p><a href="mailto:hello@yardura.com" className="hover:text-accent transition-colors">hello@yardura.com</a></p>
             <p className="mt-3 text-xs">Insights are informational only and not veterinary advice.</p>
             <p className="text-xs">© {new Date().getFullYear()} Yardura, LLC. All rights reserved.</p>

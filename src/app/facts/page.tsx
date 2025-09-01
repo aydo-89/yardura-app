@@ -331,7 +331,7 @@ export default function FactsPage() {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <Phone className="size-4 text-accent" />
-                      <span>(888) 915-9273</span>
+                      <span>(888) 915-YARD</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="size-4 text-accent" />
