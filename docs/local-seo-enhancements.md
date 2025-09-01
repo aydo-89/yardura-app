@@ -10,7 +10,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ### NAP Consistency ✅
 **Name:** Yardura (consistent)
 **Address:** Minneapolis, MN 55417 (consistent)
-**Phone:** (612) 581-9812 (consistent)
+**Phone:** (888) 915-9273 (consistent)
 
 ### Service Areas ✅
 - South Minneapolis
@@ -33,7 +33,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 **Business Name:** Yardura - Minneapolis Dog Waste Removal
 **Category:** Pet Waste Removal Service
 **Address:** Minneapolis, MN 55417 (service area HQ)
-**Phone:** (612) 581-9812
+**Phone:** (888) 915-9273
 **Website:** https://www.yardura.com
 
 ### GBP Optimization Checklist
@@ -100,7 +100,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 "Thank you for choosing Yardura for your Minneapolis dog waste removal needs! We're thrilled to keep your yard clean and eco-friendly. We appreciate your support of local, sustainable pet services!"
 
 **Negative Review Response:**
-"We're sorry to hear about your experience with our Minneapolis dog waste removal service. We'd like to make this right - please contact us at (612) 581-9812 or hello@yardura.com so we can address your concerns personally."
+"We're sorry to hear about your experience with our Minneapolis dog waste removal service. We'd like to make this right - please contact us at (888) 915-9273 or hello@yardura.com so we can address your concerns personally."
 
 **Review Monitoring:**
 - Set up Google Alerts for "Yardura Minneapolis reviews"
@@ -256,7 +256,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ### Citation Consistency Checklist
 - [ ] Business name: "Yardura"
 - [ ] Address: Minneapolis, MN 55417
-- [ ] Phone: (612) 581-9812
+- [ ] Phone: (888) 915-9273
 - [ ] Website: https://www.yardura.com
 - [ ] Category: Pet Waste Removal Service
 - [ ] Description: Consistent across all listings
@@ -310,7 +310,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
   <h3>Yardura - Minneapolis Dog Waste Removal</h3>
   <address>
     Serving Minneapolis, MN 55417<br>
-    Phone: <a href="tel:+16125819812">(612) 581-9812</a><br>
+    Phone: <a href="tel:+18889159273">(888) 915-9273</a><br>
     Email: <a href="mailto:hello@yardura.com">hello@yardura.com</a>
   </address>
   <p>Hours: Monday-Friday 8:00 AM - 6:00 PM</p>

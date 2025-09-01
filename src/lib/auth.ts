@@ -82,6 +82,11 @@ const providers: any[] = [
         return null;
       }
 
+      // Skip database operations during build time
+      if (process.env.NODE_ENV === 'production' && process.env.CI) {
+        return null;
+      }
+
       const user = await prisma.user.findUnique({
         where: { email: credentials.email.toLowerCase() },
         include: { accounts: true }
@@ -120,14 +125,28 @@ const providers: any[] = [
   }),
 ];
 
+// Only use PrismaAdapter in runtime, not during build
+const getAdapter = () => {
+  // Skip adapter during build to prevent database connection issues
+  if (process.env.NODE_ENV === 'production' && !process.env.CI) {
+    return PrismaAdapter(prisma);
+  }
+  return undefined;
+};
+
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: getAdapter(),
   providers,
   pages: {
     signIn: '/signin',
   },
   callbacks: {
     signIn: async ({ user, account, profile }) => {
+      // Skip database operations during build time
+      if (process.env.NODE_ENV === 'production' && process.env.CI) {
+        return true;
+      }
+
       // Set admin role for admin emails during sign-in
       if (user.email && isAdminEmail(user.email)) {
         try {
@@ -151,15 +170,19 @@ export const authOptions: NextAuthOptions = {
         session.user.id = (token as any).uid as string;
       }
 
-      // Get user role from database
-      if (session.user.email) {
-        const user = await prisma.user.findUnique({
-          where: { email: session.user.email },
-          select: { role: true }
-        });
+      // Get user role from database (skip during build)
+      if (session.user.email && !(process.env.NODE_ENV === 'production' && process.env.CI)) {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            select: { role: true }
+          });
 
-        if (user) {
-          (session as any).userRole = user.role;
+          if (user) {
+            (session as any).userRole = user.role;
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
         }
       }
 

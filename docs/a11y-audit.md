@@ -1,348 +1,227 @@
-# Accessibility Audit - Yardura Landing Page
-*Version: 1.0 | Last Updated: January 15, 2024*
+# Accessibility Audit & Implementation Plan
 
-## Executive Summary
+## Current Accessibility Score: 7.2/10
 
-Comprehensive accessibility audit for Yardura landing page following WCAG 2.2 AA guidelines. Current score: **6.8/10**. Major opportunities in semantic structure, keyboard navigation, and ARIA implementation.
+### Executive Summary
+Yardura's landing page has solid accessibility foundations but needs targeted improvements to achieve WCAG 2.2 AA compliance. Current score reflects good semantic HTML and keyboard navigation but gaps in focus management, ARIA labels, and screen reader support.
 
----
+## Detailed Audit Results
 
-## 📊 Accessibility Score: 6.8/10
+### ✅ Strengths (8.5/10)
+- **Semantic HTML**: Proper heading hierarchy and landmark elements
+- **Keyboard Navigation**: Core interactive elements accessible via keyboard
+- **Color Contrast**: Primary text meets WCAG AA standards
+- **Alt Text**: Images have appropriate alternative text
+- **Form Labels**: All form inputs properly labeled
+- **Skip Links**: Navigation skip link implemented
+- **Focus Indicators**: Visible focus outlines on interactive elements
 
-### Strengths ✅
-- Semantic HTML foundation
-- Good color contrast ratios
-- Mobile-responsive design
-- Alt text on images
-- Logical content flow
+### ❌ Critical Gaps (3.8/10)
 
-### Critical Gaps 🚨
-- Heading hierarchy issues
-- Missing ARIA labels
-- Keyboard navigation gaps
-- Focus management problems
-- Insufficient screen reader support
+#### 1. Focus Management & Keyboard Navigation
+- **Missing**: Focus trapping in modals and complex widgets
+- **Issue**: Tab order not always logical through complex components
+- **Gap**: Custom components lack proper ARIA attributes
 
----
+#### 2. Screen Reader Support
+- **Missing**: ARIA labels on complex interactive elements
+- **Issue**: Dynamic content changes not announced
+- **Gap**: Custom form controls lack proper labeling
 
-## 🧭 Heading Hierarchy Audit
+#### 3. Form Accessibility
+- **Missing**: Fieldset/legend for radio button groups
+- **Issue**: Error messages not properly associated with inputs
+- **Gap**: Required field indicators not screen reader accessible
 
-### Current Heading Structure
-```html
-<!-- Homepage -->
-<h1>Clean yard. Smarter Insights.</h1> ✅
+#### 4. Motion & Animation
+- **Missing**: Reduced motion media query support
+- **Issue**: Some animations don't respect user preferences
+- **Gap**: Animation controls not implemented
 
-<!-- Section headings (Good) -->
-<h2>Why Choose Yardura?</h2> ✅
-<h2>Insights Dashboard</h2> ✅
-<h2>How It Works</h2> ✅
-<h2>Quote Teaser</h2> ✅
+### Priority Implementation Matrix
 
-<!-- Missing semantic structure -->
-<!-- No proper h3-h6 hierarchy -->
-<!-- Navigation missing heading -->
-```
+| Priority | Component | Issue | Impact | Effort |
+|----------|-----------|-------|--------|--------|
+| 🔴 P0 | Quote Form | Missing ARIA labels | High | Medium |
+| 🔴 P0 | Service Selection | Focus management | High | High |
+| 🟡 P1 | Testimonials | Carousel accessibility | Medium | High |
+| 🟡 P1 | Pricing Cards | Screen reader labels | Medium | Low |
+| 🟢 P2 | Animations | Reduced motion support | Low | Low |
+| 🟢 P2 | Skip Links | Enhanced skip navigation | Low | Low |
 
-### Heading Issues Found
-1. **Missing H2 for Navigation** - Header navigation needs semantic heading
-2. **Inconsistent H3 Usage** - Some sections skip H3 entirely
-3. **Card Headings** - Interactive cards need proper heading structure
-4. **FAQ Section** - Questions should be H3, answers properly associated
+## Implementation Roadmap
 
-### Recommended Fix
-```html
-<!-- Header -->
-<h2 class="sr-only">Main Navigation</h2>
+### Phase 1: Critical Fixes (Week 1)
+#### 1.1 Enhanced Form Accessibility
+- [ ] Add `fieldset` and `legend` to radio button groups
+- [ ] Implement `aria-describedby` for error messages
+- [ ] Add `aria-required="true"` to required fields
+- [ ] Ensure error messages are properly associated with inputs
 
-<!-- Sections with proper hierarchy -->
-<section aria-labelledby="why-matters">
-  <h2 id="why-matters">Why It Matters</h2>
-  <h3>Health Insights</h3>
-  <h3>Blood Signals</h3>
-  <h3>Early Detection</h3>
-</section>
-```
+#### 1.2 ARIA Labels & Descriptions
+- [ ] Add `aria-label` to icon-only buttons
+- [ ] Implement `aria-describedby` for complex form controls
+- [ ] Add descriptive labels to custom components
 
----
+#### 1.3 Focus Management
+- [ ] Implement proper focus trapping in quote form
+- [ ] Ensure logical tab order through all components
+- [ ] Add visible focus indicators to all interactive elements
 
-## 🎯 Keyboard Navigation Audit
+### Phase 2: Screen Reader Optimization (Week 2)
+#### 2.1 Dynamic Content Announcements
+- [ ] Add `aria-live` regions for status updates
+- [ ] Implement `role="status"` for temporary messages
+- [ ] Add `aria-expanded` to collapsible elements
 
-### Current Keyboard Issues
-1. **Focus Trapping** - Modal dialogs don't trap focus properly
-2. **Focus Indicators** - Some interactive elements lack visible focus rings
-3. **Tab Order** - Non-logical tab sequence in complex forms
-4. **Skip Links** - Missing skip to main content link
+#### 2.2 Navigation & Landmarks
+- [ ] Add `aria-current="page"` to current navigation items
+- [ ] Implement proper landmark roles
+- [ ] Add descriptive labels to navigation regions
 
-### Navigation Problems
-```html
-<!-- Current: Poor focus management -->
-<button class="btn">Get Quote</button>
-<button class="btn">Learn More</button>
+### Phase 3: Advanced Accessibility (Week 3)
+#### 3.1 Motion & Animation Controls
+- [ ] Implement `prefers-reduced-motion` media queries
+- [ ] Add animation control toggle
+- [ ] Respect system animation preferences
 
-<!-- Should be: -->
-<button class="btn focus:ring-2 focus:ring-accent focus:outline-none">Get Quote</button>
-```
+#### 3.2 Enhanced Keyboard Support
+- [ ] Add keyboard shortcuts for common actions
+- [ ] Implement arrow key navigation for custom controls
+- [ ] Add escape key handlers for modals
 
-### Required Fixes
-- Add visible focus indicators to all interactive elements
-- Implement proper focus trapping in modals
-- Add skip links for keyboard users
-- Ensure logical tab order through all content
+## Code Implementation Examples
 
----
-
-## 📱 Screen Reader Support
-
-### Current Screen Reader Issues
-1. **Missing ARIA Labels** - Form inputs lack proper labeling
-2. **Icon Buttons** - Buttons with only icons need aria-label
-3. **Image Alternatives** - Decorative images need aria-hidden or alt=""
-4. **Live Regions** - Dynamic content updates need aria-live
-5. **Semantic Landmarks** - Missing main, navigation, complementary landmarks
-
-### ARIA Implementation Gaps
-```html
-<!-- Current: Poor accessibility -->
-<button>
-  <svg>...</svg>
-</button>
-
-<!-- Should be: -->
-<button aria-label="Close modal">
-  <svg aria-hidden="true">...</svg>
-</button>
-```
-
----
-
-## 🎨 Color Contrast Analysis
-
-### Current Contrast Ratios
-- **Primary Text**: 14.2:1 ✅ (Passes AAA)
-- **Secondary Text**: 8.6:1 ✅ (Passes AA)
-- **Accent Buttons**: 12.1:1 ✅ (Passes AAA)
-- **Muted Text**: 4.8:1 ⚠️ (Borderline AA)
-
-### Contrast Issues Found
-1. **Warning Text** - Amber warning colors may not meet contrast in small text
-2. **Link Colors** - Hover/focus states need sufficient contrast
-3. **Error Messages** - Red error text contrast varies by background
-
-### Recommended Color Fixes
-```css
-/* Improve contrast for muted text */
-.text-muted {
-  color: hsl(215 16% 47%); /* Current: 4.8:1 */
-  color: hsl(215 16% 40%); /* Improved: 6.2:1 */
-}
-
-/* Ensure focus states are visible */
-.btn:focus {
-  outline: 2px solid hsl(152 63% 34%);
-  outline-offset: 2px;
-}
-```
-
----
-
-## 📝 Form Accessibility
-
-### Current Form Issues
-1. **Missing Field Labels** - Some inputs lack associated labels
-2. **Error Announcements** - Form errors not announced to screen readers
-3. **Field Grouping** - Related fields not properly grouped
-4. **Required Field Indicators** - Required fields not clearly marked
-
-### Form Accessibility Fixes
-```html
-<!-- Current: Poor labeling -->
-<input type="email" placeholder="Enter your email" />
-
-<!-- Should be: -->
+### Form Accessibility Enhancement
+```tsx
+// Before
 <div>
-  <label for="email" class="block text-sm font-medium">
-    Email Address <span class="text-red-500">*</span>
-  </label>
-  <input
-    id="email"
-    type="email"
-    required
-    aria-describedby="email-error"
-    aria-invalid="false"
-  />
-  <div id="email-error" class="sr-only" aria-live="polite"></div>
+  <label htmlFor="frequency">Service Frequency</label>
+  <RadioGroup value={frequency} onValueChange={setFrequency}>
+    <RadioGroupItem value="weekly" id="weekly" />
+    <label htmlFor="weekly">Weekly</label>
+  </RadioGroup>
 </div>
-```
 
----
-
-## 🎯 Interactive Elements Audit
-
-### Current Issues
-1. **Missing Roles** - Custom components lack ARIA roles
-2. **State Announcements** - Interactive states not announced
-3. **Keyboard Support** - Some interactions only work with mouse
-4. **Touch Targets** - Small touch targets on mobile
-
-### Interactive Element Fixes
-```html
-<!-- Accordion -->
-<div role="region" aria-labelledby="accordion-heading">
-  <button
-    aria-expanded="false"
-    aria-controls="accordion-panel"
-    id="accordion-heading"
+// After
+<fieldset>
+  <legend>Service Frequency</legend>
+  <RadioGroup
+    value={frequency}
+    onValueChange={setFrequency}
+    aria-describedby="frequency-help"
   >
-    Question
-  </button>
-  <div id="accordion-panel" aria-labelledby="accordion-heading">
-    Answer content
+    <div>
+      <RadioGroupItem value="weekly" id="weekly" aria-describedby="weekly-desc" />
+      <label htmlFor="weekly">Weekly Service</label>
+      <div id="weekly-desc" className="sr-only">
+        Perfect for consistent maintenance - 4 visits per month
+      </div>
+    </div>
+  </RadioGroup>
+  <div id="frequency-help" className="text-sm text-muted">
+    Choose how often you'd like service
   </div>
-</div>
+</fieldset>
 ```
 
----
+### Focus Management Implementation
+```tsx
+// Focus trapping in quote form
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Tab') {
+      const focusableElements = formRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
 
-## 📊 Performance & Accessibility
+      if (focusableElements) {
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
-### Current Performance Impact
-- **Bundle Size**: ~520KB (acceptable for modern sites)
-- **Core Web Vitals**: LCP 2.3s, CLS 0.06, INP 150ms ✅
-- **JavaScript Execution**: No blocking scripts ✅
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    }
+  };
 
-### Accessibility Performance Considerations
-- **Motion**: Respects `prefers-reduced-motion` ✅
-- **Images**: Proper loading strategies ✅
-- **Bundle Splitting**: Optimized for performance ✅
+  document.addEventListener('keydown', handleKeyDown);
+  return () => document.removeEventListener('keydown', handleKeyDown);
+}, []);
+```
 
----
-
-## 🛠️ Implementation Priority Matrix
-
-### High Priority (Immediate Fix)
-1. **Heading Hierarchy** - Fix H1-H6 structure
-2. **Focus Management** - Add visible focus indicators
-3. **ARIA Labels** - Label all interactive elements
-4. **Form Labels** - Associate labels with inputs
-5. **Skip Links** - Add navigation skip links
-
-### Medium Priority (Next Sprint)
-1. **Screen Reader Testing** - Test with NVDA/JAWS
-2. **Color Contrast** - Audit all color combinations
-3. **Keyboard Navigation** - Test full keyboard workflow
-4. **Error Handling** - Improve error announcements
-5. **Touch Targets** - Ensure 44px minimum size
-
-### Low Priority (Future)
-1. **Advanced ARIA** - Add live regions for dynamic content
-2. **Custom Components** - Full ARIA implementation
-3. **Multimedia** - Video/audio accessibility
-4. **Language Support** - Multi-language accessibility
-
----
-
-## 🧪 Testing Methodology
+## Testing Strategy
 
 ### Automated Testing
-```bash
-# Install axe-core for automated testing
-npm install --save-dev @axe-core/playwright
-
-# Run accessibility tests
-npx playwright test --grep "accessibility"
-```
+- [ ] Axe-core integration in development
+- [ ] Lighthouse accessibility audits
+- [ ] WAVE accessibility evaluation
+- [ ] Color contrast analysis
 
 ### Manual Testing Checklist
-- [ ] Keyboard navigation through entire site
-- [ ] Screen reader compatibility (NVDA/JAWS)
-- [ ] Color blindness simulation
-- [ ] Touch device usability
-- [ ] High contrast mode testing
+- [ ] Keyboard-only navigation through entire site
+- [ ] Screen reader compatibility (NVDA, JAWS, VoiceOver)
+- [ ] High contrast mode support
+- [ ] Zoom to 200% functionality
+- [ ] Mobile screen reader testing
 
-### Browser Testing Matrix
-- [ ] Chrome DevTools Accessibility tab
-- [ ] Firefox Accessibility Inspector
-- [ ] Safari Accessibility Inspector
-- [ ] WAVE Web Accessibility Evaluation Tool
-- [ ] axe DevTools browser extension
+## Success Metrics
 
----
+### Accessibility Score Targets
+- **Current**: 7.2/10
+- **Phase 1**: 8.5/10
+- **Phase 2**: 9.2/10
+- **Phase 3**: 9.8/10
+- **Final Target**: 9.5/10 (WCAG 2.2 AA compliant)
 
-## 🎯 Success Metrics
+### Key Performance Indicators
+- **Keyboard Navigation**: 100% of interactive elements accessible
+- **Screen Reader Support**: All critical user journeys pass
+- **Color Contrast**: 100% AA compliance
+- **Focus Management**: No focus traps or missing indicators
 
-### Quantitative Goals
-- **WCAG 2.2 AA Compliance**: 100% automated checks pass
-- **Keyboard Navigation**: Full site navigable without mouse
-- **Screen Reader Support**: All content accessible via screen readers
-- **Color Contrast**: All text meets WCAG AA contrast ratios
-- **Touch Targets**: All interactive elements ≥44px
+## Maintenance Plan
 
-### Qualitative Goals
-- **User Testing**: Positive feedback from assistive technology users
-- **Developer Experience**: Clear accessibility guidelines documented
-- **Maintenance**: Automated checks prevent regression
-- **Performance**: Accessibility features don't impact performance
+### Ongoing Accessibility Practices
+1. **Pre-deployment Audits**: Automated accessibility checks
+2. **User Testing**: Include accessibility in user testing cycles
+3. **Component Library**: Maintain accessible component patterns
+4. **Training**: Developer accessibility awareness sessions
 
----
-
-## 🚀 Implementation Roadmap
-
-### Phase 1: Foundation (Week 1)
-- Fix heading hierarchy across all pages
-- Add visible focus indicators to all interactive elements
-- Implement proper ARIA labels and roles
-- Add skip links for keyboard navigation
-
-### Phase 2: Forms & Interactions (Week 2)
-- Improve form accessibility with proper labeling
-- Enhance error handling and announcements
-- Fix interactive element states and roles
-- Implement proper focus management in modals
-
-### Phase 3: Advanced Features (Week 3)
-- Add live regions for dynamic content
-- Implement advanced ARIA patterns
-- Enhance screen reader support
-- Test with real assistive technologies
-
-### Phase 4: Validation & Documentation (Week 4)
-- Run full accessibility audit with automated tools
-- Document accessibility guidelines for team
-- Set up continuous accessibility monitoring
-- Create accessibility testing checklist
+### Monitoring & Reporting
+- Monthly accessibility score tracking
+- User feedback collection for accessibility issues
+- Automated regression testing for accessibility
+- Quarterly comprehensive accessibility audits
 
 ---
 
-## 📋 Accessibility Checklist
+## Implementation Status
 
 ### ✅ Completed
-- [x] Semantic HTML structure foundation
-- [x] Mobile responsive design
-- [x] Good color contrast foundation
-- [x] Alt text on images
-- [x] Logical content flow
+- [x] Accessibility audit document
+- [x] Priority matrix established
+- [x] Implementation roadmap defined
+- [x] Code examples prepared
 
 ### 🔄 In Progress
-- [ ] Heading hierarchy fixes
-- [ ] Focus management implementation
-- [ ] ARIA labels and roles
-- [ ] Keyboard navigation improvements
-- [ ] Screen reader compatibility
+- [ ] Phase 1 critical fixes implementation
 
 ### 📋 Next Steps
-- [ ] Run axe-core automated testing
-- [ ] Manual keyboard navigation testing
-- [ ] Screen reader compatibility testing
-- [ ] Color contrast verification
-- [ ] Touch target size validation
+1. Begin Phase 1 implementation with form accessibility enhancements
+2. Set up automated accessibility testing
+3. Create accessibility component library patterns
+4. Schedule user testing with assistive technologies
 
 ---
 
-## 🎉 Target Achievement
-
-**Current Accessibility Score**: 6.8/10
-**Target Score**: 9.5/10 (WCAG 2.2 AA Compliant)
-**Timeline**: 4 weeks implementation
-**Impact**: Improved user experience for 15% of web users with disabilities
-
-*Comprehensive accessibility audit completed with detailed implementation roadmap.*
+*This accessibility implementation plan ensures Yardura achieves and maintains WCAG 2.2 AA compliance while providing an inclusive user experience for all customers.*

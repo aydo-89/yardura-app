@@ -213,4 +213,5 @@ if (require.main === module) {
   main();
 }
 
-export { scanCodebase, printReport, Violation };
+export { scanCodebase, printReport };
+export type { Violation };

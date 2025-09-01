@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,8 @@ import {
   Home,
   ArrowRight,
   Heart,
-  Shield
+  Shield,
+  Building
 } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
@@ -20,7 +22,14 @@ import Link from "next/link";
 
 export default function QuoteSuccessClient() {
   const router = useRouter();
+  const [isCommercial, setIsCommercial] = useState(false);
   const { prefersReducedMotion } = useReducedMotionSafe();
+
+  useEffect(() => {
+    // Handle search params on client side
+    const searchParams = new URLSearchParams(window.location.search);
+    setIsCommercial(searchParams.get('commercial') === 'true');
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent-soft/30 via-white to-accent-soft/20">
@@ -38,27 +47,45 @@ export default function QuoteSuccessClient() {
             </motion.div>
 
             <h1 className="text-4xl md:text-5xl font-extrabold text-ink mb-4">
-              Welcome to Yardura!
+              {isCommercial ? 'Commercial Quote Submitted!' : 'Welcome to Yardura!'}
             </h1>
 
             <p className="text-xl text-muted max-w-2xl mx-auto mb-8">
-              Your quote has been confirmed and your account is ready.
-              Let's get your Minneapolis yard sparkling clean!
+              {isCommercial
+                ? 'Thank you for your commercial property inquiry. Our team will review your details and contact you within 24 hours with a personalized quote.'
+                : 'Your quote has been confirmed and your account is ready. Let\'s get your Minneapolis yard sparkling clean!'
+              }
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/dashboard">
-                <Button className="btn-gradient">
-                  Access Your Dashboard
-                  <ArrowRight className="size-4 ml-2" />
-                </Button>
-              </Link>
-              <Link href="/schedule">
-                <Button variant="outline">
-                  Schedule Your First Visit
-                </Button>
-              </Link>
-            </div>
+            {isCommercial ? (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/">
+                  <Button className="btn-gradient">
+                    Return to Homepage
+                    <ArrowRight className="size-4 ml-2" />
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button variant="outline">
+                    Contact Us Directly
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/dashboard">
+                  <Button className="btn-gradient">
+                    Access Your Dashboard
+                    <ArrowRight className="size-4 ml-2" />
+                  </Button>
+                </Link>
+                <Link href="/schedule">
+                  <Button variant="outline">
+                    Schedule Your First Visit
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </Reveal>
 
@@ -73,35 +100,71 @@ export default function QuoteSuccessClient() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="size-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
-                    1
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-ink">Check Your Email</h4>
-                    <p className="text-sm text-muted">Secure login details sent to your email</p>
-                  </div>
-                </div>
+                {isCommercial ? (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <div className="size-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                        1
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-ink">Review in Progress</h4>
+                        <p className="text-sm text-muted">Our commercial team reviews your property details</p>
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="size-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
-                    2
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-ink">Schedule Your Service</h4>
-                    <p className="text-sm text-muted">Choose your preferred day and time</p>
-                  </div>
-                </div>
+                    <div className="flex items-start gap-3">
+                      <div className="size-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                        2
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-ink">Custom Quote Sent</h4>
+                        <p className="text-sm text-muted">Receive personalized pricing within 24 hours</p>
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="size-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
-                    3
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-ink">Enjoy Clean Yards!</h4>
-                    <p className="text-sm text-muted">Weekly eco-friendly service starts</p>
-                  </div>
-                </div>
+                    <div className="flex items-start gap-3">
+                      <div className="size-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                        3
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-ink">Professional Service</h4>
+                        <p className="text-sm text-muted">Dedicated commercial account management</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <div className="size-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                        1
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-ink">Check Your Email</h4>
+                        <p className="text-sm text-muted">Secure login details sent to your email</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="size-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                        2
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-ink">Schedule Your Service</h4>
+                        <p className="text-sm text-muted">Choose your preferred day and time</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="size-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                        3
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-ink">Enjoy Clean Yards!</h4>
+                        <p className="text-sm text-muted">Weekly eco-friendly service starts</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </Reveal>
@@ -116,30 +179,61 @@ export default function QuoteSuccessClient() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="size-5 text-green-600" />
-                  <span className="text-sm">Real-time service updates</span>
-                </div>
+                {isCommercial ? (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Dedicated commercial account manager</span>
+                    </div>
 
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="size-5 text-green-600" />
-                  <span className="text-sm">Health insights dashboard</span>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Custom service scheduling</span>
+                    </div>
 
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="size-5 text-green-600" />
-                  <span className="text-sm">Flexible scheduling</span>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Priority response times</span>
+                    </div>
 
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="size-5 text-green-600" />
-                  <span className="text-sm">Priority customer support</span>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Bulk service discounts</span>
+                    </div>
 
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="size-5 text-green-600" />
-                  <span className="text-sm">Eco impact tracking</span>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Property-specific solutions</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Real-time service updates</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Health insights dashboard</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Flexible scheduling</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Priority customer support</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="size-5 text-green-600" />
+                      <span className="text-sm">Eco impact tracking</span>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </Reveal>
@@ -166,7 +260,7 @@ export default function QuoteSuccessClient() {
                   <Phone className="size-5 text-accent" />
                   <div>
                     <p className="text-sm font-medium">Call Us</p>
-                    <p className="text-xs text-muted">(612) 581-9812</p>
+                    <p className="text-xs text-muted">(888) 915-9273</p>
                   </div>
                 </div>
 
@@ -221,23 +315,42 @@ export default function QuoteSuccessClient() {
             <Card className="bg-gradient-to-r from-accent-soft/30 via-white to-accent-soft/30 border-accent/20 max-w-2xl mx-auto">
               <CardContent className="p-8">
                 <h3 className="text-xl font-bold text-ink mb-3">
-                  Ready to Get Started?
+                  {isCommercial ? 'Questions About Your Quote?' : 'Ready to Get Started?'}
                 </h3>
                 <p className="text-muted mb-6">
-                  Your first eco-friendly dog waste removal service is just a few clicks away.
-                  Minneapolis homeowners love our reliable, professional service.
+                  {isCommercial
+                    ? 'Our commercial team is standing by to discuss your specific needs and provide a customized solution for your property.'
+                    : 'Your first eco-friendly dog waste removal service is just a few clicks away. Minneapolis homeowners love our reliable, professional service.'
+                  }
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Link href="/dashboard">
-                    <Button className="btn-gradient">
-                      Go to Dashboard
-                    </Button>
-                  </Link>
-                  <Link href="/schedule">
-                    <Button variant="outline">
-                      Schedule Now
-                    </Button>
-                  </Link>
+                  {isCommercial ? (
+                    <>
+                      <Link href="/contact">
+                        <Button className="btn-gradient">
+                          Contact Commercial Team
+                        </Button>
+                      </Link>
+                      <Link href="tel:+18889159273">
+                        <Button variant="outline">
+                          Call (888) 915-9273
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/dashboard">
+                        <Button className="btn-gradient">
+                          Go to Dashboard
+                        </Button>
+                      </Link>
+                      <Link href="/schedule">
+                        <Button variant="outline">
+                          Schedule Now
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>

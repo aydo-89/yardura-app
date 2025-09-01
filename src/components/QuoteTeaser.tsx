@@ -110,7 +110,7 @@ export default function QuoteTeaser() {
                     </div>
                   </div>
 
-                  <Link href="/quote">
+                  <Link href="/quote" data-analytics="cta_quote_teaser">
                     <button className="w-full bg-accent hover:bg-accent/90 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-soft hover:shadow-lg flex items-center justify-center gap-2 group">
                       Get Your Free Minneapolis Quote
                       <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />

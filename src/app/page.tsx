@@ -47,6 +47,8 @@ export default function Page() {
       <StickyCTA/>
 
       {/* Backward compatibility script for #quote hash redirects */}
+      {/* Hash fallback for backward compatibility */}
+      <div id="quote" />
       <script
         dangerouslySetInnerHTML={{
           __html: `

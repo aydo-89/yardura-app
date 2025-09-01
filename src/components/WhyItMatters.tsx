@@ -57,7 +57,7 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
     if (onGetQuoteClick) {
       onGetQuoteClick();
     } else {
-      window.location.href = '#quote';
+      window.location.href = '/quote';
     }
   };
 

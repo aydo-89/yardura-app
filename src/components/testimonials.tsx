@@ -78,7 +78,6 @@ export default function Testimonials() {
               <span className="text-sm text-muted font-medium">Ready to join them?</span>
               <a
                 href="/quote" data-analytics="cta_quote"
-                data-analytics="testimonials_get_quote"
                 className="px-6 py-2 bg-accent text-white rounded-xl hover:bg-accent/90 transition-all duration-200 font-semibold text-sm shadow-soft hover:shadow-md hover:scale-105"
               >
                 Get My Quote

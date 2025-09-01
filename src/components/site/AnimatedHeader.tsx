@@ -158,7 +158,6 @@ export default function AnimatedHeader() {
             {/* Primary CTA */}
             <motion.a
               href="/quote" data-analytics="cta_quote"
-              data-analytics="header_get_quote"
               className="px-6 py-2 rounded-xl bg-accent text-white hover:bg-accent/90 transition font-semibold shadow-soft"
               whileHover={{
                 scale: 1.02,
@@ -209,7 +208,6 @@ export default function AnimatedHeader() {
 
             <motion.a
               href="/quote" data-analytics="cta_quote"
-              data-analytics="header_get_quote_mobile"
               className="px-4 py-2 rounded-xl bg-accent text-white font-semibold shadow-soft"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -282,7 +280,6 @@ export default function AnimatedHeader() {
                 >
                   <motion.a
                     href="/quote" data-analytics="cta_quote"
-                    data-analytics="mobile_menu_get_quote"
                     className="block px-3 py-3 rounded-xl bg-accent text-white hover:bg-accent/90 transition shadow-soft text-center font-semibold"
                     onClick={() => setIsMenuOpen(false)}
                     whileHover={{ scale: 1.02 }}

@@ -136,7 +136,7 @@ export default function Hero() {
           >
             <motion.a
               href="/quote"
-              data-analytics="hero_get_quote"
+              data-analytics="cta_hero_get_quote"
               className="relative px-6 py-3 rounded-xl bg-accent text-white font-semibold shadow-soft overflow-hidden group"
               style={{
                 x: prefersReducedMotion ? 0 : buttonX,

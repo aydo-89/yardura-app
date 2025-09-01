@@ -2,19 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   estimatePerVisitCents,
   projectedMonthlyCents,
-  initialCleanCents,
   visitsPerMonth,
   getPricingBreakdown,
   type Frequency,
   type YardSize,
   type DogCount
 } from '@/lib/priceEstimator';
+import {
+  calculateInitialClean,
+  mapDateToBucket,
+  type CleanupBucket
+} from '@/lib/initialCleanEstimator';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { dogs, yardSize, frequency, addOns } = body;
+    const { dogs, yardSize, frequency, addOns, lastCleanedBucket, lastCleanedDate } = body;
 
     // Validate inputs
     if (!dogs || !yardSize || !frequency) {
@@ -52,20 +56,35 @@ export async function POST(request: NextRequest) {
 
     // Calculate pricing
     const perVisitCents = estimatePerVisitCents(dogs, yardSize, frequency);
-    const visitsPerMonth = visitsPerMonth(frequency);
-    const projectedMonthlyCents = projectedMonthlyCents(perVisitCents, frequency, addOns || {});
-    const initialCleanCents = initialCleanCents(perVisitCents, addOns || {});
+    const monthlyVisits = visitsPerMonth(frequency);
+    const projectedMonthly = projectedMonthlyCents(perVisitCents, frequency, addOns || {});
 
-    // Determine if initial clean should be auto-recommended
-    const initialCleanAuto = projectedMonthlyCents > 8000; // Auto-recommend if monthly > $80
+    // Handle cleanup bucket/date for initial clean calculation
+    let cleanupBucket: CleanupBucket = '7'; // Default to well maintained
+    if (lastCleanedBucket) {
+      cleanupBucket = lastCleanedBucket as CleanupBucket;
+    } else if (lastCleanedDate) {
+      const cleanupDate = new Date(lastCleanedDate);
+      cleanupBucket = mapDateToBucket(cleanupDate);
+    }
+
+    // Calculate initial clean using new estimator
+    const initialCleanEstimate = calculateInitialClean(perVisitCents, cleanupBucket, dogs, yardSize);
+
+    // Determine if initial clean should be auto-recommended (for buckets with significant backlog)
+    const initialCleanAuto = ['60', '90', '999'].includes(cleanupBucket);
 
     const response = {
       perVisitCents,
-      visitsPerMonth,
-      projectedMonthlyCents,
-      initialCleanMinCents: initialCleanCents,
+      visitsPerMonth: monthlyVisits,
+      projectedMonthlyCents: projectedMonthly,
+      initialCleanCents: initialCleanEstimate.initialCleanCents,
+      initialCleanBucket: cleanupBucket,
       initialCleanAuto,
-      breakdown: getPricingBreakdown(dogs, yardSize, frequency, addOns || {}).breakdown,
+      breakdown: {
+        ...getPricingBreakdown(dogs, yardSize, frequency, addOns || {}).breakdown,
+        initialCleanBreakdown: initialCleanEstimate.breakdown
+      },
     };
 
     return NextResponse.json(response);
@@ -82,14 +101,19 @@ export async function POST(request: NextRequest) {
 // GET endpoint for testing/default values
 export async function GET() {
   // Return sample pricing for 1 dog, medium yard, weekly
-  const sample = getPricingBreakdown(1, 'medium', 'weekly');
+  const perVisitCents = estimatePerVisitCents(1, 'medium', 'weekly');
+  const initialCleanEstimate = calculateInitialClean(perVisitCents, '7', 1, 'medium');
 
   return NextResponse.json({
-    perVisitCents: sample.perVisitCents,
-    visitsPerMonth: sample.visitsPerMonth,
-    projectedMonthlyCents: sample.monthlyCents,
-    initialCleanMinCents: sample.initialCleanCents,
+    perVisitCents,
+    visitsPerMonth: visitsPerMonth('weekly'),
+    projectedMonthlyCents: projectedMonthlyCents(perVisitCents, 'weekly', {}),
+    initialCleanCents: initialCleanEstimate.initialCleanCents,
+    initialCleanBucket: '7',
     initialCleanAuto: false,
-    breakdown: sample.breakdown,
+    breakdown: {
+      ...getPricingBreakdown(1, 'medium', 'weekly', {}).breakdown,
+      initialCleanBreakdown: initialCleanEstimate.breakdown
+    },
   });
 }

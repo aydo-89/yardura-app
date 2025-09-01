@@ -354,7 +354,7 @@ This project is private and proprietary to Yardura.
 
 For technical support or questions:
 - Email: hello@yardura.com
-- Phone: (612) 581-9812
+- Phone: (888) 915-9273
 
 ---
 

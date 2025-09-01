@@ -126,7 +126,7 @@ export default function QuoteCalculator() {
           Get Your Custom Quote
         </a>
         <p className="text-xs text-center text-slate-500 mt-2">
-          Or call/text us at (612) 581-9812 for immediate assistance
+          Or call/text us at (888) 915-9273 for immediate assistance
         </p>
       </div>
     </div>

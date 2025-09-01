@@ -139,3 +139,5 @@ async function handleSubscriptionCancellation(subscription: any) {
     console.log(`Subscription cancelled for customer ${customer.id}`);
   }
 }
+
+

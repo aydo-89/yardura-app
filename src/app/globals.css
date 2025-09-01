@@ -147,12 +147,12 @@ html, body { scroll-behavior: smooth; }
 
 /* Enhanced button styles */
 .btn-modern {
-  @apply relative px-8 py-4 bg-gradient-to-r from-accent to-accent/90 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden;
+  @apply relative px-8 py-4 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden;
 }
 
 .btn-modern::before {
   content: '';
-  @apply absolute inset-0 bg-gradient-to-r from-accent/90 to-accent opacity-0 transition-opacity duration-300;
+  @apply absolute inset-0 bg-gradient-to-r from-brand-700 to-brand-800 opacity-0 transition-opacity duration-300;
 }
 
 .btn-modern:hover::before {
@@ -162,37 +162,6 @@ html, body { scroll-behavior: smooth; }
 .btn-modern > * {
   @apply relative z-10;
 }
-
-/* Gradient Button with Shimmer */
-.btn-gradient {
-  @apply relative px-6 py-3 bg-gradient-to-r from-accent to-accent/90 text-white rounded-xl font-semibold shadow-soft overflow-hidden;
-}
-
-.btn-gradient::before {
-  content: '';
-  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full;
-  transition: transform 1.2s ease-in-out;
-}
-
-.btn-gradient:hover::before {
-  transform: translateX(100%);
-}
-
-/* Quiet button variant */
-.btn-quiet {
-  @apply px-6 py-3 rounded-xl border-2 border-accent/30 text-accent font-semibold transition-all duration-300 hover:border-accent;
-}
-
-.btn-quiet:hover {
-  background-color: hsl(var(--accent) / 0.1);
-}
-
-/* Z-index system */
-.z-sticky { z-index: 1000; }
-.z-overlay { z-index: 900; }
-.z-surface { z-index: 100; }
-.z-base { z-index: 10; }
-.z-chip { z-index: 50; }
 
 /* Modern card enhancements */
 .card-modern {

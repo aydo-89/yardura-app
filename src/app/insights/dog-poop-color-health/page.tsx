@@ -14,6 +14,7 @@ import {
   Share2,
   ArrowRight
 } from "lucide-react";
+
 import TableOfContents from "@/components/articles/TableOfContents";
 import RelatedArticles from "@/components/articles/RelatedArticles";
 import { MOCK_ARTICLES, getRelatedArticles } from "@/lib/articles";

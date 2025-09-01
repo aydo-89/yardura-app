@@ -18,13 +18,13 @@ const loadFonts = async () => {
       name: 'Inter',
       data: interRegular,
       style: 'normal' as const,
-      weight: 400,
+      weight: 400 as const,
     },
     {
       name: 'Inter',
       data: interBold,
       style: 'normal' as const,
-      weight: 700,
+      weight: 700 as const,
     },
   ];
 };

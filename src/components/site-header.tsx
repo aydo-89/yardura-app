@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { PhoneCall, Leaf, Menu, X } from "lucide-react";
+import { PhoneCall, Leaf, Menu, X, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveSection } from "@/hooks/useActiveSection";
 import { track } from "@/lib/analytics";
@@ -16,6 +16,7 @@ export default function SiteHeader() {
     { href: "#services", label: "Services", id: "services" },
     { href: "#pricing", label: "Pricing", id: "pricing" },
     { href: "#insights", label: "Insights", id: "insights" },
+    { href: "/city", label: "Cities", icon: MapPin },
     { href: "#eco", label: "Eco", id: "eco", icon: Leaf },
     { href: "#faq", label: "FAQ", id: "faq" },
   ];
@@ -95,7 +96,7 @@ export default function SiteHeader() {
               key={item.href}
               href={item.href}
               className={cn(
-                "hover:text-accent transition-colors focus:ring-2 focus:ring-accent focus:outline-none rounded-md px-2 py-1 flex items-center gap-1",
+                "text-slate-700 hover:text-slate-900 transition-colors focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:outline-none rounded-md px-2 py-1 flex items-center gap-1",
                 activeId === item.id && "text-accent font-medium"
               )}
             >
@@ -173,7 +174,7 @@ export default function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "block px-3 py-2 rounded-lg hover:bg-accent-soft hover:text-accent transition-colors focus:ring-2 focus:ring-accent focus:outline-none flex items-center gap-2",
+                  "block px-3 py-2 rounded-lg text-slate-700 hover:bg-accent-soft hover:text-slate-900 transition-colors focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:outline-none flex items-center gap-2",
                   activeId === item.id && "bg-accent-soft text-accent font-medium"
                 )}
                 onClick={handleMenuClose}

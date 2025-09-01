@@ -1,5 +1,4 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+# Updated husky configuration for v9+
 
 # Secret scanning - prevent committing sensitive keys
 echo "🔍 Scanning for secrets in staged files..."

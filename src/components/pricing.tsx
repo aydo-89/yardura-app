@@ -133,12 +133,31 @@ export default function Pricing() {
       <Reveal delay={0.1}>
         <div className="flex justify-center mb-8">
           <Tabs value={selectedFrequency} onValueChange={(value) => setSelectedFrequency(value as Frequency)}>
-            <TabsList className="grid w-full max-w-md grid-cols-3">
-              <TabsTrigger value="weekly">Weekly</TabsTrigger>
-              <TabsTrigger value="biweekly">Every Other Week</TabsTrigger>
-              <TabsTrigger value="twice-weekly">Twice Weekly</TabsTrigger>
+            <TabsList className="grid w-full max-w-md grid-cols-3 bg-muted/50 p-1">
+              <TabsTrigger
+                value="weekly"
+                className="data-[state=active]:bg-white data-[state=active]:text-accent data-[state=active]:shadow-sm data-[state=active]:font-semibold text-slate-700 hover:text-slate-900 data-[state=inactive]:hover:bg-slate-100 data-[state=inactive]:hover:text-slate-800 focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:outline-none font-medium transition-all duration-200"
+              >
+                Weekly
+              </TabsTrigger>
+              <TabsTrigger
+                value="biweekly"
+                className="data-[state=active]:bg-white data-[state=active]:text-accent data-[state=active]:shadow-sm data-[state=active]:font-semibold text-slate-700 hover:text-slate-900 data-[state=inactive]:hover:bg-slate-100 data-[state=inactive]:hover:text-slate-800 focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:outline-none font-medium transition-all duration-200"
+              >
+                Every Other Week
+              </TabsTrigger>
+              <TabsTrigger
+                value="twice-weekly"
+                className="data-[state=active]:bg-white data-[state=active]:text-accent data-[state=active]:shadow-sm data-[state=active]:font-semibold text-slate-700 hover:text-slate-900 data-[state=inactive]:hover:bg-slate-100 data-[state=inactive]:hover:text-slate-800 focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:outline-none font-medium transition-all duration-200"
+              >
+                Twice Weekly
+              </TabsTrigger>
             </TabsList>
           </Tabs>
+          <p className="text-xs text-muted text-center mt-2">
+            {selectedFrequency === 'biweekly' && 'Higher per-visit due to accumulation • Fewer visits save you money overall'}
+            {selectedFrequency === 'twice-weekly' && 'Slight discount for route efficiency'}
+          </p>
         </div>
       </Reveal>
 

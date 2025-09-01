@@ -400,7 +400,7 @@ Crawl-delay: 1
 About: Tech-enabled, eco-friendly dog waste removal in Minneapolis
 Services: Weekly/bi-weekly removal, health insights, eco disposal
 Areas: Minneapolis, Richfield, Edina, Bloomington
-Contact: (612) 581-9812
+Contact: (888) 915-9273
 Unique Value: AI stool analysis, non-diagnostic health monitoring
 ```
 

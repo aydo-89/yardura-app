@@ -11,13 +11,16 @@ function isAdmin(email?: string | null) {
   return !!email && adminEmails.includes(email.toLowerCase())
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await getServerSession(authOptions as any) as { user?: { email?: string } } | null
   if (!isAdmin(session?.user?.email)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { id } = params
+  const { id } = await params
   const body = await req.json()
   const { name, description, active } = body || {}
 
@@ -25,12 +28,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json(product)
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const session = await getServerSession(authOptions as any) as { user?: { email?: string } } | null
   if (!isAdmin(session?.user?.email)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-  const { id } = params
+  const { id } = await params
   const deleted = await stripe.products.update(id, { active: false })
   return NextResponse.json(deleted)
 }
