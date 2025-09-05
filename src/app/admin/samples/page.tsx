@@ -14,7 +14,10 @@ export default async function SamplesPage() {
     <div className="container py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Samples</h1>
-        <a href="/api/admin/labeling/export"><Button variant="outline">Export CSV</Button></a>
+        <div className="flex gap-2">
+          <a href="/api/admin/samples/export"><Button variant="outline">Export Samples</Button></a>
+          <a href="/api/admin/labeling/export"><Button variant="outline">Export GroundTruth</Button></a>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4">
