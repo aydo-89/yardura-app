@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(_req: NextRequest) {
-  const since = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
+export async function GET(req: NextRequest) {
+  const sp = new URL(req.url).searchParams;
+  const days = Math.max(1, Math.min(365, Number(sp.get('days') || 30)));
+  const since = new Date(Date.now() - 1000 * 60 * 60 * 24 * days);
   const samples = await prisma.sample.findMany({
     where: { capturedAt: { gte: since } },
     orderBy: { capturedAt: 'asc' },

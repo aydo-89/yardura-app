@@ -22,6 +22,11 @@ async function generatePdf(params: { orgId: string; customerId?: string | null; 
     take: 30,
     include: { scores: true },
   });
+  const weights = samples.map(s => s.weightG || 0).filter(Boolean);
+  const avgWeight = weights.length ? (weights.reduce((a,b)=>a+b,0)/weights.length) : 0;
+  const alerts = await prisma.alert.findMany({ where: { orgId: params.orgId } });
+
+  draw(`Samples: ${samples.length}   Avg Weight: ${avgWeight.toFixed(1)} g   Alerts: ${alerts.length}`, 50, 672);
 
   let y = 660;
   draw('Recent Samples:', 50, y);

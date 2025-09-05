@@ -8,11 +8,7 @@ export default function BillingPage() {
   const onOpenPortal = async () => {
     try {
       setLoading(true);
-      // TODO: fetch actual Stripe customer ID for the logged in user
-      const res = await fetch('/api/billing/portal', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId: 'replace_me', returnUrl: window.location.origin + '/billing' })
-      });
+      const res = await fetch('/api/billing/portal/me', { method: 'POST' });
       const json = await res.json();
       if (json.url) window.location.href = json.url;
     } finally {
