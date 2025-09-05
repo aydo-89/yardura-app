@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "worker": "tsx workers/sampleScorer.ts",
     "build": "npm run type-check && npm run lint && npm run format:check && next build",
     "build:quick": "next build",
     "start": "next start",
@@ -26,8 +27,7 @@
     "setup": "npm run db:setup",
     "db:setup": "npx prisma generate && npx prisma db push",
     "db:reset": "npx prisma db push --force-reset",
-    "prepare": "husky",
-    "worker": "tsx workers/sampleScorer.ts"
+    "prepare": "husky"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -58,12 +58,12 @@
     "@supabase/supabase-js": "^2.56.0",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
-    "bullmq": "^5.41.5",
+    "bullmq": "^5.58.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.12",
+    "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
-    "ioredis": "^5.4.1",
     "lucide-react": "^0.540.0",
     "next": "^15.5.2",
     "next-auth": "^4.24.11",
@@ -73,8 +73,8 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-hook-form": "^7.62.0",
-    "resend": "^6.0.1",
     "recharts": "^2.12.7",
+    "resend": "^6.0.1",
     "sonner": "^2.0.7",
     "stripe": "^18.4.0",
     "tailwind-merge": "^3.3.1",
