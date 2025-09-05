@@ -52,9 +52,6 @@ model User {
   role          UserRole  @default(CUSTOMER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  // Multi-tenant linkage (optional)
-  orgId         String?
-  org           Org?      @relation(fields: [orgId], references: [id])
 
   // Sales rep specific fields
   salesRepId    String?   // ID of the sales rep who signed them up
@@ -69,6 +66,8 @@ model User {
   salesRep      User?            @relation("SalesRepReferrals", fields: [salesRepId], references: [id])
   earnedCommissions Commission[]  @relation("CommissionSalesRep")
   receivedCommissions Commission[] @relation("CommissionCustomer")
+  orgId         String?
+  org           Org?      @relation(fields: [orgId], references: [id])
 }
 
 model VerificationToken {
@@ -87,16 +86,16 @@ model Dog {
   age          Int?
   weight       Float?
   userId       String
-  // Multi-tenant linkage (optional)
-  orgId        String?
-  org          Org?     @relation(fields: [orgId], references: [id])
-  customerId   String?
-  customer     Customer? @relation(fields: [customerId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   dataReadings DataReading[]
+  orgId        String?
+  org          Org?     @relation(fields: [orgId], references: [id])
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  samples      Sample[]
 }
 
 // Service visits
@@ -225,6 +224,8 @@ model Org {
   devices   Device[]
   jobs      Job[]
   dogs      Dog[]
+  samples   Sample[]
+  alerts    Alert[]
 }
 
 model Customer {
@@ -245,6 +246,7 @@ model Customer {
 
   dogs Dog[]
   jobs Job[]
+  samples Sample[]
 }
 
 model Job {
@@ -260,6 +262,7 @@ model Job {
   deodorizeMode DeodorizeMode @default(NONE)
   status        JobStatus     @default(ACTIVE)
   createdAt     DateTime      @default(now())
+  samples       Sample[]
 }
 
 enum Frequency {
@@ -291,6 +294,7 @@ model Device {
   uniqueId    String   @unique
   lastSeenAt  DateTime?
   createdAt   DateTime @default(now())
+  samples     Sample[]
 }
 
 model Sample {
@@ -317,6 +321,7 @@ model Sample {
   createdAt      DateTime  @default(now())
 
   scores SampleScore[]
+  alerts Alert[]
 }
 
 model SampleScore {
@@ -343,6 +348,8 @@ model Alert {
   message      String
   acknowledged Boolean    @default(false)
   createdAt    DateTime   @default(now())
+
+  org          Org        @relation(fields: [orgId], references: [id])
 }
 
 enum AlertLevel {
