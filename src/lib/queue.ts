@@ -1,7 +1,7 @@
 import { Queue, Worker, QueueScheduler, JobsOptions } from 'bullmq';
 import IORedis from 'ioredis';
 
-const connection = new IORedis(process.env.REDIS_URL as string, {
+export const redis = new IORedis(process.env.REDIS_URL as string, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
   tls: process.env.REDIS_URL?.startsWith('rediss://') ? {} : undefined,
@@ -9,8 +9,8 @@ const connection = new IORedis(process.env.REDIS_URL as string, {
 
 export const SAMPLE_SCORE_QUEUE = 'queue:sample-score';
 
-export const sampleScoreQueue = new Queue(SAMPLE_SCORE_QUEUE, { connection });
-export const sampleScoreScheduler = new QueueScheduler(SAMPLE_SCORE_QUEUE, { connection });
+export const sampleScoreQueue = new Queue(SAMPLE_SCORE_QUEUE, { connection: redis });
+export const sampleScoreScheduler = new QueueScheduler(SAMPLE_SCORE_QUEUE, { connection: redis });
 
 export function addSampleScoreJob(payload: { sampleId: string }, opts?: JobsOptions) {
   return sampleScoreQueue.add('score-sample', payload, {
@@ -27,7 +27,7 @@ export function createWorker(handler: (data: { sampleId: string }) => Promise<vo
     async (job) => {
       await handler(job.data as { sampleId: string });
     },
-    { connection }
+    { connection: redis }
   );
 }
 

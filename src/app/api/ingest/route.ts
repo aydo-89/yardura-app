@@ -3,8 +3,8 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { env } from '@/lib/env';
-import { uploadImage, publicUrl } from '@/lib/supabase-admin';
-import { addSampleScoreJob } from '@/lib/queue';
+import { uploadImage } from '@/lib/supabase-admin';
+import { addSampleScoreJob, redis } from '@/lib/queue';
 
 const ingestSchema = z.object({
   deviceKey: z.string().min(10),
@@ -44,15 +44,25 @@ export async function POST(req: NextRequest) {
     const ok = await bcrypt.compare(data.deviceKey, device.apiKeyHash);
     if (!ok) return NextResponse.json({ error: 'Invalid key' }, { status: 401 });
 
+    // Basic rate limiting by device
+    const rlKey = `rl:ingest:${data.deviceId}`;
+    const count = await redis.incr(rlKey);
+    if (count === 1) {
+      await redis.expire(rlKey, 10);
+    }
+    if (count > 20) {
+      return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+    }
+
     // Handle image
     const file = form.get('image') as File | null;
     let imageUrl: string | undefined;
+    let storagePath: string | undefined;
     const sampleId = crypto.randomUUID();
     if (file) {
       const arrayBuf = await file.arrayBuffer();
-      const path = `${data.orgId}/${sampleId}.jpg`;
-      await uploadImage(env.STORAGE_BUCKET!, path, arrayBuf, file.type || 'image/jpeg');
-      imageUrl = publicUrl(env.STORAGE_BUCKET!, path);
+      storagePath = `${data.orgId}/${sampleId}.jpg`;
+      await uploadImage(env.STORAGE_BUCKET!, storagePath, arrayBuf, file.type || 'image/jpeg');
     }
 
     // Insert sample
@@ -66,7 +76,7 @@ export async function POST(req: NextRequest) {
         dogId: data.dogId,
         jobId: data.jobId,
         capturedAt,
-        imageUrl,
+        imageUrl: storagePath,
         weightG: data.weightG,
         moistureRaw: data.moistureRaw,
         temperatureC: data.temperatureC,

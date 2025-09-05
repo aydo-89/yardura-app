@@ -26,8 +26,11 @@ export async function uploadImage(
   return data;
 }
 
-export function publicUrl(bucket: string, path: string) {
-  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+export async function createSignedUrl(bucket: string, path: string, expiresInSec = 3600) {
+  const { data, error } = await supabaseAdmin.storage
+    .from(bucket)
+    .createSignedUrl(path, expiresInSec);
+  if (error) throw error;
+  return data.signedUrl;
 }
 
