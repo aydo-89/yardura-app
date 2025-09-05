@@ -36,6 +36,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  STORAGE_BUCKET: z.string().optional().default('stool-samples'),
 
   // reCAPTCHA configuration
   NEXT_PUBLIC_RECAPTCHA_SITE_KEY: z.string().optional(),
@@ -60,7 +61,15 @@ const envSchema = z.object({
   ENABLE_MULTI_TENANT: z.string().optional().default('false'),
 
   // Security
-  SECRET_KEY_BASE: z.string().min(32, 'SECRET_KEY_BASE must be at least 32 characters').optional(),
+  SECRET_KEY_BASE: z
+    .string()
+    .min(32, 'SECRET_KEY_BASE must be at least 32 characters')
+    .optional(),
+  EDGE_DEVICE_ISSUER: z.string().optional().default('yardura-device'),
+  JWT_SIGNING_KEY: z.string().optional(),
+
+  // Queue
+  REDIS_URL: z.string().optional(),
 
   // Analytics (optional)
   NEXT_PUBLIC_GA_TRACKING_ID: z.string().optional(),
