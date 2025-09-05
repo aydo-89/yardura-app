@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BarChart3, TrendingUp, Calendar, Heart, Leaf, Settings, Plus } from 'lucide-react';
+import DashboardKpis from '@/components/DashboardKpis';
 
 export default async function DashboardPage() {
   const session = (await safeGetServerSession(authOptions as any)) as {
@@ -59,6 +60,8 @@ export default async function DashboardPage() {
             Settings
           </Button>
         </div>
+
+        <DashboardKpis />
 
         {/* Key Metrics */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
