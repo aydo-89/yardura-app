@@ -322,6 +322,7 @@ model Sample {
 
   scores SampleScore[]
   alerts Alert[]
+  groundTruth GroundTruth[]
 }
 
 model SampleScore {
@@ -379,4 +380,20 @@ model BillingSnapshot {
   oneTimeFeeCents      Int
   discountOneTimeCents Int
   createdAt            DateTime @default(now())
+}
+
+model GroundTruth {
+  id           String   @id @default(cuid())
+  sampleId     String   @unique
+  sample       Sample   @relation(fields: [sampleId], references: [id])
+  dataset      String   // e.g., v0.1
+  split        String   // train|val|test
+  colorLabel   String?
+  consistency  String?
+  contentFlags String?
+  freshness    String?
+  notStool     Boolean  @default(false)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
