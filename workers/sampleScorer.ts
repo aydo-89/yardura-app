@@ -1,8 +1,14 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { createWorker } from '../src/lib/queue';
+import { Resend } from 'resend';
 
 const prisma = new PrismaClient();
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const adminEmails = (process.env.ADMIN_EMAILS || '')
+  .split(',')
+  .map((e) => e.trim())
+  .filter(Boolean);
 
 // Rules-based scoring algorithm
 function calculateSampleScore(sample: any) {
@@ -23,7 +29,7 @@ function calculateSampleScore(sample: any) {
   else if (moisture > 900) consistencyLabel = 'Very Soft';
 
   // Content flags based on moisture extremes
-  let contentFlags = [];
+  let contentFlags = [] as string[];
   if (moisture < 200) contentFlags.push('dehydration');
   if (moisture > 1000) contentFlags.push('diarrhea');
 
@@ -101,22 +107,43 @@ async function handleScore({ sampleId }: { sampleId: string }) {
   console.log(`Sample ${sampleId} processing completed successfully`);
 }
 
+async function sendAlertEmail(sample: any, alert: { level: string; kind: string; message: string }) {
+  if (!resend) return;
+  const recipients = [
+    ...(sample.customer?.email ? [sample.customer.email] : []),
+    ...adminEmails,
+  ].filter(Boolean);
+  if (recipients.length === 0) return;
+  const subject = `Yardura Alert: ${alert.level} - ${alert.kind}`;
+  const text = `A new alert was generated.\n\nOrg: ${sample.orgId}\nSample: ${sample.id}\nWhen: ${sample.capturedAt}\nDog: ${sample.dog?.name || 'N/A'}\nMessage: ${alert.message}\n\nInsights are informational only — consider consulting your vet for medical concerns.`;
+  try {
+    await resend.emails.send({
+      from: 'Yardura <notifications@yardura.com>',
+      to: recipients,
+      subject,
+      text,
+    });
+  } catch (e) {
+    console.error('Failed to send alert email', e);
+  }
+}
+
 async function generateAlerts(sample: any, score: any) {
-  const alerts = [];
+  const alerts = [] as Array<{ level: 'INFO' | 'WATCH' | 'ATTENTION'; kind: string; message: string }>;
 
   // Alert for dehydration
-  if (score.contentFlags?.includes('dehydration')) {
+  if ((score.contentFlags as string)?.includes('dehydration')) {
     alerts.push({
-      level: 'WATCH' as const,
+      level: 'WATCH',
       kind: 'dehydration_risk',
       message: 'Sample indicates potential dehydration. Consider increasing water intake.',
     });
   }
 
   // Alert for diarrhea
-  if (score.contentFlags?.includes('diarrhea')) {
+  if ((score.contentFlags as string)?.includes('diarrhea')) {
     alerts.push({
-      level: 'ATTENTION' as const,
+      level: 'ATTENTION',
       kind: 'digestive_issue',
       message: 'Sample shows signs of diarrhea. Monitor closely and consult vet if persistent.',
     });
@@ -125,7 +152,7 @@ async function generateAlerts(sample: any, score: any) {
   // Temperature anomaly
   if (sample.temperatureC && (sample.temperatureC < 18 || sample.temperatureC > 28)) {
     alerts.push({
-      level: 'INFO' as const,
+      level: 'INFO',
       kind: 'temperature_anomaly',
       message: `Sample temperature (${sample.temperatureC}°C) is outside normal range.`,
     });
@@ -134,7 +161,7 @@ async function generateAlerts(sample: any, score: any) {
   // Trend analysis - check recent samples for patterns
   await analyzeTrends(sample, alerts);
 
-      // Create alerts
+  // Create + email alerts
   for (const alert of alerts) {
     await (prisma as any).alert.create({
       data: {
@@ -143,6 +170,7 @@ async function generateAlerts(sample: any, score: any) {
         ...alert,
       },
     });
+    await sendAlertEmail(sample, alert);
     console.log(`Created alert: ${alert.kind}`);
   }
 }
