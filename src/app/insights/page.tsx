@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import InsightsCharts from '@/components/InsightsCharts';
 import {
   Calendar,
   Clock,
@@ -157,6 +158,9 @@ export default function InsightsPage() {
         {/* Featured Article */}
         {insights[0] && (
           <div className="mb-12">
+            <div className="mb-6">
+              <InsightsCharts />
+            </div>
             <div className="flex items-center gap-2 mb-6">
               <div className="size-2 bg-accent rounded-full"></div>
               <span className="text-sm font-medium text-accent">Featured Article</span>
