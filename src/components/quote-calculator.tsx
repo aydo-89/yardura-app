@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Calculator, Info } from "lucide-react";
-import { calcInstantQuote, Frequency, YardSize } from "@/lib/pricing";
+import { useState, useEffect } from 'react';
+import { Calculator, Info } from 'lucide-react';
+import { calcInstantQuote, Frequency, YardSize } from '@/lib/pricing';
 
 export default function QuoteCalculator() {
   const [dogs, setDogs] = useState(1);
-  const [frequency, setFrequency] = useState<Frequency>("weekly");
-  const [yardSize, setYardSize] = useState<YardSize>("medium");
+  const [frequency, setFrequency] = useState<Frequency>('weekly');
+  const [yardSize, setYardSize] = useState<YardSize>('medium');
   const [deodorize, setDeodorize] = useState(false);
   const [litter, setLitter] = useState(false);
   const [estimate, setEstimate] = useState<number | null>(null);
@@ -39,8 +39,10 @@ export default function QuoteCalculator() {
             onChange={(e) => setDogs(Number(e.target.value))}
             className="w-full border border-brand-300 rounded-xl p-2 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
-            {[1,2,3,4,5,6,7,8].map(num => (
-              <option key={num} value={num}>{num} dog{num > 1 ? 's' : ''}</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+              <option key={num} value={num}>
+                {num} dog{num > 1 ? 's' : ''}
+              </option>
             ))}
           </select>
         </div>
@@ -104,11 +106,18 @@ export default function QuoteCalculator() {
       {estimate !== null && (
         <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
           <div className="text-center">
-            <div className="text-sm text-slate-600 mb-1">Estimated {frequency === 'one-time' ? 'cost' : 'weekly cost'}</div>
+            <div className="text-sm text-slate-600 mb-1">
+              Estimated {frequency === 'one-time' ? 'cost' : 'weekly cost'}
+            </div>
             <div className="text-3xl font-extrabold text-brand-600 mb-2">${estimate}</div>
             {frequency !== 'one-time' && (
               <div className="text-xs text-slate-500 mb-2">
-                That's only ${(estimate * (frequency === 'twice-weekly' ? 2 : frequency === 'bi-weekly' ? 0.5 : 1)).toFixed(2)} per month!
+                That's only $
+                {(
+                  estimate *
+                  (frequency === 'twice-weekly' ? 2 : frequency === 'bi-weekly' ? 0.5 : 1)
+                ).toFixed(2)}{' '}
+                per month!
               </div>
             )}
             <div className="text-xs text-slate-600">
@@ -120,7 +129,8 @@ export default function QuoteCalculator() {
 
       <div className="mt-4 pt-4 border-t border-brand-200">
         <a
-          href="/quote" data-analytics="cta_quote"
+          href="/quote"
+          data-analytics="cta_quote"
           className="block w-full text-center px-6 py-3 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition font-semibold shadow-soft"
         >
           Get Your Custom Quote

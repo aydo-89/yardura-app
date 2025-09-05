@@ -77,13 +77,13 @@ export function checkRateLimit(
     // First request or window expired
     rateLimitStore.set(key, {
       count: 1,
-      resetTime: now + limit.windowMs
+      resetTime: now + limit.windowMs,
     });
     return {
       allowed: true,
       remaining: limit.max - 1,
       resetTime: now + limit.windowMs,
-      totalRequests: 1
+      totalRequests: 1,
     };
   }
 
@@ -92,7 +92,7 @@ export function checkRateLimit(
       allowed: false,
       remaining: 0,
       resetTime: record.resetTime,
-      totalRequests: record.count
+      totalRequests: record.count,
     };
   }
 
@@ -104,7 +104,7 @@ export function checkRateLimit(
     allowed: true,
     remaining: limit.max - record.count,
     resetTime: record.resetTime,
-    totalRequests: record.count
+    totalRequests: record.count,
   };
 }
 
@@ -159,7 +159,10 @@ export function validateHoneypot(honeypotValue?: string): boolean {
 }
 
 // reCAPTCHA validation
-export async function validateRecaptcha(token: string, secretKey: string): Promise<{ success: boolean; score?: number }> {
+export async function validateRecaptcha(
+  token: string,
+  secretKey: string
+): Promise<{ success: boolean; score?: number }> {
   try {
     const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
       method: 'POST',
@@ -292,17 +295,21 @@ export async function validateFormSubmission(
 ): Promise<FormProtectionResult> {
   const errors: string[] = [];
   // Get IP address from headers (Next.js removed request.ip in newer versions)
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-             request.headers.get('x-real-ip') ||
-             request.headers.get('cf-connecting-ip') ||
-             request.headers.get('x-client-ip') ||
-             'unknown';
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-client-ip') ||
+    'unknown';
   const userAgent = request.headers.get('user-agent') || '';
 
   // Rate limiting
-  const rateLimitKey = formType === 'quote' ? 'quoteForm' as const :
-                      formType === 'contact' ? 'contactForm' as const :
-                      'general' as const;
+  const rateLimitKey =
+    formType === 'quote'
+      ? ('quoteForm' as const)
+      : formType === 'contact'
+        ? ('contactForm' as const)
+        : ('general' as const);
   const rateLimitResult = checkRateLimit(ip, rateLimitKey, request);
   if (!rateLimitResult.allowed) {
     errors.push('Too many requests. Please try again later.');
@@ -371,14 +378,16 @@ export async function validateFormSubmission(
   return {
     isValid: errors.length === 0,
     errors,
-    score: data.recaptchaToken ? (await validateRecaptcha(data.recaptchaToken, process.env.RECAPTCHA_SECRET_KEY || '')).score : undefined,
+    score: data.recaptchaToken
+      ? (await validateRecaptcha(data.recaptchaToken, process.env.RECAPTCHA_SECRET_KEY || '')).score
+      : undefined,
     metadata: {
       ip,
       userAgent,
       timestamp: Date.now(),
       rateLimited: !rateLimitResult.allowed,
       suspiciousActivity,
-    }
+    },
   };
 }
 
@@ -399,7 +408,7 @@ export function sanitizeForDatabase(input: any): any {
   }
 
   if (Array.isArray(input)) {
-    return input.map(item => sanitizeForDatabase(item));
+    return input.map((item) => sanitizeForDatabase(item));
   }
 
   if (typeof input === 'object' && input !== null) {

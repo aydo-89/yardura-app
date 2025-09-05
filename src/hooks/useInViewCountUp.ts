@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useInView } from 'framer-motion';
@@ -14,7 +14,7 @@ export function useInViewCountUp(
   { end, duration = 2000, start = 0 }: UseInViewCountUpOptions
 ) {
   const [count, setCount] = useState(start);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   useEffect(() => {
     if (!isInView) return;

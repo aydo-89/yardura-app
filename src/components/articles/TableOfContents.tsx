@@ -19,13 +19,11 @@ export default function TableOfContents({ items, className = '' }: TableOfConten
         {depth > 0 && (
           <ChevronRight className="size-3 text-muted group-hover:text-accent transition-colors" />
         )}
-        <span className={depth === 0 ? 'font-medium' : 'text-muted'}>
-          {item.text}
-        </span>
+        <span className={depth === 0 ? 'font-medium' : 'text-muted'}>{item.text}</span>
       </a>
       {item.children && item.children.length > 0 && (
         <ul className="mt-1 space-y-1">
-          {item.children.map(child => renderTOCItem(child, depth + 1))}
+          {item.children.map((child) => renderTOCItem(child, depth + 1))}
         </ul>
       )}
     </li>
@@ -38,9 +36,7 @@ export default function TableOfContents({ items, className = '' }: TableOfConten
         Table of Contents
       </h3>
       <nav>
-        <ul className="space-y-2">
-          {items.map(item => renderTOCItem(item))}
-        </ul>
+        <ul className="space-y-2">{items.map((item) => renderTOCItem(item))}</ul>
       </nav>
     </div>
   );

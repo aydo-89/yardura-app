@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const images = [
-  { src: "/clean_yard1.png", alt: "Clean yard 1" },
-  { src: "/clean_yard2.png", alt: "Clean yard 2" },
-  { src: "/clean_yard3.png", alt: "Clean yard 3" },
-  { src: "/clean_yard4.png", alt: "Clean yard 4" },
-  { src: "/clean_yard5.png", alt: "Clean yard 5" },
-  { src: "/cute_dog_clean_yard.png", alt: "Happy dog in clean yard" },
-  { src: "/yard_yardura_branded.png", alt: "Yardura branded yard" },
+  { src: '/clean_yard1.png', alt: 'Clean yard 1' },
+  { src: '/clean_yard2.png', alt: 'Clean yard 2' },
+  { src: '/clean_yard3.png', alt: 'Clean yard 3' },
+  { src: '/clean_yard4.png', alt: 'Clean yard 4' },
+  { src: '/clean_yard5.png', alt: 'Clean yard 5' },
+  { src: '/cute_dog_clean_yard.png', alt: 'Happy dog in clean yard' },
+  { src: '/yard_yardura_branded.png', alt: 'Yardura branded yard' },
 ];
 
 export default function YardCarousel() {
@@ -70,7 +70,7 @@ export default function YardCarousel() {
             aria-label={`Go to slide ${i + 1}`}
             onClick={() => setIndex(i)}
             className={`h-2.5 rounded-full transition-all ${
-              i === index ? "w-6 bg-brand-600" : "w-2.5 bg-slate-300"
+              i === index ? 'w-6 bg-brand-600' : 'w-2.5 bg-slate-300'
             }`}
           />
         ))}
@@ -78,5 +78,3 @@ export default function YardCarousel() {
     </div>
   );
 }
-
-

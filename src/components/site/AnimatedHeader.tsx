@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { motion, useScroll, useTransform, AnimatePresence, LayoutGroup } from "framer-motion";
-import { PhoneCall, Leaf, Menu, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useActiveSection } from "@/hooks/useActiveSection";
-import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
-import { track } from "@/lib/analytics";
-import { spring, dur } from "@/lib/motion/presets";
+import { useState, useEffect, useRef } from 'react';
+import { motion, useScroll, useTransform, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { PhoneCall, Leaf, Menu, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useActiveSection } from '@/hooks/useActiveSection';
+import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
+import { track } from '@/lib/analytics';
+import { spring, dur } from '@/lib/motion/presets';
 
 export default function AnimatedHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,7 +19,7 @@ export default function AnimatedHeader() {
   const { scrollY } = useScroll();
   const { prefersReducedMotion } = useReducedMotionSafe();
 
-  const sectionIds = ["hero", "services", "pricing", "insights", "eco", "faq"];
+  const sectionIds = ['hero', 'services', 'pricing', 'insights', 'eco', 'faq'];
   const activeId = useActiveSection(sectionIds);
 
   // Transform values for scroll-based animations
@@ -35,11 +35,11 @@ export default function AnimatedHeader() {
   });
 
   const navItems = [
-    { href: "#services", label: "Services", id: "services" },
-    { href: "#pricing", label: "Pricing", id: "pricing" },
-    { href: "#insights", label: "Insights", id: "insights" },
-    { href: "#eco", label: "Eco", id: "eco", icon: Leaf },
-    { href: "#faq", label: "FAQ", id: "faq" },
+    { href: '#services', label: 'Services', id: 'services' },
+    { href: '#pricing', label: 'Pricing', id: 'pricing' },
+    { href: '#insights', label: 'Insights', id: 'insights' },
+    { href: '#eco', label: 'Eco', id: 'eco', icon: Leaf },
+    { href: '#faq', label: 'FAQ', id: 'faq' },
   ];
 
   // Handle scroll-based header behavior
@@ -59,8 +59,8 @@ export default function AnimatedHeader() {
       lastScrollY.current = currentScrollY;
     };
 
-    window.addEventListener("scroll", updateScrollState, { passive: true });
-    return () => window.removeEventListener("scroll", updateScrollState);
+    window.addEventListener('scroll', updateScrollState, { passive: true });
+    return () => window.removeEventListener('scroll', updateScrollState);
   }, []);
 
   const handleMenuToggle = () => {
@@ -81,10 +81,10 @@ export default function AnimatedHeader() {
         style={{
           height: prefersReducedMotion ? 88 : headerHeight,
           y: prefersReducedMotion ? 0 : translateY,
-          backdropFilter: prefersReducedMotion ? "blur(6px)" : `blur(${backdropBlur}px)`,
+          backdropFilter: prefersReducedMotion ? 'blur(6px)' : `blur(${backdropBlur}px)`,
           opacity: prefersReducedMotion ? 0.95 : headerOpacity,
         }}
-        animate={prefersReducedMotion ? undefined : (isHidden ? "hidden" : "visible")}
+        animate={prefersReducedMotion ? undefined : isHidden ? 'hidden' : 'visible'}
         variants={headerVariants}
         transition={spring.soft}
       >
@@ -112,7 +112,7 @@ export default function AnimatedHeader() {
             <div>
               <motion.div
                 className="font-extrabold text-xl text-ink"
-                animate={{ fontSize: isScrolled ? "1.125rem" : "1.25rem" }}
+                animate={{ fontSize: isScrolled ? '1.125rem' : '1.25rem' }}
                 transition={{ duration: dur.fast }}
               >
                 Yardura
@@ -135,8 +135,8 @@ export default function AnimatedHeader() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "relative hover:text-accent transition-colors flex items-center gap-1 px-2 py-1 rounded-lg",
-                    activeId === item.id && "text-accent font-medium"
+                    'relative hover:text-accent transition-colors flex items-center gap-1 px-2 py-1 rounded-lg',
+                    activeId === item.id && 'text-accent font-medium'
                   )}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -157,11 +157,12 @@ export default function AnimatedHeader() {
 
             {/* Primary CTA */}
             <motion.a
-              href="/quote" data-analytics="cta_quote"
+              href="/quote"
+              data-analytics="cta_quote"
               className="px-6 py-2 rounded-xl bg-accent text-white hover:bg-accent/90 transition font-semibold shadow-soft"
               whileHover={{
                 scale: 1.02,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
               whileTap={{ scale: 0.98 }}
               transition={spring.snappy}
@@ -184,7 +185,7 @@ export default function AnimatedHeader() {
               className="px-4 py-2 rounded-xl bg-ink text-white hover:bg-accent transition shadow-soft"
               whileHover={{
                 scale: 1.02,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
               whileTap={{ scale: 0.98 }}
               transition={spring.snappy}
@@ -196,7 +197,7 @@ export default function AnimatedHeader() {
           {/* Mobile Navigation Toggle */}
           <div className="md:hidden flex items-center gap-2">
             <motion.a
-              href="tel:+16125819812"
+              href="tel:+18889159273"
               data-analytics="header_phone_call"
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-accent text-white"
               whileHover={{ scale: 1.02 }}
@@ -207,7 +208,8 @@ export default function AnimatedHeader() {
             </motion.a>
 
             <motion.a
-              href="/quote" data-analytics="cta_quote"
+              href="/quote"
+              data-analytics="cta_quote"
               className="px-4 py-2 rounded-xl bg-accent text-white font-semibold shadow-soft"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -219,7 +221,7 @@ export default function AnimatedHeader() {
             <motion.button
               onClick={handleMenuToggle}
               className="p-2 rounded-lg hover:bg-accent-soft transition-colors"
-              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={isMenuOpen}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -227,7 +229,7 @@ export default function AnimatedHeader() {
             >
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={isMenuOpen ? "close" : "open"}
+                  key={isMenuOpen ? 'close' : 'open'}
                   initial={{ rotate: -90, opacity: 0 }}
                   animate={{ rotate: 0, opacity: 1 }}
                   exit={{ rotate: 90, opacity: 0 }}
@@ -248,7 +250,7 @@ export default function AnimatedHeader() {
               role="dialog"
               aria-modal="true"
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
+              animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={spring.soft}
             >
@@ -258,8 +260,8 @@ export default function AnimatedHeader() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "block px-3 py-2 rounded-lg hover:bg-accent-soft hover:text-accent transition-colors flex items-center gap-2",
-                      activeId === item.id && "bg-accent-soft text-accent font-medium"
+                      'block px-3 py-2 rounded-lg hover:bg-accent-soft hover:text-accent transition-colors flex items-center gap-2',
+                      activeId === item.id && 'bg-accent-soft text-accent font-medium'
                     )}
                     onClick={() => setIsMenuOpen(false)}
                     initial={{ x: -20, opacity: 0 }}
@@ -279,7 +281,8 @@ export default function AnimatedHeader() {
                   transition={{ delay: 0.2, ...spring.soft }}
                 >
                   <motion.a
-                    href="/quote" data-analytics="cta_quote"
+                    href="/quote"
+                    data-analytics="cta_quote"
                     className="block px-3 py-3 rounded-xl bg-accent text-white hover:bg-accent/90 transition shadow-soft text-center font-semibold"
                     onClick={() => setIsMenuOpen(false)}
                     whileHover={{ scale: 1.02 }}

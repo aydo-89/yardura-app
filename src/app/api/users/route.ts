@@ -1,18 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
-import { Resend } from 'resend'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { safeGetServerSession } from '@/lib/auth';
+import { authOptions } from '@/lib/auth';
+import { Resend } from 'resend';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = (await safeGetServerSession(authOptions as any)) as {
+      user?: { id?: string; email?: string };
+    } | null;
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { address, city, zipCode, phone } = await request.json()
+    const { address, city, zipCode, phone } = await request.json();
 
     // Update user profile
     const user = await prisma.user.update({
@@ -31,39 +33,44 @@ export async function POST(request: NextRequest) {
         city: true,
         zipCode: true,
         phone: true,
-      }
-    })
+      },
+    });
 
     // Send signup notification email
     try {
       if (process.env.RESEND_API_KEY) {
-        const resend = new Resend(process.env.RESEND_API_KEY)
-        const envTo = process.env.CONTACT_TO_EMAIL || 'ayden@yardura.com,austyn@yardura.com'
-        const recipients = envTo.split(',').map((e) => e.trim()).filter(Boolean)
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const envTo = process.env.CONTACT_TO_EMAIL || 'ayden@yardura.com,austyn@yardura.com';
+        const recipients = envTo
+          .split(',')
+          .map((e) => e.trim())
+          .filter(Boolean);
         await resend.emails.send({
           from: 'Yardura <notifications@yardura.com>',
           to: recipients,
           subject: 'New Yardura Signup',
           text: `New user signup\n\nName: ${user.name || ''}\nEmail: ${user.email}\nPhone: ${user.phone || phone || ''}\nAddress: ${user.address || address || ''}, ${user.city || city || ''} ${user.zipCode || zipCode || ''}`,
-        })
+        });
       }
     } catch (err) {
-      console.error('Signup notification email failed', err)
+      console.error('Signup notification email failed', err);
     }
 
-    return NextResponse.json({ user })
+    return NextResponse.json({ user });
   } catch (error) {
-    console.error('Error updating user:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error updating user:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = (await safeGetServerSession(authOptions as any)) as {
+      user?: { id?: string; email?: string };
+    } | null;
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -72,18 +79,18 @@ export async function GET(request: NextRequest) {
         dogs: true,
         serviceVisits: {
           orderBy: { scheduledDate: 'desc' },
-          take: 5
+          take: 5,
         },
         dataReadings: {
           orderBy: { timestamp: 'desc' },
-          take: 10
-        }
-      }
-    })
+          take: 10,
+        },
+      },
+    });
 
-    return NextResponse.json({ user })
+    return NextResponse.json({ user });
   } catch (error) {
-    console.error('Error fetching user:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error fetching user:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

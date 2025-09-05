@@ -1,30 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
-import { getServerSession } from 'next-auth';
+import { safeGetServerSession } from '@/lib/auth';
 import { authOptions } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions as any) as { user?: { email?: string } } | null;
-    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-    if (!session || !session.user || !session.user.email || !adminEmails.includes(session.user.email.toLowerCase())) {
+    const session = (await safeGetServerSession(authOptions as any)) as {
+      user?: { email?: string };
+    } | null;
+    const adminEmails = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (
+      !session ||
+      !session.user ||
+      !session.user.email ||
+      !adminEmails.includes(session.user.email.toLowerCase())
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const { visitId, action, newDate, reason } = await request.json();
 
     if (!visitId || !action) {
-      return NextResponse.json(
-        { error: 'Visit ID and action are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Visit ID and action are required' }, { status: 400 });
     }
 
     const visit = await db.getServiceVisit(visitId);
     if (!visit) {
-      return NextResponse.json(
-        { error: 'Service visit not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Service visit not found' }, { status: 404 });
     }
 
     if (visit.status === 'completed') {
@@ -36,10 +40,7 @@ export async function POST(request: NextRequest) {
 
     const customer = await db.getCustomer(visit.customerId);
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Customer not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
     if (action === 'cancel') {
@@ -57,7 +58,6 @@ export async function POST(request: NextRequest) {
         message: 'Service visit cancelled successfully',
         visitId: visit.id,
       });
-
     } else if (action === 'reschedule') {
       if (!newDate) {
         return NextResponse.json(
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: `New date must be on customer's service day (${customer.serviceDay})`,
-            suggestedDate: calculateNextValidDate(customer.serviceDay, newServiceDate)
+            suggestedDate: calculateNextValidDate(customer.serviceDay, newServiceDate),
           },
           { status: 400 }
         );
@@ -104,20 +104,15 @@ export async function POST(request: NextRequest) {
         visitId: visit.id,
         newDate: newServiceDate,
       });
-
     } else {
       return NextResponse.json(
         { error: 'Invalid action. Must be "cancel" or "reschedule"' },
         { status: 400 }
       );
     }
-
   } catch (error) {
     console.error('Cancel/reschedule error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process request' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }
 }
 

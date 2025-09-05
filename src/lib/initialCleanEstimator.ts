@@ -6,25 +6,28 @@ export type YardSize = 'small' | 'medium' | 'large' | 'xl';
 export type DogCount = 1 | 2 | 3 | 4;
 
 // Default configuration - can be overridden by admin (DoodyCalls style)
-const DEFAULT_BUCKET_CONFIG: Record<CleanupBucket, { multiplier: number; floorCents: number; label: string }> = {
-  '7': { multiplier: 1.00, floorCents: 0, label: 'Today / ≤ 7 days (Well maintained)' },
-  '14': { multiplier: 1.25, floorCents: 4900, label: '< 2 weeks (It\'s spotless)' },
-  '30': { multiplier: 1.25, floorCents: 4900, label: 'Legacy - 15-30 days' }, // For backward compatibility
-  '42': { multiplier: 1.75, floorCents: 6900, label: '2–6 weeks (It\'s pretty neglected)' },
+const DEFAULT_BUCKET_CONFIG: Record<
+  CleanupBucket,
+  { multiplier: number; floorCents: number; label: string }
+> = {
+  '7': { multiplier: 1.0, floorCents: 4900, label: 'Today / ≤ 7 days (Well maintained)' },
+  '14': { multiplier: 1.0, floorCents: 4900, label: '≤ 2 weeks (Well maintained)' },
+  '30': { multiplier: 1.0, floorCents: 4900, label: 'Legacy - 15-30 days' }, // For backward compatibility
+  '42': { multiplier: 1.75, floorCents: 6900, label: "2–6 weeks (It's pretty neglected)" },
   '60': { multiplier: 1.75, floorCents: 6900, label: 'Legacy - 31-60 days' }, // For backward compatibility
   '90': { multiplier: 1.75, floorCents: 6900, label: 'Legacy - 61-90 days' }, // For backward compatibility
-  '999': { multiplier: 2.25, floorCents: 8900, label: '> 6 weeks (Watch your step!)' }
+  '999': { multiplier: 2.5, floorCents: 8900, label: '> 6 weeks (Watch your step!)' },
 };
 
 // Yard and dog adjustments
 const YARD_DOG_ADJUSTMENTS = {
-  small: 0.90,  // -10% for small yards
-  large: 1.05,  // +5% for large yards
-  xl: 1.10,     // +10% for extra large yards
-  dogs1: 0.95,  // -5% for 1 dog
-  dogs2: 1.0,   // No adjustment for 2 dogs (baseline)
-  dogs3: 1.05,  // +5% for 3 dogs
-  dogs4: 1.10   // +10% for 4 dogs
+  small: 0.9, // -10% for small yards
+  large: 1.05, // +5% for large yards
+  xl: 1.1, // +10% for extra large yards
+  dogs1: 0.95, // -5% for 1 dog
+  dogs2: 1.0, // No adjustment for 2 dogs (baseline)
+  dogs3: 1.05, // +5% for 3 dogs
+  dogs4: 1.1, // +10% for 4 dogs
 };
 
 export interface InitialCleanConfig {
@@ -37,8 +40,10 @@ export interface InitialCleanEstimate {
   bucket: CleanupBucket;
   breakdown: {
     basePerVisitCents: number;
+    initialCleanFactor: number;
     bucketMultiplier: number;
-    yardDogAdjustment: number;
+    additionalAreas: number;
+    additionalAreaCost: number;
     floorCents: number;
     finalAmount: number;
   };
@@ -48,7 +53,7 @@ export interface InitialCleanEstimate {
 export function getDefaultConfig(): InitialCleanConfig {
   return {
     buckets: { ...DEFAULT_BUCKET_CONFIG },
-    yardDogAdj: { ...YARD_DOG_ADJUSTMENTS }
+    yardDogAdj: { ...YARD_DOG_ADJUSTMENTS },
   };
 }
 
@@ -58,42 +63,51 @@ export function calculateInitialClean(
   bucket: CleanupBucket,
   dogs: DogCount,
   yardSize: YardSize,
+  areasToClean: {
+    frontYard?: boolean;
+    backYard?: boolean;
+    sideYard?: boolean;
+    dogRun?: boolean;
+    fencedArea?: boolean;
+    other?: string;
+  } = {},
   config: InitialCleanConfig = getDefaultConfig()
 ): InitialCleanEstimate {
   const bucketConfig = config.buckets[bucket];
 
-  // Calculate base amount from per-visit pricing and bucket multiplier
-  const baseAmount = perVisitCents * bucketConfig.multiplier;
+  // Unified initial clean: start from weekly per-visit base (dogs + yard only),
+  // apply initial-clean factor, then bucket multiplier
+  const INITIAL_CLEAN_FACTOR = 2.7222; // Adjusted to hit $49.00 exactly for baseline
+  const baseInitial = Math.round(perVisitCents * INITIAL_CLEAN_FACTOR);
+  const bucketApplied = Math.round(baseInitial * bucketConfig.multiplier);
 
-  // Apply yard and dog adjustments
-  let yardDogAdjustment = 1.0;
+  // Calculate additional areas cost for initial clean (+$5 per extra area)
+  const selectedAreas = Object.values(areasToClean).filter(
+    (value) => typeof value === 'boolean' && value
+  ).length;
+  const hasOtherArea = areasToClean.other && areasToClean.other.trim() !== '';
+  const totalSelectedAreas = selectedAreas + (hasOtherArea ? 1 : 0);
+  const additionalAreas = Math.max(0, totalSelectedAreas - 1); // Subtract 1 for the base area
+  const additionalAreaCost = additionalAreas * 500; // $5 per additional area in cents
 
-  // Yard size adjustments
-  if (yardSize === 'small') yardDogAdjustment *= config.yardDogAdj.small;
-  if (yardSize === 'large') yardDogAdjustment *= config.yardDogAdj.large;
-  if (yardSize === 'xl') yardDogAdjustment *= config.yardDogAdj.xl;
-
-  // Dog count adjustments
-  if (dogs === 1) yardDogAdjustment *= config.yardDogAdj.dogs1;
-  if (dogs === 2) yardDogAdjustment *= config.yardDogAdj.dogs2;
-  if (dogs === 3) yardDogAdjustment *= config.yardDogAdj.dogs3;
-  if (dogs === 4) yardDogAdjustment *= config.yardDogAdj.dogs4;
-
-  const adjustedAmount = baseAmount * yardDogAdjustment;
+  // Total including areas
+  const totalBaseAmount = bucketApplied + additionalAreaCost;
 
   // Apply floor price
-  const finalAmount = Math.max(Math.round(adjustedAmount), bucketConfig.floorCents);
+  const finalAmount = Math.max(Math.round(totalBaseAmount), bucketConfig.floorCents);
 
   return {
     initialCleanCents: finalAmount,
     bucket,
     breakdown: {
       basePerVisitCents: perVisitCents,
+      initialCleanFactor: INITIAL_CLEAN_FACTOR,
       bucketMultiplier: bucketConfig.multiplier,
-      yardDogAdjustment,
+      additionalAreas,
+      additionalAreaCost,
       floorCents: bucketConfig.floorCents,
-      finalAmount
-    }
+      finalAmount,
+    },
   };
 }
 
@@ -114,7 +128,10 @@ export function formatInitialCleanPrice(cents: number): string {
 }
 
 // Get bucket label
-export function getBucketLabel(bucket: CleanupBucket, config: InitialCleanConfig = getDefaultConfig()): string {
+export function getBucketLabel(
+  bucket: CleanupBucket,
+  config: InitialCleanConfig = getDefaultConfig()
+): string {
   return config.buckets[bucket].label;
 }
 

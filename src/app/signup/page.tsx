@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -48,13 +48,17 @@ export default function SignUpPage() {
 
       // Set dogs from quote
       if (parsed.dogs) {
-        setDogs(Array(parsed.dogs).fill(null).map((_, i) => ({
-          id: Date.now().toString() + i,
-          name: `Dog ${i + 1}`,
-          breed: '',
-          age: '',
-          weight: ''
-        })));
+        setDogs(
+          Array(parsed.dogs)
+            .fill(null)
+            .map((_, i) => ({
+              id: Date.now().toString() + i,
+              name: `Dog ${i + 1}`,
+              breed: '',
+              age: '',
+              weight: '',
+            }))
+        );
       }
     }
   }, []);
@@ -73,37 +77,38 @@ export default function SignUpPage() {
   const [yardSize, setYardSize] = useState('medium');
   const [daysSinceLastClean, setDaysSinceLastClean] = useState('');
   const [serviceType, setServiceType] = useState<'subscription' | 'one-time'>('subscription');
-  const [frequency, setFrequency] = useState<'weekly' | 'twice-weekly' | 'bi-weekly' | 'one-time'>('weekly');
+  const [frequency, setFrequency] = useState<'weekly' | 'twice-weekly' | 'bi-weekly' | 'one-time'>(
+    'weekly'
+  );
   const [preferredDay, setPreferredDay] = useState('Tuesday');
   const [preferredTime, setPreferredTime] = useState('Morning');
 
   // Dogs
-  const [dogs, setDogs] = useState<Dog[]>([
-    { id: '1', name: '', breed: '', age: '', weight: '' }
-  ]);
+  const [dogs, setDogs] = useState<Dog[]>([{ id: '1', name: '', breed: '', age: '', weight: '' }]);
 
   const addDog = () => {
     if (dogs.length < 8) {
-      setDogs([...dogs, {
-        id: Date.now().toString(),
-        name: '',
-        breed: '',
-        age: '',
-        weight: ''
-      }]);
+      setDogs([
+        ...dogs,
+        {
+          id: Date.now().toString(),
+          name: '',
+          breed: '',
+          age: '',
+          weight: '',
+        },
+      ]);
     }
   };
 
   const removeDog = (id: string) => {
     if (dogs.length > 1) {
-      setDogs(dogs.filter(dog => dog.id !== id));
+      setDogs(dogs.filter((dog) => dog.id !== id));
     }
   };
 
   const updateDog = (id: string, field: keyof Dog, value: string) => {
-    setDogs(dogs.map(dog =>
-      dog.id === id ? { ...dog, [field]: value } : dog
-    ));
+    setDogs(dogs.map((dog) => (dog.id === id ? { ...dog, [field]: value } : dog)));
   };
 
   const handleSignUp = async () => {
@@ -137,19 +142,21 @@ export default function SignUpPage() {
           zipCode,
           yardSize,
           daysSinceLastClean: parseInt(daysSinceLastClean || '0'),
-          dogs: dogs.filter(d => d.name.trim()).map(dog => ({
-            name: dog.name,
-            breed: dog.breed || null,
-            age: dog.age ? parseInt(dog.age) : null,
-            weight: dog.weight ? parseFloat(dog.weight) : null,
-          })),
+          dogs: dogs
+            .filter((d) => d.name.trim())
+            .map((dog) => ({
+              name: dog.name,
+              breed: dog.breed || null,
+              age: dog.age ? parseInt(dog.age) : null,
+              weight: dog.weight ? parseFloat(dog.weight) : null,
+            })),
           servicePreferences: {
             serviceType,
             frequency,
             preferredDay,
-            preferredTime
-          }
-        })
+            preferredTime,
+          },
+        }),
       });
 
       if (!createAccountResponse.ok) {
@@ -180,7 +187,9 @@ export default function SignUpPage() {
       <div className="container max-w-2xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-ink mb-4">Create Your Yardura Account</h1>
-          <p className="text-slate-600">Join thousands of dog owners getting better insights and cleaner yards</p>
+          <p className="text-slate-600">
+            Join thousands of dog owners getting better insights and cleaner yards
+          </p>
           {quoteData && (
             <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-brand-50 border border-brand-200 rounded-lg">
               <span className="text-sm text-brand-700">Quote: ${quoteData.estimate} per visit</span>
@@ -244,11 +253,7 @@ export default function SignUpPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
+                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="address">Address *</Label>
@@ -264,11 +269,7 @@ export default function SignUpPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                  />
+                  <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="zipCode">ZIP Code *</Label>
@@ -343,9 +344,13 @@ export default function SignUpPage() {
                     onChange={(e) => setPreferredDay(e.target.value)}
                     className="w-full border border-brand-300 rounded-xl p-3"
                   >
-                    {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(
+                      (d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      )
+                    )}
                   </select>
                 </div>
                 <div>
@@ -355,8 +360,10 @@ export default function SignUpPage() {
                     onChange={(e) => setPreferredTime(e.target.value)}
                     className="w-full border border-brand-300 rounded-xl p-3"
                   >
-                    {['Morning','Midday','Afternoon'].map(t => (
-                      <option key={t} value={t}>{t}</option>
+                    {['Morning', 'Midday', 'Afternoon'].map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -373,7 +380,9 @@ export default function SignUpPage() {
           <Card>
             <CardHeader>
               <CardTitle>Service Setup & Payment</CardTitle>
-              <p className="text-sm text-slate-600">Complete your service setup and payment information</p>
+              <p className="text-sm text-slate-600">
+                Complete your service setup and payment information
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Service Summary */}
@@ -382,7 +391,10 @@ export default function SignUpPage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-slate-600">Service:</span>
-                    <div className="font-medium">{dogs.filter(d => d.name.trim()).length || 1} dog{dogs.filter(d => d.name.trim()).length > 1 ? 's' : ''}, {yardSize} yard</div>
+                    <div className="font-medium">
+                      {dogs.filter((d) => d.name.trim()).length || 1} dog
+                      {dogs.filter((d) => d.name.trim()).length > 1 ? 's' : ''}, {yardSize} yard
+                    </div>
                   </div>
                   <div>
                     <span className="text-slate-600">Frequency:</span>
@@ -403,10 +415,21 @@ export default function SignUpPage() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-2">How Billing Works</h4>
                 <div className="text-sm text-blue-800 space-y-2">
-                  <p>✓ <strong>No upfront payment required</strong> - We only charge after service completion</p>
-                  <p>✓ <strong>Deferred billing</strong> - Payment is collected automatically after each visit</p>
-                  <p>✓ <strong>Flexible scheduling</strong> - Cancel/reschedule anytime without penalties</p>
-                  <p>✓ <strong>Transparent pricing</strong> - Only pay for services actually provided</p>
+                  <p>
+                    ✓ <strong>No upfront payment required</strong> - We only charge after service
+                    completion
+                  </p>
+                  <p>
+                    ✓ <strong>Deferred billing</strong> - Payment is collected automatically after
+                    each visit
+                  </p>
+                  <p>
+                    ✓ <strong>Flexible scheduling</strong> - Cancel/reschedule anytime without
+                    penalties
+                  </p>
+                  <p>
+                    ✓ <strong>Transparent pricing</strong> - Only pay for services actually provided
+                  </p>
                 </div>
               </div>
 
@@ -418,8 +441,10 @@ export default function SignUpPage() {
                   onChange={(e) => setPreferredDay(e.target.value)}
                   className="w-full border border-brand-300 rounded-xl p-3 mt-2"
                 >
-                  {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(d => (
-                    <option key={d} value={d}>{d}</option>
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
                   ))}
                 </select>
                 <p className="text-xs text-slate-500 mt-1">
@@ -435,8 +460,10 @@ export default function SignUpPage() {
                   onChange={(e) => setPreferredTime(e.target.value)}
                   className="w-full border border-brand-300 rounded-xl p-3 mt-2"
                 >
-                  {['Morning','Midday','Afternoon'].map(t => (
-                    <option key={t} value={t}>{t}</option>
+                  {['Morning', 'Midday', 'Afternoon'].map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -444,7 +471,9 @@ export default function SignUpPage() {
               {/* Dog Information */}
               <div>
                 <Label className="text-base font-medium">Quick Dog Info (Optional)</Label>
-                <p className="text-xs text-slate-500 mb-3">Help us provide better service by telling us about your dogs</p>
+                <p className="text-xs text-slate-500 mb-3">
+                  Help us provide better service by telling us about your dogs
+                </p>
 
                 {dogs.map((dog, index) => (
                   <div key={dog.id} className="border rounded-lg p-3 mb-3">
@@ -489,14 +518,18 @@ export default function SignUpPage() {
           <Card>
             <CardHeader>
               <CardTitle>Payment Setup</CardTitle>
-              <p className="text-sm text-slate-600">Add your payment method to complete your account setup</p>
+              <p className="text-sm text-slate-600">
+                Add your payment method to complete your account setup
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Service Summary */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-semibold text-green-900 mb-2">Service Confirmed</h4>
                 <div className="text-sm text-green-800 space-y-1">
-                  <p>📅 {frequency.replace('-', ' ')} service on {preferredDay}s</p>
+                  <p>
+                    📅 {frequency.replace('-', ' ')} service on {preferredDay}s
+                  </p>
                   <p>⏰ Preferred time: {preferredTime}</p>
                   <p>🏠 {city} service area</p>
                   <p>💰 ${quoteData?.estimate || '25'} per completed visit</p>
@@ -507,15 +540,28 @@ export default function SignUpPage() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <h4 className="font-semibold text-amber-900 mb-2">💳 How Your Payment Works</h4>
                 <div className="text-sm text-amber-800 space-y-2">
-                  <p>1. <strong>We save your payment method</strong> - No charge today</p>
-                  <p>2. <strong>Service completion</strong> - We perform your scheduled service</p>
-                  <p>3. <strong>Automatic billing</strong> - You're charged after each completed visit</p>
-                  <p>4. <strong>Full control</strong> - Cancel/reschedule anytime without charges</p>
+                  <p>
+                    1. <strong>We save your payment method</strong> - No charge today
+                  </p>
+                  <p>
+                    2. <strong>Service completion</strong> - We perform your scheduled service
+                  </p>
+                  <p>
+                    3. <strong>Automatic billing</strong> - You're charged after each completed
+                    visit
+                  </p>
+                  <p>
+                    4. <strong>Full control</strong> - Cancel/reschedule anytime without charges
+                  </p>
                 </div>
               </div>
 
               <div className="flex gap-4">
-                <Button variant="outline" onClick={() => setShowPaymentSetup(false)} className="flex-1">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPaymentSetup(false)}
+                  className="flex-1"
+                >
                   Back to Service Setup
                 </Button>
                 <Button onClick={handleSignUp} disabled={loading} className="flex-1">

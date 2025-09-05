@@ -101,3 +101,4 @@ Performance risks
 - <img> instead of Next/Image for hero and others
 - Missing width/height may cause CLS; ensure eager only for LCP image
 - Keep motion subtle; respect prefers-reduced-motion
+

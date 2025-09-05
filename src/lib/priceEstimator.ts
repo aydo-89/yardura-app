@@ -1,6 +1,8 @@
 // Pricing estimator for Yardura dog waste removal services
 // Based on competitor research and positioning strategy
 
+import { mapDateToBucket, calculateInitialClean } from './initialCleanEstimator';
+
 export type Frequency = 'weekly' | 'biweekly' | 'twice-weekly' | 'monthly' | 'onetime';
 export type YardSize = 'small' | 'medium' | 'large' | 'xl';
 export type DogCount = 1 | 2 | 3 | 4;
@@ -38,7 +40,7 @@ export interface QuoteInput {
     deodorizeMode?: 'first-visit' | 'each-visit' | 'every-other' | 'onetime';
     sprayDeck?: boolean;
     sprayDeckMode?: 'first-visit' | 'each-visit' | 'onetime';
-    divertMode?: 'none' | '50' | '100';
+    divertMode?: 'none' | 'takeaway' | '25' | '50' | '100';
   };
 
   // Cleanup timing
@@ -47,7 +49,7 @@ export interface QuoteInput {
   initialClean?: boolean;
   premiumOnboarding?: PremiumOnboarding;
 
-  // Areas to clean (DoodyCalls inspired)
+  // Areas to clean ( inspired)
   areasToClean?: {
     frontYard?: boolean;
     backYard?: boolean;
@@ -65,7 +67,7 @@ export interface QuoteInput {
     title?: string; // Added for commercial contacts
   };
 
-  // Lead source (DoodyCalls inspired)
+  // Lead source ( inspired)
   howDidYouHear?: string;
 
   // Scheduling preferences
@@ -81,7 +83,7 @@ export interface QuoteInput {
     specialNotes?: string;
   };
 
-  // Special instructions (DoodyCalls inspired)
+  // Special instructions ( inspired)
   specialInstructions?: string;
 
   // Commercial details
@@ -105,56 +107,56 @@ const BASE_PRICES: Record<DogCount, number> = {
 
 // Yard size adders in cents (medium is baseline)
 const YARD_ADDERS: Record<YardSize, number> = {
-  small: -200,  // -$2.00 (smaller yard discount)
-  medium: 0,    // baseline
-  large: 400,   // +$4.00
-  xl: 800,      // +$8.00
+  small: -200, // -$2.00 (smaller yard discount)
+  medium: 0, // baseline
+  large: 400, // +$4.00
+  xl: 800, // +$8.00
 };
 
 // Frequency multipliers
 const FREQUENCY_MULTIPLIERS: Record<Frequency, number> = {
-  'weekly': 1.0,
-  'biweekly': 1.25,     // Higher per-visit due to accumulation
-  'twice-weekly': 0.9,  // Slight discount for route density
-  'monthly': 1.5,       // Highest per-visit due to accumulation
-  'onetime': 1.0,       // Same as weekly for single service
+  weekly: 1.0,
+  biweekly: 1.25, // Higher per-visit due to accumulation
+  'twice-weekly': 0.9, // Slight discount for route density
+  monthly: 1.5, // Highest per-visit due to accumulation
+  onetime: 1.0, // Same as weekly for single service
 };
 
 // Add-on prices in cents
 const ADD_ON_PRICES = {
-  deodorize: 2500,  // +$25.00 (DoodyCalls pricing)
-  sprayDeck: 1200,  // +$12.00 (DoodyCalls pricing)
-  takeaway: 300,    // +$3.00 per visit for basic take away (DoodyCalls pricing)
-  divert25: 100,    // +$1.00 per visit for 25% diversion
-  divert50: 200,    // +$2.00 per visit for 50% diversion
-  divert100: 600,   // +$6.00 per visit for 100% diversion
+  deodorize: 2500, // +$25.00 per visit
+  sprayDeck: 1200, // +$12.00
+  takeaway: 200, // +$2.00 per visit for basic take away
+  divert25: 400, // +$4.00 per visit for 25% diversion
+  divert50: 600, // +$6.00 per visit for 50% diversion
+  divert100: 1000, // +$10.00 per visit for 100% diversion
 };
 
 // One-time service base pricing (competitive with $89-100 market)
 const ONE_TIME_BASE_PRICES = {
-  small: 8900,   // $89 - small yards
-  medium: 9900,  // $99 - medium yards (most common)
-  large: 11900,  // $119 - large yards
-  xl: 14900      // $149 - extra large yards
+  small: 4900, // $49 - small yards
+  medium: 6900, // $69 - medium yards (most common)
+  large: 8900, // $89 - large yards
+  xl: 11900, // $119 - extra large yards
 };
 
-// Deep clean assessment multipliers based on time since last cleanup (DoodyCalls style)
+// Deep clean assessment multipliers based on time since last cleanup ( style)
 const DEEP_CLEAN_MULTIPLIERS: Record<number, number> = {
-  7: 1.0,    // < 2 weeks - well maintained, minimal accumulation ($89-149)
-  21: 1.15,  // 2-6 weeks - moderate accumulation, needs attention ($102-171)
-  60: 1.25,  // 1-3 months - significant accumulation ($111-186)
-  90: 1.35,  // 3+ months - major deep clean recommended ($120-201)
+  7: 1.0, // < 2 weeks - well maintained, minimal accumulation ($89-149)
+  21: 1.15, // 2-6 weeks - moderate accumulation, needs attention ($102-171)
+  60: 1.25, // 1-3 months - significant accumulation ($111-186)
+  90: 1.35, // 3+ months - major deep clean recommended ($120-201)
   // Legacy values for backward compatibility
-  14: 1.1,   // 1-2 weeks - moderate accumulation ($98-164)
-  30: 1.15,  // 2-4 weeks - significant accumulation ($102-171)
-  999: 1.5   // Over 3 months - extreme accumulation ($134-224)
+  14: 1.1, // 1-2 weeks - moderate accumulation ($98-164)
+  30: 1.15, // 2-4 weeks - significant accumulation ($102-171)
+  999: 1.5, // Over 3 months - extreme accumulation ($134-224)
 };
 
 // Premium onboarding options in cents
 export const PREMIUM_ONBOARDING_PRICES: Record<PremiumOnboarding, number> = {
-  'none': 0,
-  'essential': 9900,        // $99.00
-  'premium-dna': 24900,     // $249.00
+  none: 0,
+  essential: 9900, // $99.00
+  'premium-dna': 24900, // $249.00
   'wellness-microbiome': 34900, // $349.00
 };
 
@@ -176,22 +178,25 @@ export function estimatePerVisitCents(
 
 /**
  * Calculate visits per month based on frequency
- * Uses minimum visits (rounded down) for conservative pricing
+ * Uses calendar-based calculation for accurate monthly pricing
  */
 export function visitsPerMonth(frequency: Frequency): number {
   switch (frequency) {
     case 'twice-weekly':
-      return 8; // Minimum 8 visits per month
+      // 2 visits per week * 52 weeks / 12 months = 8.67 visits per month
+      return Math.round((2 * 52) / 12 * 100) / 100; // 8.67
     case 'weekly':
-      return 4; // Minimum 4 visits per month
+      // 1 visit per week * 52 weeks / 12 months = 4.33 visits per month
+      return Math.round((1 * 52) / 12 * 100) / 100; // 4.33
     case 'biweekly':
-      return 2; // Minimum 2 visits per month
+      // 1 visit per 2 weeks = 0.5 visits per week * 52 weeks / 12 months = 2.17 visits per month
+      return Math.round((0.5 * 52) / 12 * 100) / 100; // 2.17
     case 'monthly':
       return 1; // 1 visit per month
     case 'onetime':
-      return 1;  // One-time service
+      return 1; // One-time service
     default:
-      return 4;
+      return Math.round((1 * 52) / 12 * 100) / 100; // 4.33
   }
 }
 
@@ -201,17 +206,20 @@ export function visitsPerMonth(frequency: Frequency): number {
 export function getVisitRange(frequency: Frequency): { min: number; max: number; average: number } {
   switch (frequency) {
     case 'twice-weekly':
-      return { min: 8, max: 9, average: 8.7 };
+      // 2 visits/week * 52 weeks = 104 visits/year / 12 months = ~8.67 visits/month
+      return { min: 8, max: 9, average: 8.67 };
     case 'weekly':
-      return { min: 4, max: 5, average: 4.3 };
+      // 1 visit/week * 52 weeks = 52 visits/year / 12 months = ~4.33 visits/month
+      return { min: 4, max: 5, average: 4.33 };
     case 'biweekly':
-      return { min: 2, max: 3, average: 2.2 };
+      // 0.5 visits/week * 52 weeks = 26 visits/year / 12 months = ~2.17 visits/month
+      return { min: 2, max: 3, average: 2.17 };
     case 'monthly':
       return { min: 1, max: 1, average: 1 };
     case 'onetime':
       return { min: 1, max: 1, average: 1 };
     default:
-      return { min: 4, max: 5, average: 4.3 };
+      return { min: 4, max: 5, average: 4.33 };
   }
 }
 
@@ -219,26 +227,26 @@ export function getVisitRange(frequency: Frequency): { min: number; max: number;
  * Get calendar-aware pricing explanation
  */
 export function getCalendarPricingNote(frequency: Frequency): string {
-  if (frequency === 'onetime') return '';
+  if (frequency === 'onetime' || frequency === 'monthly') return '';
 
   const range = getVisitRange(frequency);
   if (range.min === range.max) return '';
 
-  return `Due to calendar variations, you may have ${range.min}-${range.max} visits per month. Pricing is based on ${range.min} visits for your protection.`;
+  return `Pricing is calculated using the annual average of ${range.average} visits per month for fair and consistent billing.`;
 }
 
 /**
- * Calculate projected monthly cost in cents
+ * Calculate projected monthly cost in cents using calendar-based calculation
  */
 export function projectedMonthlyCents(
   perVisitCents: number,
   frequency: Frequency,
   addOns: { deodorize?: boolean } = {}
 ): number {
-  // Deodorize is applied per visit, so multiply by visits per month
-  const deodorizeCostPerVisit = addOns.deodorize ? ADD_ON_PRICES.deodorize : 0;
-
-  return (perVisitCents + deodorizeCostPerVisit) * visitsPerMonth(frequency);
+  // Note: perVisitCents already includes deodorize cost, so don't add it again
+  // This function should only handle the base calculation without add-ons
+  const averageVisitsPerMonth = visitsPerMonth(frequency);
+  return Math.round(perVisitCents * averageVisitsPerMonth);
 }
 
 /**
@@ -279,8 +287,8 @@ export function getPricingBreakdown(
       basePrice: BASE_PRICES[dogs as DogCount] || BASE_PRICES[4] + (dogs - 4) * 200,
       yardAdder: YARD_ADDERS[yardSize],
       frequencyMultiplier: FREQUENCY_MULTIPLIERS[frequency],
-      addOnCents: (addOns.deodorize ? ADD_ON_PRICES.deodorize : 0),
-    }
+      addOnCents: addOns.deodorize ? ADD_ON_PRICES.deodorize : 0,
+    },
   };
 }
 
@@ -337,7 +345,13 @@ export function calculatePrice(input: {
   dogs: number;
   yardSize: YardSize;
   frequency: Frequency;
-  addons?: { deodorize?: boolean };
+  addons?: {
+    deodorize?: boolean;
+    deodorizeMode?: 'first-visit' | 'each-visit' | 'every-other' | 'onetime';
+    sprayDeck?: boolean;
+    sprayDeckMode?: 'first-visit' | 'each-visit' | 'onetime';
+    divertMode?: 'none' | 'takeaway' | '25' | '50' | '100';
+  };
   initialClean?: boolean;
   premiumOnboarding?: PremiumOnboarding;
   deepCleanAssessment?: {
@@ -349,10 +363,22 @@ export function calculatePrice(input: {
   address?: string;
   lastCleanedBucket?: string;
   lastCleanedDate?: string;
+  areasToClean?: {
+    frontYard?: boolean;
+    backYard?: boolean;
+    sideYard?: boolean;
+    dogRun?: boolean;
+    fencedArea?: boolean;
+    other?: string;
+  };
 }) {
   // Check for commercial properties
-  const isCommercialProperty = input.propertyType === 'commercial' ||
-    (input.address && /park|hotel|motel|apartment|condo|business|office|store|restaurant|school|church|community|facility/i.test(input.address));
+  const isCommercialProperty =
+    input.propertyType === 'commercial' ||
+    (input.address &&
+      /park|hotel|motel|apartment|condo|business|office|store|restaurant|school|church|community|facility/i.test(
+        input.address
+      ));
 
   if (isCommercialProperty) {
     return {
@@ -368,7 +394,8 @@ export function calculatePrice(input: {
         addOnCents: 0,
       },
       requiresCustomQuote: true,
-      commercialMessage: 'Commercial properties require a custom quote. Please contact us for pricing.'
+      commercialMessage:
+        'Commercial properties require a custom quote. Please contact us for pricing.',
     };
   }
 
@@ -392,14 +419,14 @@ export function calculatePrice(input: {
   let deodorizePerVisitCost = 0;
   let deodorizeOneTimeCost = 0;
 
-  if (input.addons?.deodorize && (input.addons as any).deodorizeMode) {
-    if ((input.addons as any).deodorizeMode === 'each-visit') {
+  if (input.addons?.deodorize && input.addons.deodorizeMode) {
+    if (input.addons.deodorizeMode === 'each-visit') {
       deodorizePerVisitCost = ADD_ON_PRICES.deodorize;
-    } else if ((input.addons as any).deodorizeMode === 'every-other') {
+    } else if (input.addons.deodorizeMode === 'every-other') {
       deodorizePerVisitCost = Math.round(ADD_ON_PRICES.deodorize / 2); // $12.50 per visit
-    } else if ((input.addons as any).deodorizeMode === 'first-visit') {
+    } else if (input.addons.deodorizeMode === 'first-visit') {
       deodorizeOneTimeCost = ADD_ON_PRICES.deodorize;
-    } else if ((input.addons as any).deodorizeMode === 'onetime') {
+    } else if (input.addons.deodorizeMode === 'onetime') {
       deodorizeOneTimeCost = ADD_ON_PRICES.deodorize;
     }
   }
@@ -408,45 +435,49 @@ export function calculatePrice(input: {
   let sprayDeckPerVisitCost = 0;
   let sprayDeckOneTimeCost = 0;
 
-  if ((input as any).addons?.sprayDeck && (input as any).addons?.sprayDeckMode) {
-    if ((input as any).addons?.sprayDeckMode === 'each-visit') {
+  if (input.addons?.sprayDeck && input.addons.sprayDeckMode) {
+    if (input.addons.sprayDeckMode === 'each-visit') {
       sprayDeckPerVisitCost = ADD_ON_PRICES.sprayDeck;
-    } else if ((input as any).addons?.sprayDeckMode === 'first-visit') {
+    } else if (input.addons.sprayDeckMode === 'first-visit') {
       sprayDeckOneTimeCost = ADD_ON_PRICES.sprayDeck;
-    } else if ((input as any).addons?.sprayDeckMode === 'onetime') {
+    } else if (input.addons.sprayDeckMode === 'onetime') {
       sprayDeckOneTimeCost = ADD_ON_PRICES.sprayDeck;
     }
   }
 
   // Calculate divert from landfill add-on cost based on mode
   let divertPerVisitCost = 0;
-  let divertOneTimeCost = 0;
+  const divertOneTimeCost = 0;
 
-  if ((input as any).addons?.divertMode && (input as any).addons?.divertMode !== 'none') {
-    if ((input as any).addons?.divertMode === 'takeaway') {
+  if (input.addons?.divertMode && input.addons.divertMode !== 'none') {
+    if (input.addons.divertMode === 'takeaway') {
       divertPerVisitCost = ADD_ON_PRICES.takeaway;
-    } else if ((input as any).addons?.divertMode === '25') {
+    } else if (input.addons.divertMode === '25') {
       divertPerVisitCost = ADD_ON_PRICES.divert25;
-    } else if ((input as any).addons?.divertMode === '50') {
+    } else if (input.addons.divertMode === '50') {
       divertPerVisitCost = ADD_ON_PRICES.divert50;
-    } else if ((input as any).addons?.divertMode === '100') {
+    } else if (input.addons.divertMode === '100') {
       divertPerVisitCost = ADD_ON_PRICES.divert100;
     }
   }
 
-  const addOnCostPerVisit = deodorizePerVisitCost + sprayDeckPerVisitCost + divertPerVisitCost;
-  const perVisitCents = basePerVisitCents + addOnCostPerVisit + additionalAreaCostPerVisit;
-  const monthlyCents = projectedMonthlyCents(basePerVisitCents + addOnCostPerVisit + additionalAreaCostPerVisit, input.frequency, input.addons || {});
+  // Only include TRULY per-visit add-ons (each-visit, every-other) in monthly calculation
+  // First-visit-only add-ons should NOT affect monthly cost
+  const trulyPerVisitAddOnCost = deodorizePerVisitCost + sprayDeckPerVisitCost + divertPerVisitCost;
+  const perVisitCents = basePerVisitCents + trulyPerVisitAddOnCost + additionalAreaCostPerVisit;
+  const monthlyCents = projectedMonthlyCents(
+    basePerVisitCents + trulyPerVisitAddOnCost + additionalAreaCostPerVisit,
+    input.frequency,
+    input.addons || {}
+  );
   const visitsPerMonthValue = visitsPerMonth(input.frequency);
 
   // Calculate initial clean cost using new estimator
   let initialCleanCost = 0;
-  let initialCleanBucket: string = '7';
+  let initialCleanBucket: string = '14';
   if (input.lastCleanedBucket) {
     initialCleanBucket = input.lastCleanedBucket;
   } else if (input.lastCleanedDate) {
-    // Import the function here to avoid circular dependency
-    const { mapDateToBucket } = require('./initialCleanEstimator');
     const cleanupDate = new Date(input.lastCleanedDate);
     initialCleanBucket = mapDateToBucket(cleanupDate);
   } else if (input.deepCleanAssessment?.daysSinceLastCleanup) {
@@ -454,14 +485,27 @@ export function calculatePrice(input: {
   }
 
   // Use new initial clean estimator
-  const { calculateInitialClean } = require('./initialCleanEstimator');
-  const initialCleanEstimate = calculateInitialClean(perVisitCents, initialCleanBucket as any, input.dogs, input.yardSize);
+  // Pass basePerVisitCents (dogs + yard) only; add-ons/areas handled separately by estimator/one-time flow
+  const initialCleanEstimate = calculateInitialClean(
+    basePerVisitCents,
+    initialCleanBucket as any,
+    input.dogs as DogCount,
+    input.yardSize,
+    input.areasToClean
+  );
   initialCleanCost = initialCleanEstimate.initialCleanCents;
 
+  // For recurring services, add first-visit-only add-ons to the initial clean cost
+  if (input.frequency !== 'onetime') {
+    const firstVisitOnlyAddOns = deodorizeOneTimeCost + sprayDeckOneTimeCost + divertOneTimeCost;
+    initialCleanCost += firstVisitOnlyAddOns;
+  }
+
   // Calculate premium onboarding cost
-  const premiumOnboardingCents = input.premiumOnboarding && input.premiumOnboarding !== 'none'
-    ? PREMIUM_ONBOARDING_PRICES[input.premiumOnboarding]
-    : 0;
+  const premiumOnboardingCents =
+    input.premiumOnboarding && input.premiumOnboarding !== 'none'
+      ? PREMIUM_ONBOARDING_PRICES[input.premiumOnboarding]
+      : 0;
 
   // Calculate one-time service pricing (use initial clean cost for simplicity)
   let oneTimeCents = 0;
@@ -492,8 +536,7 @@ export function calculatePrice(input: {
       }
     }
 
-    // Add additional area costs for one-time service
-    oneTimeCents += additionalAreaCostOneTime;
+    // Do not add additional area costs here; unified initial clean estimator already includes +$5/extra area
   }
 
   return {
@@ -506,12 +549,16 @@ export function calculatePrice(input: {
     initialCleanCents: initialCleanCost,
     initialCleanBucket: initialCleanBucket,
     premiumOnboarding: premiumOnboardingCents,
-    breakdown: input.frequency === 'onetime' ? {
-      basePrice: ONE_TIME_BASE_PRICES[input.yardSize],
-      yardAdder: 0, // Already factored into base price
-      frequencyMultiplier: 1.0,
-      addOnCents: input.addons?.deodorize ? ADD_ON_PRICES.deodorize : 0,
-    } : getPricingBreakdown(input.dogs, input.yardSize, input.frequency, input.addons || {}).breakdown,
+    breakdown:
+      input.frequency === 'onetime'
+        ? {
+            basePrice: ONE_TIME_BASE_PRICES[input.yardSize],
+            yardAdder: 0, // Already factored into base price
+            frequencyMultiplier: 1.0,
+            addOnCents: input.addons?.deodorize ? ADD_ON_PRICES.deodorize : 0,
+          }
+        : getPricingBreakdown(input.dogs, input.yardSize, input.frequency, input.addons || {})
+            .breakdown,
   };
 }
 
@@ -532,8 +579,16 @@ export function getYardSizeOptions() {
  */
 export function getFrequencyOptions() {
   return [
-    { value: 'weekly', label: 'Weekly Service', description: 'Most popular - consistent cleanliness' },
-    { value: 'biweekly', label: 'Every Other Week', description: 'Cost-effective for lighter needs' },
+    {
+      value: 'weekly',
+      label: 'Weekly Service',
+      description: 'Most popular - consistent cleanliness',
+    },
+    {
+      value: 'biweekly',
+      label: 'Every Other Week',
+      description: 'Cost-effective for lighter needs',
+    },
     { value: 'twice-weekly', label: 'Twice Weekly', description: 'Maximum cleanliness' },
   ];
 }
@@ -543,11 +598,32 @@ export function getFrequencyOptions() {
  */
 export function getServiceTypeOptions() {
   return [
-    { value: 'weekly', label: 'Weekly (4/month)', description: 'Most popular - consistent cleanliness & maintenance', isPopular: true },
-    { value: 'twice-weekly', label: 'Twice Weekly (8/month)', description: 'Maximum cleanliness - intensive service schedule' },
-    { value: 'biweekly', label: 'Every Other Week (2/month)', description: 'Balanced frequency - fewer visits, higher per-visit cost' },
-    { value: 'monthly', label: 'Monthly (1/month)', description: 'Cost-effective for lighter needs' },
-    { value: 'onetime', label: 'Just Once', description: 'Perfect for first-time service or seasonal cleanup' },
+    {
+      value: 'weekly',
+      label: 'Weekly (~4.3/month)',
+      description: 'Most popular - consistent cleanliness & maintenance',
+      isPopular: true,
+    },
+    {
+      value: 'twice-weekly',
+      label: 'Twice Weekly (~8.7/month)',
+      description: 'Maximum cleanliness - intensive service schedule',
+    },
+    {
+      value: 'biweekly',
+      label: 'Every Other Week (~2.2/month)',
+      description: 'Balanced frequency - fewer visits, higher per-visit cost',
+    },
+    {
+      value: 'monthly',
+      label: 'Monthly (1/month)',
+      description: 'Cost-effective for lighter needs',
+    },
+    {
+      value: 'onetime',
+      label: 'Just Once',
+      description: 'Perfect for first-time service or seasonal cleanup',
+    },
   ];
 }
 
@@ -556,7 +632,13 @@ export function getServiceTypeOptions() {
  */
 export function getAddonOptions() {
   return [
-    { value: 'deodorize', label: 'Enhanced Deodorizing', price: 500, description: 'Premium odor-neutralizing treatment applied every other visit for superior scent control' },
+    {
+      value: 'deodorize',
+      label: 'Enhanced Deodorizing',
+      price: 500,
+      description:
+        'Premium odor-neutralizing treatment applied every other visit for superior scent control',
+    },
   ];
 }
 
@@ -569,14 +651,16 @@ export function getPremiumOnboardingOptions() {
       value: 'premium-dna',
       label: 'Premium DNA Kit (Coming Soon)',
       price: 0, // Disable pricing for now
-      description: 'Advanced dog DNA testing for breed identification and genetic health insights. Coming soon - reserve your spot for early access.',
+      description:
+        'Advanced dog DNA testing for breed identification and genetic health insights. Coming soon - reserve your spot for early access.',
       disabled: true,
     },
     {
       value: 'wellness-microbiome',
       label: 'Wellness+ Microbiome Kit (Coming Soon)',
       price: 0, // Disable pricing for now
-      description: 'Comprehensive gut microbiome analysis for optimal pet health. Coming soon with lab partnerships.',
+      description:
+        'Comprehensive gut microbiome analysis for optimal pet health. Coming soon with lab partnerships.',
       disabled: true,
     },
   ];

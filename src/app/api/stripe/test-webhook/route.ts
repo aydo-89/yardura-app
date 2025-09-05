@@ -25,14 +25,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true, event: event.type });
-
   } catch (error) {
     console.error('Test webhook error:', error);
-    return NextResponse.json(
-      { error: 'Test webhook processing failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Test webhook processing failed' }, { status: 500 });
   }
 }
-
-

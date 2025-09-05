@@ -6,10 +6,7 @@ export async function POST(request: NextRequest) {
     const { customerEmail, customerName } = await request.json();
 
     if (!customerEmail) {
-      return NextResponse.json(
-        { error: 'Customer email is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Customer email is required' }, { status: 400 });
     }
 
     // Create or retrieve Stripe customer
@@ -45,14 +42,8 @@ export async function POST(request: NextRequest) {
       clientSecret: setupIntent.client_secret,
       customerId: customer.id,
     });
-
   } catch (error) {
     console.error('Setup intent error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create setup intent' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create setup intent' }, { status: 500 });
   }
 }
-
-

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-export function useActiveSection(sectionIds: string[], rootMargin = "-40% 0px -50% 0px") {
+export function useActiveSection(sectionIds: string[], rootMargin = '-40% 0px -50% 0px') {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -10,13 +10,17 @@ export function useActiveSection(sectionIds: string[], rootMargin = "-40% 0px -5
     const handler: IntersectionObserverCallback = (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          const id = entry.target.getAttribute("id");
+          const id = entry.target.getAttribute('id');
           if (id) setActiveId(id);
         }
       });
     };
 
-    const options: IntersectionObserverInit = { root: null, rootMargin, threshold: [0, 0.25, 0.5, 1] };
+    const options: IntersectionObserverInit = {
+      root: null,
+      rootMargin,
+      threshold: [0, 0.25, 0.5, 1],
+    };
 
     sectionIds.forEach((id) => {
       const el = document.getElementById(id);

@@ -49,7 +49,16 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
 }
 
 export async function generateStaticParams() {
-  const citySlugs = ['minneapolis', 'st-paul', 'bloomington', 'eden-prairie', 'plymouth', 'woodbury', 'edina', 'richfield'];
+  const citySlugs = [
+    'minneapolis',
+    'st-paul',
+    'bloomington',
+    'eden-prairie',
+    'plymouth',
+    'woodbury',
+    'edina',
+    'richfield',
+  ];
 
   return citySlugs.map((city) => ({
     city: city,
@@ -66,32 +75,33 @@ export default async function CityPage({ params }: CityPageProps) {
 
   // Create local business structured data
   const localBusinessSchema = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "name": cityData.localBusiness.name,
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": cityData.localBusiness.address,
-      "addressLocality": cityData.displayName,
-      "addressRegion": cityData.state,
-      "postalCode": cityData.zipCodes[0],
-      "addressCountry": "US"
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: cityData.localBusiness.name,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: cityData.localBusiness.address,
+      addressLocality: cityData.displayName,
+      addressRegion: cityData.state,
+      postalCode: cityData.zipCodes[0],
+      addressCountry: 'US',
     },
-    "telephone": cityData.localBusiness.phone,
-    "url": `https://yardura.dev/city/${cityData.name}`,
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": cityData.localBusiness.rating,
-      "reviewCount": cityData.localBusiness.reviewCount
-    },
-    "areaServed": cityData.serviceAreas.map(area => ({
-      "@type": "City",
-      "name": area,
-      "addressRegion": "MN",
-      "addressCountry": "US"
+    telephone: cityData.localBusiness.phone,
+    url: `https://yardura.dev/city/${cityData.name}`,
+    // TODO: Uncomment when we have real ratings
+    // aggregateRating: {
+    //   '@type': 'AggregateRating',
+    //   ratingValue: cityData.localBusiness.rating,
+    //   reviewCount: cityData.localBusiness.reviewCount,
+    // },
+    areaServed: cityData.serviceAreas.map((area) => ({
+      '@type': 'City',
+      name: area,
+      addressRegion: 'MN',
+      addressCountry: 'US',
     })),
-    "serviceType": "Dog Waste Removal",
-    "priceRange": "$$"
+    serviceType: 'Dog Waste Removal',
+    priceRange: '$$',
   };
 
   return (
@@ -115,26 +125,18 @@ export default async function CityPage({ params }: CityPageProps) {
                 </h1>
 
                 <p className="text-xl text-muted max-w-lg">
-                  {cityData.description} Keep your yard clean and healthy with our eco-friendly dog waste removal services.
+                  {cityData.description} Keep your yard clean and healthy with our eco-friendly dog
+                  waste removal services.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button
-                    size="lg"
-                    className="px-8 py-4 text-lg font-semibold"
-                    asChild
-                  >
+                  <Button size="lg" className="px-8 py-4 text-lg font-semibold" asChild>
                     <a href="/quote" data-analytics="cta_city_quote">
                       Get Your Free Quote
                     </a>
                   </Button>
 
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="px-8 py-4 text-lg"
-                    asChild
-                  >
+                  <Button variant="outline" size="lg" className="px-8 py-4 text-lg" asChild>
                     <a href={`tel:${cityData.localBusiness.phone}`} data-analytics="cta_city_call">
                       <Phone className="size-5 mr-2" />
                       Call {cityData.localBusiness.phone.replace('-YARD', '-9273')}
@@ -142,6 +144,7 @@ export default async function CityPage({ params }: CityPageProps) {
                   </Button>
                 </div>
 
+                {/* TODO: Uncomment when we have real ratings
                 <div className="flex items-center gap-4 pt-4">
                   <div className="flex items-center gap-1">
                     {[...Array(5)].map((_, i) => (
@@ -159,6 +162,7 @@ export default async function CityPage({ params }: CityPageProps) {
                     </span>
                   </div>
                 </div>
+                */}
               </div>
             </Reveal>
 
@@ -211,7 +215,8 @@ export default async function CityPage({ params }: CityPageProps) {
                 Serving {cityData.displayName} & Surrounding Areas
               </h2>
               <p className="text-xl text-muted max-w-2xl mx-auto">
-                We provide reliable dog waste removal services throughout {cityData.displayName} and the surrounding communities.
+                We provide reliable dog waste removal services throughout {cityData.displayName} and
+                the surrounding communities.
               </p>
             </div>
           </Reveal>
@@ -249,7 +254,8 @@ export default async function CityPage({ params }: CityPageProps) {
               Ready to Get Started in {cityData.displayName}?
             </h2>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Join hundreds of {cityData.displayName} pet owners who trust Yardura for clean, healthy yards.
+              Join hundreds of {cityData.displayName} pet owners who trust Yardura for clean,
+              healthy yards.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -270,7 +276,10 @@ export default async function CityPage({ params }: CityPageProps) {
                 className="px-8 py-4 text-lg border-white text-white hover:bg-white hover:text-accent"
                 asChild
               >
-                <a href={`tel:${cityData.localBusiness.phone}`} data-analytics="cta_city_final_call">
+                <a
+                  href={`tel:${cityData.localBusiness.phone}`}
+                  data-analytics="cta_city_final_call"
+                >
                   <Phone className="size-5 mr-2" />
                   Call Now
                 </a>

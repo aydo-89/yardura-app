@@ -1,21 +1,21 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, AlertCircle } from 'lucide-react'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 
 interface FormData {
-  name: string
-  email: string
-  password: string
-  confirmPassword: string
-  phone: string
-  commissionRate: string
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  commissionRate: string;
 }
 
 export default function SalesRepForm() {
@@ -25,48 +25,48 @@ export default function SalesRepForm() {
     password: '',
     confirmPassword: '',
     phone: '',
-    commissionRate: '0.10'
-  })
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const router = useRouter()
+    commissionRate: '0.10',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
-    setSuccess('')
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
 
     // Validation
     if (!formData.name || !formData.email || !formData.password) {
-      setError('Name, email, and password are required')
-      setIsLoading(false)
-      return
+      setError('Name, email, and password are required');
+      setIsLoading(false);
+      return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      setIsLoading(false)
-      return
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long')
-      setIsLoading(false)
-      return
+      setError('Password must be at least 8 characters long');
+      setIsLoading(false);
+      return;
     }
 
-    const commissionRate = parseFloat(formData.commissionRate)
+    const commissionRate = parseFloat(formData.commissionRate);
     if (isNaN(commissionRate) || commissionRate < 0 || commissionRate > 1) {
-      setError('Commission rate must be between 0 and 1 (0% to 100%)')
-      setIsLoading(false)
-      return
+      setError('Commission rate must be between 0 and 1 (0% to 100%)');
+      setIsLoading(false);
+      return;
     }
 
     try {
@@ -80,17 +80,17 @@ export default function SalesRepForm() {
           email: formData.email,
           password: formData.password,
           phone: formData.phone,
-          commissionRate
+          commissionRate,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong')
+        throw new Error(data.error || 'Something went wrong');
       }
 
-      setSuccess(`Sales rep account created successfully! Sales Rep ID: ${data.salesRepId}`)
+      setSuccess(`Sales rep account created successfully! Sales Rep ID: ${data.salesRepId}`);
 
       // Reset form
       setFormData({
@@ -99,20 +99,19 @@ export default function SalesRepForm() {
         password: '',
         confirmPassword: '',
         phone: '',
-        commissionRate: '0.10'
-      })
+        commissionRate: '0.10',
+      });
 
       // Redirect to admin dashboard after a delay
       setTimeout(() => {
-        router.push('/admin/dashboard')
-      }, 3000)
-
+        router.push('/admin/dashboard');
+      }, 3000);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -227,18 +226,12 @@ export default function SalesRepForm() {
             <Button type="submit" disabled={isLoading} className="flex-1">
               {isLoading ? 'Creating Account...' : 'Create Sales Rep Account'}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push('/admin/dashboard')}
-            >
+            <Button type="button" variant="outline" onClick={() => router.push('/admin/dashboard')}>
               Cancel
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }
-
-

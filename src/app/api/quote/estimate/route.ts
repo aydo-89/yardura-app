@@ -6,12 +6,12 @@ import {
   getPricingBreakdown,
   type Frequency,
   type YardSize,
-  type DogCount
+  type DogCount,
 } from '@/lib/priceEstimator';
 import {
   calculateInitialClean,
   mapDateToBucket,
-  type CleanupBucket
+  type CleanupBucket,
 } from '@/lib/initialCleanEstimator';
 
 export async function POST(request: NextRequest) {
@@ -34,10 +34,7 @@ export async function POST(request: NextRequest) {
     const validFrequencies: Frequency[] = ['weekly', 'biweekly', 'twice-weekly'];
 
     if (!validDogs.includes(dogs)) {
-      return NextResponse.json(
-        { error: 'Invalid dog count. Must be 1-4.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid dog count. Must be 1-4.' }, { status: 400 });
     }
 
     if (!validYardSizes.includes(yardSize)) {
@@ -69,7 +66,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate initial clean using new estimator
-    const initialCleanEstimate = calculateInitialClean(perVisitCents, cleanupBucket, dogs, yardSize);
+    const initialCleanEstimate = calculateInitialClean(
+      perVisitCents,
+      cleanupBucket,
+      dogs,
+      yardSize
+    );
 
     // Determine if initial clean should be auto-recommended (for buckets with significant backlog)
     const initialCleanAuto = ['60', '90', '999'].includes(cleanupBucket);
@@ -83,18 +85,14 @@ export async function POST(request: NextRequest) {
       initialCleanAuto,
       breakdown: {
         ...getPricingBreakdown(dogs, yardSize, frequency, addOns || {}).breakdown,
-        initialCleanBreakdown: initialCleanEstimate.breakdown
+        initialCleanBreakdown: initialCleanEstimate.breakdown,
       },
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
     console.error('Quote estimate error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -113,7 +111,7 @@ export async function GET() {
     initialCleanAuto: false,
     breakdown: {
       ...getPricingBreakdown(1, 'medium', 'weekly', {}).breakdown,
-      initialCleanBreakdown: initialCleanEstimate.breakdown
+      initialCleanBreakdown: initialCleanEstimate.breakdown,
     },
   });
 }

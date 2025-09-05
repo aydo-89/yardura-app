@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Clock, XCircle, Calendar, DollarSign, User, Plus } from 'lucide-react';
-import { db } from '@/lib/database';
+import { CheckCircle, Clock, Calendar, DollarSign, User, Plus } from 'lucide-react';
+
 import type { ServiceVisit, YarduraCustomer } from '@/lib/database';
 
 interface CustomerWithVisits extends YarduraCustomer {
@@ -19,7 +19,14 @@ export default function AdminDashboard() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithVisits | null>(null);
   const [eco, setEco] = useState<{ waste: number; methane: number; compost: number } | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ count: 1, weight_grams: '', moisture_percent: '', c_color: '', c_content: '', c_consistency: '' });
+  const [form, setForm] = useState({
+    count: 1,
+    weight_grams: '',
+    moisture_percent: '',
+    c_color: '',
+    c_content: '',
+    c_consistency: '',
+  });
 
   useEffect(() => {
     loadCustomers();
@@ -50,7 +57,7 @@ export default function AdminDashboard() {
       const response = await fetch('/api/stripe/charge-service', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitId })
+        body: JSON.stringify({ visitId }),
       });
 
       if (response.ok) {
@@ -67,12 +74,16 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleCancelReschedule = async (visitId: string, action: 'cancel' | 'reschedule', newDate?: string) => {
+  const handleCancelReschedule = async (
+    visitId: string,
+    action: 'cancel' | 'reschedule',
+    newDate?: string
+  ) => {
     try {
       const response = await fetch('/api/stripe/cancel-reschedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitId, action, newDate })
+        body: JSON.stringify({ visitId, action, newDate }),
       });
 
       if (response.ok) {
@@ -89,22 +100,26 @@ export default function AdminDashboard() {
   };
 
   const loadEcoStats = async (customerId: string) => {
-    const res = await fetch(`/api/admin/eco-stats?customerId=${customerId}`)
+    const res = await fetch(`/api/admin/eco-stats?customerId=${customerId}`);
     if (res.ok) {
-      const { stats } = await res.json()
-      setEco({ waste: stats.wasteDiverted_kg, methane: stats.methaneAvoided_kgCO2e, compost: stats.compostCreated_kg })
+      const { stats } = await res.json();
+      setEco({
+        waste: stats.wasteDiverted_kg,
+        methane: stats.methaneAvoided_kgCO2e,
+        compost: stats.compostCreated_kg,
+      });
     } else {
-      setEco(null)
+      setEco(null);
     }
-  }
+  };
 
   useEffect(() => {
-    if (selectedCustomer) loadEcoStats(selectedCustomer.id)
-  }, [selectedCustomer])
+    if (selectedCustomer) loadEcoStats(selectedCustomer.id);
+  }, [selectedCustomer]);
 
   const submitDeposit = async () => {
-    if (!selectedCustomer) return
-    setAdding(true)
+    if (!selectedCustomer) return;
+    setAdding(true);
     const res = await fetch('/api/admin/deposits', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -116,16 +131,17 @@ export default function AdminDashboard() {
         c_color: form.c_color || undefined,
         c_content: form.c_content || undefined,
         c_consistency: form.c_consistency || undefined,
-      })
-    })
-    setAdding(false)
+      }),
+    });
+    setAdding(false);
     if (res.ok) {
-      await loadEcoStats(selectedCustomer.id)
-      alert('Deposit recorded')
+      await loadEcoStats(selectedCustomer.id);
+      alert('Deposit recorded');
     } else {
-      const e = await res.json(); alert(e.error || 'Failed')
+      const e = await res.json();
+      alert(e.error || 'Failed');
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -166,10 +182,14 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {customers.reduce((acc, customer) =>
-                    acc + customer.upcomingVisits.filter(v =>
-                      new Date(v.scheduledDate).toDateString() === new Date().toDateString()
-                    ).length, 0
+                  {customers.reduce(
+                    (acc, customer) =>
+                      acc +
+                      customer.upcomingVisits.filter(
+                        (v) =>
+                          new Date(v.scheduledDate).toDateString() === new Date().toDateString()
+                      ).length,
+                    0
                   )}
                 </div>
               </CardContent>
@@ -182,8 +202,10 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {customers.reduce((acc, customer) =>
-                    acc + customer.upcomingVisits.filter(v => v.status === 'completed').length, 0
+                  {customers.reduce(
+                    (acc, customer) =>
+                      acc + customer.upcomingVisits.filter((v) => v.status === 'completed').length,
+                    0
                   )}
                 </div>
               </CardContent>
@@ -196,11 +218,21 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${customers.reduce((acc, customer) =>
-                    acc + customer.upcomingVisits
-                      .filter(v => v.status === 'completed' && new Date(v.completedDate!).getMonth() === new Date().getMonth())
-                      .reduce((sum, v) => sum + v.amount, 0), 0
-                  ).toFixed(0)}
+                  $
+                  {customers
+                    .reduce(
+                      (acc, customer) =>
+                        acc +
+                        customer.upcomingVisits
+                          .filter(
+                            (v) =>
+                              v.status === 'completed' &&
+                              new Date(v.completedDate!).getMonth() === new Date().getMonth()
+                          )
+                          .reduce((sum, v) => sum + v.amount, 0),
+                      0
+                    )
+                    .toFixed(0)}
                 </div>
               </CardContent>
             </Card>
@@ -224,7 +256,8 @@ export default function AdminDashboard() {
                         <h3 className="font-semibold">{customer.name}</h3>
                         <p className="text-sm text-gray-600">{customer.email}</p>
                         <p className="text-xs text-gray-500">
-                          {customer.dogs} dog{customer.dogs > 1 ? 's' : ''} • {customer.yardSize} yard • {customer.frequency}
+                          {customer.dogs} dog{customer.dogs > 1 ? 's' : ''} • {customer.yardSize}{' '}
+                          yard • {customer.frequency}
                         </p>
                       </div>
                       <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
@@ -232,10 +265,10 @@ export default function AdminDashboard() {
                       </Badge>
                     </div>
                     <div className="text-xs text-gray-500">
-                      Next service: {customer.upcomingVisits.length > 0
+                      Next service:{' '}
+                      {customer.upcomingVisits.length > 0
                         ? new Date(customer.upcomingVisits[0].scheduledDate).toLocaleDateString()
-                        : 'None scheduled'
-                      }
+                        : 'None scheduled'}
                     </div>
                   </div>
                 ))}
@@ -299,9 +332,7 @@ export default function AdminDashboard() {
                             {visit.status}
                           </Badge>
                         </div>
-                        <div className="text-sm text-gray-600 mb-2">
-                          Amount: ${visit.amount}
-                        </div>
+                        <div className="text-sm text-gray-600 mb-2">Amount: ${visit.amount}</div>
                         <div className="flex gap-2">
                           {visit.status === 'scheduled' && (
                             <>
@@ -330,30 +361,68 @@ export default function AdminDashboard() {
                   <div className="border rounded p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium">Add Pickup / Deposit</h4>
-                      <button className="text-sm flex items-center gap-1" onClick={submitDeposit} disabled={adding}>
+                      <button
+                        className="text-sm flex items-center gap-1"
+                        onClick={submitDeposit}
+                        disabled={adding}
+                      >
                         <Plus className="h-4 w-4" /> {adding ? 'Saving...' : 'Add'}
                       </button>
                     </div>
                     <div className="grid md:grid-cols-3 gap-3">
-                      <label className="text-sm">Count
-                        <input className="w-full border rounded p-2" type="number" min={1} value={form.count} onChange={e=>setForm({ ...form, count: Number(e.target.value) })} />
+                      <label className="text-sm">
+                        Count
+                        <input
+                          className="w-full border rounded p-2"
+                          type="number"
+                          min={1}
+                          value={form.count}
+                          onChange={(e) => setForm({ ...form, count: Number(e.target.value) })}
+                        />
                       </label>
-                      <label className="text-sm">Weight (g)
-                        <input className="w-full border rounded p-2" type="number" value={form.weight_grams} onChange={e=>setForm({ ...form, weight_grams: e.target.value })} />
+                      <label className="text-sm">
+                        Weight (g)
+                        <input
+                          className="w-full border rounded p-2"
+                          type="number"
+                          value={form.weight_grams}
+                          onChange={(e) => setForm({ ...form, weight_grams: e.target.value })}
+                        />
                       </label>
-                      <label className="text-sm">Moisture (%)
-                        <input className="w-full border rounded p-2" type="number" value={form.moisture_percent} onChange={e=>setForm({ ...form, moisture_percent: e.target.value })} />
+                      <label className="text-sm">
+                        Moisture (%)
+                        <input
+                          className="w-full border rounded p-2"
+                          type="number"
+                          value={form.moisture_percent}
+                          onChange={(e) => setForm({ ...form, moisture_percent: e.target.value })}
+                        />
                       </label>
                     </div>
                     <div className="grid md:grid-cols-3 gap-3 mt-3">
-                      <label className="text-sm">Color
-                        <input className="w-full border rounded p-2" value={form.c_color} onChange={e=>setForm({ ...form, c_color: e.target.value })} />
+                      <label className="text-sm">
+                        Color
+                        <input
+                          className="w-full border rounded p-2"
+                          value={form.c_color}
+                          onChange={(e) => setForm({ ...form, c_color: e.target.value })}
+                        />
                       </label>
-                      <label className="text-sm">Content
-                        <input className="w-full border rounded p-2" value={form.c_content} onChange={e=>setForm({ ...form, c_content: e.target.value })} />
+                      <label className="text-sm">
+                        Content
+                        <input
+                          className="w-full border rounded p-2"
+                          value={form.c_content}
+                          onChange={(e) => setForm({ ...form, c_content: e.target.value })}
+                        />
                       </label>
-                      <label className="text-sm">Consistency
-                        <input className="w-full border rounded p-2" value={form.c_consistency} onChange={e=>setForm({ ...form, c_consistency: e.target.value })} />
+                      <label className="text-sm">
+                        Consistency
+                        <input
+                          className="w-full border rounded p-2"
+                          value={form.c_consistency}
+                          onChange={(e) => setForm({ ...form, c_consistency: e.target.value })}
+                        />
                       </label>
                     </div>
                   </div>

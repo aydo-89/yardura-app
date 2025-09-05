@@ -33,7 +33,7 @@ export default function RelatedArticles({ articles, className = '' }: RelatedArt
                       <Calendar className="size-3" />
                       {new Date(article.publishedAt).toLocaleDateString('en-US', {
                         month: 'short',
-                        day: 'numeric'
+                        day: 'numeric',
                       })}
                     </div>
                     <div className="flex items-center gap-1">

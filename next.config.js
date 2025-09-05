@@ -9,6 +9,8 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'], // Tree-shake Lucide icons
   },
+  // Produce standalone output to deploy without installing dev deps on server
+  output: 'standalone',
   eslint: {
     // Unblock CI/builds while we stabilize lint config
     ignoreDuringBuilds: true,

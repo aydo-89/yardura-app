@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
@@ -15,7 +15,7 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import { useInViewCountUp } from '../hooks/useInViewCountUp';
 
@@ -77,12 +77,15 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-[0.03]">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, hsl(var(--accent)) 2px, transparent 2px),
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `radial-gradient(circle at 25% 25%, hsl(var(--accent)) 2px, transparent 2px),
                            radial-gradient(circle at 75% 75%, hsl(var(--accent)) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px, 40px 40px',
-          backgroundPosition: '0 0, 30px 30px'
-        }} />
+            backgroundSize: '60px 60px, 40px 40px',
+            backgroundPosition: '0 0, 30px 30px',
+          }}
+        />
       </div>
 
       <div className="container max-w-7xl py-24 md:py-32 relative z-10">
@@ -90,15 +93,12 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: '-100px' }}
           className="grid md:grid-cols-2 gap-12 lg:gap-16 items-start"
         >
           {/* Left Column - Header Content */}
           <div className="space-y-8">
-            <motion.div
-              variants={itemVariants}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-            >
+            <motion.div variants={itemVariants} transition={{ duration: 0.6, ease: 'easeOut' }}>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-soft text-accent font-medium text-sm mb-4">
                 <Eye className="size-4" />
                 Why it matters
@@ -113,13 +113,14 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
               </h2>
 
               <p className="mt-6 text-lg text-muted leading-relaxed">
-                Parasites and GI disease can be quiet at first. They can steal nutrients, cause malabsorption,
-                and lead to anemia or weight loss—often before a dog looks "sick." Blood in stool can be subtle
-                (or hidden in dark, tarry stools), and most owners don't examine every pickup—especially when a
-                service does it for them.{' '}
+                Parasites and GI disease can be quiet at first. They can steal nutrients, cause
+                malabsorption, and lead to anemia or weight loss—often before a dog looks "sick."
+                Blood in stool can be subtle (or hidden in dark, tarry stools), and most owners
+                don't examine every pickup—especially when a service does it for them.{' '}
                 <span className="font-medium text-ink">
-                  Yardura pairs a clean yard with opt-in, privacy-first stool monitoring (non-diagnostic) so you
-                  can spot concerning changes early and talk to your vet sooner.
+                  Yardura pairs a clean yard with opt-in, privacy-first stool monitoring
+                  (non-diagnostic) so you can spot concerning changes early and talk to your vet
+                  sooner.
                 </span>
               </p>
             </motion.div>
@@ -127,16 +128,19 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
             {/* Callout Box */}
             <motion.div
               variants={itemVariants}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
               className="p-6 rounded-2xl bg-panel border border-slate-200/60 shadow-sm"
             >
               <div className="flex items-start gap-3">
                 <AlertTriangle className="size-5 text-warning mt-0.5 flex-shrink-0" />
                 <div className="space-y-2">
-                  <p className="text-sm text-muted font-medium">Most people don't inspect every stool.</p>
+                  <p className="text-sm text-muted font-medium">
+                    Most people don't inspect every stool.
+                  </p>
                   <p className="text-sm text-muted leading-relaxed">
-                    With a service, it's even easier to miss the quiet warnings. We log controlled photos and basics
-                    (time, weight, moisture) so you don't have to look—but you still get the signal.
+                    With a service, it's even easier to miss the quiet warnings. We log controlled
+                    photos and basics (time, weight, moisture) so you don't have to look—but you
+                    still get the signal.
                   </p>
                 </div>
               </div>
@@ -146,14 +150,14 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
           {/* Right Column - Insight Preview Card */}
           <motion.div
             variants={itemVariants}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
             className="relative"
           >
             <motion.div
               ref={insightRef}
               variants={cardHoverVariants}
               whileHover="hover"
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
               className="p-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-soft"
             >
               <div className="flex items-center justify-between mb-4">
@@ -204,16 +208,40 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
                   />
 
                   {/* Data points with tooltips */}
-                  <circle cx="50" cy="28" r="3" fill="hsl(var(--accent))" className="drop-shadow-sm">
+                  <circle
+                    cx="50"
+                    cy="28"
+                    r="3"
+                    fill="hsl(var(--accent))"
+                    className="drop-shadow-sm"
+                  >
                     <title>Softer than usual</title>
                   </circle>
-                  <circle cx="90" cy="25" r="3" fill="hsl(var(--accent))" className="drop-shadow-sm">
+                  <circle
+                    cx="90"
+                    cy="25"
+                    r="3"
+                    fill="hsl(var(--accent))"
+                    className="drop-shadow-sm"
+                  >
                     <title>Red streaks</title>
                   </circle>
-                  <circle cx="130" cy="22" r="3" fill="hsl(var(--warning))" className="drop-shadow-sm">
+                  <circle
+                    cx="130"
+                    cy="22"
+                    r="3"
+                    fill="hsl(var(--warning))"
+                    className="drop-shadow-sm"
+                  >
                     <title>Black/tarry</title>
                   </circle>
-                  <circle cx="170" cy="25" r="3" fill="hsl(var(--accent))" className="drop-shadow-sm">
+                  <circle
+                    cx="170"
+                    cy="25"
+                    r="3"
+                    fill="hsl(var(--accent))"
+                    className="drop-shadow-sm"
+                  >
                     <title>Normal</title>
                   </circle>
                 </svg>
@@ -232,7 +260,7 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
+          viewport={{ once: true, margin: '-50px' }}
           className="grid md:grid-cols-3 gap-6 mt-20"
         >
           <motion.div
@@ -295,15 +323,17 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
+          viewport={{ once: true, margin: '-50px' }}
           className="mt-20"
         >
           <motion.div
             variants={itemVariants}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
             className="text-center mb-12"
           >
-            <h3 className="text-2xl font-bold text-ink mb-2">Common Conditions & What to Watch For</h3>
+            <h3 className="text-2xl font-bold text-ink mb-2">
+              Common Conditions & What to Watch For
+            </h3>
             <p className="text-muted">Early detection through pattern recognition</p>
           </motion.div>
 
@@ -311,46 +341,48 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
             {[
               {
                 icon: Bug,
-                condition: "Hookworms & Whipworms",
-                whatShows: "dark/tarry or fresh red blood, mucus; sometimes none",
-                whyMatters: "Blood loss + nutrient theft → anemia, poor growth, weight loss if untreated",
-                color: "text-red-500"
+                condition: 'Hookworms & Whipworms',
+                whatShows: 'dark/tarry or fresh red blood, mucus; sometimes none',
+                whyMatters:
+                  'Blood loss + nutrient theft → anemia, poor growth, weight loss if untreated',
+                color: 'text-red-500',
               },
               {
                 icon: Biohazard,
-                condition: "Giardia & Coccidia",
-                whatShows: "soft/pale, foul; intermittent diarrhea; steatorrhea possible",
-                whyMatters: "Malabsorption → chronic weight loss and poor condition if missed",
-                color: "text-orange-500"
+                condition: 'Giardia & Coccidia',
+                whatShows: 'soft/pale, foul; intermittent diarrhea; steatorrhea possible',
+                whyMatters: 'Malabsorption → chronic weight loss and poor condition if missed',
+                color: 'text-orange-500',
               },
               {
                 icon: Stethoscope,
-                condition: "Colitis / Large-bowel inflammation",
-                whatShows: "urgency, mucus, bright red blood, small frequent stools",
-                whyMatters: "Often episodic; can progress or mimic other serious disease",
-                color: "text-blue-500"
+                condition: 'Colitis / Large-bowel inflammation',
+                whatShows: 'urgency, mucus, bright red blood, small frequent stools',
+                whyMatters: 'Often episodic; can progress or mimic other serious disease',
+                color: 'text-blue-500',
               },
               {
                 icon: Activity,
-                condition: "Parvovirus / Acute hemorrhagic diarrhea",
-                whatShows: "bloody, hemorrhagic diarrhea ± vomiting, lethargy",
-                whyMatters: "Rapidly progressive, potentially life-threatening — time is critical",
-                color: "text-purple-500"
+                condition: 'Parvovirus / Acute hemorrhagic diarrhea',
+                whatShows: 'bloody, hemorrhagic diarrhea ± vomiting, lethargy',
+                whyMatters: 'Rapidly progressive, potentially life-threatening — time is critical',
+                color: 'text-purple-500',
               },
               {
                 icon: Bone,
-                condition: "Exocrine Pancreatic Insufficiency",
-                whatShows: "large-volume loose/greasy stools; weight loss despite eating",
-                whyMatters: "Chronic maldigestion; earlier recognition shortens the road to treatment",
-                color: "text-green-500"
+                condition: 'Exocrine Pancreatic Insufficiency',
+                whatShows: 'large-volume loose/greasy stools; weight loss despite eating',
+                whyMatters:
+                  'Chronic maldigestion; earlier recognition shortens the road to treatment',
+                color: 'text-green-500',
               },
               {
                 icon: Droplet,
-                condition: "Foreign body / Ulcer / Upper-GI bleed",
-                whatShows: "black/tarry (melena)",
-                whyMatters: "Indicates digested blood — needs timely evaluation",
-                color: "text-red-600"
-              }
+                condition: 'Foreign body / Ulcer / Upper-GI bleed',
+                whatShows: 'black/tarry (melena)',
+                whyMatters: 'Indicates digested blood — needs timely evaluation',
+                color: 'text-red-600',
+              },
             ].map((item, index) => (
               <motion.div
                 key={item.condition}
@@ -385,12 +417,12 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
+          viewport={{ once: true, margin: '-50px' }}
           className="mt-20"
         >
           <motion.div
             variants={itemVariants}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
             className="text-center mb-8"
           >
             <h3 className="text-xl font-bold text-ink mb-2">When to contact your vet</h3>
@@ -398,12 +430,12 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
 
           <div className="flex flex-wrap justify-center gap-3">
             {[
-              "Black/tarry stools (melena)",
-              "Bright red blood that persists >24 hours",
-              "Diarrhea with lethargy, fever, repeated vomiting",
-              "Rapid weight loss or pale gums",
-              "Greasy, gray/tan stools with increased volume",
-              "Any sudden change that lasts >48 hours"
+              'Black/tarry stools (melena)',
+              'Bright red blood that persists >24 hours',
+              'Diarrhea with lethargy, fever, repeated vomiting',
+              'Rapid weight loss or pale gums',
+              'Greasy, gray/tan stools with increased volume',
+              'Any sudden change that lasts >48 hours',
             ].map((item, index) => (
               <motion.div
                 key={item}
@@ -421,15 +453,18 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
+          viewport={{ once: true, margin: '-50px' }}
           className="mt-20 p-8 rounded-2xl bg-gradient-to-r from-accent-soft to-accent-soft/60 border border-accent/20"
         >
           <div className="text-center space-y-6">
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-ink">Privacy-first. Science-backed. Non-diagnostic.</h3>
+              <h3 className="text-lg font-semibold text-ink">
+                Privacy-first. Science-backed. Non-diagnostic.
+              </h3>
               <p className="text-sm text-muted max-w-2xl mx-auto">
-                Insights are informational only and not veterinary advice. Yardura does not diagnose or treat disease.
-                We simply help you spot patterns that might warrant professional attention.
+                Insights are informational only and not veterinary advice. Yardura does not diagnose
+                or treat disease. We simply help you spot patterns that might warrant professional
+                attention.
               </p>
             </div>
 

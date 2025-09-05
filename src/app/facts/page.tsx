@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import type { Metadata } from 'next';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Shield,
   MapPin,
@@ -12,34 +12,36 @@ import {
   Award,
   Phone,
   Mail,
-  Calendar
-} from "lucide-react";
+  Calendar,
+} from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: "Yardura Facts & Service Details | Minneapolis Dog Waste Removal",
-  description: "Complete fact sheet about Yardura's eco-friendly dog waste removal services in Minneapolis, Richfield, Edina & Bloomington. Pricing, coverage, and service details.",
+  title: 'Yardura Facts & Service Details | Minneapolis Dog Waste Removal',
+  description:
+    "Complete fact sheet about Yardura's eco-friendly dog waste removal services in Minneapolis, Richfield, Edina & Bloomington. Pricing, coverage, and service details.",
   keywords: [
-    "yardura facts",
-    "dog waste removal Minneapolis facts",
-    "yardura service details",
-    "minneapolis pooper scooper pricing"
+    'yardura facts',
+    'dog waste removal Minneapolis facts',
+    'yardura service details',
+    'minneapolis pooper scooper pricing',
   ],
   openGraph: {
-    title: "Yardura Facts & Service Details",
-    description: "Complete information about Yardura's eco-friendly dog waste removal services in the Twin Cities.",
-    type: "website",
+    title: 'Yardura Facts & Service Details',
+    description:
+      "Complete information about Yardura's eco-friendly dog waste removal services in the Twin Cities.",
+    type: 'website',
     images: [
       {
-        url: "/api/og?type=facts",
+        url: '/api/og?type=facts',
         width: 1200,
         height: 630,
-        alt: "Yardura service facts - Licensing, insurance, service areas, pricing, and eco-friendly practices",
+        alt: 'Yardura service facts - Licensing, insurance, service areas, pricing, and eco-friendly practices',
       },
     ],
-    url: "https://www.yardura.com/facts",
+    url: 'https://www.yardura.com/facts',
   },
   alternates: {
-    canonical: "https://www.yardura.com/facts",
+    canonical: 'https://www.yardura.com/facts',
   },
   robots: {
     index: true,
@@ -56,12 +58,10 @@ export default function FactsPage() {
           <Badge variant="secondary" className="mb-4">
             Official Fact Sheet
           </Badge>
-          <h1 className="text-4xl font-extrabold text-ink mb-4">
-            Yardura Service Facts
-          </h1>
+          <h1 className="text-4xl font-extrabold text-ink mb-4">Yardura Service Facts</h1>
           <p className="text-lg text-muted max-w-2xl mx-auto">
-            Complete, accurate information about our eco-friendly dog waste removal services
-            in the Twin Cities area.
+            Complete, accurate information about our eco-friendly dog waste removal services in the
+            Twin Cities area.
           </p>
         </div>
 
@@ -79,19 +79,35 @@ export default function FactsPage() {
                 <div>
                   <h3 className="font-semibold mb-2">Business Information</h3>
                   <ul className="space-y-1 text-sm">
-                    <li><strong>Founded:</strong> 2024</li>
-                    <li><strong>Service Area:</strong> Twin Cities (MN)</li>
-                    <li><strong>License:</strong> Fully licensed and insured</li>
-                    <li><strong>Insurance:</strong> General liability coverage</li>
+                    <li>
+                      <strong>Founded:</strong> 2024
+                    </li>
+                    <li>
+                      <strong>Service Area:</strong> Twin Cities (MN)
+                    </li>
+                    <li>
+                      <strong>License:</strong> Fully licensed and insured
+                    </li>
+                    <li>
+                      <strong>Insurance:</strong> General liability coverage
+                    </li>
                   </ul>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Service Philosophy</h3>
                   <ul className="space-y-1 text-sm">
-                    <li><strong>Approach:</strong> Tech-enabled, eco-friendly</li>
-                    <li><strong>Focus:</strong> Clean yards + health insights</li>
-                    <li><strong>Values:</strong> Transparency, reliability, sustainability</li>
-                    <li><strong>Technology:</strong> AI-powered analysis</li>
+                    <li>
+                      <strong>Approach:</strong> Tech-enabled, eco-friendly
+                    </li>
+                    <li>
+                      <strong>Focus:</strong> Clean yards + health insights
+                    </li>
+                    <li>
+                      <strong>Values:</strong> Transparency, reliability, sustainability
+                    </li>
+                    <li>
+                      <strong>Technology:</strong> AI-powered analysis
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -309,8 +325,8 @@ export default function FactsPage() {
 
               <div className="mt-6 p-4 bg-green-50 rounded-lg">
                 <p className="text-sm text-green-800">
-                  <strong>Impact per dog per year:</strong> ~250 lbs diverted from landfills,
-                  ~0.5 metric tons CO2 equivalent reduced through composting.
+                  <strong>Impact per dog per year:</strong> ~250 lbs diverted from landfills, ~0.5
+                  metric tons CO2 equivalent reduced through composting.
                 </p>
               </div>
             </CardContent>
@@ -367,7 +383,10 @@ export default function FactsPage() {
             <CardContent>
               <div className="space-y-3 text-sm text-orange-800">
                 <p>
-                  <strong>Our health insights are informational only and do not constitute veterinary advice.</strong>
+                  <strong>
+                    Our health insights are informational only and do not constitute veterinary
+                    advice.
+                  </strong>
                 </p>
                 <ul className="space-y-1 ml-4">
                   <li>• We analyze Color, Consistency, and Content changes</li>

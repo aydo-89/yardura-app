@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const globalStats = await prisma.globalStats.findUnique({
-      where: { id: 'global' }
-    })
+      where: { id: 'global' },
+    });
 
     if (!globalStats) {
       // Initialize global stats if they don't exist
@@ -16,17 +16,17 @@ export async function GET(request: NextRequest) {
           totalMethaneAvoided: 0,
           totalUsers: 0,
           totalDogs: 0,
-          totalServiceVisits: 0
-        }
-      })
+          totalServiceVisits: 0,
+        },
+      });
 
       return NextResponse.json({
         totalWasteDiverted: Math.round(newStats.totalWasteDiverted),
         totalMethaneAvoided: Math.round(newStats.totalMethaneAvoided),
         totalUsers: newStats.totalUsers,
         totalDogs: newStats.totalDogs,
-        totalServiceVisits: newStats.totalServiceVisits
-      })
+        totalServiceVisits: newStats.totalServiceVisits,
+      });
     }
 
     return NextResponse.json({
@@ -34,12 +34,10 @@ export async function GET(request: NextRequest) {
       totalMethaneAvoided: Math.round(globalStats.totalMethaneAvoided),
       totalUsers: globalStats.totalUsers,
       totalDogs: globalStats.totalDogs,
-      totalServiceVisits: globalStats.totalServiceVisits
-    })
+      totalServiceVisits: globalStats.totalServiceVisits,
+    });
   } catch (error) {
-    console.error('Error fetching stats:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error fetching stats:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
-

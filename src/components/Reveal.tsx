@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { PropsWithChildren, ElementType } from "react";
-import { motion } from "framer-motion";
-import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
-import { reveal, createStaggerItem, dur, ease } from "@/lib/motion/presets";
+import { PropsWithChildren, ElementType } from 'react';
+import { motion } from 'framer-motion';
+import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
+import { reveal, createStaggerItem, dur, ease } from '@/lib/motion/presets';
 
 type RevealProps = PropsWithChildren<{
   // Animation control
@@ -32,7 +32,7 @@ export default function Reveal({
   staggerDelay,
   once = true,
   variant = 'reveal',
-  margin = "-50px",
+  margin = '-50px',
   as: Component = motion.div,
   className,
   whileHover,
@@ -67,9 +67,7 @@ export default function Reveal({
   const selectedVariant = getVariant();
 
   // Create stagger item if staggerDelay is provided
-  const staggerVariant = staggerDelay
-    ? createStaggerItem(delay)
-    : selectedVariant;
+  const staggerVariant = staggerDelay ? createStaggerItem(delay) : selectedVariant;
 
   // Motion configuration
   const motionConfig = {
@@ -101,9 +99,5 @@ export default function Reveal({
     },
   });
 
-  return (
-    <Component {...safeMotionConfig}>
-      {children}
-    </Component>
-  );
+  return <Component {...safeMotionConfig}>{children}</Component>;
 }

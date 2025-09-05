@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, Star, ArrowRight } from "lucide-react";
-import Reveal from "@/components/Reveal";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle, Star, ArrowRight } from 'lucide-react';
+import Reveal from '@/components/Reveal';
 import {
   estimatePerVisitCents,
   projectedMonthlyCents,
   formatPrice,
   getFrequencyDisplayName,
   type Frequency,
-  type DogCount
-} from "@/lib/priceEstimator";
+  type DogCount,
+} from '@/lib/priceEstimator';
 
 interface PricingCardProps {
   title: string;
@@ -36,13 +36,15 @@ function PricingCard({
   frequency,
   yardSize,
   popular = false,
-  addOns = {}
+  addOns = {},
 }: PricingCardProps) {
   const perVisitCents = estimatePerVisitCents(dogs, yardSize, frequency);
   const monthlyCents = projectedMonthlyCents(perVisitCents, frequency, addOns);
 
   return (
-    <Card className={`relative ${popular ? 'border-accent shadow-lg scale-105' : 'border-accent/20'}`}>
+    <Card
+      className={`relative ${popular ? 'border-accent shadow-lg scale-105' : 'border-accent/20'}`}
+    >
       {popular && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <Badge className="bg-accent text-white px-3 py-1">
@@ -59,9 +61,7 @@ function PricingCard({
 
       <CardContent className="space-y-4">
         <div className="text-center">
-          <div className="text-3xl font-bold text-ink">
-            {formatPrice(perVisitCents)}
-          </div>
+          <div className="text-3xl font-bold text-ink">{formatPrice(perVisitCents)}</div>
           <div className="text-sm text-muted">per visit</div>
         </div>
 
@@ -73,12 +73,11 @@ function PricingCard({
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
             <CheckCircle className="size-4 text-accent" />
-            <span>{dogs} dog{dogs > 1 ? 's' : ''} included</span>
+            <span>
+              {dogs} dog{dogs > 1 ? 's' : ''} included
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle className="size-4 text-accent" />
-            <span>Eco diversion included</span>
-          </div>
+
           <div className="flex items-center gap-2">
             <CheckCircle className="size-4 text-accent" />
             <span>Health insights included</span>
@@ -119,11 +118,9 @@ export default function Pricing() {
     <section id="pricing" className="container py-16">
       <div className="text-center mb-12">
         <Reveal>
-          <h2 className="text-3xl font-extrabold text-ink mb-4">
-            Simple, Transparent Pricing
-          </h2>
+          <h2 className="text-3xl font-extrabold text-ink mb-4">Simple, Transparent Pricing</h2>
           <p className="text-slate-600 max-w-2xl mx-auto">
-            No hidden fees. Eco diversion and health insights included.
+            No hidden fees. Health insights included. Premium eco diversion options available.
             Billed monthly for completed visits only.
           </p>
         </Reveal>
@@ -132,7 +129,10 @@ export default function Pricing() {
       {/* Frequency Toggle */}
       <Reveal delay={0.1}>
         <div className="flex justify-center mb-8">
-          <Tabs value={selectedFrequency} onValueChange={(value) => setSelectedFrequency(value as Frequency)}>
+          <Tabs
+            value={selectedFrequency}
+            onValueChange={(value) => setSelectedFrequency(value as Frequency)}
+          >
             <TabsList className="grid w-full max-w-md grid-cols-3 bg-muted/50 p-1">
               <TabsTrigger
                 value="weekly"
@@ -155,7 +155,8 @@ export default function Pricing() {
             </TabsList>
           </Tabs>
           <p className="text-xs text-muted text-center mt-2">
-            {selectedFrequency === 'biweekly' && 'Higher per-visit due to accumulation • Fewer visits save you money overall'}
+            {selectedFrequency === 'biweekly' &&
+              'Higher per-visit due to accumulation • Fewer visits save you money overall'}
             {selectedFrequency === 'twice-weekly' && 'Slight discount for route efficiency'}
           </p>
         </div>
@@ -199,20 +200,30 @@ export default function Pricing() {
       <Reveal delay={0.5}>
         <div className="mt-12 text-center">
           <h3 className="text-xl font-semibold text-ink mb-4">Add-on Services</h3>
-          <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
             <Card className="text-center">
               <CardContent className="p-6">
                 <h4 className="font-semibold mb-2">Deodorize & Sanitize</h4>
-                <p className="text-sm text-muted mb-3">Pet-safe enzymatic treatment</p>
-                <div className="text-lg font-bold text-accent">+$5 per visit</div>
+                <p className="text-sm text-muted mb-3">
+                  Pet-safe enzymatic treatment with frequency options
+                </p>
+                <div className="text-lg font-bold text-accent">$12.50-$25 per visit</div>
               </CardContent>
             </Card>
 
             <Card className="text-center">
               <CardContent className="p-6">
-                <h4 className="font-semibold mb-2">Litter Box Service</h4>
-                <p className="text-sm text-muted mb-3">Complete litter maintenance</p>
-                <div className="text-lg font-bold text-accent">+$5 per visit</div>
+                <h4 className="font-semibold mb-2">Spray Deck/Patio</h4>
+                <p className="text-sm text-muted mb-3">Eco-friendly deodorizer spray treatment</p>
+                <div className="text-lg font-bold text-accent">+$12 per visit</div>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center">
+              <CardContent className="p-6">
+                <h4 className="font-semibold mb-2">Premium Waste Diversion</h4>
+                <p className="text-sm text-muted mb-3">25%, 50%, or 100% landfill diversion</p>
+                <div className="text-lg font-bold text-accent">+$4-$10 per visit</div>
               </CardContent>
             </Card>
           </div>
@@ -223,11 +234,10 @@ export default function Pricing() {
       <Reveal delay={0.6}>
         <div className="mt-12 text-center">
           <div className="bg-gradient-to-r from-accent-soft/30 to-accent-soft/20 rounded-2xl p-8 max-w-2xl mx-auto">
-            <h3 className="text-xl font-semibold text-ink mb-3">
-              Ready to Get Started?
-            </h3>
+            <h3 className="text-xl font-semibold text-ink mb-3">Ready to Get Started?</h3>
             <p className="text-muted mb-6">
-              Get an instant quote with no commitment. Eco-friendly service with health insights included.
+              Get an instant quote with no commitment. Eco-friendly service with health insights
+              included. Premium diversion options available for maximum environmental impact.
             </p>
             <Button size="lg" asChild>
               <a href="/quote" data-analytics="cta_pricing_bottom_get_quote">

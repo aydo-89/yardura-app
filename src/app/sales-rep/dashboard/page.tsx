@@ -1,33 +1,35 @@
-import { Metadata } from 'next'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
-import { redirect } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { DollarSign, Users, TrendingUp, UserPlus } from 'lucide-react'
+import { Metadata } from 'next';
+import { safeGetServerSession } from '@/lib/auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { UserRole } from '@prisma/client';
+import { redirect } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { DollarSign, Users, TrendingUp, UserPlus } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Sales Rep Dashboard • Yardura',
-}
+};
 
 export default async function SalesRepDashboard() {
-  const session = await getServerSession(authOptions)
+  const session = (await safeGetServerSession(authOptions as any)) as {
+    user?: { id?: string; email?: string };
+  } | null;
 
   if (!session?.user?.id) {
-    redirect('/signin')
+    redirect('/signin');
   }
 
   // Check if user is a sales rep
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true, commissionRate: true }
-  })
+    select: { role: true, commissionRate: true },
+  });
 
   if (!user || user.role !== UserRole.SALES_REP) {
-    redirect('/dashboard')
+    redirect('/dashboard');
   }
 
   // Get commission data
@@ -38,34 +40,34 @@ export default async function SalesRepDashboard() {
         select: {
           name: true,
           email: true,
-          city: true
-        }
+          city: true,
+        },
       },
       serviceVisit: {
         select: {
           completedDate: true,
           serviceType: true,
-          dogsServiced: true
-        }
-      }
+          dogsServiced: true,
+        },
+      },
     },
-    orderBy: { createdAt: 'desc' }
-  })
+    orderBy: { createdAt: 'desc' },
+  });
 
   // Calculate stats
   const totalEarned = commissions
-    .filter(c => c.status === 'PAID')
-    .reduce((sum, c) => sum + c.amount, 0)
+    .filter((c) => c.status === 'PAID')
+    .reduce((sum, c) => sum + c.amount, 0);
 
   const pendingAmount = commissions
-    .filter(c => c.status === 'PENDING')
-    .reduce((sum, c) => sum + c.amount, 0)
+    .filter((c) => c.status === 'PENDING')
+    .reduce((sum, c) => sum + c.amount, 0);
 
   const totalCustomers = await prisma.user.count({
-    where: { salesRepId: session.user.id }
-  })
+    where: { salesRepId: session.user.id },
+  });
 
-  const recentCommissions = commissions.slice(0, 5)
+  const recentCommissions = commissions.slice(0, 5);
 
   return (
     <div className="container mx-auto py-8">
@@ -112,7 +114,9 @@ export default async function SalesRepDashboard() {
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{((user.commissionRate || 0) * 100).toFixed(0)}%</div>
+            <div className="text-2xl font-bold">
+              {((user.commissionRate || 0) * 100).toFixed(0)}%
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -154,7 +158,10 @@ export default async function SalesRepDashboard() {
           {recentCommissions.length > 0 ? (
             <div className="space-y-4">
               {recentCommissions.map((commission) => (
-                <div key={commission.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div
+                  key={commission.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium">{commission.customer.name}</span>
@@ -163,7 +170,9 @@ export default async function SalesRepDashboard() {
                       </Badge>
                     </div>
                     <div className="text-sm text-gray-600">
-                      {commission.customer.city} • {commission.serviceVisit.serviceType} • {commission.serviceVisit.dogsServiced} dog{commission.serviceVisit.dogsServiced !== 1 ? 's' : ''}
+                      {commission.customer.city} • {commission.serviceVisit.serviceType} •{' '}
+                      {commission.serviceVisit.dogsServiced} dog
+                      {commission.serviceVisit.dogsServiced !== 1 ? 's' : ''}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       {commission.createdAt.toLocaleDateString()}
@@ -176,12 +185,12 @@ export default async function SalesRepDashboard() {
               ))}
             </div>
           ) : (
-            <p className="text-center text-gray-500 py-8">No commissions yet. Start by signing up customers!</p>
+            <p className="text-center text-gray-500 py-8">
+              No commissions yet. Start by signing up customers!
+            </p>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-
-

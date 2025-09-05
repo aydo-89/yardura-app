@@ -28,7 +28,7 @@ export function Recaptcha({
   siteKey,
   size = 'normal',
   theme = 'light',
-  className = ''
+  className = '',
 }: RecaptchaProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -79,7 +79,7 @@ export function Recaptcha({
           'error-callback': () => {
             setError('reCAPTCHA error occurred');
             onError?.();
-          }
+          },
         });
       } catch (err) {
         setError('Failed to load reCAPTCHA');
@@ -98,7 +98,9 @@ export function Recaptcha({
 
   if (error) {
     return (
-      <div className={`flex items-center gap-2 p-3 border border-red-200 rounded-lg bg-red-50 ${className}`}>
+      <div
+        className={`flex items-center gap-2 p-3 border border-red-200 rounded-lg bg-red-50 ${className}`}
+      >
         <AlertCircle className="size-4 text-red-600" />
         <span className="text-sm text-red-700">{error}</span>
         <Button
@@ -140,12 +142,7 @@ export function Recaptcha({
       )}
 
       {isVerified && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={resetRecaptcha}
-          className="text-xs"
-        >
+        <Button variant="ghost" size="sm" onClick={resetRecaptcha} className="text-xs">
           Reset verification
         </Button>
       )}
@@ -191,7 +188,7 @@ export function FormProtection({
   recaptchaSiteKey,
   showRecaptcha = true,
   honeypotName = 'website',
-  className = ''
+  className = '',
 }: FormProtectionProps) {
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
@@ -207,10 +204,7 @@ export function FormProtection({
 
       {/* reCAPTCHA */}
       {showRecaptcha && recaptchaSiteKey && (
-        <Recaptcha
-          siteKey={recaptchaSiteKey}
-          onVerify={handleRecaptchaVerify}
-        />
+        <Recaptcha siteKey={recaptchaSiteKey} onVerify={handleRecaptchaVerify} />
       )}
 
       {/* Security notice */}
@@ -218,8 +212,8 @@ export function FormProtection({
         <div className="flex items-start gap-2">
           <Shield className="size-3 text-accent mt-0.5 flex-shrink-0" />
           <div>
-            Your information is protected with enterprise-grade security.
-            We use multiple layers of validation to prevent spam and ensure data integrity.
+            Your information is protected with enterprise-grade security. We use multiple layers of
+            validation to prevent spam and ensure data integrity.
           </div>
         </div>
       </div>

@@ -1,33 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/database';
-import { getServerSession } from 'next-auth';
+import { safeGetServerSession } from '@/lib/auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions as any) as { user?: { email?: string } } | null;
-    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-    if (!session || !session.user || !session.user.email || !adminEmails.includes(session.user.email.toLowerCase())) {
+    const session = (await safeGetServerSession(authOptions as any)) as {
+      user?: { email?: string };
+    } | null;
+    const adminEmails = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (
+      !session ||
+      !session.user ||
+      !session.user.email ||
+      !adminEmails.includes(session.user.email.toLowerCase())
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const { visitId, notes } = await request.json();
 
     if (!visitId) {
-      return NextResponse.json(
-        { error: 'Visit ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Visit ID is required' }, { status: 400 });
     }
 
     // Get the service visit
     const visit = await db.getServiceVisit(visitId);
     if (!visit) {
-      return NextResponse.json(
-        { error: 'Service visit not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Service visit not found' }, { status: 404 });
     }
 
     if (visit.status === 'completed') {
@@ -40,10 +44,7 @@ export async function POST(request: NextRequest) {
     // Get customer details
     const customer = await db.getCustomer(visit.customerId);
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Customer not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
     // Create payment intent for the service charge
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     if (customer.salesRepId) {
       const salesRep = await prisma.user.findUnique({
         where: { id: customer.salesRepId },
-        select: { commissionRate: true }
+        select: { commissionRate: true },
       });
 
       if (salesRep?.commissionRate) {
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
             serviceVisitId: visit.id,
             amount: commissionAmount,
             status: 'PENDING',
-          }
+          },
         });
       }
     }
@@ -100,10 +101,7 @@ export async function POST(request: NextRequest) {
 
     // Schedule next service visit if recurring
     if (customer.frequency !== 'one-time') {
-      const nextVisitDate = calculateNextServiceDate(
-        customer.serviceDay,
-        visit.scheduledDate
-      );
+      const nextVisitDate = calculateNextServiceDate(customer.serviceDay, visit.scheduledDate);
 
       await db.createServiceVisit({
         customerId: customer.id,
@@ -117,11 +115,11 @@ export async function POST(request: NextRequest) {
       success: true,
       paymentIntentId: paymentIntent.id,
       amount: visit.amount,
-      nextVisitDate: customer.frequency !== 'one-time'
-        ? calculateNextServiceDate(customer.serviceDay, visit.scheduledDate)
-        : null,
+      nextVisitDate:
+        customer.frequency !== 'one-time'
+          ? calculateNextServiceDate(customer.serviceDay, visit.scheduledDate)
+          : null,
     });
-
   } catch (error: any) {
     console.error('Service charge error:', error);
 
@@ -131,16 +129,13 @@ export async function POST(request: NextRequest) {
         {
           error: 'Payment failed',
           details: error.message,
-          code: error.code
+          code: error.code,
         },
         { status: 402 }
       );
     }
 
-    return NextResponse.json(
-      { error: 'Failed to process service charge' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to process service charge' }, { status: 500 });
   }
 }
 
@@ -154,7 +149,7 @@ function calculateNextServiceDate(serviceDay: string, lastServiceDate: Date): Da
 
   // Adjust to the correct day of the week
   const currentDayIndex = nextDate.getDay();
-  let dayDifference = targetDayIndex - currentDayIndex;
+  const dayDifference = targetDayIndex - currentDayIndex;
 
   nextDate.setDate(nextDate.getDate() + dayDifference);
   nextDate.setHours(9, 0, 0, 0); // 9 AM

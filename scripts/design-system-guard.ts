@@ -23,14 +23,34 @@ interface Violation {
 const DESIGN_SYSTEM_RULES = {
   // Allowed color classes
   allowedColors: [
-    'text-ink', 'text-muted', 'text-accent', 'text-warning',
-    'bg-white', 'bg-accent', 'bg-accent-soft', 'bg-ink', 'bg-panel', 'bg-card',
-    'border-accent', 'border-accent/10', 'border-black/5',
-    'hover:bg-accent-soft', 'hover:bg-accent', 'hover:text-accent',
-    'focus:ring-accent', 'focus:ring-2', 'focus:outline-none',
-    'text-slate-500', 'text-blue-600', 'text-emerald-600',
-    'bg-blue-50', 'bg-green-50', 'bg-red-50',
-    'border-red-600', 'text-red-600', 'text-green-600'
+    'text-ink',
+    'text-muted',
+    'text-accent',
+    'text-warning',
+    'bg-white',
+    'bg-accent',
+    'bg-accent-soft',
+    'bg-ink',
+    'bg-panel',
+    'bg-card',
+    'border-accent',
+    'border-accent/10',
+    'border-black/5',
+    'hover:bg-accent-soft',
+    'hover:bg-accent',
+    'hover:text-accent',
+    'focus:ring-accent',
+    'focus:ring-2',
+    'focus:outline-none',
+    'text-slate-500',
+    'text-blue-600',
+    'text-emerald-600',
+    'bg-blue-50',
+    'bg-green-50',
+    'bg-red-50',
+    'border-red-600',
+    'text-red-600',
+    'text-green-600',
   ],
 
   // Forbidden color patterns
@@ -45,13 +65,41 @@ const DESIGN_SYSTEM_RULES = {
 
   // Utility classes that are allowed
   allowedUtilities: [
-    'size-', 'w-', 'h-', 'p-', 'm-', 'rounded-', 'shadow-',
-    'flex', 'grid', 'items-', 'justify-', 'gap-', 'space-',
-    'hover:', 'focus:', 'md:', 'lg:', 'xl:',
-    'sr-only', 'container', 'max-w-', 'min-w-', 'font-',
-    'text-', 'leading-', 'tracking-', 'transition', 'duration-', 'ease-',
-    'animate-', 'delay-', 'opacity-', 'scale-', 'translate-',
-  ]
+    'size-',
+    'w-',
+    'h-',
+    'p-',
+    'm-',
+    'rounded-',
+    'shadow-',
+    'flex',
+    'grid',
+    'items-',
+    'justify-',
+    'gap-',
+    'space-',
+    'hover:',
+    'focus:',
+    'md:',
+    'lg:',
+    'xl:',
+    'sr-only',
+    'container',
+    'max-w-',
+    'min-w-',
+    'font-',
+    'text-',
+    'leading-',
+    'tracking-',
+    'transition',
+    'duration-',
+    'ease-',
+    'animate-',
+    'delay-',
+    'opacity-',
+    'scale-',
+    'translate-',
+  ],
 };
 
 function scanFile(filePath: string): Violation[] {
@@ -64,13 +112,13 @@ function scanFile(filePath: string): Violation[] {
     const classMatches = line.match(/(?:className|class)="([^"]*)"/g);
     if (!classMatches) return;
 
-    classMatches.forEach(match => {
+    classMatches.forEach((match) => {
       const classValue = match.match(/"([^"]*)"/)?.[1];
       if (!classValue) return;
 
       const classes = classValue.split(/\s+/);
 
-      classes.forEach(className => {
+      classes.forEach((className) => {
         let violation: Violation | null = null;
 
         // Check against forbidden patterns
@@ -82,7 +130,7 @@ function scanFile(filePath: string): Violation[] {
               column: line.indexOf(className) + 1,
               violation: `Arbitrary color class: ${className}`,
               suggestion: 'Use design token classes from tokens.css',
-              severity: 'error'
+              severity: 'error',
             };
             break;
           }
@@ -90,18 +138,38 @@ function scanFile(filePath: string): Violation[] {
 
         // Check for ad-hoc color usage
         if (!violation) {
-          const isAllowedUtility = DESIGN_SYSTEM_RULES.allowedUtilities.some(util =>
-            className.startsWith(util) || className.includes(util)
+          const isAllowedUtility = DESIGN_SYSTEM_RULES.allowedUtilities.some(
+            (util) => className.startsWith(util) || className.includes(util)
           );
 
           const isAllowedColor = DESIGN_SYSTEM_RULES.allowedColors.includes(className);
 
           if (!isAllowedUtility && !isAllowedColor) {
             // Check for color-related classes
-            const colorClasses = ['red-', 'blue-', 'green-', 'yellow-', 'purple-', 'pink-',
-                                'indigo-', 'gray-', 'slate-', 'zinc-', 'neutral-', 'stone-',
-                                'orange-', 'amber-', 'lime-', 'emerald-', 'teal-', 'cyan-',
-                                'sky-', 'violet-', 'fuchsia-', 'rose-'];
+            const colorClasses = [
+              'red-',
+              'blue-',
+              'green-',
+              'yellow-',
+              'purple-',
+              'pink-',
+              'indigo-',
+              'gray-',
+              'slate-',
+              'zinc-',
+              'neutral-',
+              'stone-',
+              'orange-',
+              'amber-',
+              'lime-',
+              'emerald-',
+              'teal-',
+              'cyan-',
+              'sky-',
+              'violet-',
+              'fuchsia-',
+              'rose-',
+            ];
 
             for (const colorClass of colorClasses) {
               if (className.includes(colorClass)) {
@@ -109,7 +177,11 @@ function scanFile(filePath: string): Violation[] {
                 if (className.includes('red-')) suggestion = 'text-red-600 for errors';
                 else if (className.includes('blue-')) suggestion = 'text-blue-600 or bg-blue-50';
                 else if (className.includes('green-')) suggestion = 'text-green-600 or bg-green-50';
-                else if (className.includes('gray-') || className.includes('slate-') || className.includes('zinc-'))
+                else if (
+                  className.includes('gray-') ||
+                  className.includes('slate-') ||
+                  className.includes('zinc-')
+                )
                   suggestion = 'text-muted or text-ink';
 
                 violation = {
@@ -118,7 +190,7 @@ function scanFile(filePath: string): Violation[] {
                   column: line.indexOf(className) + 1,
                   violation: `Ad-hoc color class: ${className}`,
                   suggestion,
-                  severity: 'warning'
+                  severity: 'warning',
                 };
                 break;
               }
@@ -142,7 +214,7 @@ async function scanCodebase(): Promise<Violation[]> {
   // Scan TypeScript/React files
   const files = await glob('src/**/*.{ts,tsx,js,jsx}', {
     cwd: process.cwd(),
-    absolute: true
+    absolute: true,
   });
 
   console.log(`🔍 Scanning ${files.length} files for design system violations...`);
@@ -163,12 +235,12 @@ function printReport(violations: Violation[]): void {
 
   console.log(`🚨 Found ${violations.length} design system violations:\n`);
 
-  const errors = violations.filter(v => v.severity === 'error');
-  const warnings = violations.filter(v => v.severity === 'warning');
+  const errors = violations.filter((v) => v.severity === 'error');
+  const warnings = violations.filter((v) => v.severity === 'warning');
 
   if (errors.length > 0) {
     console.log('❌ ERRORS:');
-    errors.forEach(violation => {
+    errors.forEach((violation) => {
       console.log(`  ${violation.file}:${violation.line}:${violation.column}`);
       console.log(`    ${violation.violation}`);
       console.log(`    💡 ${violation.suggestion}\n`);
@@ -177,7 +249,7 @@ function printReport(violations: Violation[]): void {
 
   if (warnings.length > 0) {
     console.log('⚠️  WARNINGS:');
-    warnings.forEach(violation => {
+    warnings.forEach((violation) => {
       console.log(`  ${violation.file}:${violation.line}:${violation.column}`);
       console.log(`    ${violation.violation}`);
       console.log(`    💡 ${violation.suggestion}\n`);

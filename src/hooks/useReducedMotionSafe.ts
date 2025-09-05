@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useReducedMotion } from 'framer-motion';
 import { reducedMotionReveal, reducedMotionHover } from '@/lib/motion/presets';
@@ -19,11 +19,9 @@ export function useReducedMotionSafe() {
     prefersReducedMotion: shouldReduceMotion,
 
     // Convenience methods for conditional variants
-    getRevealVariant: () =>
-      shouldReduceMotion ? reducedMotionReveal : undefined,
+    getRevealVariant: () => (shouldReduceMotion ? reducedMotionReveal : undefined),
 
-    getHoverVariant: () =>
-      shouldReduceMotion ? reducedMotionHover : undefined,
+    getHoverVariant: () => (shouldReduceMotion ? reducedMotionHover : undefined),
 
     // Helper to conditionally return animation props
     motionProps: (normalProps: any, reducedProps: any = {}) => {
@@ -44,9 +42,7 @@ export function useReducedMotionSafe() {
     shouldDisableContinuous: shouldReduceMotion,
 
     // Safe transition for static elements
-    safeTransition: shouldReduceMotion
-      ? { duration: 0.3, ease: 'linear' }
-      : undefined,
+    safeTransition: shouldReduceMotion ? { duration: 0.3, ease: 'linear' } : undefined,
   };
 }
 
@@ -68,10 +64,7 @@ export function getSafeVariants(
 /**
  * Create a motion-safe transition object
  */
-export function createSafeTransition(
-  normalTransition: any,
-  prefersReducedMotion: boolean
-) {
+export function createSafeTransition(normalTransition: any, prefersReducedMotion: boolean) {
   if (prefersReducedMotion) {
     return {
       duration: 0.3,
@@ -84,10 +77,7 @@ export function createSafeTransition(
 /**
  * Hook for conditional animation values
  */
-export function useConditionalAnimation<T>(
-  normalValue: T,
-  reducedValue: T
-): T {
+export function useConditionalAnimation<T>(normalValue: T, reducedValue: T): T {
   const { prefersReducedMotion } = useReducedMotionSafe();
   return prefersReducedMotion ? reducedValue : normalValue;
 }

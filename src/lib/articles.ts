@@ -178,13 +178,19 @@ export function generateTableOfContents(content: string): TableOfContentsItem[] 
   return toc;
 }
 
-export function getRelatedArticles(currentSlug: string, allArticles: Article[], limit: number = 3): Article[] {
+export function getRelatedArticles(
+  currentSlug: string,
+  allArticles: Article[],
+  limit: number = 3
+): Article[] {
   return allArticles
-    .filter(article => article.slug !== currentSlug)
+    .filter((article) => article.slug !== currentSlug)
     .sort((a, b) => {
       // Prioritize same category
       if (a.category.id === b.category.id) return 0;
-      return a.category.id === allArticles.find(art => art.slug === currentSlug)?.category.id ? -1 : 1;
+      return a.category.id === allArticles.find((art) => art.slug === currentSlug)?.category.id
+        ? -1
+        : 1;
     })
     .slice(0, limit);
 }
@@ -193,33 +199,34 @@ export function searchArticles(articles: Article[], query: string): Article[] {
   const searchTerm = query.toLowerCase().trim();
   if (!searchTerm) return articles;
 
-  return articles.filter(article =>
-    article.title.toLowerCase().includes(searchTerm) ||
-    article.description.toLowerCase().includes(searchTerm) ||
-    article.excerpt.toLowerCase().includes(searchTerm) ||
-    article.tags.some(tag => tag.name.toLowerCase().includes(searchTerm)) ||
-    article.category.name.toLowerCase().includes(searchTerm)
+  return articles.filter(
+    (article) =>
+      article.title.toLowerCase().includes(searchTerm) ||
+      article.description.toLowerCase().includes(searchTerm) ||
+      article.excerpt.toLowerCase().includes(searchTerm) ||
+      article.tags.some((tag) => tag.name.toLowerCase().includes(searchTerm)) ||
+      article.category.name.toLowerCase().includes(searchTerm)
   );
 }
 
 export function filterArticlesByCategory(articles: Article[], categorySlug: string): Article[] {
-  return articles.filter(article => article.category.slug === categorySlug);
+  return articles.filter((article) => article.category.slug === categorySlug);
 }
 
 export function filterArticlesByTag(articles: Article[], tagSlug: string): Article[] {
-  return articles.filter(article =>
-    article.tags.some(tag => tag.slug === tagSlug)
-  );
+  return articles.filter((article) => article.tags.some((tag) => tag.slug === tagSlug));
 }
 
 // Mock article data for development
 export const MOCK_ARTICLES: Article[] = [
   {
     title: "Dog Poop Color Chart: What Your Dog's Stool Says About Health",
-    description: "Complete guide to dog stool colors and what they mean for your pet's health. Know when to consult your Minneapolis vet.",
-    excerpt: "Understanding dog poop colors is crucial for early health detection. Learn what different colors indicate and when to seek veterinary care.",
-    slug: "dog-poop-color-health",
-    publishedAt: "2024-01-15T10:00:00.000Z",
+    description:
+      "Complete guide to dog stool colors and what they mean for your pet's health. Know when to consult your Minneapolis vet.",
+    excerpt:
+      'Understanding dog poop colors is crucial for early health detection. Learn what different colors indicate and when to seek veterinary care.',
+    slug: 'dog-poop-color-health',
+    publishedAt: '2024-01-15T10:00:00.000Z',
     readingTime: 8,
     featured: true,
     category: ARTICLE_CATEGORIES[0], // Health

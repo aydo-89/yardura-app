@@ -1,35 +1,40 @@
-import { NextAuthOptions } from "next-auth"
-import GoogleProvider from "next-auth/providers/google"
-import EmailProvider from "next-auth/providers/email"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@next-auth/prisma-adapter"
-import { prisma } from "./prisma"
-import bcrypt from "bcryptjs"
-import { env, getEmailConfig, isAdminEmail } from "./env"
+import { prisma } from './prisma';
+import bcrypt from 'bcryptjs';
+import { env, getEmailConfig, isAdminEmail } from './env';
 
 // Get email configuration
 const emailConfig = getEmailConfig();
 
-// Configure providers based on available environment variables
-const providers: any[] = [
+// Import NextAuth components
+import NextAuth, { NextAuthOptions } from 'next-auth';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import GoogleProvider from 'next-auth/providers/google';
+import EmailProvider from 'next-auth/providers/email';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
+
+const providers = [
   // Email provider for magic links (always available)
   EmailProvider({
-    server: emailConfig.provider === 'smtp' ? {
-      host: emailConfig.host,
-      port: emailConfig.port,
-      secure: emailConfig.port === 465,
-      auth: {
-        user: emailConfig.user,
-        pass: emailConfig.password,
-      },
-    } : undefined,
+    server:
+      emailConfig.provider === 'smtp'
+        ? {
+            host: emailConfig.host,
+            port: emailConfig.port,
+            secure: emailConfig.port === 465,
+            auth: {
+              user: emailConfig.user,
+              pass: emailConfig.password,
+            },
+          }
+        : undefined,
     from: env.EMAIL_FROM,
-    async sendVerificationRequest({ identifier, url, provider }) {
+    async sendVerificationRequest({ identifier, url, provider }: any) {
       const host = new URL(env.NEXTAUTH_URL).host;
 
       // Development: log to console if no SMTP configured
       if (emailConfig.provider === 'resend' || !emailConfig.host) {
-        console.log("\n[NextAuth] Magic sign-in link (DEV):\n", url, "\n");
+        console.log('\n[NextAuth] Magic sign-in link (DEV):\n', url, '\n');
         return;
       }
 
@@ -63,33 +68,32 @@ const providers: any[] = [
   }),
 
   // Google provider (only if configured)
-  ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? [
-    GoogleProvider({
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-    })
-  ] : []),
+  ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+    ? [
+        GoogleProvider({
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+        }),
+      ]
+    : []),
 
   // Credentials provider for password-based auth
   CredentialsProvider({
     name: 'credentials',
     credentials: {
       email: { label: 'Email', type: 'email' },
-      password: { label: 'Password', type: 'password' }
+      password: { label: 'Password', type: 'password' },
     },
-    async authorize(credentials) {
+    async authorize(credentials: any) {
       if (!credentials?.email || !credentials?.password) {
         return null;
       }
 
-      // Skip database operations during build time
-      if (process.env.NODE_ENV === 'production' && process.env.CI) {
-        return null;
-      }
+      // Database operations are always available in this configuration
 
       const user = await prisma.user.findUnique({
         where: { email: credentials.email.toLowerCase() },
-        include: { accounts: true }
+        include: { accounts: true },
       });
 
       if (!user) {
@@ -106,10 +110,7 @@ const providers: any[] = [
       }
 
       // Verify password
-      const isValid = await bcrypt.compare(
-        credentials.password,
-        credentialsAccount.access_token
-      );
+      const isValid = await bcrypt.compare(credentials.password, credentialsAccount.access_token);
 
       if (!isValid) {
         return null;
@@ -121,32 +122,19 @@ const providers: any[] = [
         email: user.email,
         image: user.image,
       };
-    }
+    },
   }),
 ];
 
-// Only use PrismaAdapter in runtime, not during build
-const getAdapter = () => {
-  // Skip adapter during build to prevent database connection issues
-  if (process.env.NODE_ENV === 'production' && !process.env.CI) {
-    return PrismaAdapter(prisma);
-  }
-  return undefined;
-};
-
+// Configure NextAuth options
 export const authOptions: NextAuthOptions = {
-  adapter: getAdapter(),
-  providers,
+  adapter: PrismaAdapter(prisma),
+  providers: providers,
   pages: {
     signIn: '/signin',
   },
   callbacks: {
-    signIn: async ({ user, account, profile }) => {
-      // Skip database operations during build time
-      if (process.env.NODE_ENV === 'production' && process.env.CI) {
-        return true;
-      }
-
+    signIn: async ({ user, account: _account, profile: _profile }) => {
       // Set admin role for admin emails during sign-in
       if (user.email && isAdminEmail(user.email)) {
         try {
@@ -170,12 +158,12 @@ export const authOptions: NextAuthOptions = {
         session.user.id = (token as any).uid as string;
       }
 
-      // Get user role from database (skip during build)
-      if (session.user.email && !(process.env.NODE_ENV === 'production' && process.env.CI)) {
+      // Get user role from database
+      if (session.user.email) {
         try {
           const user = await prisma.user.findUnique({
             where: { email: session.user.email },
-            select: { role: true }
+            select: { role: true },
           });
 
           if (user) {
@@ -201,15 +189,31 @@ export const authOptions: NextAuthOptions = {
     },
     redirect: async ({ url, baseUrl }) => {
       // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
       // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url;
       return baseUrl;
     },
   },
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: env.NEXTAUTH_SECRET,
+};
+
+// Safe wrapper for getServerSession that prevents build-time errors
+export async function safeGetServerSession(options: any): Promise<any> {
+  // During build time or when NextAuth is disabled, return null
+  if (typeof window === 'undefined' && process.env.DISABLE_NEXTAUTH_BUILD === 'true') {
+    return null;
+  }
+
+  try {
+    const { getServerSession } = await import('next-auth/next');
+    return await getServerSession(options);
+  } catch (error) {
+    console.warn('getServerSession failed, returning null:', error);
+    return null;
+  }
 }

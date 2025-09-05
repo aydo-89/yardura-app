@@ -1,23 +1,23 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, AlertCircle } from 'lucide-react'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 
 interface FormData {
-  name: string
-  email: string
-  password: string
-  confirmPassword: string
-  phone: string
-  address: string
-  city: string
-  zipCode: string
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone: string;
+  address: string;
+  city: string;
+  zipCode: string;
 }
 
 export default function CustomerSignupForm() {
@@ -29,41 +29,41 @@ export default function CustomerSignupForm() {
     phone: '',
     address: '',
     city: '',
-    zipCode: ''
-  })
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const router = useRouter()
+    zipCode: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
-    setSuccess('')
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
 
     // Validation
     if (!formData.name || !formData.email || !formData.password) {
-      setError('Name, email, and password are required')
-      setIsLoading(false)
-      return
+      setError('Name, email, and password are required');
+      setIsLoading(false);
+      return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      setIsLoading(false)
-      return
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long')
-      setIsLoading(false)
-      return
+      setError('Password must be at least 8 characters long');
+      setIsLoading(false);
+      return;
     }
 
     try {
@@ -73,15 +73,15 @@ export default function CustomerSignupForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong')
+        throw new Error(data.error || 'Something went wrong');
       }
 
-      setSuccess(`Customer account created successfully! Customer ID: ${data.customerId}`)
+      setSuccess(`Customer account created successfully! Customer ID: ${data.customerId}`);
 
       // Reset form
       setFormData({
@@ -92,20 +92,19 @@ export default function CustomerSignupForm() {
         phone: '',
         address: '',
         city: '',
-        zipCode: ''
-      })
+        zipCode: '',
+      });
 
       // Redirect to dashboard after a delay
       setTimeout(() => {
-        router.push('/sales-rep/dashboard')
-      }, 3000)
-
+        router.push('/sales-rep/dashboard');
+      }, 3000);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -244,7 +243,5 @@ export default function CustomerSignupForm() {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }
-
-

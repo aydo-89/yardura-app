@@ -18,10 +18,7 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
   } catch (err: any) {
     console.error('Webhook signature verification failed:', err.message);
-    return NextResponse.json(
-      { error: 'Invalid signature' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
   try {
@@ -55,13 +52,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-
   } catch (error) {
     console.error('Webhook processing error:', error);
-    return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }
 
@@ -139,5 +132,3 @@ async function handleSubscriptionCancellation(subscription: any) {
     console.log(`Subscription cancelled for customer ${customer.id}`);
   }
 }
-
-

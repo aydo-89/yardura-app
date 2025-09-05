@@ -1,20 +1,20 @@
-export type Frequency = "weekly" | "twice-weekly" | "bi-weekly" | "one-time";
+export type Frequency = 'weekly' | 'twice-weekly' | 'bi-weekly' | 'one-time';
 
 // Yard size categories for pricing
 export type YardSize = 'small' | 'medium' | 'large' | 'xlarge';
 
 export const YARD_SIZE_MULTIPLIERS = {
-  small: 0.8,   // < 1/4 acre
-  medium: 1.0,  // 1/4 - 1/2 acre
-  large: 1.2,   // 1/2 - 1 acre
-  xlarge: 1.4   // > 1 acre
+  small: 0.8, // < 1/4 acre
+  medium: 1.0, // 1/4 - 1/2 acre
+  large: 1.2, // 1/2 - 1 acre
+  xlarge: 1.4, // > 1 acre
 };
 
 export const BASE_RATES = {
-  weekly:      { base1: 20, base2: 24, base3: 28, extraDog: 4, visitMultiplier: 1 },
-  "twice-weekly": { base1: 32, base2: 38, base3: 44, extraDog: 6, visitMultiplier: 1 }, // weekly total for 2 visits
-  "bi-weekly": { base1: 28, base2: 32, base3: 36, extraDog: 4, visitMultiplier: 1/2 }, // charged per visit, occurs twice monthly
-  "one-time":  { base1: 89, base2: 104, base3: 119, extraDog: 15, visitMultiplier: 0 },
+  weekly: { base1: 20, base2: 24, base3: 28, extraDog: 4, visitMultiplier: 1 },
+  'twice-weekly': { base1: 32, base2: 38, base3: 44, extraDog: 6, visitMultiplier: 1 }, // weekly total for 2 visits
+  'bi-weekly': { base1: 28, base2: 32, base3: 36, extraDog: 4, visitMultiplier: 1 / 2 }, // charged per visit, occurs twice monthly
+  'one-time': { base1: 89, base2: 104, base3: 119, extraDog: 15, visitMultiplier: 0 },
 } as const;
 
 // Backward compatible signature:
@@ -39,15 +39,20 @@ export function calcPerVisitEstimate(
   }
 
   const tier =
-    dogs <= 1 ? (rates as any).base1 :
-    dogs === 2 ? (rates as any).base2 :
-    (rates as any).base3 + Math.max(0, dogs - 3) * (rates as any).extraDog;
+    dogs <= 1
+      ? (rates as any).base1
+      : dogs === 2
+        ? (rates as any).base2
+        : (rates as any).base3 + Math.max(0, dogs - 3) * (rates as any).extraDog;
 
   // Per visit calculation
   let perVisit = 0;
-  if (frequency === 'weekly') perVisit = tier; // one visit per week
-  else if (frequency === 'twice-weekly') perVisit = tier / 2; // weekly total divided by two visits
-  else if (frequency === 'bi-weekly') perVisit = tier; // price charged per visit
+  if (frequency === 'weekly')
+    perVisit = tier; // one visit per week
+  else if (frequency === 'twice-weekly')
+    perVisit = tier / 2; // weekly total divided by two visits
+  else if (frequency === 'bi-weekly')
+    perVisit = tier; // price charged per visit
   else perVisit = 0; // handled by calcOneTimeEstimate
 
   // Apply yard size multiplier
@@ -88,7 +93,7 @@ export function calcInstantQuote(
   dogs: number,
   frequency: Frequency,
   yardSize: YardSize,
-  addOns: { deodorize: boolean; litter: boolean; }
+  addOns: { deodorize: boolean; litter: boolean }
 ): number {
   if (frequency === 'one-time') {
     return calcOneTimeEstimate(dogs, yardSize, { deodorize: addOns.deodorize });
@@ -96,4 +101,3 @@ export function calcInstantQuote(
     return calcPerVisitEstimate(dogs, frequency, yardSize, addOns);
   }
 }
-

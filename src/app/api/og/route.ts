@@ -5,7 +5,7 @@ import {
   generateInsightsOG,
   generateFactsOG,
   generateCustomOGImage,
-  type OGImageOptions
+  type OGImageOptions,
 } from '@/lib/og-image';
 
 export const runtime = 'edge';

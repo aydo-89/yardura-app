@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -26,7 +26,7 @@ export function useABTest({ testId, variants, defaultVariant = 'control' }: ABTe
     // Check cookie for persistent variant
     const cookieValue = document.cookie
       .split('; ')
-      .find(row => row.startsWith(`${testId}=`))
+      .find((row) => row.startsWith(`${testId}=`))
       ?.split('=')[1];
 
     if (cookieValue && variants[cookieValue as keyof typeof variants]) {
@@ -51,7 +51,7 @@ export function useABTest({ testId, variants, defaultVariant = 'control' }: ABTe
       (window as any).gtag('event', 'ab_test_variant_assigned', {
         test_id: testId,
         variant: assignedVariant,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   }, [testId, variants, defaultVariant, searchParams]);
@@ -62,7 +62,7 @@ export function useABTest({ testId, variants, defaultVariant = 'control' }: ABTe
         ...properties,
         test_id: testId,
         variant,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   };
@@ -73,6 +73,6 @@ export function useABTest({ testId, variants, defaultVariant = 'control' }: ABTe
     variant,
     Component,
     isLoaded,
-    track
+    track,
   };
 }

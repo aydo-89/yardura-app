@@ -25,7 +25,7 @@ export default function ArticleFilters({
 }: ArticleFiltersProps) {
   const toggleTag = (tagSlug: string) => {
     if (selectedTags.includes(tagSlug)) {
-      onTagsChange(selectedTags.filter(tag => tag !== tagSlug));
+      onTagsChange(selectedTags.filter((tag) => tag !== tagSlug));
     } else {
       onTagsChange([...selectedTags, tagSlug]);
     }
@@ -114,21 +114,15 @@ export default function ArticleFilters({
             {searchQuery && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-accent-soft/50 rounded-md">
                 Search: "{searchQuery}"
-                <button
-                  onClick={() => onSearchChange('')}
-                  className="hover:text-accent"
-                >
+                <button onClick={() => onSearchChange('')} className="hover:text-accent">
                   <X className="size-3" />
                 </button>
               </span>
             )}
             {selectedCategory && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-accent-soft/50 rounded-md">
-                {ARTICLE_CATEGORIES.find(cat => cat.slug === selectedCategory)?.name}
-                <button
-                  onClick={() => onCategoryChange(null)}
-                  className="hover:text-accent"
-                >
+                {ARTICLE_CATEGORIES.find((cat) => cat.slug === selectedCategory)?.name}
+                <button onClick={() => onCategoryChange(null)} className="hover:text-accent">
                   <X className="size-3" />
                 </button>
               </span>

@@ -80,3 +80,4 @@ Scope: Elevate Yardura landing to flagship quality with consistent tokens, motio
 - [ ] Add FAQ schema JSON-LD
 - [ ] Add LocalBusiness/Offer JSON-LD
 - [ ] Verify a11y and Lighthouse ≥ 90 across categories
+

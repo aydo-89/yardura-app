@@ -8,6 +8,7 @@ export default function Footer() {
     { name: 'Woodbury', slug: 'woodbury' },
     { name: 'Edina', slug: 'edina' },
     { name: 'Richfield', slug: 'richfield' },
+    { name: 'St. Cloud', slug: 'st-cloud' },
   ];
 
   return (
@@ -25,10 +26,7 @@ export default function Footer() {
             <div className="space-y-1">
               {cities.map((city) => (
                 <p key={city.slug}>
-                  <a
-                    href={`/city/${city.slug}`}
-                    className="hover:text-accent transition-colors"
-                  >
+                  <a href={`/city/${city.slug}`} className="hover:text-accent transition-colors">
                     {city.name}
                   </a>
                 </p>
@@ -39,23 +37,50 @@ export default function Footer() {
           <div>
             <div className="font-semibold mb-3">Services</div>
             <div className="space-y-1">
-              <p><a href="#services" className="hover:text-accent transition-colors">Dog Waste Removal</a></p>
-              <p><a href="#pricing" className="hover:text-accent transition-colors">Pricing</a></p>
-              <p><a href="#insights" className="hover:text-accent transition-colors">Health Insights</a></p>
-              <p><a href="/city" className="hover:text-accent transition-colors">All Cities</a></p>
+              <p>
+                <a href="#services" className="hover:text-accent transition-colors">
+                  Dog Waste Removal
+                </a>
+              </p>
+              <p>
+                <a href="#pricing" className="hover:text-accent transition-colors">
+                  Pricing
+                </a>
+              </p>
+              <p>
+                <a href="#insights" className="hover:text-accent transition-colors">
+                  Health Insights
+                </a>
+              </p>
+              <p>
+                <a href="/city" className="hover:text-accent transition-colors">
+                  All Cities
+                </a>
+              </p>
             </div>
           </div>
 
           <div>
             <div className="font-semibold mb-3">Contact & Legal</div>
-            <p><a href="tel:+18889159273" className="hover:text-accent transition-colors">(888) 915-YARD</a></p>
-            <p><a href="mailto:hello@yardura.com" className="hover:text-accent transition-colors">hello@yardura.com</a></p>
-            <p className="mt-3 text-xs">Insights are informational only and not veterinary advice.</p>
-            <p className="text-xs">© {new Date().getFullYear()} Yardura, LLC. All rights reserved.</p>
+            <p>
+              <a href="tel:+18889159273" className="hover:text-accent transition-colors">
+                (888) 915-YARD
+              </a>
+            </p>
+            <p>
+              <a href="mailto:hello@yardura.com" className="hover:text-accent transition-colors">
+                hello@yardura.com
+              </a>
+            </p>
+            <p className="mt-3 text-xs">
+              Insights are informational only and not veterinary advice.
+            </p>
+            <p className="text-xs">
+              © {new Date().getFullYear()} Yardura, LLC. All rights reserved.
+            </p>
           </div>
         </div>
       </div>
     </footer>
   );
 }
-

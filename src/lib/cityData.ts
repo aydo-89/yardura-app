@@ -11,8 +11,8 @@ export interface CityData {
     name: string;
     address: string;
     phone: string;
-    rating: number;
-    reviewCount: number;
+    // rating: number; // TODO: Uncomment when we have real ratings
+    // reviewCount: number; // TODO: Uncomment when we have real ratings
   };
   seo: {
     title: string;
@@ -22,182 +22,327 @@ export interface CityData {
 }
 
 export const CITY_DATA: Record<string, CityData> = {
-  'minneapolis': {
+  minneapolis: {
     name: 'minneapolis',
     displayName: 'Minneapolis',
     state: 'MN',
     population: 430000,
-    description: 'Minneapolis, the largest city in Minnesota and the heart of the Twin Cities metro area.',
-    zipCodes: ['55401', '55402', '55403', '55404', '55405', '55406', '55407', '55408', '55409', '55410'],
-    neighborhoods: ['Downtown Minneapolis', 'Uptown', 'Lowertown', 'North Loop', 'Warehouse District'],
-    serviceAreas: ['Minneapolis', 'Golden Valley', 'St. Louis Park', 'Richfield', 'Bloomington'],
+    description:
+      'Minneapolis, the largest city in Minnesota and the heart of the Twin Cities metro area.',
+    zipCodes: [
+      '55401',
+      '55402',
+      '55403',
+      '55404',
+      '55405',
+      '55406',
+      '55407',
+      '55408',
+      '55409',
+      '55410',
+      '55419', // South Minneapolis
+      '55423', // Richfield area
+    ],
+    neighborhoods: [
+      'Downtown Minneapolis',
+      'Uptown',
+      'Lowertown',
+      'North Loop',
+      'Warehouse District',
+      'South Minneapolis',
+    ],
+    serviceAreas: ['Minneapolis', 'South Minneapolis', 'Richfield', 'Bloomington'],
     localBusiness: {
       name: 'Yardura Minneapolis',
       address: 'Downtown Minneapolis, MN 55401',
-      phone: '(612) 555-YARD',
-      rating: 4.9,
-      reviewCount: 247
+      phone: '(888) 915-YARD',
+      // rating: 4.9, // TODO: Uncomment when we have real ratings
+      // reviewCount: 247, // TODO: Uncomment when we have real ratings
     },
     seo: {
       title: 'Professional Dog Waste Removal Services in Minneapolis, MN | Yardura',
-      description: 'Expert dog poop cleanup services in Minneapolis. Eco-friendly, reliable, and affordable. Serving Minneapolis and surrounding areas. Get your free quote today!',
-      keywords: ['dog waste removal Minneapolis', 'poop scooping Minneapolis', 'dog cleanup services Minneapolis', 'eco friendly pet waste Minneapolis']
-    }
-  },
-  'st-paul': {
-    name: 'st-paul',
-    displayName: 'St. Paul',
-    state: 'MN',
-    population: 310000,
-    description: 'St. Paul, the capital city of Minnesota, known for its rich history and beautiful neighborhoods.',
-    zipCodes: ['55101', '55102', '55103', '55104', '55105', '55106', '55107', '55108'],
-    neighborhoods: ['Downtown St. Paul', 'Summit Hill', 'Lowertown', 'West Side', 'East Side'],
-    serviceAreas: ['St. Paul', 'Roseville', 'Maplewood', 'White Bear Lake', 'Stillwater'],
-    localBusiness: {
-      name: 'Yardura St. Paul',
-      address: 'Downtown St. Paul, MN 55101',
-      phone: '(651) 555-YARD',
-      rating: 4.8,
-      reviewCount: 189
+      description:
+        'Expert dog poop cleanup services in Minneapolis. Eco-friendly, reliable, and affordable. Serving Minneapolis and surrounding areas. Get your free quote today!',
+      keywords: [
+        'dog waste removal Minneapolis',
+        'poop scooping Minneapolis',
+        'dog cleanup services Minneapolis',
+        'eco friendly pet waste Minneapolis',
+      ],
     },
-    seo: {
-      title: 'Professional Dog Waste Removal Services in St. Paul, MN | Yardura',
-      description: 'Expert dog poop cleanup services in St. Paul. Eco-friendly, reliable, and affordable. Serving St. Paul and surrounding areas. Get your free quote today!',
-      keywords: ['dog waste removal St. Paul', 'poop scooping St. Paul', 'dog cleanup services St. Paul', 'eco friendly pet waste St. Paul']
-    }
   },
-  'bloomington': {
+  bloomington: {
     name: 'bloomington',
     displayName: 'Bloomington',
     state: 'MN',
     population: 90000,
-    description: 'Bloomington, home to the Mall of America and known for its suburban charm and family-friendly atmosphere.',
+    description:
+      'Bloomington, home to the Mall of America and known for its suburban charm and family-friendly atmosphere.',
     zipCodes: ['55420', '55425', '55431', '55435', '55437', '55438'],
-    neighborhoods: ['West Bloomington', 'East Bloomington', 'South Bloomington', 'North Bloomington'],
-    serviceAreas: ['Bloomington', 'Richfield', 'Savage', 'Prior Lake', 'Shakopee'],
+    neighborhoods: [
+      'West Bloomington',
+      'East Bloomington',
+      'South Bloomington',
+      'North Bloomington',
+    ],
+    serviceAreas: ['Bloomington', 'Richfield', 'Edina'],
     localBusiness: {
       name: 'Yardura Bloomington',
       address: 'West Bloomington, MN 55431',
-      phone: '(952) 555-YARD',
-      rating: 4.9,
-      reviewCount: 156
+      phone: '(888) 915-YARD',
+      // rating: 4.9, // TODO: Uncomment when we have real ratings
+      // reviewCount: 156, // TODO: Uncomment when we have real ratings
     },
     seo: {
       title: 'Professional Dog Waste Removal Services in Bloomington, MN | Yardura',
-      description: 'Expert dog poop cleanup services in Bloomington. Eco-friendly, reliable, and affordable. Serving Bloomington and surrounding areas. Get your free quote today!',
-      keywords: ['dog waste removal Bloomington', 'poop scooping Bloomington', 'dog cleanup services Bloomington', 'eco friendly pet waste Bloomington']
-    }
-  },
-  'eden-prairie': {
-    name: 'eden-prairie',
-    displayName: 'Eden Prairie',
-    state: 'MN',
-    population: 65000,
-    description: 'Eden Prairie, a thriving suburb known for its excellent schools, parks, and business community.',
-    zipCodes: ['55344', '55346', '55347'],
-    neighborhoods: ['Prairie Center', 'Eden Lake', 'Edenvale', 'Briarwood'],
-    serviceAreas: ['Eden Prairie', 'Chanhassen', 'Shakopee', 'Chaska', 'Victoria'],
-    localBusiness: {
-      name: 'Yardura Eden Prairie',
-      address: 'Prairie Center, MN 55344',
-      phone: '(952) 555-YARD',
-      rating: 4.8,
-      reviewCount: 134
+      description:
+        'Expert dog poop cleanup services in Bloomington. Eco-friendly, reliable, and affordable. Serving Bloomington and surrounding areas. Get your free quote today!',
+      keywords: [
+        'dog waste removal Bloomington',
+        'poop scooping Bloomington',
+        'dog cleanup services Bloomington',
+        'eco friendly pet waste Bloomington',
+      ],
     },
-    seo: {
-      title: 'Professional Dog Waste Removal Services in Eden Prairie, MN | Yardura',
-      description: 'Expert dog poop cleanup services in Eden Prairie. Eco-friendly, reliable, and affordable. Serving Eden Prairie and surrounding areas. Get your free quote today!',
-      keywords: ['dog waste removal Eden Prairie', 'poop scooping Eden Prairie', 'dog cleanup services Eden Prairie', 'eco friendly pet waste Eden Prairie']
-    }
   },
-  'plymouth': {
-    name: 'plymouth',
-    displayName: 'Plymouth',
-    state: 'MN',
-    population: 80000,
-    description: 'Plymouth, a vibrant suburb with excellent shopping, dining, and recreational opportunities.',
-    zipCodes: ['55441', '55442', '55446', '55447'],
-    neighborhoods: ['Downtown Plymouth', 'Plymouth Pointe', 'North Plymouth', 'South Plymouth'],
-    serviceAreas: ['Plymouth', 'Wayzata', 'Minnetonka', 'Maple Grove', 'Medina'],
-    localBusiness: {
-      name: 'Yardura Plymouth',
-      address: 'Downtown Plymouth, MN 55441',
-      phone: '(763) 555-YARD',
-      rating: 4.9,
-      reviewCount: 178
-    },
-    seo: {
-      title: 'Professional Dog Waste Removal Services in Plymouth, MN | Yardura',
-      description: 'Expert dog poop cleanup services in Plymouth. Eco-friendly, reliable, and affordable. Serving Plymouth and surrounding areas. Get your free quote today!',
-      keywords: ['dog waste removal Plymouth', 'poop scooping Plymouth', 'dog cleanup services Plymouth', 'eco friendly pet waste Plymouth']
-    }
-  },
-  'woodbury': {
-    name: 'woodbury',
-    displayName: 'Woodbury',
-    state: 'MN',
-    population: 75000,
-    description: 'Woodbury, a growing suburb known for its family-friendly atmosphere and excellent schools.',
-    zipCodes: ['55125', '55129'],
-    neighborhoods: ['Downtown Woodbury', 'Middleton', 'Valley Creek', 'Tartan'],
-    serviceAreas: ['Woodbury', 'Oakdale', 'Maplewood', 'Cottage Grove', 'Lake Elmo'],
-    localBusiness: {
-      name: 'Yardura Woodbury',
-      address: 'Downtown Woodbury, MN 55125',
-      phone: '(651) 555-YARD',
-      rating: 4.8,
-      reviewCount: 142
-    },
-    seo: {
-      title: 'Professional Dog Waste Removal Services in Woodbury, MN | Yardura',
-      description: 'Expert dog poop cleanup services in Woodbury. Eco-friendly, reliable, and affordable. Serving Woodbury and surrounding areas. Get your free quote today!',
-      keywords: ['dog waste removal Woodbury', 'poop scooping Woodbury', 'dog cleanup services Woodbury', 'eco friendly pet waste Woodbury']
-    }
-  },
-  'edina': {
+  edina: {
     name: 'edina',
     displayName: 'Edina',
     state: 'MN',
     population: 53000,
-    description: 'Edina, an affluent suburb known for its excellent schools, parks, and high quality of life.',
+    description:
+      'Edina, an affluent suburb known for its excellent schools, parks, and high quality of life.',
     zipCodes: ['55435', '55436', '55439'],
     neighborhoods: ['Southdale', 'Morningside', 'Countryside', 'Interlachen'],
-    serviceAreas: ['Edina', 'Hopkins', 'Minnetonka', 'Wayzata', 'Deephaven'],
+    serviceAreas: ['Edina', 'Bloomington', 'Hopkins'],
     localBusiness: {
       name: 'Yardura Edina',
       address: 'Southdale Edina, MN 55435',
-      phone: '(952) 555-YARD',
-      rating: 4.9,
-      reviewCount: 203
+      phone: '(888) 915-YARD',
+      // rating: 4.9, // TODO: Uncomment when we have real ratings
+      // reviewCount: 203, // TODO: Uncomment when we have real ratings
     },
     seo: {
       title: 'Professional Dog Waste Removal Services in Edina, MN | Yardura',
-      description: 'Expert dog poop cleanup services in Edina. Eco-friendly, reliable, and affordable. Serving Edina and surrounding areas. Get your free quote today!',
-      keywords: ['dog waste removal Edina', 'poop scooping Edina', 'dog cleanup services Edina', 'eco friendly pet waste Edina']
-    }
+      description:
+        'Expert dog poop cleanup services in Edina. Eco-friendly, reliable, and affordable. Serving Edina and surrounding areas. Get your free quote today!',
+      keywords: [
+        'dog waste removal Edina',
+        'poop scooping Edina',
+        'dog cleanup services Edina',
+        'eco friendly pet waste Edina',
+      ],
+    },
   },
-  'richfield': {
+  richfield: {
     name: 'richfield',
     displayName: 'Richfield',
     state: 'MN',
     population: 38000,
-    description: 'Richfield, a vibrant community with diverse neighborhoods and excellent access to downtown Minneapolis.',
+    description:
+      'Richfield, a vibrant community with diverse neighborhoods and excellent access to downtown Minneapolis.',
     zipCodes: ['55423'],
     neighborhoods: ['West Richfield', 'East Richfield', 'South Richfield', 'Lyric'],
-    serviceAreas: ['Richfield', 'Bloomington', 'Minneapolis', 'Fort Snelling', 'Mendota Heights'],
+    serviceAreas: ['Richfield', 'Bloomington', 'Minneapolis'],
     localBusiness: {
       name: 'Yardura Richfield',
       address: 'West Richfield, MN 55423',
-      phone: '(612) 555-YARD',
-      rating: 4.8,
-      reviewCount: 167
+      phone: '(888) 915-YARD',
+      // rating: 4.8, // TODO: Uncomment when we have real ratings
+      // reviewCount: 167, // TODO: Uncomment when we have real ratings
     },
     seo: {
       title: 'Professional Dog Waste Removal Services in Richfield, MN | Yardura',
-      description: 'Expert dog poop cleanup services in Richfield. Eco-friendly, reliable, and affordable. Serving Richfield and surrounding areas. Get your free quote today!',
-      keywords: ['dog waste removal Richfield', 'poop scooping Richfield', 'dog cleanup services Richfield', 'eco friendly pet waste Richfield']
-    }
-  }
+      description:
+        'Expert dog poop cleanup services in Richfield. Eco-friendly, reliable, and affordable. Serving Richfield and surrounding areas. Get your free quote today!',
+      keywords: [
+        'dog waste removal Richfield',
+        'poop scooping Richfield',
+        'dog cleanup services Richfield',
+        'eco friendly pet waste Richfield',
+      ],
+    },
+  },
+  eagan: {
+    name: 'eagan',
+    displayName: 'Eagan',
+    state: 'MN',
+    population: 68000,
+    description:
+      'Eagan, a thriving suburb in the Twin Cities South metro area known for its excellent schools and family-friendly communities.',
+    zipCodes: ['55120', '55121', '55122', '55123'],
+    neighborhoods: [
+      'Northview',
+      'Rahncliff',
+      'Thomas Lake',
+      'Wescott',
+      'Southview',
+    ],
+    serviceAreas: ['Eagan', 'Apple Valley', 'Burnsville', 'Rosemount'],
+    localBusiness: {
+      name: 'Yardura Eagan',
+      address: 'Northview Eagan, MN 55121',
+      phone: '(888) 915-YARD',
+      // rating: 4.8, // TODO: Uncomment when we have real ratings
+      // reviewCount: 124, // TODO: Uncomment when we have real ratings
+    },
+    seo: {
+      title: 'Professional Dog Waste Removal Services in Eagan, MN | Yardura',
+      description:
+        'Expert dog poop cleanup services in Eagan. Eco-friendly, reliable, and affordable. Serving Eagan and surrounding areas. Get your free quote today!',
+      keywords: [
+        'dog waste removal Eagan',
+        'poop scooping Eagan',
+        'dog cleanup services Eagan',
+        'eco friendly pet waste Eagan',
+      ],
+    },
+  },
+  'apple-valley': {
+    name: 'apple-valley',
+    displayName: 'Apple Valley',
+    state: 'MN',
+    population: 55000,
+    description:
+      'Apple Valley, a growing suburb known for its parks, schools, and convenient location in the Twin Cities South metro area.',
+    zipCodes: ['55124'],
+    neighborhoods: [
+      'North Apple Valley',
+      'South Apple Valley',
+      'East Apple Valley',
+      'West Apple Valley',
+    ],
+    serviceAreas: ['Apple Valley', 'Eagan', 'Burnsville', 'Lakeville'],
+    localBusiness: {
+      name: 'Yardura Apple Valley',
+      address: 'North Apple Valley, MN 55124',
+      phone: '(888) 915-YARD',
+      // rating: 4.8, // TODO: Uncomment when we have real ratings
+      // reviewCount: 98, // TODO: Uncomment when we have real ratings
+    },
+    seo: {
+      title: 'Professional Dog Waste Removal Services in Apple Valley, MN | Yardura',
+      description:
+        'Expert dog poop cleanup services in Apple Valley. Eco-friendly, reliable, and affordable. Serving Apple Valley and surrounding areas. Get your free quote today!',
+      keywords: [
+        'dog waste removal Apple Valley',
+        'poop scooping Apple Valley',
+        'dog cleanup services Apple Valley',
+        'eco friendly pet waste Apple Valley',
+      ],
+    },
+  },
+  lakeville: {
+    name: 'lakeville',
+    displayName: 'Lakeville',
+    state: 'MN',
+    population: 67000,
+    description:
+      'Lakeville, a family-friendly suburb known for its excellent schools, parks, and growing community along I-35.',
+    zipCodes: ['55044'],
+    neighborhoods: [
+      'North Lakeville',
+      'South Lakeville',
+      'East Lakeville',
+      'West Lakeville',
+    ],
+    serviceAreas: ['Lakeville', 'Burnsville', 'Apple Valley', 'Farmington'],
+    localBusiness: {
+      name: 'Yardura Lakeville',
+      address: 'North Lakeville, MN 55044',
+      phone: '(888) 915-YARD',
+      // rating: 4.8, // TODO: Uncomment when we have real ratings
+      // reviewCount: 112, // TODO: Uncomment when we have real ratings
+    },
+    seo: {
+      title: 'Professional Dog Waste Removal Services in Lakeville, MN | Yardura',
+      description:
+        'Expert dog poop cleanup services in Lakeville. Eco-friendly, reliable, and affordable. Serving Lakeville and surrounding areas. Get your free quote today!',
+      keywords: [
+        'dog waste removal Lakeville',
+        'poop scooping Lakeville',
+        'dog cleanup services Lakeville',
+        'eco friendly pet waste Lakeville',
+      ],
+    },
+  },
+  burnsville: {
+    name: 'burnsville',
+    displayName: 'Burnsville',
+    state: 'MN',
+    population: 62000,
+    description:
+      'Burnsville, a vibrant suburb known for its diverse community, excellent schools, and convenient location along I-35.',
+    zipCodes: ['55306', '55337'],
+    neighborhoods: [
+      'North Burnsville',
+      'South Burnsville',
+      'East Burnsville',
+      'West Burnsville',
+    ],
+    serviceAreas: ['Burnsville', 'Lakeville', 'Apple Valley', 'Savage'],
+    localBusiness: {
+      name: 'Yardura Burnsville',
+      address: 'North Burnsville, MN 55337',
+      phone: '(888) 915-YARD',
+      // rating: 4.8, // TODO: Uncomment when we have real ratings
+      // reviewCount: 134, // TODO: Uncomment when we have real ratings
+    },
+    seo: {
+      title: 'Professional Dog Waste Removal Services in Burnsville, MN | Yardura',
+      description:
+        'Expert dog poop cleanup services in Burnsville. Eco-friendly, reliable, and affordable. Serving Burnsville and surrounding areas. Get your free quote today!',
+      keywords: [
+        'dog waste removal Burnsville',
+        'poop scooping Burnsville',
+        'dog cleanup services Burnsville',
+        'eco friendly pet waste Burnsville',
+      ],
+    },
+  },
+  'st-cloud': {
+    name: 'st-cloud',
+    displayName: 'St. Cloud',
+    state: 'MN',
+    population: 68000,
+    description:
+      'St. Cloud, a vibrant city in central Minnesota known for its university, riverfront, and growing community.',
+    zipCodes: ['56301', '56302', '56303', '56304', '56379', '56387'],
+    neighborhoods: [
+      'Downtown St. Cloud',
+      'North St. Cloud',
+      'South St. Cloud',
+      'East St. Cloud',
+      'West St. Cloud',
+    ],
+    serviceAreas: [
+      'St. Cloud',
+      'Sartell',
+      'Sauk Rapids',
+      'Waite Park',
+      'St. Joseph',
+      'Cold Spring',
+      'Rockville',
+    ],
+    localBusiness: {
+      name: 'Yardura St. Cloud',
+      address: 'Downtown St. Cloud, MN 56301',
+      phone: '(888) 915-YARD',
+      // rating: 4.8, // TODO: Uncomment when we have real ratings
+      // reviewCount: 89, // TODO: Uncomment when we have real ratings
+    },
+    seo: {
+      title: 'Professional Dog Waste Removal Services in St. Cloud, MN | Yardura',
+      description:
+        'Expert dog poop cleanup services in St. Cloud. Eco-friendly, reliable, and affordable. Serving St. Cloud and surrounding central Minnesota areas. Get your free quote today!',
+      keywords: [
+        'dog waste removal St. Cloud',
+        'poop scooping St. Cloud',
+        'dog cleanup services St. Cloud',
+        'eco friendly pet waste St. Cloud',
+      ],
+    },
+  },
 };
 
 export const getCityData = (citySlug: string): CityData | null => {

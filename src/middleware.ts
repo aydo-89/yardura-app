@@ -34,7 +34,7 @@ function checkRateLimit(
     // First request or window expired
     rateLimitStore.set(key, {
       count: 1,
-      resetTime: now + limit.windowMs
+      resetTime: now + limit.windowMs,
     });
     return true;
   }
@@ -49,14 +49,15 @@ function checkRateLimit(
   return true;
 }
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export function middleware(_request: NextRequest) {
+  const { pathname } = _request.nextUrl;
   // Get IP address from headers (Next.js removed request.ip in newer versions)
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-             request.headers.get('x-real-ip') ||
-             request.headers.get('cf-connecting-ip') ||
-             request.headers.get('x-client-ip') ||
-             'unknown';
+  const ip =
+    _request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    _request.headers.get('x-real-ip') ||
+    _request.headers.get('cf-connecting-ip') ||
+    _request.headers.get('x-client-ip') ||
+    'unknown';
 
   // Skip rate limiting for static assets, Next.js internal routes, and NextAuth
   if (
@@ -76,38 +77,41 @@ export function middleware(request: NextRequest) {
 
   // Rate limiting for API routes
   if (pathname.startsWith('/api/')) {
-    const allowed = checkRateLimit(ip, 'api', request);
+    const allowed = checkRateLimit(ip, 'api', _request);
     if (!allowed) {
       return new NextResponse(
         JSON.stringify({
           error: 'Too many requests',
-          retryAfter: Math.ceil((rateLimitStore.get(`api:${ip}`)?.resetTime || Date.now() + 60000 - Date.now()) / 1000)
+          retryAfter: Math.ceil(
+            (rateLimitStore.get(`api:${ip}`)?.resetTime || Date.now() + 60000 - Date.now()) / 1000
+          ),
         }),
         {
           status: 429,
           headers: {
             'Content-Type': 'application/json',
-            'Retry-After': Math.ceil((rateLimitStore.get(`api:${ip}`)?.resetTime || Date.now() + 60000 - Date.now()) / 1000).toString(),
-            ...securityHeaders
-          }
+            'Retry-After': Math.ceil(
+              (rateLimitStore.get(`api:${ip}`)?.resetTime || Date.now() + 60000 - Date.now()) / 1000
+            ).toString(),
+            ...securityHeaders,
+          },
         }
       );
     }
   }
 
   // Rate limiting for page routes
-  const allowed = checkRateLimit(ip, 'page', request);
+  const allowed = checkRateLimit(ip, 'page', _request);
   if (!allowed) {
-    return new NextResponse(
-      'Too many requests. Please try again later.',
-      {
-        status: 429,
-        headers: {
-          'Retry-After': Math.ceil((rateLimitStore.get(`page:${ip}`)?.resetTime || Date.now() + 60000 - Date.now()) / 1000).toString(),
-          ...securityHeaders
-        }
-      }
-    );
+    return new NextResponse('Too many requests. Please try again later.', {
+      status: 429,
+      headers: {
+        'Retry-After': Math.ceil(
+          (rateLimitStore.get(`page:${ip}`)?.resetTime || Date.now() + 60000 - Date.now()) / 1000
+        ).toString(),
+        ...securityHeaders,
+      },
+    });
   }
 
   // Apply security headers
@@ -120,6 +124,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  runtime: 'nodejs', // Force Node.js runtime instead of edge runtime
   matcher: [
     /*
      * Match all request paths except for the ones starting with:

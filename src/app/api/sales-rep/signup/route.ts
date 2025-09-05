@@ -1,33 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
-import { UserRole } from '@prisma/client'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
+import { UserRole } from '@prisma/client';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, phone, commissionRate = 0.10 } = await request.json()
+    const { name, email, password, phone, commissionRate = 0.1 } = await request.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: 'Name, email, and password are required' },
         { status: 400 }
-      )
+      );
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
+      where: { email },
+    });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'User with this email already exists' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 });
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12)
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create sales rep user
     const salesRep = await prisma.user.create({
@@ -45,23 +42,17 @@ export async function POST(request: NextRequest) {
             providerAccountId: email,
             // Store hashed password in access_token field for simplicity
             access_token: hashedPassword,
-          }
-        }
-      }
-    })
+          },
+        },
+      },
+    });
 
     return NextResponse.json({
       message: 'Sales rep created successfully',
-      salesRepId: salesRep.id
-    })
-
+      salesRepId: salesRep.id,
+    });
   } catch (error) {
-    console.error('Sales rep signup error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Sales rep signup error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
-

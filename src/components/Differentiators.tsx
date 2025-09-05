@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Shield, Zap, Leaf, Heart, LucideIcon } from "lucide-react";
-import Reveal from "./Reveal";
+import { Shield, Zap, Leaf, LucideIcon } from 'lucide-react';
+import Reveal from './Reveal';
 
 interface DifferentiatorProps {
   icon: LucideIcon;
@@ -13,22 +13,25 @@ interface DifferentiatorProps {
 const differentiators: DifferentiatorProps[] = [
   {
     icon: Zap,
-    title: "Tech-Enabled Insights",
-    description: "AI-powered stool analysis tracks your dog's health patterns. Non-diagnostic insights help you spot changes early and consult your vet sooner.",
-    color: "text-accent"
+    title: 'Tech-Enabled Insights',
+    description:
+      "AI-powered stool analysis tracks your dog's health patterns. Non-diagnostic insights help you spot changes early and consult your vet sooner.",
+    color: 'text-accent',
   },
   {
     icon: Leaf,
-    title: "Eco-Friendly Disposal",
-    description: "We divert waste from landfills through composting programs where permitted, reducing methane emissions and supporting local environmental initiatives.",
-    color: "text-green-600"
+    title: 'Eco-Friendly Disposal',
+    description:
+      'We divert waste from landfills through composting programs where permitted, reducing methane emissions and supporting local environmental initiatives.',
+    color: 'text-green-600',
   },
   {
     icon: Shield,
-    title: "Reliable & Trusted",
-    description: "Licensed, insured, and committed to excellence. Same-day service, satisfaction guarantee, and professional technicians you can trust.",
-    color: "text-blue-600"
-  }
+    title: 'Reliable & Trusted',
+    description:
+      'Licensed, insured, and committed to excellence. Same-day service, satisfaction guarantee, and professional technicians you can trust.',
+    color: 'text-blue-600',
+  },
 ];
 
 function DifferentiatorCard({ icon: Icon, title, description, color }: DifferentiatorProps) {
@@ -60,8 +63,8 @@ export default function Differentiators() {
               Why Choose Yardura?
             </h2>
             <p className="text-lg text-muted">
-              We're not just another dog waste removal service. Our unique combination of technology,
-              environmental responsibility, and health insights sets us apart.
+              We're not just another dog waste removal service. Our unique combination of
+              technology, environmental responsibility, and health insights sets us apart.
             </p>
           </div>
         </Reveal>
@@ -77,8 +80,8 @@ export default function Differentiators() {
         <Reveal delay={0.4}>
           <div className="text-center mt-12">
             <p className="text-sm text-muted max-w-2xl mx-auto">
-              <strong>Experience the difference:</strong> Professional service meets cutting-edge technology
-              for a cleaner yard, healthier planet, and peace of mind.
+              <strong>Experience the difference:</strong> Professional service meets cutting-edge
+              technology for a cleaner yard, healthier planet, and peace of mind.
             </p>
           </div>
         </Reveal>

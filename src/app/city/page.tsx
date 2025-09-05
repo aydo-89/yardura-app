@@ -7,8 +7,14 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Dog Waste Removal Services by City | Yardura',
-  description: 'Find professional dog poop cleanup services in your Twin Cities area. Serving Minneapolis, St. Paul, Bloomington, and surrounding communities.',
-  keywords: ['dog waste removal Twin Cities', 'poop scooping services', 'dog cleanup Minneapolis', 'pet waste removal St. Paul'],
+  description:
+    'Find professional dog poop cleanup services in your Twin Cities area. Serving Minneapolis, St. Paul, Bloomington, and surrounding communities.',
+  keywords: [
+    'dog waste removal Twin Cities',
+    'poop scooping services',
+    'dog cleanup Minneapolis',
+    'pet waste removal St. Paul',
+  ],
 };
 
 export default function CitiesPage() {
@@ -26,8 +32,8 @@ export default function CitiesPage() {
                 <span className="block text-accent">Across the Twin Cities</span>
               </h1>
               <p className="text-xl text-muted max-w-3xl mx-auto">
-                Professional, eco-friendly dog poop cleanup services in your neighborhood.
-                Find the perfect service for your Minneapolis, St. Paul, or surrounding area.
+                Professional, eco-friendly dog poop cleanup services in your neighborhood. Find the
+                perfect service for your Minneapolis, St. Paul, or surrounding area.
               </p>
             </div>
           </Reveal>
@@ -50,10 +56,14 @@ export default function CitiesPage() {
                       <span>{city.population.toLocaleString()} residents</span>
                     </div>
 
+                    {/* TODO: Uncomment when we have real ratings
                     <div className="flex items-center gap-2 text-sm">
                       <Star className="size-4 text-accent" />
-                      <span>{city.localBusiness.rating} stars ({city.localBusiness.reviewCount} reviews)</span>
+                      <span>
+                        {city.localBusiness.rating} stars ({city.localBusiness.reviewCount} reviews)
+                      </span>
                     </div>
+                    */}
                   </div>
 
                   <div className="mb-6">
@@ -97,7 +107,8 @@ export default function CitiesPage() {
                 Comprehensive Twin Cities Coverage
               </h2>
               <p className="text-xl text-muted max-w-2xl mx-auto">
-                We serve all major Twin Cities communities with reliable, eco-friendly dog waste removal services.
+                We serve all major Twin Cities communities with reliable, eco-friendly dog waste
+                removal services.
               </p>
             </div>
           </Reveal>
@@ -113,7 +124,9 @@ export default function CitiesPage() {
                     </div>
                     <div>
                       <h4 className="font-semibold mb-1">Local Expertise</h4>
-                      <p className="text-muted">Our teams know your neighborhood and understand local regulations.</p>
+                      <p className="text-muted">
+                        Our teams know your neighborhood and understand local regulations.
+                      </p>
                     </div>
                   </div>
 
@@ -123,7 +136,9 @@ export default function CitiesPage() {
                     </div>
                     <div>
                       <h4 className="font-semibold mb-1">Quick Response</h4>
-                      <p className="text-muted">Same-day service available in most areas with flexible scheduling.</p>
+                      <p className="text-muted">
+                        Same-day service available in most areas with flexible scheduling.
+                      </p>
                     </div>
                   </div>
 
@@ -133,7 +148,9 @@ export default function CitiesPage() {
                     </div>
                     <div>
                       <h4 className="font-semibold mb-1">Community Focused</h4>
-                      <p className="text-muted">Supporting local pet owners and keeping our communities clean.</p>
+                      <p className="text-muted">
+                        Supporting local pet owners and keeping our communities clean.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -144,27 +161,24 @@ export default function CitiesPage() {
               <div className="bg-white rounded-2xl p-8 shadow-soft">
                 <h3 className="text-2xl font-bold mb-6">Ready to Get Started?</h3>
                 <p className="text-muted mb-6">
-                  Get a free quote for dog waste removal services in your area.
-                  Choose your city above or contact us directly.
+                  Get a free quote for dog waste removal services in your area. Choose your city
+                  above or contact us directly.
                 </p>
 
                 <div className="space-y-4">
                   <Button className="w-full" size="lg" asChild>
-                    <Link href="/quote">
-                      Get Free Quote
-                    </Link>
+                    <Link href="/quote">Get Free Quote</Link>
                   </Button>
 
                   <Button variant="outline" className="w-full" size="lg" asChild>
-                    <Link href="tel:(888) 915-9273">
-                      Call (888) 915-YARD
-                    </Link>
+                    <Link href="tel:(888) 915-9273">Call (888) 915-YARD</Link>
                   </Button>
                 </div>
 
                 <div className="mt-6 p-4 bg-accent/10 rounded-xl">
                   <p className="text-sm text-center">
-                    <strong>Serving:</strong> Minneapolis, St. Paul, Bloomington, Eden Prairie, Plymouth, Woodbury & surrounding areas
+                    <strong>Serving:</strong> Minneapolis, St. Paul, Bloomington, Eden Prairie,
+                    Plymouth, Woodbury & surrounding areas
                   </p>
                 </div>
               </div>

@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { safeGetServerSession } from '@/lib/auth';
+import { authOptions } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = (await safeGetServerSession(authOptions as any)) as {
+      user?: { id?: string; email?: string };
+    } | null;
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const {
@@ -19,8 +21,8 @@ export async function POST(request: NextRequest) {
       accountNumber,
       notes,
       deodorize,
-      litterService
-    } = await request.json()
+      litterService,
+    } = await request.json();
 
     const serviceVisit = await prisma.serviceVisit.create({
       data: {
@@ -32,23 +34,25 @@ export async function POST(request: NextRequest) {
         accountNumber,
         notes,
         deodorize,
-        litterService
-      }
-    })
+        litterService,
+      },
+    });
 
-    return NextResponse.json({ serviceVisit })
+    return NextResponse.json({ serviceVisit });
   } catch (error) {
-    console.error('Error creating service visit:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error creating service visit:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = (await safeGetServerSession(authOptions as any)) as {
+      user?: { id?: string; email?: string };
+    } | null;
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const serviceVisits = await prisma.serviceVisit.findMany({
@@ -56,17 +60,15 @@ export async function GET(request: NextRequest) {
       include: {
         dataReadings: {
           orderBy: { timestamp: 'desc' },
-          take: 5
-        }
+          take: 5,
+        },
       },
-      orderBy: { scheduledDate: 'desc' }
-    })
+      orderBy: { scheduledDate: 'desc' },
+    });
 
-    return NextResponse.json({ serviceVisits })
+    return NextResponse.json({ serviceVisits });
   } catch (error) {
-    console.error('Error fetching service visits:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error fetching service visits:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
-

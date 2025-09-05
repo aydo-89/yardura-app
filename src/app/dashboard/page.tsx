@@ -1,25 +1,19 @@
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { redirect } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  BarChart3,
-  TrendingUp,
-  Calendar,
-  Heart,
-  Leaf,
-  Settings,
-  Plus
-} from 'lucide-react'
+import { safeGetServerSession } from '@/lib/auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { redirect } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { BarChart3, TrendingUp, Calendar, Heart, Leaf, Settings, Plus } from 'lucide-react';
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions)
+  const session = (await safeGetServerSession(authOptions as any)) as {
+    user?: { id?: string; email?: string };
+  } | null;
 
   if (!session?.user) {
-    redirect('/signin')
+    redirect('/signin');
   }
 
   const user = await prisma.user.findUnique({
@@ -28,38 +22,34 @@ export default async function DashboardPage() {
       dogs: true,
       serviceVisits: {
         orderBy: { scheduledDate: 'desc' },
-        take: 5
+        take: 5,
       },
       dataReadings: {
         orderBy: { timestamp: 'desc' },
-        take: 20
-      }
-    }
-  })
+        take: 20,
+      },
+    },
+  });
 
   if (!user) {
-    redirect('/signin')
+    redirect('/signin');
   }
 
   // Calculate insights
   const totalWaste = user.dataReadings
-    .filter(d => d.weight)
-    .reduce((sum, reading) => sum + (reading.weight || 0), 0)
+    .filter((d) => d.weight)
+    .reduce((sum, reading) => sum + (reading.weight || 0), 0);
 
-  const avgHealthScore = user.dataReadings
-    .filter(d => d.consistency)
-    .length > 0 ? 85 : 0 // Mock health score
+  const avgHealthScore = user.dataReadings.filter((d) => d.consistency).length > 0 ? 85 : 0; // Mock health score
 
-  const recentVisits = user.serviceVisits.slice(0, 3)
+  const recentVisits = user.serviceVisits.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
       <div className="container py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold text-ink mb-2">
-              Welcome back, {user.name}!
-            </h1>
+            <h1 className="text-3xl font-extrabold text-ink mb-2">Welcome back, {user.name}!</h1>
             <p className="text-slate-600">
               Your personal dashboard for dog health insights and eco impact
             </p>
@@ -79,9 +69,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{(totalWaste * 0.00220462).toFixed(1)} lbs</div>
-              <p className="text-xs text-muted-foreground">
-                Kept out of landfills
-              </p>
+              <p className="text-xs text-muted-foreground">Kept out of landfills</p>
             </CardContent>
           </Card>
 
@@ -92,9 +80,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{avgHealthScore}%</div>
-              <p className="text-xs text-muted-foreground">
-                Based on recent data
-              </p>
+              <p className="text-xs text-muted-foreground">Based on recent data</p>
             </CardContent>
           </Card>
 
@@ -105,9 +91,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{user.serviceVisits.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Total completed
-              </p>
+              <p className="text-xs text-muted-foreground">Total completed</p>
             </CardContent>
           </Card>
 
@@ -118,9 +102,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{user.dogs.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Active profiles
-              </p>
+              <p className="text-xs text-muted-foreground">Active profiles</p>
             </CardContent>
           </Card>
         </div>
@@ -136,7 +118,10 @@ export default async function DashboardPage() {
                 {recentVisits.length > 0 ? (
                   <div className="space-y-4">
                     {recentVisits.map((visit) => (
-                      <div key={visit.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={visit.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
                         <div>
                           <div className="font-semibold">
                             {visit.serviceType.replace('_', ' ')} - {visit.yardSize}
@@ -171,7 +156,10 @@ export default async function DashboardPage() {
               <CardContent>
                 <div className="space-y-4">
                   {user.dogs.map((dog) => (
-                    <div key={dog.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={dog.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div>
                         <div className="font-semibold">{dog.name}</div>
                         <div className="text-sm text-slate-600">
@@ -225,11 +213,10 @@ export default async function DashboardPage() {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-slate-600 mb-4">
-                    Health insights will appear here after your first service visit with data collection.
+                    Health insights will appear here after your first service visit with data
+                    collection.
                   </p>
-                  <Button>
-                    Schedule First Service
-                  </Button>
+                  <Button>Schedule First Service</Button>
                 </div>
               )}
             </CardContent>
@@ -237,5 +224,5 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

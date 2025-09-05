@@ -1,11 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import Reveal from "@/components/Reveal";
-import ArticleGrid from "@/components/articles/ArticleGrid";
-import ArticleFilters from "@/components/articles/ArticleFilters";
-import { MOCK_ARTICLES, searchArticles, filterArticlesByCategory, filterArticlesByTag, ARTICLE_CATEGORIES } from "@/lib/articles";
+import { useState, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import Reveal from '@/components/Reveal';
+import ArticleGrid from '@/components/articles/ArticleGrid';
+import ArticleFilters from '@/components/articles/ArticleFilters';
+import {
+  MOCK_ARTICLES,
+  searchArticles,
+  filterArticlesByCategory,
+  filterArticlesByTag,
+  ARTICLE_CATEGORIES,
+} from '@/lib/articles';
 
 export default function InsightsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,8 +21,8 @@ export default function InsightsPage() {
   // Get all unique tags from articles
   const availableTags = useMemo(() => {
     const tagMap = new Map();
-    MOCK_ARTICLES.forEach(article => {
-      article.tags.forEach(tag => {
+    MOCK_ARTICLES.forEach((article) => {
+      article.tags.forEach((tag) => {
         if (!tagMap.has(tag.id)) {
           tagMap.set(tag.id, tag);
         }
@@ -59,8 +65,8 @@ export default function InsightsPage() {
               Dog Health & Eco Insights
             </h1>
             <p className="text-lg text-muted max-w-3xl mx-auto">
-              Expert insights on dog health, eco-friendly waste management, and Minneapolis pet care.
-              Professional dog waste removal tips and local Twin Cities resources.
+              Expert insights on dog health, eco-friendly waste management, and Minneapolis pet
+              care. Professional dog waste removal tips and local Twin Cities resources.
             </p>
           </div>
         </Reveal>
@@ -82,11 +88,7 @@ export default function InsightsPage() {
 
         {/* Article Grid */}
         <Reveal delay={0.2}>
-          <ArticleGrid
-            articles={filteredArticles}
-            columns={3}
-            showFeatured={true}
-          />
+          <ArticleGrid articles={filteredArticles} columns={3} showFeatured={true} />
         </Reveal>
 
         {/* Results Summary */}
@@ -98,8 +100,10 @@ export default function InsightsPage() {
                 {(searchQuery || selectedCategory || selectedTags.length > 0) && (
                   <span className="ml-2">
                     {searchQuery && `for "${searchQuery}"`}
-                    {selectedCategory && ` in ${ARTICLE_CATEGORIES.find(cat => cat.slug === selectedCategory)?.name}`}
-                    {selectedTags.length > 0 && ` with ${selectedTags.length} tag filter${selectedTags.length !== 1 ? 's' : ''}`}
+                    {selectedCategory &&
+                      ` in ${ARTICLE_CATEGORIES.find((cat) => cat.slug === selectedCategory)?.name}`}
+                    {selectedTags.length > 0 &&
+                      ` with ${selectedTags.length} tag filter${selectedTags.length !== 1 ? 's' : ''}`}
                   </span>
                 )}
               </p>
@@ -126,9 +130,7 @@ export default function InsightsPage() {
                     </a>
                   </Button>
                   <Button size="lg" variant="outline" asChild>
-                    <a href="/facts">
-                      Learn More
-                    </a>
+                    <a href="/facts">Learn More</a>
                   </Button>
                 </div>
               </div>

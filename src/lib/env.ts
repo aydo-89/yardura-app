@@ -6,7 +6,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
   // Stripe
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1, 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is required'),
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z
+    .string()
+    .min(1, 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is required'),
   STRIPE_SECRET_KEY: z.string().min(1, 'STRIPE_SECRET_KEY is required'),
   STRIPE_WEBHOOK_SECRET: z.string().min(1, 'STRIPE_WEBHOOK_SECRET is required'),
 
@@ -124,16 +126,19 @@ function getValidatedEnv() {
     if (!parsed.success) {
       // In development or during build, log and continue with partial env to avoid hard errors
       if (process.env.NODE_ENV !== 'production' || !process.env.CI) {
-        const messages = parsed.error.issues.map(err => `${err.path.join('.')}: ${err.message}`)
-        console.warn('[env] Environment validation warnings:\n' + messages.join('\n'))
+        const messages = parsed.error.issues.map((err) => `${err.path.join('.')}: ${err.message}`);
+        console.warn('[env] Environment validation warnings:\n' + messages.join('\n'));
         // Provide minimal required defaults to keep app running locally
         const fallback = {
           DATABASE_URL: process.env.DATABASE_URL || 'postgresql://user:pass@localhost:5432/db',
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_stripe_publishable_key_here',
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
+            process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+            'pk_test_your_stripe_publishable_key_here',
           STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
           STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder',
-          NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-          NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_',
+          NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'https://www.yardura.com',
+          NEXTAUTH_SECRET:
+            process.env.NEXTAUTH_SECRET || 'dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_',
           EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@yardura.dev',
           EMAIL_SERVER_HOST: process.env.EMAIL_SERVER_HOST,
           EMAIL_SERVER_PORT: process.env.EMAIL_SERVER_PORT as any,
@@ -145,15 +150,23 @@ function getValidatedEnv() {
           NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
           NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
           ADMIN_EMAILS: process.env.ADMIN_EMAILS,
-        }
+        };
         // Skip strict email provider validation in dev
-        try { validateGoogleOAuth(process.env) } catch {}
-        try { validateSupabase(process.env) } catch {}
-        return fallback as any
+        try {
+          validateGoogleOAuth(process.env);
+        // eslint-disable-next-line no-empty
+        } catch {}
+        try {
+          validateSupabase(process.env);
+        // eslint-disable-next-line no-empty
+        } catch {}
+        return fallback as any;
       }
       // Production: throw with detailed message
-      const errorMessages = parsed.error.issues.map(err => `${err.path.join('.')}: ${err.message}`)
-      throw new Error(`Environment validation failed:\n${errorMessages.join('\n')}`)
+      const errorMessages = parsed.error.issues.map(
+        (err) => `${err.path.join('.')}: ${err.message}`
+      );
+      throw new Error(`Environment validation failed:\n${errorMessages.join('\n')}`);
     }
 
     // Additional validation rules - temporarily disabled during build
@@ -162,28 +175,35 @@ function getValidatedEnv() {
     //     throw e
     //   }
     // }
-    try { validateGoogleOAuth(process.env) } catch (e) {
-      if (process.env.NODE_ENV === 'production' && !process.env.CI) throw e
+    try {
+      validateGoogleOAuth(process.env);
+    } catch (e) {
+      if (process.env.NODE_ENV === 'production' && !process.env.CI) throw e;
     }
-    try { validateSupabase(process.env) } catch (e) {
-      if (process.env.NODE_ENV === 'production' && !process.env.CI) throw e
+    try {
+      validateSupabase(process.env);
+    } catch (e) {
+      if (process.env.NODE_ENV === 'production' && !process.env.CI) throw e;
     }
 
     return parsed.data;
   } catch (error) {
     // Fallback to a minimal env in dev so routes don’t 500
-          if (process.env.NODE_ENV !== 'production') {
-        console.warn('[env] Non-Zod error during env validation in development:', error)
-        return {
-          DATABASE_URL: process.env.DATABASE_URL || 'postgresql://user:pass@localhost:5432/db',
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_stripe_publishable_key_here',
-          STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
-          STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder',
-          NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-          NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_',
-          EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@yardura.com',
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[env] Non-Zod error during env validation in development:', error);
+      return {
+        DATABASE_URL: process.env.DATABASE_URL || 'postgresql://user:pass@localhost:5432/db',
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
+          process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+          'pk_test_your_stripe_publishable_key_here',
+        STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
+        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder',
+        NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'https://www.yardura.com',
+        NEXTAUTH_SECRET:
+          process.env.NEXTAUTH_SECRET || 'dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_',
+        EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@yardura.com',
         ADMIN_EMAILS: process.env.ADMIN_EMAILS || '',
-      } as any
+      } as any;
     }
     throw error;
   }
@@ -271,15 +291,22 @@ export const SECRET_PATTERNS = [
 ];
 
 // Validate no secrets are in plain text
-export function validateNoSecrets(content: string, filePath: string): { hasSecrets: boolean; violations: string[] } {
+export function validateNoSecrets(
+  content: string,
+  filePath: string
+): { hasSecrets: boolean; violations: string[] } {
   const violations: string[] = [];
 
-  SECRET_PATTERNS.forEach(pattern => {
+  SECRET_PATTERNS.forEach((pattern) => {
     const matches = content.match(pattern);
     if (matches) {
-      matches.forEach(match => {
+      matches.forEach((match) => {
         // Skip if it's clearly a placeholder or example
-        if (!match.includes('placeholder') && !match.includes('example') && !match.includes('your_')) {
+        if (
+          !match.includes('placeholder') &&
+          !match.includes('example') &&
+          !match.includes('your_')
+        ) {
           violations.push(`Found potential secret in ${filePath}: ${match.substring(0, 10)}...`);
         }
       });
@@ -288,7 +315,7 @@ export function validateNoSecrets(content: string, filePath: string): { hasSecre
 
   return {
     hasSecrets: violations.length > 0,
-    violations
+    violations,
   };
 }
 
@@ -297,7 +324,7 @@ export function getEnvironmentStatus() {
   return {
     hasStripeKeys: !!(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && env.STRIPE_SECRET_KEY),
     hasGoogleMaps: !!env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-    hasEmailConfig: !!(env.EMAIL_FROM),
+    hasEmailConfig: !!env.EMAIL_FROM,
     hasNextAuth: !!(env.NEXTAUTH_URL && env.NEXTAUTH_SECRET),
     hasSupabase: !!(env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     hasRecaptcha: !!(env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && env.RECAPTCHA_SECRET_KEY),

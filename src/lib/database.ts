@@ -68,7 +68,9 @@ function mapVisitRecord(record: any): ServiceVisit {
 }
 
 export const db = {
-  async createCustomer(customer: Omit<YarduraCustomer, 'id' | 'createdAt' | 'updatedAt'>): Promise<YarduraCustomer> {
+  async createCustomer(
+    customer: Omit<YarduraCustomer, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<YarduraCustomer> {
     const { data, error } = await supabase
       .from('yardura_customers')
       .insert(customer)
@@ -101,7 +103,10 @@ export const db = {
     return data ? mapCustomerRecord(data) : null;
   },
 
-  async updateCustomer(id: string, updates: Partial<YarduraCustomer>): Promise<YarduraCustomer | null> {
+  async updateCustomer(
+    id: string,
+    updates: Partial<YarduraCustomer>
+  ): Promise<YarduraCustomer | null> {
     const { data, error } = await supabase
       .from('yardura_customers')
       .update(updates)
@@ -113,23 +118,17 @@ export const db = {
     return mapCustomerRecord(data);
   },
 
-  async createServiceVisit(visit: Omit<ServiceVisit, 'id' | 'createdAt' | 'updatedAt'>): Promise<ServiceVisit> {
-    const { data, error } = await supabase
-      .from('service_visits')
-      .insert(visit)
-      .select()
-      .single();
+  async createServiceVisit(
+    visit: Omit<ServiceVisit, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<ServiceVisit> {
+    const { data, error } = await supabase.from('service_visits').insert(visit).select().single();
 
     if (error) throw error;
     return mapVisitRecord(data);
   },
 
   async getServiceVisit(id: string): Promise<ServiceVisit | null> {
-    const { data, error } = await supabase
-      .from('service_visits')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await supabase.from('service_visits').select('*').eq('id', id).single();
 
     if (error && error.code !== 'PGRST116') throw error;
     return data ? mapVisitRecord(data) : null;
@@ -146,7 +145,10 @@ export const db = {
     return data.map(mapVisitRecord);
   },
 
-  async updateServiceVisit(id: string, updates: Partial<ServiceVisit>): Promise<ServiceVisit | null> {
+  async updateServiceVisit(
+    id: string,
+    updates: Partial<ServiceVisit>
+  ): Promise<ServiceVisit | null> {
     const { data, error } = await supabase
       .from('service_visits')
       .update(updates)
@@ -181,5 +183,5 @@ export const db = {
 
     if (error) throw error;
     return data.map(mapVisitRecord);
-  }
+  },
 };

@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import Script from "next/script";
-import { Input } from "@/components/ui/input";
-import { env } from "@/lib/env";
+import { useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
+import { Input } from '@/components/ui/input';
+// Read public env directly so Next inlines it for the client bundle
+const GOOGLE_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 // Declare global window interface for Google Maps
 declare global {
@@ -32,17 +33,22 @@ type AddressAutocompleteProps = {
   placeholder?: string;
 };
 
-export default function AddressAutocomplete({ value, onSelect, onChange, placeholder }: AddressAutocompleteProps) {
+export default function AddressAutocomplete({
+  value,
+  onSelect,
+  onChange,
+  placeholder,
+}: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<any>(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
   // Twin Cities bounds
   const bounds: any = {
-    south: 44.730,
+    south: 44.73,
     west: -93.515,
-    north: 45.120,
-    east: -92.730,
+    north: 45.12,
+    east: -92.73,
   };
 
   const waitForGoogleMaps = (callback: () => void, maxAttempts: number = 50) => {
@@ -53,7 +59,7 @@ export default function AddressAutocomplete({ value, onSelect, onChange, placeho
       console.log(`AddressAutocomplete: Attempt ${attempts} - Checking Google Maps availability:`, {
         google: !!window.google,
         maps: !!window.google?.maps,
-        places: !!window.google?.maps?.places
+        places: !!window.google?.maps?.places,
       });
 
       if (window.google && window.google.maps && window.google.maps.places) {
@@ -79,16 +85,16 @@ export default function AddressAutocomplete({ value, onSelect, onChange, placeho
       console.log('AddressAutocomplete: Creating autocomplete instance');
       try {
         autocompleteRef.current = new window.google!.maps!.places!.Autocomplete(inputRef.current!, {
-          types: ["address"],
-          componentRestrictions: { country: "us" },
+          types: ['address'],
+          componentRestrictions: { country: 'us' },
           bounds,
           strictBounds: false,
-          fields: ["formatted_address", "geometry", "address_components"],
+          fields: ['formatted_address', 'geometry', 'address_components'],
         });
 
         console.log('AddressAutocomplete: Autocomplete instance created:', autocompleteRef.current);
 
-        autocompleteRef.current.addListener("place_changed", () => {
+        autocompleteRef.current.addListener('place_changed', () => {
           console.log('AddressAutocomplete: Place changed event fired');
           try {
             const place = autocompleteRef.current!.getPlace();
@@ -108,9 +114,10 @@ export default function AddressAutocomplete({ value, onSelect, onChange, placeho
             console.log('AddressAutocomplete: Place selected:', place.formatted_address);
             onSelect({
               formattedAddress: place.formatted_address,
-              city: components["locality"] || components["sublocality"] || components["postal_town"],
-              state: components["administrative_area_level_1"],
-              postalCode: components["postal_code"],
+              city:
+                components['locality'] || components['sublocality'] || components['postal_town'],
+              state: components['administrative_area_level_1'],
+              postalCode: components['postal_code'],
               latitude: place.geometry?.location?.lat?.(),
               longitude: place.geometry?.location?.lng?.(),
             });
@@ -140,14 +147,14 @@ export default function AddressAutocomplete({ value, onSelect, onChange, placeho
   }, [scriptLoaded]);
 
   useEffect(() => {
-    console.log('AddressAutocomplete: Component mounted, API key:', !!env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
+    console.log('AddressAutocomplete: Component mounted, API key:', !!GOOGLE_KEY);
   }, []);
 
   return (
     <>
-      {env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
+      {GOOGLE_KEY && (
         <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=${env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly&loading=async`}
+          src={`https://maps.googleapis.com/maps/api/js?key=${GOOGLE_KEY}&libraries=places&v=weekly&loading=async`}
           strategy="afterInteractive"
           onLoad={() => {
             console.log('AddressAutocomplete: Google Maps script loaded successfully');
@@ -160,50 +167,17 @@ export default function AddressAutocomplete({ value, onSelect, onChange, placeho
         />
       )}
 
-      {/* Fallback manual test */}
-      {env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
-        <button
-          onClick={async () => {
-            console.log('Testing Google Places API directly...');
-            try {
-              const response = await fetch(`https://maps.googleapis.com/maps/api/place/autocomplete/json?input=123%20Main%20St&key=${env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&types=address&components=country:us`);
-              const data = await response.json();
-              console.log('Direct API test result:', data);
-              if (data.status === 'REQUEST_DENIED') {
-                alert('API request denied. Check:\n1. Places API enabled\n2. Billing enabled\n3. No referrer restrictions\n4. Valid API key');
-              } else if (data.status === 'OK') {
-                alert('API is working! The issue is with the autocomplete widget initialization.');
-              } else {
-                alert(`API status: ${data.status}\nError: ${data.error_message || 'Unknown error'}`);
-              }
-            } catch (error) {
-              console.error('Direct API test failed:', error);
-              alert('Failed to test API directly. Check network and API key.');
-            }
-          }}
-          style={{
-            marginTop: '10px',
-            padding: '5px 10px',
-            background: '#f0f0f0',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            fontSize: '12px',
-            cursor: 'pointer'
-          }}
-        >
-          Test API Key
-        </button>
-      )}
-      {!env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
+      {!GOOGLE_KEY && (
         <div style={{ color: 'red', padding: '10px', border: '1px solid red', margin: '10px 0' }}>
-          Google Maps API key not configured. Please add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your .env.local file.
+          Google Maps API key not configured. Please add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your
+          .env.local file.
         </div>
       )}
       <Input
         ref={inputRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder || "Start typing your address"}
+        placeholder={placeholder || 'Start typing your address'}
         className="mt-2 bg-white border-2 border-gray-200 hover:border-accent/30 focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:outline-none"
         onFocus={() => console.log('AddressAutocomplete: Input focused')}
         onInput={(e) => {
@@ -214,14 +188,7 @@ export default function AddressAutocomplete({ value, onSelect, onChange, placeho
         onKeyDown={(e) => console.log('AddressAutocomplete: Key pressed:', e.key)}
       />
 
-      {/* Debug info */}
-      <div style={{ fontSize: '12px', color: '#666', marginTop: '5px', fontFamily: 'monospace' }}>
-        Debug: API Key: {env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? '✓ Set' : '✗ Missing'} |
-        Script: {scriptLoaded ? '✓ Loaded' : '⏳ Loading'} |
-        Autocomplete: {autocompleteRef.current ? '✓ Ready' : '✗ Not ready'}
-      </div>
+      {/* Debug info removed for production */}
     </>
   );
 }
-
-

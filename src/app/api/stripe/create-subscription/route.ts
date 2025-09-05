@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, getStripePriceId, BILLING_ANCHOR_DAYS } from '@/lib/stripe';
 import { db } from '@/lib/database';
-import { calcPerVisitEstimate, calcOneTimeEstimate, type Frequency, type YardSize } from '@/lib/pricing';
+import {
+  calcPerVisitEstimate,
+  calcOneTimeEstimate,
+  type Frequency,
+  type YardSize,
+} from '@/lib/pricing';
 
 export async function POST(request: NextRequest) {
   try {
-    const {
-      customerId,
-      paymentMethodId,
-      serviceDetails,
-      serviceDay
-    } = await request.json();
+    const { customerId, paymentMethodId, serviceDetails, serviceDay } = await request.json();
 
     const {
       name,
@@ -24,15 +24,12 @@ export async function POST(request: NextRequest) {
       frequency,
       deodorize,
       litter,
-      dataOptIn
+      dataOptIn,
     } = serviceDetails;
 
     // Validate required fields
     if (!customerId || !paymentMethodId || !serviceDay) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Attach payment method to customer
@@ -48,15 +45,23 @@ export async function POST(request: NextRequest) {
     });
 
     // Calculate the per-visit price
-    const perVisitPrice = frequency === 'one-time'
-      ? calcOneTimeEstimate(dogs, yardSize as YardSize, { deodorize })
-      : calcPerVisitEstimate(dogs, frequency as Frequency, yardSize as YardSize, { deodorize, litter });
+    const perVisitPrice =
+      frequency === 'one-time'
+        ? calcOneTimeEstimate(dogs, yardSize as YardSize, { deodorize })
+        : calcPerVisitEstimate(dogs, frequency as Frequency, yardSize as YardSize, {
+            deodorize,
+            litter,
+          });
 
     // Get the appropriate Stripe price ID
-    const stripePriceId = await getStripePriceId(frequency as Frequency, yardSize as YardSize, dogs);
+    const stripePriceId = await getStripePriceId(
+      frequency as Frequency,
+      yardSize as YardSize,
+      dogs
+    );
 
     let subscriptionId: string | null = null;
-    let oneTimePaymentIntentId: string | null = null;
+    const _oneTimePaymentIntentId: string | null = null;
 
     if (frequency === 'one-time') {
       // For one-time service, charge immediately after completion using charge-service route.
@@ -117,13 +122,9 @@ export async function POST(request: NextRequest) {
       customerId: customer.id,
       nextServiceDate: firstVisitDate,
     });
-
   } catch (error) {
     console.error('Subscription creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create subscription' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create subscription' }, { status: 500 });
   }
 }
 

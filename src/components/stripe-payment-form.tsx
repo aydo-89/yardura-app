@@ -1,13 +1,8 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import {
-  Elements,
-  PaymentElement,
-  useStripe,
-  useElements
-} from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CreditCard, Shield, Lock } from 'lucide-react';
@@ -27,7 +22,7 @@ function PaymentForm({
   amount,
   customerEmail,
   customerName,
-  disabled
+  disabled,
 }: StripePaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -75,7 +70,6 @@ function PaymentForm({
         const paymentMethodId = setupIntent.payment_method as string;
         onPaymentMethodReady(paymentMethodId, customerId);
       }
-
     } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {
@@ -102,16 +96,15 @@ function PaymentForm({
             <strong>Amount to be charged:</strong> ${amount.toFixed(2)}
             <br />
             <span className="text-xs">
-              Your card will be saved for future service charges. You'll only be charged after service completion.
+              Your card will be saved for future service charges. You'll only be charged after
+              service completion.
             </span>
           </div>
 
           <PaymentElement />
 
           {error && (
-            <div className="text-red-600 text-sm bg-red-50 p-3 rounded border">
-              {error}
-            </div>
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded border">{error}</div>
           )}
 
           <Button
@@ -134,7 +127,8 @@ function PaymentForm({
   );
 }
 
-interface StripePaymentFormWrapperProps extends Omit<StripePaymentFormProps, 'onPaymentMethodReady'> {
+interface StripePaymentFormWrapperProps
+  extends Omit<StripePaymentFormProps, 'onPaymentMethodReady'> {
   onPaymentMethodReady: (paymentMethodId: string, customerId: string) => void;
 }
 
@@ -143,7 +137,7 @@ export default function StripePaymentFormWrapper({
   amount,
   customerEmail,
   customerName,
-  disabled
+  disabled,
 }: StripePaymentFormWrapperProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -220,5 +214,3 @@ export default function StripePaymentFormWrapper({
     </Elements>
   );
 }
-
-

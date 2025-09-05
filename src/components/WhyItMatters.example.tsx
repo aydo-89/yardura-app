@@ -15,10 +15,7 @@ export default function ExamplePage() {
   return (
     <div>
       {/* Other page content */}
-      <WhyItMatters
-        onGetQuoteClick={handleGetQuote}
-        onInsightsClick={handleInsights}
-      />
+      <WhyItMatters onGetQuoteClick={handleGetQuote} onInsightsClick={handleInsights} />
       {/* More content */}
     </div>
   );

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Calculator, CheckCircle } from "lucide-react";
-import Reveal from "./Reveal";
+import { useState } from 'react';
+import Link from 'next/link';
+import { ArrowRight, Calculator, CheckCircle } from 'lucide-react';
+import Reveal from './Reveal';
 
 interface PricingPreview {
   dogs: number;
@@ -14,7 +14,7 @@ interface PricingPreview {
 const pricingPreviews: PricingPreview[] = [
   { dogs: 1, frequency: 'weekly', estimate: '$25-35/visit' },
   { dogs: 2, frequency: 'weekly', estimate: '$30-45/visit' },
-  { dogs: 1, frequency: 'biweekly', estimate: '$28-40/visit' }
+  { dogs: 1, frequency: 'biweekly', estimate: '$28-40/visit' },
 ];
 
 export default function QuoteTeaser() {
@@ -30,7 +30,8 @@ export default function QuoteTeaser() {
                 Ready for Professional Minneapolis Dog Waste Removal?
               </h2>
               <p className="text-lg text-muted max-w-2xl mx-auto">
-                Get started with eco-friendly weekly service. See pricing instantly and book your first visit today.
+                Get started with eco-friendly weekly service. See pricing instantly and book your
+                first visit today.
               </p>
             </div>
 
@@ -66,8 +67,8 @@ export default function QuoteTeaser() {
 
                   <div className="text-center">
                     <p className="text-sm text-muted mb-4">
-                      Starting at {pricingPreviews[selectedPreview].estimate} •
-                      Final quote confirmed after first visit
+                      Starting at {pricingPreviews[selectedPreview].estimate} • Final quote
+                      confirmed after first visit
                     </p>
                   </div>
                 </div>
@@ -81,7 +82,9 @@ export default function QuoteTeaser() {
                       <CheckCircle className="size-5 text-accent mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-semibold text-ink">Eco-Friendly Disposal</h4>
-                        <p className="text-sm text-muted">Landfill diversion through composting programs</p>
+                        <p className="text-sm text-muted">
+                          Landfill diversion through composting programs
+                        </p>
                       </div>
                     </div>
 
@@ -89,7 +92,9 @@ export default function QuoteTeaser() {
                       <CheckCircle className="size-5 text-accent mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-semibold text-ink">Health Insights Included</h4>
-                        <p className="text-sm text-muted">Optional AI stool analysis (non-diagnostic)</p>
+                        <p className="text-sm text-muted">
+                          Optional AI stool analysis (non-diagnostic)
+                        </p>
                       </div>
                     </div>
 
@@ -97,7 +102,9 @@ export default function QuoteTeaser() {
                       <CheckCircle className="size-5 text-accent mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-semibold text-ink">Licensed & Insured</h4>
-                        <p className="text-sm text-muted">Professional service with satisfaction guarantee</p>
+                        <p className="text-sm text-muted">
+                          Professional service with satisfaction guarantee
+                        </p>
                       </div>
                     </div>
 
@@ -105,7 +112,9 @@ export default function QuoteTeaser() {
                       <CheckCircle className="size-5 text-accent mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-semibold text-ink">Same-Day Service</h4>
-                        <p className="text-sm text-muted">Available in Minneapolis, Richfield, Edina & Bloomington</p>
+                        <p className="text-sm text-muted">
+                          Available in Minneapolis, Richfield, Edina & Bloomington
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -14,18 +14,18 @@ export interface StripePriceConfig {
 
 // Yard size multipliers (same as in pricing.ts)
 const YARD_MULTIPLIERS = {
-  small: 0.8,   // 20% discount
-  medium: 1.0,  // base price
-  large: 1.2,   // 20% premium
-  xlarge: 1.4   // 40% premium
+  small: 0.8, // 20% discount
+  medium: 1.0, // base price
+  large: 1.2, // 20% premium
+  xlarge: 1.4, // 40% premium
 };
 
 // Base rates from pricing.ts
 const BASE_RATES = {
   weekly: { base1: 20, base2: 24, base3: 28, extraDog: 4 },
-  "twice-weekly": { base1: 32, base2: 38, base3: 44, extraDog: 6 },
-  "bi-weekly": { base1: 28, base2: 32, base3: 36, extraDog: 4 },
-  "one-time": { base1: 89, base2: 104, base3: 119, extraDog: 15 }
+  'twice-weekly': { base1: 32, base2: 38, base3: 44, extraDog: 6 },
+  'bi-weekly': { base1: 28, base2: 32, base3: 36, extraDog: 4 },
+  'one-time': { base1: 89, base2: 104, base3: 119, extraDog: 15 },
 };
 
 // Calculate price per visit based on dogs and yard size
@@ -74,7 +74,7 @@ export function generateStripePrices(): StripePriceConfig[] {
           dogs,
           priceId,
           unitAmount,
-          description: `${dogs} dog${dogs > 1 ? 's' : ''}, ${yardSize} yard, ${frequency} service`
+          description: `${dogs} dog${dogs > 1 ? 's' : ''}, ${yardSize} yard, ${frequency} service`,
         });
       }
     }
@@ -95,19 +95,19 @@ export function buildLookupKey(frequency: Frequency, yardSize: YardSize, dogs: n
 // Get all prices for a specific frequency
 export function getPricesByFrequency(frequency: Frequency): StripePriceConfig[] {
   const allPrices = generateStripePrices();
-  return allPrices.filter(config => config.frequency === frequency);
+  return allPrices.filter((config) => config.frequency === frequency);
 }
 
 // Get all prices for a specific yard size
 export function getPricesByYardSize(yardSize: YardSize): StripePriceConfig[] {
   const allPrices = generateStripePrices();
-  return allPrices.filter(config => config.yardSize === yardSize);
+  return allPrices.filter((config) => config.yardSize === yardSize);
 }
 
 // Get all prices for a specific dog count
 export function getPricesByDogCount(dogs: number): StripePriceConfig[] {
   const allPrices = generateStripePrices();
-  return allPrices.filter(config => config.dogs === dogs);
+  return allPrices.filter((config) => config.dogs === dogs);
 }
 
 // Example usage:

@@ -28,7 +28,7 @@ export const STRIPE_PRODUCTS = {
   },
   'one-time': {
     id: 'prod_one_time_service',
-  }
+  },
 };
 
 // Helper function to get the correct Stripe price ID
@@ -40,7 +40,9 @@ export async function getStripePriceId(
   const lookupKey = buildLookupKey(frequency, yardSize, Math.min(dogs, 8) as number);
   const prices = await stripe.prices.list({ lookup_keys: [lookupKey], active: true, limit: 1 });
   if (prices.data.length === 0) {
-    throw new Error(`Stripe price not found for ${lookupKey}. Make sure products/prices are created.`);
+    throw new Error(
+      `Stripe price not found for ${lookupKey}. Make sure products/prices are created.`
+    );
   }
   return prices.data[0].id;
 }

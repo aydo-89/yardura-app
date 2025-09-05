@@ -6,11 +6,15 @@ import React from 'react';
 const loadFonts = async () => {
   const [interRegular, interBold] = await Promise.all([
     fetch(
-      new URL('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2')
-    ).then(res => res.arrayBuffer()),
+      new URL(
+        'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2'
+      )
+    ).then((res) => res.arrayBuffer()),
     fetch(
-      new URL('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hiJ-Ek-_EeA.woff2')
-    ).then(res => res.arrayBuffer()),
+      new URL(
+        'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hiJ-Ek-_EeA.woff2'
+      )
+    ).then((res) => res.arrayBuffer()),
   ]);
 
   return [

@@ -6,7 +6,7 @@ import {
   getBucketLabel,
   isValidBucket,
   getDefaultConfig,
-  type CleanupBucket
+  type CleanupBucket,
 } from '../initialCleanEstimator';
 
 describe('Initial Clean Estimator', () => {
@@ -14,54 +14,54 @@ describe('Initial Clean Estimator', () => {
 
   describe('calculateInitialClean', () => {
     it('should calculate initial clean for well maintained yard (7 days)', () => {
-      const result = calculateInitialClean(2000, '7', 1, 'medium', config);
+      const result = calculateInitialClean(2000, '7', 1, 'medium', {}, config);
 
       expect(result.initialCleanCents).toBe(0); // Floor price for well maintained
       expect(result.bucket).toBe('7');
-      expect(result.breakdown.bucketMultiplier).toBe(1.00);
+      expect(result.breakdown.bucketMultiplier).toBe(1.0);
       expect(result.breakdown.floorCents).toBe(0);
     });
 
     it('should calculate initial clean for moderate accumulation (30 days)', () => {
-      const result = calculateInitialClean(2000, '30', 1, 'medium', config);
+      const result = calculateInitialClean(2000, '30', 1, 'medium', {}, config);
 
       expect(result.initialCleanCents).toBe(3500); // 2000 * 1.75 = 3500
       expect(result.breakdown.bucketMultiplier).toBe(1.75);
     });
 
-    it('should apply yard size adjustments', () => {
-      const smallResult = calculateInitialClean(2000, '30', 1, 'small', config);
-      const largeResult = calculateInitialClean(2000, '30', 1, 'large', config);
-      const xlResult = calculateInitialClean(2000, '30', 1, 'xl', config);
+    it('should handle yard size variations', () => {
+      const smallResult = calculateInitialClean(2000, '30', 1, 'small', {}, config);
+      const largeResult = calculateInitialClean(2000, '30', 1, 'large', {}, config);
+      const xlResult = calculateInitialClean(2000, '30', 1, 'xl', {}, config);
 
-      expect(smallResult.initialCleanCents).toBe(3500); // 2000 * 1.75 = 3500
-      expect(largeResult.initialCleanCents).toBe(3675); // 2000 * 1.75 * 1.05 = 3675
-      expect(xlResult.initialCleanCents).toBe(3850); // 2000 * 1.75 * 1.10 = 3850
+      expect(smallResult.initialCleanCents).toBe(3500); // 2000 * 1.75 = 3500 (yard adjustments already in perVisitCents)
+      expect(largeResult.initialCleanCents).toBe(3500); // 2000 * 1.75 = 3500 (yard adjustments already in perVisitCents)
+      expect(xlResult.initialCleanCents).toBe(3500); // 2000 * 1.75 = 3500 (yard adjustments already in perVisitCents)
     });
 
-    it('should apply dog count adjustments', () => {
-      const oneDog = calculateInitialClean(2000, '30', 1, 'medium', config);
-      const threeDogs = calculateInitialClean(2000, '30', 3, 'medium', config);
-      const fourDogs = calculateInitialClean(2000, '30', 4, 'medium', config);
+    it('should handle dog count variations', () => {
+      const oneDog = calculateInitialClean(2000, '30', 1, 'medium', {}, config);
+      const threeDogs = calculateInitialClean(2000, '30', 3, 'medium', {}, config);
+      const fourDogs = calculateInitialClean(2000, '30', 4, 'medium', {}, config);
 
-      expect(oneDog.initialCleanCents).toBe(3500); // 2000 * 1.75 = 3500
-      expect(threeDogs.initialCleanCents).toBe(3675); // 2000 * 1.75 * 1.05 = 3675
-      expect(fourDogs.initialCleanCents).toBe(3850); // 2000 * 1.75 * 1.10 = 3850
+      expect(oneDog.initialCleanCents).toBe(3500); // 2000 * 1.75 = 3500 (dog adjustments already in perVisitCents)
+      expect(threeDogs.initialCleanCents).toBe(3500); // 2000 * 1.75 = 3500 (dog adjustments already in perVisitCents)
+      expect(fourDogs.initialCleanCents).toBe(3500); // 2000 * 1.75 = 3500 (dog adjustments already in perVisitCents)
     });
 
     it('should respect floor prices', () => {
       // Test with a very low per-visit price that would result in amount below floor
-      const result = calculateInitialClean(500, '60', 1, 'medium', config);
+      const result = calculateInitialClean(500, '60', 1, 'medium', {}, config);
 
       expect(result.initialCleanCents).toBe(8900); // Should be floor price, not 500 * 2.00 = 1000
       expect(result.breakdown.floorCents).toBe(8900);
     });
 
     it('should handle maximum backlog bucket', () => {
-      const result = calculateInitialClean(2000, '999', 1, 'medium', config);
+      const result = calculateInitialClean(2000, '999', 1, 'medium', {}, config);
 
       expect(result.initialCleanCents).toBe(5000); // 2000 * 2.50 = 5000
-      expect(result.breakdown.bucketMultiplier).toBe(2.50);
+      expect(result.breakdown.bucketMultiplier).toBe(2.5);
       expect(result.breakdown.floorCents).toBe(12900);
     });
   });
@@ -134,12 +134,12 @@ describe('Initial Clean Estimator', () => {
 
   describe('edge cases', () => {
     it('should handle minimum values', () => {
-      const result = calculateInitialClean(1000, '7', 1, 'small', config);
+      const result = calculateInitialClean(1000, '7', 1, 'small', {}, config);
       expect(result.initialCleanCents).toBe(0); // Well maintained should always be free
     });
 
     it('should handle maximum values', () => {
-      const result = calculateInitialClean(5000, '999', 4, 'xl', config);
+      const result = calculateInitialClean(5000, '999', 4, 'xl', {}, config);
       expect(result.initialCleanCents).toBe(13750); // 5000 * 2.50 * 1.10 = 13750
     });
 
