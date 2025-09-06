@@ -227,6 +227,8 @@ model Org {
   dogs      Dog[]
   samples   Sample[]
   alerts    Alert[]
+
+  // unique on slug already declared at field level
 }
 
 model Customer {
@@ -296,6 +298,8 @@ model Device {
   lastSeenAt  DateTime?
   createdAt   DateTime @default(now())
   samples     Sample[]
+
+  @@index([orgId])
 }
 
 model Sample {
@@ -324,6 +328,10 @@ model Sample {
   scores SampleScore[]
   alerts Alert[]
   groundTruth GroundTruth[]
+
+  @@index([orgId, capturedAt])
+  @@index([customerId, capturedAt])
+  @@index([dogId, capturedAt])
 }
 
 model SampleScore {
@@ -352,6 +360,9 @@ model Alert {
   createdAt    DateTime   @default(now())
 
   org          Org        @relation(fields: [orgId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([sampleId])
 }
 
 enum AlertLevel {
@@ -369,6 +380,8 @@ model EcoStat {
   lbsDiverted        Float
   methaneAvoidedCuFt Float
   createdAt          DateTime @default(now())
+
+  @@index([orgId, periodMonth])
 }
 
 model BillingSnapshot {
@@ -381,6 +394,8 @@ model BillingSnapshot {
   oneTimeFeeCents      Int
   discountOneTimeCents Int
   createdAt            DateTime @default(now())
+
+  @@index([orgId, customerId])
 }
 
 model GroundTruth {
@@ -397,4 +412,6 @@ model GroundTruth {
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([dataset, split])
 }
