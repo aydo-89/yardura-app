@@ -184,6 +184,7 @@ function StatRing({
   caption,
   accentColorClassName = 'text-accent',
 }: StatRingProps) {
+  const gradId = `ringGrad-${size}-${thickness}`;
   const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
   const clamped = Math.max(0, Math.min(1, value || 0));
@@ -191,7 +192,20 @@ function StatRing({
   const remainder = circumference - dash;
   return (
     <div className="inline-flex flex-col items-center justify-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="block"
+        role="img"
+        aria-label={`Progress ${Math.round(clamped * 100)}%`}
+      >
+        <defs>
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0.65" />
+          </linearGradient>
+        </defs>
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -205,12 +219,13 @@ function StatRing({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="currentColor"
+          stroke={`url(#${gradId})`}
           strokeWidth={thickness}
           strokeLinecap="round"
           strokeDasharray={`${dash} ${remainder}`}
           fill="none"
           className={accentColorClassName}
+          style={{ transition: 'stroke-dasharray 600ms ease' }}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
         {centerText && (
