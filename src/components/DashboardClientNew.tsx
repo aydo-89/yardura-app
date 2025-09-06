@@ -705,9 +705,9 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-slate-900">{user.stripeCustomerId ? 'Active' : 'Set up'}</div>
-                <p className="text-xs text-muted">Next charge via portal</p>
+                <p className="text-xs text-muted">Manage plan and payments</p>
                 <div className="mt-2">
-                  <a className="text-xs text-accent underline" href="/billing">Open Billing</a>
+                  <a className="text-xs text-accent underline" href="/billing">Open Billing Portal</a>
                 </div>
               </CardContent>
             </Card>
@@ -1499,15 +1499,15 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               </div>
               <h2 className="text-2xl font-bold mb-2">Your Environmental Impact</h2>
               <p className="text-green-100">Together we're making a difference for our planet</p>
-              <div className="mt-4 flex justify-center gap-3">
+              <div className="mt-4 flex justify-center gap-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold">{formatLbsFromGrams(totalGrams)}</div>
-                  <div className="text-sm text-green-100">Waste Diverted</div>
+                  <div className="text-xs text-green-100">MTD Diverted</div>
+                  <div className="text-2xl font-bold">{formatLbsFromGrams(gramsThisMonth)} lbs</div>
                 </div>
                 <div className="w-px h-12 bg-white/30"></div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">{serviceVisits.length}</div>
-                  <div className="text-sm text-green-100">Services Completed</div>
+                  <div className="text-xs text-green-100">MTD Methane Avoided</div>
+                  <div className="text-2xl font-bold">{methaneThisMonthLbsEq.toFixed(1)} ft³</div>
                 </div>
               </div>
             </div>
@@ -1563,41 +1563,20 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </CardContent>
           </Card>
 
-          {/* Monthly Eco Impact */}
+          {/* Monthly Eco Impact (cleaner) */}
           <Card>
             <CardHeader>
               <CardTitle>Monthly Environmental Impact</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {/* Impact Summary */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <div className="text-sm font-medium text-slate-700 mb-1">This Month</div>
-                    <div className="text-2xl font-bold text-slate-900">{formatLbsFromGrams(totalGrams)}</div>
-                    <div className="text-xs text-slate-600">Waste diverted</div>
-                  </div>
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <div className="text-sm font-medium text-green-700 mb-1">Monthly Goal</div>
-                    <div className="text-2xl font-bold text-green-700">50 lbs</div>
-                    <div className="text-xs text-green-600">
-                      {totalGrams >= 25000 ? 'Achieved! 🎉' : `${((totalGrams / 25000) * 100).toFixed(0)}% complete`}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-lg">
+                  <div className="text-sm font-medium text-slate-700 mb-1">Diverted (MTD)</div>
+                  <div className="text-2xl font-bold text-slate-900">{formatLbsFromGrams(gramsThisMonth)}</div>
                 </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Monthly Progress</span>
-                    <span className="font-medium">{((totalGrams / 25000) * 100).toFixed(0)}%</span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-3">
-                    <div
-                      className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-1000 ease-out"
-                      style={{ width: `${Math.min((totalGrams / 25000) * 100, 100)}%` }}
-                    ></div>
-                  </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <div className="text-sm font-medium text-green-700 mb-1">Methane Avoided (MTD)</div>
+                  <div className="text-2xl font-bold text-green-700">{methaneThisMonthLbsEq.toFixed(1)} ft³</div>
                 </div>
               </div>
             </CardContent>
