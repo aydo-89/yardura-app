@@ -2,15 +2,13 @@ import AnimatedHeader from '@/components/site/AnimatedHeader';
 import Hero from '@/components/hero';
 import Differentiators from '@/components/Differentiators';
 import WhyItMatters from '@/components/WhyItMatters';
-import Insights from '@/components/insights';
+import dynamic from 'next/dynamic';
 import HowItWorks from '@/components/services';
 import Pricing from '@/components/pricing';
-import QuoteTeaser from '@/components/QuoteTeaser';
-import Eco from '@/components/eco';
-import Testimonials from '@/components/testimonials';
 import FAQ from '@/components/faq';
 import Footer from '@/components/footer';
 import StickyCTA from '@/components/sticky-cta';
+import Proof from '@/components/Proof';
 
 export default function Page() {
   const jsonLd = {
@@ -38,19 +36,21 @@ export default function Page() {
       <main>
         {/* Backward compatibility anchor for old #quote links */}
         <span id="quote" />
-        <Hero />
-        {/* Differentiators + Why It Matters + Insights preview */}
+        {/* Hero with anchor for nav/scroll tracking */}
+        <div id="hero">
+          <Hero />
+        </div>
+        {/* Differentiators + mission framing */}
         <Differentiators />
         <WhyItMatters />
-        <Insights />
-        {/* Proof: condensed eco stats + testimonial */}
-        <Eco />
-        <Testimonials />
-        {/* Pricing before How It Works */}
+        {/* Proof block: eco KPIs + single testimonial */}
+        <Proof />
+        {/* Pricing before How It Works for conversion focus */}
         <Pricing />
         <HowItWorks />
-        {/* Optional teaser retained at end before FAQ */}
-        <QuoteTeaser />
+        {/* Insights preview lazily loaded for performance */}
+        {dynamic(() => import('@/components/insights'), { ssr: false })({})}
+        {/* FAQ at end before footer */}
         <FAQ />
       </main>
       <Footer />
