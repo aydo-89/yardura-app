@@ -1,5 +1,6 @@
 # Yardura Site Map & Architecture
-*Generated: January 15, 2024 | Branch: feat/runbook-full-pass*
+
+_Generated: January 15, 2024 | Branch: feat/runbook-full-pass_
 
 ## Executive Summary
 
@@ -10,6 +11,7 @@ Current site architecture overview showing all routes, components, and homepage 
 ## 📁 Directory Structure
 
 ### App Routes (`/src/app/`)
+
 ```
 /                           # Homepage
 ├── admin/
@@ -32,6 +34,7 @@ Current site architecture overview showing all routes, components, and homepage 
 ```
 
 ### Component Architecture (`/src/components/`)
+
 ```
 ├── admin/                 # Admin-specific components
 ├── auth/                  # Authentication forms
@@ -66,6 +69,7 @@ Current site architecture overview showing all routes, components, and homepage 
 **Layout:** Single-column with container sections
 
 ### Current Section Flow:
+
 ```
 1. SiteHeader (Navigation)
 2. Hero (Main value proposition)
@@ -83,6 +87,7 @@ Current site architecture overview showing all routes, components, and homepage 
 ```
 
 ### Component Mapping:
+
 ```tsx
 <SiteHeader />              // Navigation
 <main>
@@ -108,11 +113,13 @@ Current site architecture overview showing all routes, components, and homepage 
 ## 🔄 Key User Flows
 
 ### Primary Conversion Flow:
+
 ```
 Homepage → Hero CTA → Quote Form → Account Creation → Success
 ```
 
 ### Secondary Flows:
+
 ```
 Homepage → Why It Matters → Insights → Quote
 Homepage → Services → Pricing → Quote
@@ -120,6 +127,7 @@ Homepage → FAQ → Contact → Quote
 ```
 
 ### Navigation Flows:
+
 ```
 Header → Services → Quote
 Header → Insights → Article → Quote
@@ -131,6 +139,7 @@ Footer → Contact → Quote
 ## 📊 Content Architecture
 
 ### Homepage Sections:
+
 - **Hero:** Value prop, trust signals, primary CTA
 - **Quote Form:** Early conversion attempt (problematic placement)
 - **Services:** Weekly/bi-weekly, add-ons, guarantees
@@ -143,6 +152,7 @@ Footer → Contact → Quote
 - **Testimonials:** Customer social proof
 
 ### Supporting Pages:
+
 - **Quote Flow:** 3-step stepper (Basics → Contact → Account)
 - **Facts:** LEO-optimized fact sheet
 - **Insights:** Blog/Resources hub with articles
@@ -153,18 +163,21 @@ Footer → Contact → Quote
 ## 🎯 Current IA Issues (Pre-Runbook)
 
 ### Critical Issues:
+
 1. **Quote Form Too Early** - Section 2 (should be 5-6)
 2. **Why It Matters Too Low** - Section 7 (should be 3-4)
 3. **Insights Too Low** - Section 8 (should be 4-5)
 4. **Missing Differentiators Section** - No dedicated unique value props
 
 ### Conversion Flow Problems:
+
 1. **Trust Before Commitment** - Quote form appears before value demonstration
 2. **Features Before Benefits** - Services shown before unique advantages
 3. **Social Proof Late** - Testimonials appear after FAQ
 4. **No Progressive Disclosure** - All information at once
 
 ### SEO/Content Issues:
+
 1. **No Clear Hierarchy** - All sections treated equally
 2. **Missing Internal Links** - Limited cross-section navigation
 3. **Weak Anchor Text** - Generic "Get Quote" vs descriptive
@@ -175,6 +188,7 @@ Footer → Contact → Quote
 ## 🛠️ Technical Architecture
 
 ### Framework & Stack:
+
 - **Next.js 14** (App Router)
 - **React 18** with TypeScript
 - **Tailwind CSS** for styling
@@ -183,13 +197,15 @@ Footer → Contact → Quote
 - **Lucide React** for icons
 
 ### Key Libraries:
-- **@radix-ui/*** - Accessible primitives
+
+- **@radix-ui/\*** - Accessible primitives
 - **zod** - Form validation
 - **react-hook-form** - Form handling
 - **sonner** - Toast notifications
 - **next/image** - Optimized images
 
 ### Performance Features:
+
 - **Server Components** - Default rendering
 - **Client Components** - Interactive elements only
 - **Image Optimization** - Next.js built-in
@@ -200,12 +216,14 @@ Footer → Contact → Quote
 ## 📈 Analytics & Tracking
 
 ### Current Events (Basic):
+
 - Page views
 - CTA clicks
 - Form interactions
 - Quote completions
 
 ### Missing Events:
+
 - Scroll depth
 - Section engagement
 - A/B test variants
@@ -217,12 +235,14 @@ Footer → Contact → Quote
 ## 🔒 Security & Compliance
 
 ### Current Security:
+
 - Basic authentication (NextAuth.js)
 - Stripe payment processing
 - Form validation
 - HTTPS enforcement
 
 ### Missing Security:
+
 - CSP headers
 - Rate limiting
 - Input sanitization
@@ -234,36 +254,42 @@ Footer → Contact → Quote
 ## 🚀 Runbook Impact Areas
 
 ### Phase 1 (IA Reorganization):
+
 - Move Why It Matters + Insights to positions 3-4
 - Add Differentiators section
 - Implement A/B testing for section order
 - Create quote teaser instead of full form
 
 ### Phase 2 (Motion QA):
+
 - Audit all animations for performance
 - Verify reduced motion support
 - Z-index conflict resolution
 - Animation timing optimization
 
 ### Phase 3-5 (Performance & Quality):
+
 - Core Web Vitals optimization
 - Accessibility compliance
 - Design system enforcement
 - Bundle size optimization
 
 ### Phase 6-7 (SEO & LEO):
+
 - Technical SEO implementation
 - Content optimization
 - Structured data enhancement
 - LEO resource creation
 
 ### Phase 8-10 (Content & Local):
+
 - Dynamic OG image generation
 - Blog system implementation
 - City-specific landing pages
 - Local SEO optimization
 
 ### Phase 11-18 (Conversion & Systems):
+
 - Quote flow rebuild
 - Form security enhancement
 - Analytics taxonomy
@@ -278,12 +304,14 @@ Footer → Contact → Quote
 ## 📋 Component Dependencies
 
 ### Critical Path Components:
+
 - `Hero` → `SiteHeader`, `StickyCTA`
 - `QuoteForm` → `QuoteCalculator`, `StripePaymentForm`
 - `WhyItMatters` → `Insights`, `Reveal`
 - `Insights` → `Eco`, `Testimonials`
 
 ### Shared Dependencies:
+
 - All components → `Reveal` (motion wrapper)
 - Forms → `ui/*` (shadcn components)
 - SEO → `StructuredData` (schema markup)
@@ -293,27 +321,30 @@ Footer → Contact → Quote
 ## 🎯 Success Metrics (Post-Runbook)
 
 ### Performance Targets:
+
 - **LCP:** <2.5s (mobile)
 - **CLS:** <0.1
 - **INP:** <200ms
 - **Bundle Size:** <500KB
 
 ### Conversion Targets:
+
 - **Quote Starts:** +40% (from IA optimization)
 - **Completion Rate:** +25% (from flow improvements)
 - **Time on Page:** +30% (from content reorganization)
 
 ### SEO Targets:
+
 - **Organic Traffic:** +50% (from technical + content SEO)
 - **Local Rankings:** Top 3 for primary keywords
 - **Rich Results:** 100% eligible pages
 
 ### Quality Targets:
+
 - **Accessibility:** 95+ Axe score
 - **Performance:** 90+ Lighthouse score
 - **SEO:** 100% rich results validation
 
 ---
 
-*This site map serves as the baseline for the comprehensive runbook optimization. All subsequent phases will reference and update this document.*
-
+_This site map serves as the baseline for the comprehensive runbook optimization. All subsequent phases will reference and update this document._

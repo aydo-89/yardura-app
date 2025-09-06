@@ -171,13 +171,7 @@ export const CITY_DATA: Record<string, CityData> = {
     description:
       'Eagan, a thriving suburb in the Twin Cities South metro area known for its excellent schools and family-friendly communities.',
     zipCodes: ['55120', '55121', '55122', '55123'],
-    neighborhoods: [
-      'Northview',
-      'Rahncliff',
-      'Thomas Lake',
-      'Wescott',
-      'Southview',
-    ],
+    neighborhoods: ['Northview', 'Rahncliff', 'Thomas Lake', 'Wescott', 'Southview'],
     serviceAreas: ['Eagan', 'Apple Valley', 'Burnsville', 'Rosemount'],
     localBusiness: {
       name: 'Yardura Eagan',
@@ -240,12 +234,7 @@ export const CITY_DATA: Record<string, CityData> = {
     description:
       'Lakeville, a family-friendly suburb known for its excellent schools, parks, and growing community along I-35.',
     zipCodes: ['55044'],
-    neighborhoods: [
-      'North Lakeville',
-      'South Lakeville',
-      'East Lakeville',
-      'West Lakeville',
-    ],
+    neighborhoods: ['North Lakeville', 'South Lakeville', 'East Lakeville', 'West Lakeville'],
     serviceAreas: ['Lakeville', 'Burnsville', 'Apple Valley', 'Farmington'],
     localBusiness: {
       name: 'Yardura Lakeville',
@@ -274,12 +263,7 @@ export const CITY_DATA: Record<string, CityData> = {
     description:
       'Burnsville, a vibrant suburb known for its diverse community, excellent schools, and convenient location along I-35.',
     zipCodes: ['55306', '55337'],
-    neighborhoods: [
-      'North Burnsville',
-      'South Burnsville',
-      'East Burnsville',
-      'West Burnsville',
-    ],
+    neighborhoods: ['North Burnsville', 'South Burnsville', 'East Burnsville', 'West Burnsville'],
     serviceAreas: ['Burnsville', 'Lakeville', 'Apple Valley', 'Savage'],
     localBusiness: {
       name: 'Yardura Burnsville',

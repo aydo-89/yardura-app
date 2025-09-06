@@ -1,9 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
+import { env } from './env';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export async function getSignedUrl(path: string, expiresInSeconds = 3600) {
+  const bucket = env.STORAGE_BUCKET || 'stool-samples';
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresInSeconds);
+  if (error) throw error;
+  return data.signedUrl as string;
+}
 
 // Database types
 export interface YarduraCustomer {
