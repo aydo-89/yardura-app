@@ -261,10 +261,10 @@ export default function DashboardClientNew(props: DashboardClientProps) {
 
                 <div className="flex flex-wrap gap-3">
                   <Button asChild>
-                    <a href="/signup">Update Profile</a>
+                    <a href="/account">Update Profile</a>
                   </Button>
                   <Button variant="outline" asChild>
-                    <a href="/signup">Add Dog Profile</a>
+                    <a href="/dogs/new">Add Dog Profile</a>
                   </Button>
                 </div>
               </div>
