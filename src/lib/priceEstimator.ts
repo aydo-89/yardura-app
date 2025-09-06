@@ -184,19 +184,19 @@ export function visitsPerMonth(frequency: Frequency): number {
   switch (frequency) {
     case 'twice-weekly':
       // 2 visits per week * 52 weeks / 12 months = 8.67 visits per month
-      return Math.round((2 * 52) / 12 * 100) / 100; // 8.67
+      return Math.round(((2 * 52) / 12) * 100) / 100; // 8.67
     case 'weekly':
       // 1 visit per week * 52 weeks / 12 months = 4.33 visits per month
-      return Math.round((1 * 52) / 12 * 100) / 100; // 4.33
+      return Math.round(((1 * 52) / 12) * 100) / 100; // 4.33
     case 'biweekly':
       // 1 visit per 2 weeks = 0.5 visits per week * 52 weeks / 12 months = 2.17 visits per month
-      return Math.round((0.5 * 52) / 12 * 100) / 100; // 2.17
+      return Math.round(((0.5 * 52) / 12) * 100) / 100; // 2.17
     case 'monthly':
       return 1; // 1 visit per month
     case 'onetime':
       return 1; // One-time service
     default:
-      return Math.round((1 * 52) / 12 * 100) / 100; // 4.33
+      return Math.round(((1 * 52) / 12) * 100) / 100; // 4.33
   }
 }
 

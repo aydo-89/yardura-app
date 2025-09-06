@@ -81,3 +81,4 @@ export function useConditionalAnimation<T>(normalValue: T, reducedValue: T): T {
   const { prefersReducedMotion } = useReducedMotionSafe();
   return prefersReducedMotion ? reducedValue : normalValue;
 }
+

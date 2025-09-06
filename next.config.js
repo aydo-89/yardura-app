@@ -44,6 +44,39 @@ const nextConfig = {
           priority: 20,
         },
       };
+
+      // Exclude server-only modules from client bundle
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        dns: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
+        util: false,
+        querystring: false,
+        events: false,
+        buffer: false,
+        string_decoder: false,
+        child_process: false,
+        cluster: false,
+        dgram: false,
+        punycode: false,
+        readline: false,
+        repl: false,
+        tty: false,
+        v8: false,
+        vm: false,
+        worker_threads: false,
+      };
     }
 
     return config;

@@ -52,6 +52,7 @@ model User {
   role          UserRole  @default(CUSTOMER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  stripeCustomerId String?
 
   // Sales rep specific fields
   salesRepId    String?   // ID of the sales rep who signed them up
@@ -66,6 +67,8 @@ model User {
   salesRep      User?            @relation("SalesRepReferrals", fields: [salesRepId], references: [id])
   earnedCommissions Commission[]  @relation("CommissionSalesRep")
   receivedCommissions Commission[] @relation("CommissionCustomer")
+  orgId         String?
+  org           Org?      @relation(fields: [orgId], references: [id])
 }
 
 model VerificationToken {
@@ -89,6 +92,11 @@ model Dog {
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   dataReadings DataReading[]
+  orgId        String?
+  org          Org?     @relation(fields: [orgId], references: [id])
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  samples      Sample[]
 }
 
 // Service visits
@@ -170,6 +178,8 @@ enum UserRole {
   CUSTOMER
   SALES_REP
   ADMIN
+  TECH
+  OWNER
 }
 
 enum CommissionStatus {
@@ -197,4 +207,211 @@ enum YardSize {
   MEDIUM   // 1/4 - 1/2 acre
   LARGE    // 1/2 - 1 acre
   XLARGE   // > 1 acre
+}
+
+// ====================
+// Multi-tenant & Edge → Cloud pipeline models
+// ====================
+
+model Org {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  customers Customer[]
+  devices   Device[]
+  jobs      Job[]
+  dogs      Dog[]
+  samples   Sample[]
+  alerts    Alert[]
+
+  // unique on slug already declared at field level
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Org      @relation(fields: [orgId], references: [id])
+  name         String
+  email        String?
+  phone        String?
+  addressLine1 String
+  city         String
+  state        String
+  zip          String
+  latitude     Float?
+  longitude    Float?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  dogs Dog[]
+  jobs Job[]
+  samples Sample[]
+}
+
+model Job {
+  id            String        @id @default(cuid())
+  orgId         String
+  org           Org           @relation(fields: [orgId], references: [id])
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  frequency     Frequency     @default(WEEKLY)
+  nextVisitAt   DateTime?
+  dayOfWeek     Int?
+  extraAreas    Int           @default(0)
+  deodorizeMode DeodorizeMode @default(NONE)
+  status        JobStatus     @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  samples       Sample[]
+}
+
+enum Frequency {
+  ONE_TIME
+  WEEKLY
+  BI_WEEKLY
+  TWICE_WEEKLY
+}
+
+enum JobStatus {
+  ACTIVE
+  PAUSED
+  CANCELED
+}
+
+enum DeodorizeMode {
+  NONE
+  FIRST_VISIT
+  EACH_VISIT
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id])
+  name        String
+  type        String
+  apiKeyHash  String
+  uniqueId    String   @unique
+  lastSeenAt  DateTime?
+  createdAt   DateTime @default(now())
+  samples     Sample[]
+
+  @@index([orgId])
+}
+
+model Sample {
+  id             String    @id @default(cuid())
+  orgId          String
+  org            Org       @relation(fields: [orgId], references: [id])
+  deviceId       String
+  device         Device    @relation(fields: [deviceId], references: [id])
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  dogId          String?
+  dog            Dog?      @relation(fields: [dogId], references: [id])
+  jobId          String?
+  job            Job?      @relation(fields: [jobId], references: [id])
+  capturedAt     DateTime  @default(now())
+  imageUrl       String?
+  weightG        Float?
+  moistureRaw    Int?
+  temperatureC   Float?
+  gpsLat         Float?
+  gpsLng         Float?
+  notes          String?
+  freshnessScore Float?
+  createdAt      DateTime  @default(now())
+
+  scores SampleScore[]
+  alerts Alert[]
+  groundTruth GroundTruth[]
+
+  @@index([orgId, capturedAt])
+  @@index([customerId, capturedAt])
+  @@index([dogId, capturedAt])
+}
+
+model SampleScore {
+  id               String   @id @default(cuid())
+  sampleId         String
+  sample           Sample   @relation(fields: [sampleId], references: [id])
+  colorLabel       String?
+  consistencyLabel String?
+  contentFlags     String?
+  hydrationHint    String?
+  giCluster        String?
+  confidence       Float?
+  baselineDelta    Json?
+  scoredAt         DateTime @default(now())
+}
+
+model Alert {
+  id           String     @id @default(cuid())
+  orgId        String
+  sampleId     String
+  sample       Sample     @relation(fields: [sampleId], references: [id])
+  level        AlertLevel @default(INFO)
+  kind         String
+  message      String
+  acknowledged Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  org          Org        @relation(fields: [orgId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([sampleId])
+}
+
+enum AlertLevel {
+  INFO
+  WATCH
+  ATTENTION
+}
+
+model EcoStat {
+  id                 String   @id @default(cuid())
+  orgId              String
+  customerId         String?
+  dogId              String?
+  periodMonth        String
+  lbsDiverted        Float
+  methaneAvoidedCuFt Float
+  createdAt          DateTime @default(now())
+
+  @@index([orgId, periodMonth])
+}
+
+model BillingSnapshot {
+  id                   String   @id @default(cuid())
+  orgId                String
+  customerId           String
+  plan                 String
+  pricePerVisitCents   Int
+  visitsPerMonth       Int
+  oneTimeFeeCents      Int
+  discountOneTimeCents Int
+  createdAt            DateTime @default(now())
+
+  @@index([orgId, customerId])
+}
+
+model GroundTruth {
+  id           String   @id @default(cuid())
+  sampleId     String   @unique
+  sample       Sample   @relation(fields: [sampleId], references: [id])
+  dataset      String   // e.g., v0.1
+  split        String   // train|val|test
+  colorLabel   String?
+  consistency  String?
+  contentFlags String?
+  freshness    String?
+  notStool     Boolean  @default(false)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([dataset, split])
 }

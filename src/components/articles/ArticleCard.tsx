@@ -132,3 +132,4 @@ export default function ArticleCard({ article, variant = 'default', className }:
     </article>
   );
 }
+

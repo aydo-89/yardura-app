@@ -1,5 +1,6 @@
 # Local SEO Enhancements & GBP Integration
-*Version: 1.0 | Last Updated: January 15, 2024*
+
+_Version: 1.0 | Last Updated: January 15, 2024_
 
 ## Executive Summary
 
@@ -8,17 +9,20 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Current Local SEO Status
 
 ### NAP Consistency ✅
+
 **Name:** Yardura (consistent)
 **Address:** Minneapolis, MN 55417 (consistent)
 **Phone:** (888) 915-9273 (consistent)
 
 ### Service Areas ✅
+
 - South Minneapolis
 - Richfield
 - Edina
 - Bloomington
 
 ### Missing Local SEO Elements 🚨
+
 - Google Business Profile optimization
 - City-specific landing pages
 - Local schema markup enhancements
@@ -30,6 +34,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Google Business Profile (GBP) Setup & Optimization
 
 ### GBP Profile Creation
+
 **Business Name:** Yardura - Minneapolis Dog Waste Removal
 **Category:** Pet Waste Removal Service
 **Address:** Minneapolis, MN 55417 (service area HQ)
@@ -39,6 +44,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ### GBP Optimization Checklist
 
 #### Business Information
+
 - [ ] **Primary Category:** Pet Waste Removal Service
 - [ ] **Additional Categories:**
   - Pet Sitting
@@ -52,10 +58,12 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 - [ ] **Service Areas:** Minneapolis, Richfield, Edina, Bloomington, MN
 
 #### GBP Photos (Critical for Rankings)
+
 **Profile Photo:** Professional logo with Minneapolis skyline
 **Cover Photo:** Clean Minneapolis yard with service branding
 
 **Photo Categories (Post 10+ photos):**
+
 - Service in action (Minneapolis yards)
 - Equipment (eco-friendly tools)
 - Team members (local staff)
@@ -64,7 +72,9 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 - Environmental impact (composting)
 
 #### GBP Services Setup
+
 **Primary Services:**
+
 - Weekly Dog Waste Removal - Minneapolis
 - Bi-Weekly Dog Waste Removal - Minneapolis
 - One-Time Yard Cleanup - Minneapolis
@@ -73,6 +83,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 - Health Insights Monitoring - Minneapolis
 
 **Service Attributes:**
+
 - [ ] Same-day service available
 - [ ] Weekend availability
 - [ ] Eco-friendly practices
@@ -81,7 +92,9 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 - [ ] Mobile payments accepted
 
 ### GBP Posting Strategy
+
 **Post Types:**
+
 - Service promotions (seasonal)
 - Educational content (dog health tips)
 - Local events (Minneapolis pet events)
@@ -89,11 +102,13 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 - Environmental impact updates
 
 **Posting Schedule:**
+
 - 2-3 posts per week
 - Mix of promotional and educational content
 - Always include local Minneapolis context
 
 ### GBP Review Management
+
 **Review Response Templates:**
 
 **Positive Review Response:**
@@ -103,6 +118,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 "We're sorry to hear about your experience with our Minneapolis dog waste removal service. We'd like to make this right - please contact us at (888) 915-9273 or hello@yardura.com so we can address your concerns personally."
 
 **Review Monitoring:**
+
 - Set up Google Alerts for "Yardura Minneapolis reviews"
 - Respond within 24 hours
 - Use reviews in marketing materials (with permission)
@@ -112,6 +128,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Local Schema Markup Enhancements
 
 ### Enhanced LocalBusiness Schema
+
 ```json
 {
   "@context": "https://schema.org",
@@ -131,7 +148,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
   "geo": {
     "@type": "GeoCoordinates",
     "latitude": 44.9778,
-    "longitude": -93.2650
+    "longitude": -93.265
   },
   "openingHours": "Mo-Fr 08:00-18:00",
   "priceRange": "$$",
@@ -184,6 +201,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ```
 
 ### Local Service Schema
+
 ```json
 {
   "@context": "https://schema.org",
@@ -213,11 +231,13 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## City-Specific Landing Pages
 
 ### Minneapolis Landing Page Strategy
+
 **URL:** `/minneapolis-dog-waste-removal`
 **Title:** "Dog Waste Removal Minneapolis | Professional Poop Scooping Services"
 **Meta Description:** "Professional dog waste removal in Minneapolis, MN. Weekly eco-friendly service starting at $20/visit. Serving South Minneapolis, Richfield, Edina & Bloomington."
 
 **Page Content Structure:**
+
 1. **Hero:** Minneapolis-specific headline and trust signals
 2. **Local Proof:** Minneapolis landmarks, local testimonials
 3. **Service Areas:** Detailed Minneapolis neighborhoods served
@@ -225,6 +245,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 5. **CTA:** "Get Minneapolis Quote"
 
 ### Implementation Plan
+
 - Create `/app/minneapolis-dog-waste-removal/page.tsx`
 - Add unique local content and testimonials
 - Include Minneapolis-specific schema markup
@@ -235,7 +256,9 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Local Citation Building Strategy
 
 ### High-Priority Citations
+
 **Business Directories:**
+
 - Google Business Profile ✅
 - Bing Places
 - Apple Maps Connect
@@ -243,17 +266,20 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 - Yelp
 
 **Local Minneapolis Directories:**
+
 - Minneapolis Chamber of Commerce
 - Minnesota Business Directory
 - Local pet stores partnerships
 - Veterinary clinic networks
 
 **Industry-Specific Citations:**
+
 - Pet industry directories
 - Environmental service listings
 - Local cleaning service associations
 
 ### Citation Consistency Checklist
+
 - [ ] Business name: "Yardura"
 - [ ] Address: Minneapolis, MN 55417
 - [ ] Phone: (888) 915-9273
@@ -266,6 +292,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Local Content Marketing Strategy
 
 ### Minneapolis-Focused Content Topics
+
 1. **Dog Waste Laws:** "Minneapolis Dog Waste Ordinances & Fines"
 2. **Local Parks:** "Dog Waste Removal for Minneapolis Parks & Trails"
 3. **Seasonal Services:** "Winter Dog Waste Removal in Minneapolis"
@@ -273,12 +300,15 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 5. **Environmental Impact:** "Minneapolis Dog Waste Composting Initiative"
 
 ### Local Keyword Integration
+
 **Primary Keywords:**
+
 - Dog waste removal Minneapolis
 - Pooper scooper Minneapolis
 - Minneapolis dog poop pickup
 
 **Long-tail Keywords:**
+
 - Dog waste removal South Minneapolis
 - Eco-friendly pet waste Minneapolis
 - Weekly dog scooping Minneapolis
@@ -288,6 +318,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Local Link Building Opportunities
 
 ### Local Partnership Links
+
 - Minneapolis veterinary clinics
 - Local pet stores
 - Animal shelters
@@ -295,6 +326,7 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 - Local business associations
 
 ### Content Partnership Ideas
+
 - Guest posts on Minneapolis pet blogs
 - Local environmental newsletters
 - Community event sponsorships
@@ -305,12 +337,13 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## GBP Integration in Website
 
 ### Footer NAP Block
+
 ```html
 <div class="local-nap">
   <h3>Yardura - Minneapolis Dog Waste Removal</h3>
   <address>
-    Serving Minneapolis, MN 55417<br>
-    Phone: <a href="tel:+18889159273">(888) 915-9273</a><br>
+    Serving Minneapolis, MN 55417<br />
+    Phone: <a href="tel:+18889159273">(888) 915-9273</a><br />
     Email: <a href="mailto:hello@yardura.com">hello@yardura.com</a>
   </address>
   <p>Hours: Monday-Friday 8:00 AM - 6:00 PM</p>
@@ -319,13 +352,16 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ```
 
 ### GBP Link Integration
+
 **Strategic Placement:**
+
 - Footer (primary)
 - Contact page
 - Service area pages
 - About page
 
 **Link Text Variations:**
+
 - "Find us on Google"
 - "View Minneapolis location"
 - "Google Business Profile"
@@ -336,29 +372,35 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Local SEO Monitoring & Reporting
 
 ### Key Performance Indicators
+
 **Ranking KPIs:**
+
 - Google local pack position for "dog waste removal Minneapolis"
 - GBP profile views and searches
 - Direction requests from GBP
 - Phone calls from GBP
 
 **Citation KPIs:**
+
 - Total citation consistency score
 - New citations added per month
 - Citation ranking improvements
 
 **Review KPIs:**
+
 - Average rating on GBP
 - Total review count
 - Review response rate (<24 hours)
 
 ### Monitoring Tools
+
 - Google Search Console (local queries)
 - GBP Insights dashboard
 - BrightLocal citation tracking
 - SEMrush local rank tracking
 
 ### Monthly Reporting
+
 - Local ranking improvements
 - Citation coverage growth
 - Review acquisition metrics
@@ -369,24 +411,28 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Implementation Timeline
 
 ### Phase 1: Foundation (Week 1)
+
 - [ ] GBP profile optimization
 - [ ] Schema markup enhancements
 - [ ] NAP consistency audit
 - [ ] Local keyword research
 
 ### Phase 2: Content & Citations (Weeks 2-3)
+
 - [ ] City-specific landing page
 - [ ] Citation building campaign
 - [ ] Local content creation
 - [ ] GBP posting strategy
 
 ### Phase 3: Link Building (Weeks 4-6)
+
 - [ ] Local partnership outreach
 - [ ] Guest posting campaign
 - [ ] Local business cross-promotions
 - [ ] Community event participation
 
 ### Phase 4: Optimization (Ongoing)
+
 - [ ] GBP performance monitoring
 - [ ] Local ranking tracking
 - [ ] Review management
@@ -397,16 +443,19 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Budget Considerations
 
 ### GBP Advertising Budget
+
 - **Monthly Budget:** $200-500 for local campaigns
 - **Target CPC:** $1-3 for local keywords
 - **Focus:** Minneapolis service area targeting
 
 ### Citation Building Budget
+
 - **Citation Services:** $300-600/month
 - **Local Directories:** $200-400 one-time setup
 - **Content Marketing:** $500-1,000/month
 
 ### Total Monthly Investment
+
 - **Year 1:** $1,000-2,000/month
 - **Year 2:** $800-1,500/month (optimization focus)
 
@@ -415,12 +464,14 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 ## Success Metrics & Goals
 
 ### 6-Month Goals
+
 - **Local Rankings:** Top 3 for primary Minneapolis keywords
 - **GBP Profile:** 4.8+ star rating, 50+ reviews
 - **Organic Traffic:** 40% increase from local searches
 - **Conversions:** 30% increase from Minneapolis area
 
 ### 12-Month Goals
+
 - **Market Dominance:** #1 local pack position
 - **Citation Coverage:** 95%+ consistency across directories
 - **Brand Authority:** Recognized Minneapolis pet care leader
@@ -428,4 +479,4 @@ Comprehensive local SEO strategy to dominate Minneapolis dog waste removal searc
 
 ---
 
-*Local SEO strategy designed for Minneapolis market dominance in dog waste removal services.*
+_Local SEO strategy designed for Minneapolis market dominance in dog waste removal services._

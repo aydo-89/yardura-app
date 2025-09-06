@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/database';
+import { prisma } from '@/lib/prisma';
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -46,6 +47,25 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.deleted':
         await handleSubscriptionCancellation(event.data.object);
         break;
+
+      case 'customer.updated': {
+        const cust: any = event.data.object;
+        const email = cust.email?.toLowerCase();
+        if (email) {
+          await prisma.user.updateMany({ where: { email }, data: { stripeCustomerId: cust.id } });
+        }
+        break;
+      }
+
+      case 'checkout.session.completed': {
+        const sess: any = event.data.object;
+        const customer = sess.customer;
+        const email = sess.customer_details?.email?.toLowerCase();
+        if (customer && email) {
+          await prisma.user.updateMany({ where: { email }, data: { stripeCustomerId: customer } });
+        }
+        break;
+      }
 
       default:
         console.log(`Unhandled event type: ${event.type}`);

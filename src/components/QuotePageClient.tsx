@@ -45,8 +45,6 @@ import {
   User,
 } from 'lucide-react';
 
-
-
 import { useSession } from 'next-auth/react';
 import { track } from '@/lib/analytics';
 import {
@@ -1232,8 +1230,12 @@ function QuotePageClient() {
 
           {/* Step Indicator */}
           <div className="text-xs sm:text-sm text-muted-foreground flex-1 text-center">
-            <span className="hidden sm:inline">Step {currentStep + 1} of {STEPS.length}</span>
-            <span className="sm:hidden">{currentStep + 1}/{STEPS.length}</span>
+            <span className="hidden sm:inline">
+              Step {currentStep + 1} of {STEPS.length}
+            </span>
+            <span className="sm:hidden">
+              {currentStep + 1}/{STEPS.length}
+            </span>
           </div>
 
           {currentStep === STEPS.length - 1 ? (
@@ -3183,22 +3185,40 @@ function StepZipCheck({ quoteData, updateQuoteData, _errors, onNext }: any) {
   // Service area zip codes for initial launch
   const SERVICE_AREA_ZIPS = [
     // Minneapolis (including South Minneapolis & Richfield areas)
-    '55401', '55402', '55403', '55404', '55405',
-    '55406', '55407', '55408', '55409', '55410',
+    '55401',
+    '55402',
+    '55403',
+    '55404',
+    '55405',
+    '55406',
+    '55407',
+    '55408',
+    '55409',
+    '55410',
     '55419', // South Minneapolis
     '55423', // Richfield
 
     // Bloomington
-    '55420', '55425', '55431', '55435', '55437', '55438',
+    '55420',
+    '55425',
+    '55431',
+    '55435',
+    '55437',
+    '55438',
 
     // Edina
-    '55435', '55436', '55439',
+    '55435',
+    '55436',
+    '55439',
 
     // Richfield (already included above)
     '55423',
 
     // Eagan
-    '55120', '55121', '55122', '55123',
+    '55120',
+    '55121',
+    '55122',
+    '55123',
 
     // Apple Valley
     '55124',
@@ -3207,10 +3227,16 @@ function StepZipCheck({ quoteData, updateQuoteData, _errors, onNext }: any) {
     '55044',
 
     // Burnsville
-    '55306', '55337',
+    '55306',
+    '55337',
 
     // St. Cloud area
-    '56301', '56302', '56303', '56304', '56379', '56387',
+    '56301',
+    '56302',
+    '56303',
+    '56304',
+    '56379',
+    '56387',
   ];
 
   const validateZipCode = async () => {

@@ -5,26 +5,11 @@ import { UserRole } from '@prisma/client';
 
 export async function POST(request: NextRequest) {
   try {
-    const {
-      email,
-      password,
-      name,
-      phone,
-      address,
-      city,
-      zipCode,
-      yardSize,
-      daysSinceLastClean,
-      dogs,
-      servicePreferences,
-    } = await request.json();
+    const { email, password, name } = await request.json();
 
     // Validate required fields
-    if (!email || !password || !name || !address || !zipCode) {
-      return NextResponse.json(
-        { error: 'Email, password, name, address, and zip code are required' },
-        { status: 400 }
-      );
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
     // Check if user already exists
@@ -42,12 +27,8 @@ export async function POST(request: NextRequest) {
     // Create the user account
     const user = await prisma.user.create({
       data: {
-        name,
+        name: name || email.split('@')[0], // Use email prefix if no name provided
         email,
-        phone,
-        address,
-        city,
-        zipCode,
         role: UserRole.CUSTOMER,
         // Create a direct password account
         accounts: {
@@ -60,38 +41,6 @@ export async function POST(request: NextRequest) {
         },
       },
     });
-
-    // Create dog profiles
-    if (dogs && dogs.length > 0) {
-      for (const dogData of dogs) {
-        if (dogData.name?.trim()) {
-          await prisma.dog.create({
-            data: {
-              name: dogData.name,
-              breed: dogData.breed || null,
-              age: dogData.age || null,
-              weight: dogData.weight || null,
-              userId: user.id,
-            },
-          });
-        }
-      }
-    }
-
-    // Create initial service visit record for scheduling
-    if (servicePreferences) {
-      await prisma.serviceVisit.create({
-        data: {
-          userId: user.id,
-          scheduledDate: new Date(),
-          serviceType: servicePreferences.serviceType === 'one-time' ? 'ONE_TIME' : 'REGULAR',
-          yardSize: yardSize?.toUpperCase() || 'MEDIUM',
-          dogsServiced: dogs?.length || 1,
-          notes: `New signup: ${servicePreferences.serviceType}; Frequency: ${servicePreferences.frequency}; Preferred: ${servicePreferences.preferredDay} ${servicePreferences.preferredTime}${daysSinceLastClean ? `; Days since last clean: ${daysSinceLastClean}` : ''}`,
-          status: 'SCHEDULED',
-        },
-      });
-    }
 
     return NextResponse.json({
       message: 'Account created successfully',

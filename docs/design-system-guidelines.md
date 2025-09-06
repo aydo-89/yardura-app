@@ -1,5 +1,6 @@
 # Yardura Design System Guidelines
-*Version: 1.0 | Last Updated: January 15, 2024*
+
+_Version: 1.0 | Last Updated: January 15, 2024_
 
 ## Overview
 
@@ -10,29 +11,32 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ## 🎨 Design Tokens (CSS Variables)
 
 ### Primary Colors
+
 ```css
 /* Primary Palette */
---ink: hsl(222 47% 11%);        /* Primary text - very dark blue */
---muted: hsl(215 16% 47%);      /* Secondary text - medium gray */
---accent: hsl(152 63% 34%);     /* Primary accent - sage green */
+--ink: hsl(222 47% 11%); /* Primary text - very dark blue */
+--muted: hsl(215 16% 47%); /* Secondary text - medium gray */
+--accent: hsl(152 63% 34%); /* Primary accent - sage green */
 --accent-soft: hsl(152 63% 94%); /* Light accent background */
---warning: hsl(38 92% 50%);     /* Warning/amber color */
+--warning: hsl(38 92% 50%); /* Warning/amber color */
 ```
 
 ### Surface Colors
+
 ```css
---panel: hsl(216 20% 95%);      /* Light panel background */
---card: hsl(210 20% 98%);       /* Card background */
---white: hsl(0 0% 100%);        /* Pure white */
+--panel: hsl(216 20% 95%); /* Light panel background */
+--card: hsl(210 20% 98%); /* Card background */
+--white: hsl(0 0% 100%); /* Pure white */
 ```
 
 ### Interactive States
+
 ```css
 /* Focus States */
 --focus-ring: hsl(152 63% 34%); /* Accent color for focus rings */
 
 /* Hover States */
---hover-bg: hsl(152 63% 94%);   /* Soft accent hover */
+--hover-bg: hsl(152 63% 94%); /* Soft accent hover */
 --hover-text: hsl(152 63% 34%); /* Accent text on hover */
 ```
 
@@ -43,6 +47,7 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ### ✅ ALLOWED: Design Token Classes
 
 #### Text Colors
+
 ```html
 <!-- Primary content -->
 <p class="text-ink">Primary text content</p>
@@ -58,6 +63,7 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ```
 
 #### Background Colors
+
 ```html
 <!-- Primary backgrounds -->
 <div class="bg-white">White background</div>
@@ -70,6 +76,7 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ```
 
 #### Border Colors
+
 ```html
 <!-- Subtle borders -->
 <div class="border border-accent/10">Subtle accent border</div>
@@ -79,21 +86,19 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ```
 
 #### Interactive States
+
 ```html
 <!-- Focus states -->
-<button class="focus:ring-2 focus:ring-accent focus:outline-none">
-  Focusable button
-</button>
+<button class="focus:ring-2 focus:ring-accent focus:outline-none">Focusable button</button>
 
 <!-- Hover states -->
-<div class="hover:bg-accent-soft hover:text-accent">
-  Hoverable element
-</div>
+<div class="hover:bg-accent-soft hover:text-accent">Hoverable element</div>
 ```
 
 ### ❌ FORBIDDEN: Ad-hoc Color Classes
 
 #### Direct Color Scales (Not Allowed)
+
 ```html
 <!-- ❌ WRONG -->
 <p class="text-gray-600">Don't use direct gray scales</p>
@@ -107,6 +112,7 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ```
 
 #### Arbitrary Values (Not Allowed)
+
 ```html
 <!-- ❌ WRONG -->
 <div class="bg-[hsl(200,50%,50%)]">Arbitrary HSL values</div>
@@ -124,22 +130,31 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ### Button Variants
 
 #### Primary CTA Button
+
 ```html
-<button class="px-6 py-2 rounded-xl bg-accent text-white hover:bg-accent/90 transition font-semibold shadow-soft focus:ring-2 focus:ring-accent focus:outline-none">
+<button
+  class="px-6 py-2 rounded-xl bg-accent text-white hover:bg-accent/90 transition font-semibold shadow-soft focus:ring-2 focus:ring-accent focus:outline-none"
+>
   Get My Quote
 </button>
 ```
 
 #### Secondary Button
+
 ```html
-<button class="px-4 py-2 rounded-xl border hover:bg-accent-soft transition focus:ring-2 focus:ring-accent focus:outline-none">
+<button
+  class="px-4 py-2 rounded-xl border hover:bg-accent-soft transition focus:ring-2 focus:ring-accent focus:outline-none"
+>
   Learn More
 </button>
 ```
 
 #### Quiet Button
+
 ```html
-<button class="px-4 py-2 rounded-xl hover:bg-accent-soft transition focus:ring-2 focus:ring-accent focus:outline-none">
+<button
+  class="px-4 py-2 rounded-xl hover:bg-accent-soft transition focus:ring-2 focus:ring-accent focus:outline-none"
+>
   Cancel
 </button>
 ```
@@ -147,6 +162,7 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ### Card Components
 
 #### Standard Card
+
 ```html
 <div class="bg-white border border-accent/10 rounded-xl p-6 shadow-soft">
   <h3 class="text-ink font-semibold mb-3">Card Title</h3>
@@ -155,8 +171,11 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ```
 
 #### Interactive Card
+
 ```html
-<div class="bg-white border border-accent/10 rounded-xl p-6 shadow-soft hover:shadow-lg transition-all duration-200 cursor-pointer focus:ring-2 focus:ring-accent focus:outline-none">
+<div
+  class="bg-white border border-accent/10 rounded-xl p-6 shadow-soft hover:shadow-lg transition-all duration-200 cursor-pointer focus:ring-2 focus:ring-accent focus:outline-none"
+>
   <h3 class="text-ink font-semibold mb-3">Interactive Card</h3>
   <p class="text-muted">Hover and focus states included.</p>
 </div>
@@ -165,11 +184,10 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ### Form Elements
 
 #### Input Field
+
 ```html
 <div>
-  <label for="email" class="block text-sm font-medium text-ink mb-2">
-    Email Address
-  </label>
+  <label for="email" class="block text-sm font-medium text-ink mb-2"> Email Address </label>
   <input
     id="email"
     type="email"
@@ -180,6 +198,7 @@ This document outlines the comprehensive design system for Yardura, ensuring con
 ```
 
 #### Error State
+
 ```html
 <div>
   <label for="email" class="block text-sm font-medium text-ink mb-2">
@@ -192,9 +211,7 @@ This document outlines the comprehensive design system for Yardura, ensuring con
     placeholder="Enter your email"
     aria-invalid="true"
   />
-  <p class="mt-1 text-sm text-red-600" role="alert">
-    Please enter a valid email address
-  </p>
+  <p class="mt-1 text-sm text-red-600" role="alert">Please enter a valid email address</p>
 </div>
 ```
 
@@ -240,31 +257,33 @@ Design system violations are caught before commit:
 ## 📐 Spacing & Typography Scale
 
 ### Spacing Scale (8px base)
+
 ```css
---space-1: 0.25rem;   /* 4px */
---space-2: 0.5rem;    /* 8px */
---space-3: 0.75rem;   /* 12px */
---space-4: 1rem;      /* 16px */
---space-6: 1.5rem;    /* 24px */
---space-8: 2rem;      /* 32px */
---space-12: 3rem;     /* 48px */
---space-16: 4rem;     /* 64px */
---space-24: 6rem;     /* 96px */
---space-32: 8rem;     /* 128px */
+--space-1: 0.25rem; /* 4px */
+--space-2: 0.5rem; /* 8px */
+--space-3: 0.75rem; /* 12px */
+--space-4: 1rem; /* 16px */
+--space-6: 1.5rem; /* 24px */
+--space-8: 2rem; /* 32px */
+--space-12: 3rem; /* 48px */
+--space-16: 4rem; /* 64px */
+--space-24: 6rem; /* 96px */
+--space-32: 8rem; /* 128px */
 ```
 
 ### Typography Scale
+
 ```css
 /* Headings */
---text-h1: 2.25rem;   /* 36px */
---text-h2: 1.875rem;  /* 30px */
---text-h3: 1.5rem;    /* 24px */
---text-h4: 1.25rem;   /* 20px */
+--text-h1: 2.25rem; /* 36px */
+--text-h2: 1.875rem; /* 30px */
+--text-h3: 1.5rem; /* 24px */
+--text-h4: 1.25rem; /* 20px */
 
 /* Body Text */
---text-base: 1rem;    /* 16px */
---text-sm: 0.875rem;  /* 14px */
---text-xs: 0.75rem;   /* 12px */
+--text-base: 1rem; /* 16px */
+--text-sm: 0.875rem; /* 14px */
+--text-xs: 0.75rem; /* 12px */
 
 /* Line Heights */
 --leading-tight: 1.25;
@@ -299,16 +318,19 @@ Design system violations are caught before commit:
 ## ♿ Accessibility Guidelines
 
 ### Focus Management
+
 - All interactive elements must have visible focus indicators
 - Focus rings use `focus:ring-2 focus:ring-accent focus:outline-none`
 - Focus order must follow logical tab sequence
 
 ### Color Contrast
+
 - Primary text: 14.2:1 (AAA compliant)
 - Secondary text: 8.6:1 (AA compliant)
 - Interactive elements: 12.1:1 (AAA compliant)
 
 ### Semantic HTML
+
 - Use proper heading hierarchy (H1 → H2 → H3)
 - Screen reader only content: `sr-only` class
 - Landmark roles: `banner`, `main`, `complementary`
@@ -318,6 +340,7 @@ Design system violations are caught before commit:
 ## 🚀 Implementation Checklist
 
 ### ✅ Completed
+
 - [x] Design token CSS variables defined
 - [x] ESLint rules for design system enforcement
 - [x] Automated checking script
@@ -326,11 +349,13 @@ Design system violations are caught before commit:
 - [x] Accessibility guidelines included
 
 ### 🔄 In Progress
+
 - [ ] Component library audit
 - [ ] Existing code migration
 - [ ] Design system adoption training
 
 ### 📋 Next Steps
+
 - [ ] Run design system audit on existing code
 - [ ] Create migration guide for legacy components
 - [ ] Set up automated design system monitoring
@@ -341,6 +366,7 @@ Design system violations are caught before commit:
 ## 🛠️ Migration Guide
 
 ### From Legacy Colors
+
 ```html
 <!-- OLD (not allowed) -->
 <div class="bg-gray-100 text-gray-800">Old component</div>
@@ -350,6 +376,7 @@ Design system violations are caught before commit:
 ```
 
 ### From Arbitrary Values
+
 ```html
 <!-- OLD (not allowed) -->
 <p class="text-[hsl(200,50%,50%)]">Arbitrary color</p>
@@ -359,6 +386,7 @@ Design system violations are caught before commit:
 ```
 
 ### Component Updates
+
 1. Audit existing components for violations
 2. Replace ad-hoc colors with design tokens
 3. Update focus states to use accent colors
@@ -370,16 +398,19 @@ Design system violations are caught before commit:
 ## 📊 Monitoring & Maintenance
 
 ### Automated Checks
+
 - ESLint rules run on every commit
 - Pre-commit hooks prevent violations
 - CI/CD pipeline includes design system checks
 
 ### Manual Reviews
+
 - Design system audit quarterly
 - Accessibility testing monthly
 - Component library updates as needed
 
 ### Metrics
+
 - Design system compliance rate
 - ESLint violation trends
 - Component adoption statistics
@@ -389,11 +420,13 @@ Design system violations are caught before commit:
 ## 📞 Support & Resources
 
 ### Getting Help
+
 - Check this document first
 - Review `src/app/styles/tokens.css` for available tokens
 - Run `npm run design-system:check` for automated guidance
 
 ### Resources
+
 - **Design Tokens**: `src/app/styles/tokens.css`
 - **Component Library**: `src/components/` directory
 - **ESLint Rules**: `.eslintrc.json` and `eslint-plugin-design-system.js`
@@ -409,5 +442,5 @@ Design system violations are caught before commit:
 **Maintainability**: Easy to update colors and spacing globally
 **Accessibility**: All components meet WCAG 2.2 AA standards
 
-*Design system implemented with automated enforcement and comprehensive documentation.*
+_Design system implemented with automated enforcement and comprehensive documentation._
 

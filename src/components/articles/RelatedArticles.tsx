@@ -62,3 +62,4 @@ export default function RelatedArticles({ articles, className = '' }: RelatedArt
     </div>
   );
 }
+

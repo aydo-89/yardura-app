@@ -74,7 +74,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 33**: `text-5xl`
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
 
-
 ### scripts/style-audit.ts
 
 #### darkBackgrounds
@@ -92,7 +91,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 48**: `rounded-xl`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 
-
 ### src/components/yard-carousel.tsx
 
 #### inconsistentRadii
@@ -103,7 +101,6 @@ Generated: 2025-08-30T15:33:27.050Z
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 - **Line 81**: `rounded-full`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
-
 
 ### src/components/testimonials.tsx
 
@@ -130,7 +127,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 74**: `rounded-full`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 
-
 ### src/components/sticky-cta.tsx
 
 #### inconsistentRadii
@@ -142,7 +138,6 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 27**: `shadow-lg`
   - Suggestion: Use shadow-soft for subtle depth
-
 
 ### src/components/site-header.tsx
 
@@ -169,7 +164,6 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 154**: `shadow-xl`
   - Suggestion: Use shadow-soft for subtle depth
-
 
 ### src/components/services.tsx
 
@@ -210,7 +204,6 @@ Generated: 2025-08-30T15:33:27.050Z
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 - **Line 49**: `rounded-xl`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
-
 
 ### src/components/quote-form.tsx
 
@@ -267,7 +260,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 259**: `text-3xl`
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
 
-
 ### src/components/quote-calculator.tsx
 
 #### inconsistentRadii
@@ -300,7 +292,6 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 108**: `text-3xl`
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
-
 
 ### src/components/insights.tsx
 
@@ -407,7 +398,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 127**: `text-slate-500`
   - Suggestion: Use standardized tokens: text-ink, text-muted, bg-card, bg-panel, border-border
 
-
 ### src/components/hero.tsx
 
 #### inconsistentRadii
@@ -462,14 +452,12 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 111**: `shadow-lg`
   - Suggestion: Use shadow-soft for subtle depth
 
-
 ### src/components/footer.tsx
 
 #### adhocColorClasses
 
 - **Line 4**: `text-slate-600`
   - Suggestion: Use standardized tokens: text-ink, text-muted, bg-card, bg-panel, border-border
-
 
 ### src/components/faq.tsx
 
@@ -482,7 +470,6 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 10**: `text-slate-700`
   - Suggestion: Use standardized tokens: text-ink, text-muted, bg-card, bg-panel, border-border
-
 
 ### src/components/eco.tsx
 
@@ -547,7 +534,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 61**: `rounded-3xl`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 
-
 ### src/components/community.tsx
 
 #### typographyDrift
@@ -574,7 +560,6 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 40**: `rounded-3xl`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
-
 
 ### src/components/WhyItMatters.tsx
 
@@ -610,7 +595,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 306**: `text-2xl`
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
 
-
 ### src/app/page.tsx
 
 #### typographyDrift
@@ -623,14 +607,12 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 43**: `text-slate-600`
   - Suggestion: Use standardized tokens: text-ink, text-muted, bg-card, bg-panel, border-border
 
-
 ### src/app/layout.tsx
 
 #### adhocColorClasses
 
 - **Line 23**: `text-slate-800`
   - Suggestion: Use standardized tokens: text-ink, text-muted, bg-card, bg-panel, border-border
-
 
 ### src/app/globals.css
 
@@ -642,7 +624,6 @@ Generated: 2025-08-30T15:33:27.050Z
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 - **Line 81**: `rounded-xl`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
-
 
 ### src/components/sections/TrendsPreview.tsx
 
@@ -693,7 +674,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 170**: `shadow-lg`
   - Suggestion: Use shadow-soft for subtle depth
 
-
 ### src/components/sections/Services.tsx
 
 #### typographyDrift
@@ -714,7 +694,6 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 106**: `rounded-full`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
-
 
 ### src/components/sections/Pricing.tsx
 
@@ -749,7 +728,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 212**: `shadow-xl`
   - Suggestion: Use shadow-soft for subtle depth
 
-
 ### src/components/sections/HowItWorks.tsx
 
 #### typographyDrift
@@ -772,7 +750,6 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 116**: `rounded-3xl`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
-
 
 ### src/components/sections/Hero.tsx
 
@@ -799,7 +776,6 @@ Generated: 2025-08-30T15:33:27.050Z
   - Suggestion: Use shadow-soft for subtle depth
 - **Line 195**: `shadow-lg`
   - Suggestion: Use shadow-soft for subtle depth
-
 
 ### src/components/sections/EcoImpact.tsx
 
@@ -840,7 +816,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 100**: `shadow-lg`
   - Suggestion: Use shadow-soft for subtle depth
 
-
 ### src/components/ui/typography.tsx
 
 #### typographyDrift
@@ -866,7 +841,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 26**: `text-6xl`
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
 
-
 ### src/components/ui/switch.tsx
 
 #### inconsistentRadii
@@ -881,14 +855,12 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 22**: `shadow-lg`
   - Suggestion: Use shadow-soft for subtle depth
 
-
 ### src/components/ui/sheet.tsx
 
 #### heavyShadows
 
 - **Line 34**: `shadow-lg`
   - Suggestion: Use shadow-soft for subtle depth
-
 
 ### src/components/ui/dialog.tsx
 
@@ -902,14 +874,12 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 41**: `shadow-lg`
   - Suggestion: Use shadow-soft for subtle depth
 
-
 ### src/components/ui/card.tsx
 
 #### inconsistentRadii
 
 - **Line 12**: `rounded-xl`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
-
 
 ### src/components/ui/alert.tsx
 
@@ -918,14 +888,12 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 6**: `rounded-lg`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 
-
 ### src/components/admin/SalesRepForm.tsx
 
 #### adhocColorClasses
 
 - **Line 219**: `text-gray-500`
   - Suggestion: Use standardized tokens: text-ink, text-muted, bg-card, bg-panel, border-border
-
 
 ### src/app/signup/page.tsx
 
@@ -984,7 +952,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 507**: `rounded-lg`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 
-
 ### src/app/styles/tokens.css
 
 #### typographyDrift
@@ -997,7 +964,6 @@ Generated: 2025-08-30T15:33:27.050Z
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
 - **Line 29**: `text-5xl`
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
-
 
 ### src/app/signin/page.tsx
 
@@ -1021,7 +987,6 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 28**: `rounded-xl`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
-
 
 ### src/app/dashboard/page.tsx
 
@@ -1072,7 +1037,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 219**: `rounded-lg`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 
-
 ### src/app/sales-rep/dashboard/page.tsx
 
 #### adhocColorClasses
@@ -1106,7 +1070,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 157**: `rounded-lg`
   - Suggestion: Use rounded-xl (1rem) or rounded-2xl (1.25rem) consistently
 
-
 ### src/app/sales-rep/customer-signup/page.tsx
 
 #### adhocColorClasses
@@ -1120,7 +1083,6 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 34**: `text-3xl`
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
-
 
 ### src/app/admin/dashboard/page.tsx
 
@@ -1183,7 +1145,6 @@ Generated: 2025-08-30T15:33:27.050Z
 - **Line 266**: `text-2xl`
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
 
-
 ### src/app/admin/sales-reps/create/page.tsx
 
 #### adhocColorClasses
@@ -1197,5 +1158,3 @@ Generated: 2025-08-30T15:33:27.050Z
 
 - **Line 28**: `text-3xl`
   - Suggestion: Use standardized scale: H1/H2/H3 text sizes with default line-height
-
-
