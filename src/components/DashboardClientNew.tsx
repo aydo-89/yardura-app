@@ -456,10 +456,10 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                       <AddressAutocomplete
                         value={formAddress}
                         onChange={(val: string) => setFormAddress(val)}
-                        onAddressSelected={(addr: { address?: string; city?: string; zipCode?: string }) => {
-                          if (addr.address) setFormAddress(addr.address);
-                          if (addr.city) setFormCity(addr.city);
-                          if (addr.zipCode) setFormZip(addr.zipCode);
+                        onSelect={(addr: { formattedAddress: string; city?: string; postalCode?: string }) => {
+                          if (addr.formattedAddress) setFormAddress(addr.formattedAddress);
+                          if (addr.city) setFormCity(addr.city || '');
+                          if (addr.postalCode) setFormZip(addr.postalCode || '');
                         }}
                       />
                     </div>
@@ -635,7 +635,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Trend (Week over Week) */}
             <div className="lg:col-span-2">
-              <Card>
+              <Card className="motion-hover-lift">
                 <CardHeader>
                   <CardTitle>Week-over-Week Observations</CardTitle>
                 </CardHeader>
@@ -684,7 +684,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
 
             {/* Core Signals (3 Cs) */}
             <div>
-              <Card>
+              <Card className="motion-hover-lift">
                 <CardHeader>
                   <CardTitle>Core Wellness Signals (3 Cs)</CardTitle>
                 </CardHeader>
@@ -719,7 +719,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           {/* Service Streak and Breakdown */}
           <div className="grid lg:grid-cols-3 gap-8">
             <div>
-              <Card>
+              <Card className="motion-hover-lift">
                 <CardHeader>
                   <CardTitle>Service Streak</CardTitle>
                 </CardHeader>
@@ -730,7 +730,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               </Card>
             </div>
             <div className="lg:col-span-2">
-              <Card>
+              <Card className="motion-hover-lift">
                 <CardHeader>
                   <CardTitle>Observations Breakdown</CardTitle>
                 </CardHeader>
@@ -760,7 +760,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           </div>
 
           {/* Color Flags */}
-          <Card>
+          <Card className="motion-hover-lift">
             <CardHeader>
               <CardTitle>Color Flags</CardTitle>
             </CardHeader>

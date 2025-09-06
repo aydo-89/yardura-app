@@ -5,6 +5,7 @@ import type { ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 
 export default function AccountPage() {
   const [loading, setLoading] = useState(true);
@@ -69,7 +70,15 @@ export default function AccountPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Address</label>
-                  <Input value={address} onChange={(e: ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)} />
+                  <AddressAutocomplete
+                    value={address}
+                    onChange={(val: string) => setAddress(val)}
+                    onSelect={(addr: { formattedAddress: string; city?: string; postalCode?: string }) => {
+                      if (addr.formattedAddress) setAddress(addr.formattedAddress);
+                      if (addr.city) setCity(addr.city || '');
+                      if (addr.postalCode) setZipCode(addr.postalCode || '');
+                    }}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
