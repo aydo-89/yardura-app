@@ -752,20 +752,20 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           {/* Above-the-fold KPIs */}
           <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6">
             {/* Next Pickup */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Next Pickup</CardTitle>
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
                 <div className="flex items-start justify-between gap-4">
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-2xl font-bold">
                       {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
                     </div>
                     <p className="text-xs text-muted">Scheduled window</p>
                   </div>
-                  <div className="hidden sm:block">
+                  <div className="hidden sm:block shrink-0">
                     <StatRing
                       value={nextServiceProgress}
                       centerText={daysUntilNext != null ? `${daysUntilNext}d` : '—'}
@@ -777,20 +777,20 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </Card>
 
             {/* Last Pickup */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Last Pickup</CardTitle>
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
                 <div className="flex items-start justify-between gap-4">
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-2xl font-bold">
                       {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : '—'}
                     </div>
                     <p className="text-xs text-muted">Most recent visit</p>
                   </div>
-                  <div className="hidden sm:block">
+                  <div className="hidden sm:block shrink-0">
                     <StatRing
                       value={lastServiceRecency}
                       centerText={daysSinceLast != null ? `${daysSinceLast}d` : '—'}
@@ -816,7 +816,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </Card>
 
             {/* Activity */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Activity</CardTitle>
                 <TrendingUp className="h-4 w-4 text-accent" />
@@ -828,7 +828,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     <div className="flex items-center justify-between"><span>Deposits (30d)</span><span className="font-semibold text-ink">{last30DaysCount}</span></div>
                     <div className="flex items-center justify-between"><span>Avg wt (30d)</span><span className="font-semibold text-ink">{avgWeight30G != null ? `${avgWeight30G.toFixed(1)} g` : '—'}</span></div>
                   </div>
-                  <div className="hidden sm:block">
+                  <div className="hidden sm:block shrink-0">
                     <StatRing
                       value={activityRatio7of30}
                       centerText={`${last7DaysCount}`}
@@ -840,7 +840,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </Card>
 
             {/* Eco (MTD) */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Eco (MTD)</CardTitle>
                 <Leaf className="h-4 w-4 text-accent" />
@@ -851,7 +851,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     <div className="flex items-center justify-between"><span>Diverted</span><span className="font-semibold text-ink">{formatLbsFromGrams(gramsThisMonth)} lbs</span></div>
                     <div className="flex items-center justify-between"><span>Methane</span><span className="font-semibold text-ink">{methaneThisMonthLbsEq.toFixed(1)} ft³</span></div>
                   </div>
-                  <div className="hidden sm:block">
+                  <div className="hidden sm:block shrink-0">
                     <StatRing
                       value={ecoRatioVsPrev}
                       centerText={`${formatLbsFromGrams(gramsThisMonth)}`}
@@ -863,7 +863,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </Card>
 
             {/* Billing */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Billing</CardTitle>
                 <User className="h-4 w-4 text-accent" />
