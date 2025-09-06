@@ -1,10 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import type { ChangeEvent } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { track } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import {
@@ -479,6 +481,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(referralUrl);
+      track('referral_copy');
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -494,6 +497,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           text: 'Get a clean yard + optional wellness signals. Use my link to join!',
           url: referralUrl,
         });
+        track('referral_native_share');
       } else {
         await handleCopy();
       }
@@ -634,7 +638,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
       </div>
 
       {/* Main Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue="overview" onValueChange={(val) => track('dashboard_tab_change', { tab: val })} className="space-y-6">
         <TabsList className="grid w-full grid-cols-8 bg-slate-100 p-1 rounded-xl">
           <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
             <Home className="size-4 mr-2" />
@@ -852,7 +856,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <div className="text-2xl font-bold text-slate-900">{user.stripeCustomerId ? 'Active' : 'Set up'}</div>
                 <p className="text-xs text-muted">Manage plan and payments</p>
                 <div className="mt-2">
-                  <a className="text-xs text-accent underline" href="/billing">Open Billing Portal</a>
+                  <a className="text-xs text-accent underline" href="/billing" onClick={() => track('billing_portal_opened', { location: 'overview_kpi' })}>Open Billing Portal</a>
                 </div>
               </CardContent>
             </Card>
@@ -865,15 +869,15 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4">
-                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                <Button className="h-20 flex flex-col gap-2" variant="outline" onClick={() => track('dashboard_quick_action', { action: 'schedule_service' })}>
                   <Calendar className="size-6" />
                   <span>Schedule Service</span>
                 </Button>
-                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                <Button className="h-20 flex flex-col gap-2" variant="outline" onClick={() => track('dashboard_quick_action', { action: 'add_dog' })}>
                   <Dog className="size-6" />
                   <span>Add Dog</span>
                 </Button>
-                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                <Button className="h-20 flex flex-col gap-2" variant="outline" onClick={() => track('dashboard_quick_action', { action: 'view_health_insights' })}>
                   <Heart className="size-6" />
                   <span>View Health Insights</span>
                 </Button>
