@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,25 +49,20 @@ export default function NewDogPage() {
           <CardContent className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Name *</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <Input value={name} onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Breed</label>
-              <Input value={breed} onChange={(e) => setBreed(e.target.value)} />
+              <Input value={breed} onChange={(e: ChangeEvent<HTMLInputElement>) => setBreed(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Age (years)</label>
-                <Input value={age} onChange={(e) => setAge(e.target.value)} type="number" min="0" />
+                <Input value={age} onChange={(e: ChangeEvent<HTMLInputElement>) => setAge(e.target.value)} type="number" min="0" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Weight (lbs)</label>
-                <Input
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  type="number"
-                  min="0"
-                />
+                <Input value={weight} onChange={(e: ChangeEvent<HTMLInputElement>) => setWeight(e.target.value)} type="number" min="0" />
               </div>
             </div>
             <div className="pt-2">

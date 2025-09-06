@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,24 +61,24 @@ export default function AccountPage() {
               <>
                 <div>
                   <label className="block text-sm font-medium mb-1">Full Name</label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} disabled />
+                  <Input value={name} onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)} disabled />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Phone</label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <Input value={phone} onChange={(e: ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Address</label>
-                  <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+                  <Input value={address} onChange={(e: ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">City</label>
-                    <Input value={city} onChange={(e) => setCity(e.target.value)} />
+                    <Input value={city} onChange={(e: ChangeEvent<HTMLInputElement>) => setCity(e.target.value)} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">ZIP Code</label>
-                    <Input value={zipCode} onChange={(e) => setZipCode(e.target.value)} />
+                    <Input value={zipCode} onChange={(e: ChangeEvent<HTMLInputElement>) => setZipCode(e.target.value)} />
                   </div>
                 </div>
                 <div className="pt-2">

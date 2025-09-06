@@ -173,6 +173,101 @@ export default function DashboardClientNew(props: DashboardClientProps) {
       ? `${window.location.origin}/?ref=${user.id}`
       : `https://www.yardura.com/?ref=${user.id}`;
 
+  const weeksWithData = useMemo(
+    () => weeklySeries.filter((p) => p.value > 0).length,
+    [weeklySeries]
+  );
+
+  const baselinePercent = useMemo(
+    () => Math.min(100, Math.round((weeksWithData / 4) * 100)),
+    [weeksWithData]
+  );
+
+  const lastReadingAt = useMemo(() => {
+    if (dataReadings.length === 0) return null as Date | null;
+    const ts = Math.max(...dataReadings.map((r) => new Date(r.timestamp).getTime()));
+    return new Date(ts);
+  }, [dataReadings]);
+
+  const nextServiceAt = useMemo(() => {
+    const future = serviceVisits
+      .map((v) => new Date(v.scheduledDate))
+      .filter((d) => d.getTime() >= Date.now())
+      .sort((a, b) => a.getTime() - b.getTime());
+    return future[0] || null;
+  }, [serviceVisits]);
+
+  const serviceStreak = useMemo(() => {
+    const sorted = [...serviceVisits].sort(
+      (a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
+    );
+    let count = 0;
+    for (const v of sorted) {
+      if (v.status === 'COMPLETED') count += 1;
+      else break;
+    }
+    return count;
+  }, [serviceVisits]);
+
+  function inRange(t: Date, start: Date, end: Date) {
+    return t.getTime() >= start.getTime() && t.getTime() < end.getTime();
+  }
+
+  const gramsLastWeek = useMemo(() => {
+    const start = startOfWeek(new Date());
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return dataReadings.reduce((sum, r) => {
+      const t = new Date(r.timestamp);
+      return inRange(t, start, end) ? sum + (r.weight || 0) : sum;
+    }, 0);
+  }, [dataReadings]);
+
+  const gramsPrevWeek = useMemo(() => {
+    const end = startOfWeek(new Date());
+    const start = new Date(end);
+    start.setDate(start.getDate() - 7);
+    return dataReadings.reduce((sum, r) => {
+      const t = new Date(r.timestamp);
+      return inRange(t, start, end) ? sum + (r.weight || 0) : sum;
+    }, 0);
+  }, [dataReadings]);
+
+  const weekTrend = useMemo(() => {
+    if (gramsPrevWeek === 0) return null as number | null;
+    return (gramsLastWeek - gramsPrevWeek) / gramsPrevWeek;
+  }, [gramsLastWeek, gramsPrevWeek]);
+
+  const consistencyCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    dataReadings.forEach((r) => {
+      const key = (r.consistency || 'unknown').toLowerCase();
+      map.set(key, (map.get(key) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4);
+  }, [dataReadings]);
+
+  const colorFlagCounts = useMemo(() => {
+    const flags = { blackTar: 0, brightRed: 0, yellowGray: 0, green: 0 } as const;
+    const mutable: { blackTar: number; brightRed: number; yellowGray: number; green: number } = {
+      blackTar: 0,
+      brightRed: 0,
+      yellowGray: 0,
+      green: 0,
+    };
+    dataReadings.forEach((r) => {
+      const c = (r.color || '').toLowerCase();
+      if (!c) return;
+      if (c.includes('black') || c.includes('tarry') || c.includes('melena')) mutable.blackTar += 1;
+      if (c.includes('red')) mutable.brightRed += 1;
+      if (c.includes('yellow') || c.includes('gray') || c.includes('grey')) mutable.yellowGray += 1;
+      if (c.includes('green')) mutable.green += 1;
+    });
+    return mutable;
+  }, [dataReadings]);
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(referralUrl);
@@ -307,6 +402,34 @@ export default function DashboardClientNew(props: DashboardClientProps) {
       {/* When data exists */}
       {hasAnyData && (
         <>
+          {/* Overview strip */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-ink mb-2">Baseline Progress</div>
+                <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                  <div className="bg-accent h-2 rounded-full transition-all" style={{ width: `${baselinePercent}%` }} />
+                </div>
+                <div className="text-xs text-muted mt-1">{weeksWithData}/4 weeks of data</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-ink">Last Sample</div>
+                <div className="text-xs text-muted">
+                  {lastReadingAt ? lastReadingAt.toLocaleDateString() : '—'}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-ink">Next Service</div>
+                <div className="text-xs text-muted">
+                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           {/* Key Metrics */}
           <div className="grid md:grid-cols-4 gap-6">
             <Card>
@@ -396,6 +519,10 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                       <span key={p.weekLabel}>{p.weekLabel}</span>
                     ))}
                   </div>
+                  <div className="mt-3 text-xs text-muted">
+                    Last week: {formatLbsFromGrams(gramsLastWeek)} lbs vs prior week: {formatLbsFromGrams(gramsPrevWeek)} lbs
+                    {typeof weekTrend === 'number' ? ` (${(weekTrend * 100 > 0 ? '+' : '')}${Math.round(weekTrend * 100)}%)` : ''}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -434,6 +561,64 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </div>
           </div>
 
+          {/* Service Streak and Breakdown */}
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Service Streak</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{serviceStreak}</div>
+                  <div className="text-xs text-muted">Completed visits in a row</div>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Observations Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {consistencyCounts.length > 0 ? (
+                    <div className="space-y-2">
+                      {consistencyCounts.map(([label, count]) => {
+                        const max = Math.max(...consistencyCounts.map(([, c]) => c));
+                        const width = Math.round((count / (max || 1)) * 100);
+                        return (
+                          <div key={label} className="flex items-center gap-3">
+                            <div className="w-24 text-xs text-muted truncate">{label}</div>
+                            <div className="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
+                              <div className="bg-accent h-2 rounded-full" style={{ width: `${width}%` }} />
+                            </div>
+                            <div className="w-8 text-right text-xs text-muted">{count}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted">No observations yet.</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Color Flags */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Color Flags</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <div className="px-3 py-1 bg-amber-50 border border-amber-200 rounded-full">Black/tarry: {colorFlagCounts.blackTar}</div>
+                <div className="px-3 py-1 bg-rose-50 border border-rose-200 rounded-full">Bright red: {colorFlagCounts.brightRed}</div>
+                <div className="px-3 py-1 bg-yellow-50 border border-yellow-200 rounded-full">Yellow/gray: {colorFlagCounts.yellowGray}</div>
+                <div className="px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full">Green: {colorFlagCounts.green}</div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Recent Service Visits */}
           <Card>
             <CardHeader>
@@ -458,7 +643,9 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                             {new Date(visit.scheduledDate).toLocaleDateString()}
                           </div>
                         </div>
-                        <Badge variant={badgeVariant}>{visit.status}</Badge>
+                        <Badge variant={badgeVariant}>
+                          <span>{visit.status}</span>
+                        </Badge>
                       </div>
                     );
                   })}
