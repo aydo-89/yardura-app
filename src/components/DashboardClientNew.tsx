@@ -1163,12 +1163,12 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </Card>
           </div>
           {/* Insights Timeline (stacked markers) */}
-          <Card>
+          <Card className="motion-hover-lift">
             <CardHeader>
               <CardTitle>Insights Timeline</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" role="img" aria-label="Recent color and consistency events timeline">
                 <svg viewBox="0 0 800 120" className="w-[800px] h-[120px] max-w-full">
                   <line x1="20" y1="60" x2="780" y2="60" stroke="hsl(var(--muted))" strokeWidth="1" opacity="0.5" />
                   {dataReadings.slice(0, 24).map((r, i) => {
@@ -1178,17 +1178,37 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     return (
                       <g key={r.id || i}>
                         {/* Consistency dot */}
-                        <circle cx={x} cy={45} r={4} fill="hsl(var(--accent))">
+                        <circle
+                          cx={x}
+                          cy={45}
+                          r={4}
+                          fill="hsl(var(--accent))"
+                          className="transition-transform duration-150 hover:scale-125"
+                        >
                           <title>{new Date(r.timestamp).toLocaleDateString()} • Consistency: {r.consistency || '—'}</title>
                         </circle>
                         {/* Color markers */}
                         {hasRed && (
-                          <rect x={x - 4} y={64} width={8} height={8} fill="#ef4444">
+                          <rect
+                            x={x - 4}
+                            y={64}
+                            width={8}
+                            height={8}
+                            fill="#ef4444"
+                            className="transition-transform duration-150 hover:scale-110"
+                          >
                             <title>Color: red</title>
                           </rect>
                         )}
                         {hasBlack && (
-                          <rect x={x - 4} y={76} width={8} height={8} fill="#111827">
+                          <rect
+                            x={x - 4}
+                            y={76}
+                            width={8}
+                            height={8}
+                            fill="#111827"
+                            className="transition-transform duration-150 hover:scale-110"
+                          >
                             <title>Color: black/tarry</title>
                           </rect>
                         )}
@@ -1197,7 +1217,12 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                   })}
                 </svg>
               </div>
-              <div className="mt-3 text-xs text-muted">Markers summarize recent color/consistency. Informational only.</div>
+              <div className="mt-3 text-xs text-muted flex items-center gap-4">
+                <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 rounded-full bg-[hsl(var(--accent))]"></span> Consistency</div>
+                <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 bg-[#ef4444]"></span> Red color</div>
+                <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 bg-[#111827]"></span> Black/tarry</div>
+                <span className="ml-auto">Informational only</span>
+              </div>
             </CardContent>
           </Card>
           {/* Key Signals (compact) */}
