@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle, Star, ArrowRight } from 'lucide-react';
 import Reveal from '@/components/Reveal';
+import { track } from '@/lib/analytics';
 import {
   estimatePerVisitCents,
   projectedMonthlyCents,
@@ -101,7 +102,18 @@ function PricingCard({
           variant={popular ? 'default' : 'outline'}
           asChild
         >
-          <a href="/quote" data-analytics="cta_pricing_get_quote">
+          <a
+            href="/quote"
+            data-analytics="cta_pricing_get_quote"
+            onClick={() =>
+              track('cta_pricing_get_quote', {
+                dogs,
+                frequency,
+                yardSize,
+                popular,
+              })
+            }
+          >
             Get Started
             <ArrowRight className="size-4 ml-2" />
           </a>
@@ -240,7 +252,11 @@ export default function Pricing() {
               included. Premium diversion options available for maximum environmental impact.
             </p>
             <Button size="lg" asChild>
-              <a href="/quote" data-analytics="cta_pricing_bottom_get_quote">
+              <a
+                href="/quote"
+                data-analytics="cta_pricing_bottom_get_quote"
+                onClick={() => track('cta_pricing_bottom_get_quote')}
+              >
                 Get Your Quote
                 <ArrowRight className="size-4 ml-2" />
               </a>

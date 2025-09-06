@@ -1,3 +1,48 @@
+# Client Dashboard IA (Web + Mobile)
+
+## Web (Next.js)
+
+- Tabs: Overview, Wellness, Services, Eco Impact, Reports, Billing, Rewards, Profile
+- Overview (above the fold):
+  - Next Pickup (date + stat ring days to next)
+  - Last Pickup (date + stat ring days since)
+  - Recent Insights (All normal or Watch)
+  - Activity (7d/30d counts, avg wt 30d + stat ring for 7d of 30)
+  - Eco (MTD diverted + methane + stat ring vs prev month)
+  - Billing snippet (active/setup + portal link)
+- Wellness:
+  - Key Signals (Last sample, WoW change, 8-week sparkline)
+  - Insights Timeline (stacked markers)
+  - Core 3Cs (condensed copy, informational-only)
+  - Color Distribution (30d)
+  - Service Streak + Observations Breakdown
+- Reports: Monthly list + download
+- Services: Next service, streak, total services, scheduling CTAs
+- Eco Impact: MTD stats and comparison
+- Billing: Stripe portal link/embedded
+- Profile: Account and dogs
+
+Accessibility: Informational-only disclaimer on insights; keyboard focus and labels.
+
+## Mobile (Expo/React Native)
+
+- Bottom Tabs: Home, Insights, Reports, Schedule, Billing, Profile
+- Home:
+  - KPI cards: Next Pickup, Last Pickup, Recent Insights, Activity, Eco, Billing
+  - Single-column cards, larger tap targets, pull-to-refresh
+- Insights:
+  - Key Signals (compact)
+  - Timeline (scrollable markers)
+  - Condensed Core 3Cs + Color Distribution
+- Reports: List + open in viewer
+- Schedule: Upcoming window, skip/reschedule request
+- Billing: Open Stripe Portal in in-app browser
+- Profile: Household & dogs, privacy controls
+
+Notes:
+- Light theme only, gradients on CTAs and chips; opaque cards; no transparency.
+- Copy: “Insights are informational only and not veterinary advice.”
+
 ## Client Dashboard — Final IA (Web + Mobile)
 
 Audience: Everyday dog owners. Core questions: Am I okay? Anything to watch? When are you coming? What am I paying? What good are we doing?

@@ -1,10 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import type { ChangeEvent } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { track } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import {
@@ -41,6 +43,7 @@ function ReportsList({ orgId }: { orgId: string }) {
           href={`/api/reports/monthly?orgId=${encodeURIComponent(orgId)}&month=${m}`}
           target="_blank"
           rel="noreferrer"
+          onClick={() => track('report_download', { month: m, orgId })}
         >
           <span className="text-sm">{m}</span>
           <span className="text-accent text-xs underline">Download</span>
@@ -164,6 +167,86 @@ function buildSparklinePath(points: WeeklyPoint[], width = 280, height = 60, pad
   return d;
 }
 
+type StatRingProps = {
+  value: number; // 0..1
+  size?: number;
+  thickness?: number;
+  centerText?: string;
+  caption?: string;
+  accentColorClassName?: string; // e.g. text-accent
+};
+
+function StatRing({
+  value,
+  size = 56,
+  thickness = 6,
+  centerText,
+  caption,
+  accentColorClassName = 'text-accent',
+}: StatRingProps) {
+  const gradId = `ringGrad-${size}-${thickness}`;
+  const radius = (size - thickness) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.max(0, Math.min(1, value || 0));
+  const dash = clamped * circumference;
+  const remainder = circumference - dash;
+  return (
+    <div className="inline-flex flex-col items-center justify-center">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="block"
+        role="img"
+        aria-label={`Progress ${Math.round(clamped * 100)}%`}
+      >
+        <defs>
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0.65" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="hsl(var(--muted))"
+          strokeWidth={thickness}
+          fill="none"
+          opacity="0.35"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={`url(#${gradId})`}
+          strokeWidth={thickness}
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${remainder}`}
+          fill="none"
+          className={accentColorClassName}
+          style={{ transition: 'stroke-dasharray 600ms ease' }}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+        {centerText && (
+          <text
+            x="50%"
+            y="50%"
+            dominantBaseline="middle"
+            textAnchor="middle"
+            className="fill-slate-900"
+            fontSize={Math.max(12, size * 0.28)}
+            fontWeight={700}
+          >
+            {centerText}
+          </text>
+        )}
+      </svg>
+      {caption && <div className="text-[10px] leading-none text-muted mt-1">{caption}</div>}
+    </div>
+  );
+}
+
 export default function DashboardClientNew(props: DashboardClientProps) {
   const { user, dogs, serviceVisits, dataReadings } = props;
   const [copied, setCopied] = useState(false);
@@ -255,6 +338,28 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return completed[0] || null;
   }, [serviceVisits]);
 
+  const daysUntilNext = useMemo(() => {
+    if (!nextServiceAt) return null as number | null;
+    const ms = nextServiceAt.getTime() - Date.now();
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+  }, [nextServiceAt]);
+
+  const nextServiceProgress = useMemo(() => {
+    if (daysUntilNext == null) return 0;
+    return 1 - Math.min(1, daysUntilNext / 7);
+  }, [daysUntilNext]);
+
+  const daysSinceLast = useMemo(() => {
+    if (!lastCompletedAt) return null as number | null;
+    const ms = Date.now() - lastCompletedAt.getTime();
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+  }, [lastCompletedAt]);
+
+  const lastServiceRecency = useMemo(() => {
+    if (daysSinceLast == null) return 0;
+    return Math.min(1, daysSinceLast / 7);
+  }, [daysSinceLast]);
+
   const serviceStreak = useMemo(() => {
     const sorted = [...serviceVisits].sort(
       (a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
@@ -330,9 +435,27 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     }, 0);
   }, [dataReadings]);
 
+  const gramsPrevMonth = useMemo(() => {
+    const now = new Date();
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+    return dataReadings.reduce((sum, r) => {
+      const t = new Date(r.timestamp);
+      return inRange(t, prevMonthStart, prevMonthEnd) ? sum + (r.weight || 0) : sum;
+    }, 0);
+  }, [dataReadings]);
+
   const methaneThisMonthLbsEq = useMemo(() => {
     return gramsThisMonth * 0.002 * 0.67;
   }, [gramsThisMonth]);
+
+  const activityRatio7of30 = useMemo(() => {
+    return last30DaysCount > 0 ? Math.min(1, last7DaysCount / last30DaysCount) : 0;
+  }, [last7DaysCount, last30DaysCount]);
+
+  const ecoRatioVsPrev = useMemo(() => {
+    return gramsPrevMonth > 0 ? Math.min(1.25, gramsThisMonth / gramsPrevMonth) / 1.25 : 0.6; // normalize, cap for ring
+  }, [gramsThisMonth, gramsPrevMonth]);
 
   const recentInsightsLevel = useMemo(() => {
     const concerning = dataReadings.some((r) => {
@@ -374,6 +497,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(referralUrl);
+      track('referral_copy');
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -389,6 +513,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           text: 'Get a clean yard + optional wellness signals. Use my link to join!',
           url: referralUrl,
         });
+        track('referral_native_share');
       } else {
         await handleCopy();
       }
@@ -529,7 +654,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
       </div>
 
       {/* Main Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue="overview" onValueChange={(val) => track('dashboard_tab_change', { tab: val })} className="space-y-6">
         <TabsList className="grid w-full grid-cols-8 bg-slate-100 p-1 rounded-xl">
           <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
             <Home className="size-4 mr-2" />
@@ -627,30 +752,54 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           {/* Above-the-fold KPIs */}
           <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6">
             {/* Next Pickup */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Next Pickup</CardTitle>
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
+                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-2xl font-bold">
+                      {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
+                    </div>
+                    <p className="text-xs text-muted">Scheduled window</p>
+                  </div>
+                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
+                    <StatRing
+                      value={nextServiceProgress}
+                      centerText={daysUntilNext != null ? `${daysUntilNext}d` : '—'}
+                      caption="to next"
+                      size={48}
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-muted">Scheduled window</p>
               </CardContent>
             </Card>
 
             {/* Last Pickup */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Last Pickup</CardTitle>
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : '—'}
+                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-2xl font-bold">
+                      {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : '—'}
+                    </div>
+                    <p className="text-xs text-muted">Most recent visit</p>
+                  </div>
+                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
+                    <StatRing
+                      value={lastServiceRecency}
+                      centerText={daysSinceLast != null ? `${daysSinceLast}d` : '—'}
+                      caption="since"
+                      size={48}
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-muted">Most recent visit</p>
               </CardContent>
             </Card>
 
@@ -669,36 +818,56 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </Card>
 
             {/* Activity */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Activity</CardTitle>
                 <TrendingUp className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-muted">
-                  <div className="flex items-center justify-between"><span>Deposits (7d)</span><span className="font-semibold text-ink">{last7DaysCount}</span></div>
-                  <div className="flex items-center justify-between"><span>Deposits (30d)</span><span className="font-semibold text-ink">{last30DaysCount}</span></div>
-                  <div className="flex items-center justify-between"><span>Avg wt (30d)</span><span className="font-semibold text-ink">{avgWeight30G != null ? `${avgWeight30G.toFixed(1)} g` : '—'}</span></div>
+                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
+                  <div className="text-sm text-muted">
+                    <div className="flex items-center justify-between"><span>Deposits (7d)</span><span className="font-semibold text-ink">{last7DaysCount}</span></div>
+                    <div className="flex items-center justify-between"><span>Deposits (30d)</span><span className="font-semibold text-ink">{last30DaysCount}</span></div>
+                    <div className="flex items-center justify-between"><span>Avg wt (30d)</span><span className="font-semibold text-ink">{avgWeight30G != null ? `${avgWeight30G.toFixed(1)} g` : '—'}</span></div>
+                  </div>
+                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
+                    <StatRing
+                      value={activityRatio7of30}
+                      centerText={`${last7DaysCount}`}
+                      caption="7d"
+                      size={48}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Eco (MTD) */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Eco (MTD)</CardTitle>
                 <Leaf className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-muted">
-                  <div className="flex items-center justify-between"><span>Diverted</span><span className="font-semibold text-ink">{formatLbsFromGrams(gramsThisMonth)} lbs</span></div>
-                  <div className="flex items-center justify-between"><span>Methane</span><span className="font-semibold text-ink">{methaneThisMonthLbsEq.toFixed(1)} ft³</span></div>
+                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
+                  <div className="text-sm text-muted">
+                    <div className="flex items-center justify-between"><span>Diverted</span><span className="font-semibold text-ink">{formatLbsFromGrams(gramsThisMonth)} lbs</span></div>
+                    <div className="flex items-center justify-between"><span>Methane</span><span className="font-semibold text-ink">{methaneThisMonthLbsEq.toFixed(1)} ft³</span></div>
+                  </div>
+                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
+                    <StatRing
+                      value={ecoRatioVsPrev}
+                      centerText={`${formatLbsFromGrams(gramsThisMonth)}`}
+                      caption="lbs MTD"
+                      size={48}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Billing */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Billing</CardTitle>
                 <User className="h-4 w-4 text-accent" />
@@ -707,7 +876,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <div className="text-2xl font-bold text-slate-900">{user.stripeCustomerId ? 'Active' : 'Set up'}</div>
                 <p className="text-xs text-muted">Manage plan and payments</p>
                 <div className="mt-2">
-                  <a className="text-xs text-accent underline" href="/billing">Open Billing Portal</a>
+                  <a className="text-xs text-accent underline" href="/billing" onClick={() => track('billing_portal_opened', { location: 'overview_kpi' })}>Open Billing Portal</a>
                 </div>
               </CardContent>
             </Card>
@@ -720,15 +889,15 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4">
-                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                <Button className="h-20 flex flex-col gap-2" variant="outline" onClick={() => track('dashboard_quick_action', { action: 'schedule_service' })}>
                   <Calendar className="size-6" />
                   <span>Schedule Service</span>
                 </Button>
-                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                <Button className="h-20 flex flex-col gap-2" variant="outline" onClick={() => track('dashboard_quick_action', { action: 'add_dog' })}>
                   <Dog className="size-6" />
                   <span>Add Dog</span>
                 </Button>
-                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                <Button className="h-20 flex flex-col gap-2" variant="outline" onClick={() => track('dashboard_quick_action', { action: 'view_health_insights' })}>
                   <Heart className="size-6" />
                   <span>View Health Insights</span>
                 </Button>
@@ -998,12 +1167,12 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </Card>
           </div>
           {/* Insights Timeline (stacked markers) */}
-          <Card>
+          <Card className="motion-hover-lift">
             <CardHeader>
               <CardTitle>Insights Timeline</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" role="img" aria-label="Recent color and consistency events timeline">
                 <svg viewBox="0 0 800 120" className="w-[800px] h-[120px] max-w-full">
                   <line x1="20" y1="60" x2="780" y2="60" stroke="hsl(var(--muted))" strokeWidth="1" opacity="0.5" />
                   {dataReadings.slice(0, 24).map((r, i) => {
@@ -1013,17 +1182,37 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     return (
                       <g key={r.id || i}>
                         {/* Consistency dot */}
-                        <circle cx={x} cy={45} r={4} fill="hsl(var(--accent))">
+                        <circle
+                          cx={x}
+                          cy={45}
+                          r={4}
+                          fill="hsl(var(--accent))"
+                          className="transition-transform duration-150 hover:scale-125"
+                        >
                           <title>{new Date(r.timestamp).toLocaleDateString()} • Consistency: {r.consistency || '—'}</title>
                         </circle>
                         {/* Color markers */}
                         {hasRed && (
-                          <rect x={x - 4} y={64} width={8} height={8} fill="#ef4444">
+                          <rect
+                            x={x - 4}
+                            y={64}
+                            width={8}
+                            height={8}
+                            fill="#ef4444"
+                            className="transition-transform duration-150 hover:scale-110"
+                          >
                             <title>Color: red</title>
                           </rect>
                         )}
                         {hasBlack && (
-                          <rect x={x - 4} y={76} width={8} height={8} fill="#111827">
+                          <rect
+                            x={x - 4}
+                            y={76}
+                            width={8}
+                            height={8}
+                            fill="#111827"
+                            className="transition-transform duration-150 hover:scale-110"
+                          >
                             <title>Color: black/tarry</title>
                           </rect>
                         )}
@@ -1032,171 +1221,60 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                   })}
                 </svg>
               </div>
-              <div className="mt-3 text-xs text-muted">Markers summarize recent color/consistency. Informational only.</div>
+              <div className="mt-3 text-xs text-muted flex items-center gap-4">
+                <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 rounded-full bg-[hsl(var(--accent))]"></span> Consistency</div>
+                <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 bg-[#ef4444]"></span> Red color</div>
+                <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 bg-[#111827]"></span> Black/tarry</div>
+                <span className="ml-auto">Informational only</span>
+              </div>
             </CardContent>
           </Card>
-          {/* Week-over-Week Observations */}
+          {/* Key Signals (compact) */}
           <Card className="motion-hover-lift">
             <CardHeader>
-              <CardTitle>Weekly Service Status</CardTitle>
+              <CardTitle>Key Signals</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Week-over-Week Trend Visualization */}
-              <div className="space-y-6">
-                {/* Three C's Health Insights */}
-                <div className="bg-white rounded-lg border border-slate-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Health Insights (3 C's)</h3>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-700">All Normal</span>
-                    </div>
+              <div className="grid md:grid-cols-3 gap-4 items-start">
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">Last sample</div>
+                  <div className="text-2xl font-bold text-slate-900">
+                    {lastReadingAt ? lastReadingAt.toLocaleDateString() : '—'}
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Color */}
-                    <div className="text-center p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                      <div className="text-3xl mb-2">💚</div>
-                      <div className="font-semibold text-emerald-800">Color</div>
-                      <div className="text-sm text-emerald-600">Stable hues</div>
-                    </div>
-
-                    {/* Consistency */}
-                    <div className="text-center p-4 bg-amber-50 rounded-lg border border-amber-200">
-                      <div className="text-3xl mb-2">📊</div>
-                      <div className="font-semibold text-amber-800">Consistency</div>
-                      <div className="text-sm text-amber-600">Normal texture</div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-                      <div className="text-3xl mb-2">🎯</div>
-                      <div className="font-semibold text-orange-800">Content</div>
-                      <div className="text-sm text-orange-600">No anomalies</div>
-                    </div>
+                  <div className="mt-2 inline-flex items-center gap-2 rounded-full border px-2 py-1 text-xs bg-white">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Most recent check
                   </div>
                 </div>
 
-                {/* Weekly Service Status */}
-                <div className="bg-white rounded-lg border border-slate-200 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-slate-900">This Week's Service</h3>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm font-medium text-green-700">Service Completed</span>
-                    </div>
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">WoW change</div>
+                  <div className={`text-2xl font-bold ${typeof weekTrend === 'number' ? (weekTrend >= 0 ? 'text-emerald-700' : 'text-rose-700') : 'text-slate-900'}`}>
+                    {typeof weekTrend === 'number' ? `${weekTrend >= 0 ? '+' : ''}${Math.round(weekTrend * 100)}%` : '—'}
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Service Completion */}
-                    <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                      <div className="text-3xl mb-2">✅</div>
-                      <div className="font-semibold text-green-800">Full Yard Clean</div>
-                      <div className="text-sm text-green-600">Completed</div>
-                    </div>
-
-                    {/* Eco Diversion Level */}
-                    <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="text-3xl mb-2">🌱</div>
-                      <div className="font-semibold text-blue-800">100% Eco Diversion</div>
-                      <div className="text-sm text-blue-600">Waste diverted from landfill</div>
-                    </div>
-
-                    {/* Pet Wellness Check */}
-                    <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
-                      <div className="text-3xl mb-2">🐕</div>
-                      <div className="font-semibold text-purple-800">Wellness Check</div>
-                      <div className="text-sm text-purple-600">Health analysis complete</div>
-                    </div>
-                  </div>
-
-                  {/* Service Details */}
-                  <div className="mt-6 pt-4 border-t border-slate-200">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-slate-600">Service Date:</span>
-                        <div className="font-medium">
-                          {dataReadings.length > 0
-                            ? new Date(Math.max(...dataReadings.map(r => new Date(r.timestamp).getTime()))).toLocaleDateString()
-                            : 'No recent service'
-                          }
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-slate-600">Next Service:</span>
-                        <div className="font-medium">
-                          {dataReadings.length > 0
-                            ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()
-                            : 'Schedule upcoming'
-                          }
-                        </div>
-                      </div>
-                    </div>
+                  <div className="mt-2 text-xs text-muted">
+                    vs prior week volume
                   </div>
                 </div>
 
-                {/* Sample Collection Summary */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-lg border border-slate-200 p-4">
-                    <div className="text-sm font-medium text-slate-700 mb-2">Services Completed</div>
-                    <div className="text-2xl font-bold text-slate-900">{serviceVisits.length}</div>
-                    <div className="text-xs text-slate-500">Total yard cleans</div>
-                  </div>
-
-                  <div className="bg-white rounded-lg border border-slate-200 p-4">
-                    <div className="text-sm font-medium text-slate-700 mb-2">Eco Impact</div>
-                    <div className="text-2xl font-bold text-green-600">{formatLbsFromGrams(totalGrams)}</div>
-                    <div className="text-xs text-slate-500">Waste diverted</div>
-                  </div>
-                </div>
-
-                {/* Service Insights */}
-                <div className="bg-white rounded-lg border border-slate-200 p-4">
-                  <div className="text-sm font-medium text-slate-700 mb-3">Service Insights</div>
-                  <div className="space-y-2 text-sm text-slate-600">
-                    <div className="flex justify-between">
-                      <span>Service Plan:</span>
-                      <span className="font-medium">Weekly Clean + Wellness</span>
-                    </div>
-                    {serviceVisits.length > 0 && (
-                      <div className="flex justify-between">
-                        <span>Last Service:</span>
-                        <span className="font-medium">
-                          {new Date(Math.max(...serviceVisits.map(s => new Date(s.scheduledDate).getTime()))).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>Eco Level:</span>
-                      <span className="font-medium text-green-600">100% Diversion</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Wellness Status:</span>
-                      <span className="font-medium text-blue-600">Healthy 🐕</span>
-                    </div>
+                <div className="md:col-span-1 md:row-span-1 col-span-3">
+                  <div className="p-4 rounded-xl border bg-white/60">
+                    <div className="text-xs text-muted mb-2">8-week activity</div>
+                    <svg viewBox="0 0 300 60" className="w-full h-[60px]">
+                      <g stroke="hsl(var(--muted))" strokeWidth="0.5" opacity="0.3">
+                        <line x1="0" y1="10" x2="300" y2="10" />
+                        <line x1="0" y1="30" x2="300" y2="30" />
+                        <line x1="0" y1="50" x2="300" y2="50" />
+                      </g>
+                      {trendPath && (
+                        <path d={trendPath} fill="none" stroke="hsl(var(--accent))" strokeWidth="2" strokeLinecap="round" />
+                      )}
+                    </svg>
                   </div>
                 </div>
               </div>
-              {/* Waste Summary */}
-              <div className="mt-3 p-3 bg-white/50 rounded-lg border border-green-200">
-                <div className="text-xs text-slate-600 space-y-1">
-                  <div className="flex justify-between">
-                    <span>This week:</span>
-                    <span className="font-medium">{formatLbsFromGrams(gramsThisWeek)} lbs</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Last week:</span>
-                    <span>{formatLbsFromGrams(gramsLastWeek)} lbs</span>
-                  </div>
-                  {typeof weekTrend === 'number' && (
-                    <div className="flex justify-between pt-1 border-t border-green-300">
-                      <span>Trend:</span>
-                      <span className={`font-medium ${weekTrend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {weekTrend > 0 ? '+' : ''}{Math.round(weekTrend * 100)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
+              <div className="mt-3 text-xs text-muted">
+                Insights are informational only and not veterinary advice.
               </div>
             </CardContent>
           </Card>
@@ -1338,6 +1416,57 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </CardHeader>
             <CardContent>
               <ReportsList orgId={user.orgId || 'org_demo'} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Billing Tab */}
+        <TabsContent value="billing" className="space-y-6">
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle>Current Plan</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">Status</div>
+                  <div className="text-lg font-semibold text-ink">{user.stripeCustomerId ? 'Active' : 'Not set'}</div>
+                </div>
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">Plan</div>
+                  <div className="text-lg font-semibold text-ink">Weekly Clean</div>
+                </div>
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">Next Charge</div>
+                  <div className="text-lg font-semibold text-ink">{new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}</div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <a className="text-sm text-accent underline" href="/billing">Open Stripe Portal</a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle>Recent Receipts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                {Array.from({ length: 4 }).map((_, i) => {
+                  const d = new Date();
+                  d.setDate(d.getDate() - i * 7);
+                  return (
+                    <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium">Weekly Clean • {d.toLocaleDateString()}</div>
+                        <div className="text-xs text-muted">Invoice #{1000 + i}</div>
+                      </div>
+                      <a href="#" className="text-accent text-xs underline">Download PDF</a>
+                    </div>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -2078,6 +2207,28 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     </div>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Privacy & Data Controls</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-sm">
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" defaultChecked className="accent-accent" />
+                  Opt-in to anonymous insights (informational only)
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" className="accent-accent" />
+                  Allow report previews in-app
+                </label>
+                <div className="pt-2">
+                  <button className="text-xs underline text-accent">Request data deletion</button>
+                </div>
+                <p className="text-xs text-muted">Insights are informational only and not veterinary advice.</p>
               </div>
             </CardContent>
           </Card>

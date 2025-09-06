@@ -2,10 +2,9 @@ import AnimatedHeader from '@/components/site/AnimatedHeader';
 import Hero from '@/components/hero';
 import Differentiators from '@/components/Differentiators';
 import WhyItMatters from '@/components/WhyItMatters';
-import Insights from '@/components/insights';
+import dynamic from 'next/dynamic';
 import HowItWorks from '@/components/services';
 import Pricing from '@/components/pricing';
-import QuoteTeaser from '@/components/QuoteTeaser';
 import Eco from '@/components/eco';
 import Testimonials from '@/components/testimonials';
 import FAQ from '@/components/faq';
@@ -38,19 +37,33 @@ export default function Page() {
       <main>
         {/* Backward compatibility anchor for old #quote links */}
         <span id="quote" />
-        <Hero />
-        {/* Differentiators + Why It Matters + Insights preview */}
+        {/* Hero with anchor for nav/scroll tracking */}
+        <div id="hero">
+          <Hero />
+        </div>
+        {/* Differentiators + mission framing */}
         <Differentiators />
         <WhyItMatters />
-        <Insights />
-        {/* Proof: condensed eco stats + testimonial */}
+        {/* Proof via original Eco stats + Testimonials */}
         <Eco />
         <Testimonials />
-        {/* Pricing before How It Works */}
+        {/* Pricing before How It Works for conversion focus */}
         <Pricing />
         <HowItWorks />
-        {/* Optional teaser retained at end before FAQ */}
-        <QuoteTeaser />
+        {/* Insights preview lazily loaded for performance */}
+        {/** Proper dynamic component usage with fallback **/}
+        {(() => {
+          const Insights = dynamic(() => import('@/components/insights'), {
+            ssr: false,
+            loading: () => (
+              <div className="container py-16">
+                <div className="h-48 rounded-2xl bg-accent-soft/20 border border-accent/10 animate-pulse" />
+              </div>
+            ),
+          });
+          return <Insights />;
+        })()}
+        {/* FAQ at end before footer */}
         <FAQ />
       </main>
       <Footer />
