@@ -2,6 +2,7 @@ import { safeGetServerSession } from '@/lib/auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import DashboardClientNew from '@/components/DashboardClientNew';
 import { generateMockDashboardData } from '@/lib/mockDashboardData';
 
@@ -104,6 +105,17 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
       <div className="container py-8">
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="mb-4 text-xs text-slate-600 flex items-center gap-3">
+            <span>Data source:</span>
+            <span className={useMock ? 'px-2 py-1 rounded bg-amber-100 text-amber-800' : 'px-2 py-1 rounded bg-emerald-100 text-emerald-800'}>
+              {useMock ? 'Mock' : 'Live'}
+            </span>
+            <span className="ml-2">
+              Toggle by setting <code className="px-1 rounded bg-slate-100">DASHBOARD_USE_MOCK={useMock ? '0' : '1'}</code> and refreshing
+            </span>
+          </div>
+        )}
         <DashboardClientNew
           user={clientUser}
           dogs={clientDogs}
