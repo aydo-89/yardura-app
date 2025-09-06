@@ -19,7 +19,7 @@ export default function AnimatedHeader() {
   const { scrollY } = useScroll();
   const { prefersReducedMotion } = useReducedMotionSafe();
 
-  const sectionIds = ['hero', 'services', 'pricing', 'proof', 'insights', 'faq'];
+  const sectionIds = ['hero', 'services', 'pricing', 'eco', 'insights', 'faq'];
   const activeId = useActiveSection(sectionIds);
 
   // Transform values for scroll-based animations
@@ -37,7 +37,7 @@ export default function AnimatedHeader() {
   const navItems = [
     { href: '#services', label: 'Services', id: 'services' },
     { href: '#pricing', label: 'Pricing', id: 'pricing' },
-    { href: '#proof', label: 'Proof', id: 'proof' },
+    { href: '#eco', label: 'Eco', id: 'eco' },
     { href: '#insights', label: 'Insights', id: 'insights' },
     { href: '#faq', label: 'FAQ', id: 'faq' },
   ];

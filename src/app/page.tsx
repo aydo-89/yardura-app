@@ -5,10 +5,11 @@ import WhyItMatters from '@/components/WhyItMatters';
 import dynamic from 'next/dynamic';
 import HowItWorks from '@/components/services';
 import Pricing from '@/components/pricing';
+import Eco from '@/components/eco';
+import Testimonials from '@/components/testimonials';
 import FAQ from '@/components/faq';
 import Footer from '@/components/footer';
 import StickyCTA from '@/components/sticky-cta';
-import Proof from '@/components/Proof';
 
 export default function Page() {
   const jsonLd = {
@@ -43,8 +44,9 @@ export default function Page() {
         {/* Differentiators + mission framing */}
         <Differentiators />
         <WhyItMatters />
-        {/* Proof block: eco KPIs + single testimonial */}
-        <Proof />
+        {/* Proof via original Eco stats + Testimonials */}
+        <Eco />
+        <Testimonials />
         {/* Pricing before How It Works for conversion focus */}
         <Pricing />
         <HowItWorks />
