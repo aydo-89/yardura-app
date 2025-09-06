@@ -758,18 +758,19 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-2xl font-bold">
                       {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
                     </div>
                     <p className="text-xs text-muted">Scheduled window</p>
                   </div>
-                  <div className="hidden sm:block shrink-0">
+                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
                     <StatRing
                       value={nextServiceProgress}
                       centerText={daysUntilNext != null ? `${daysUntilNext}d` : '—'}
                       caption="to next"
+                      size={48}
                     />
                   </div>
                 </div>
@@ -783,18 +784,19 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-2xl font-bold">
                       {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : '—'}
                     </div>
                     <p className="text-xs text-muted">Most recent visit</p>
                   </div>
-                  <div className="hidden sm:block shrink-0">
+                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
                     <StatRing
                       value={lastServiceRecency}
                       centerText={daysSinceLast != null ? `${daysSinceLast}d` : '—'}
                       caption="since"
+                      size={48}
                     />
                   </div>
                 </div>
@@ -822,17 +824,18 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <TrendingUp className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
                   <div className="text-sm text-muted">
                     <div className="flex items-center justify-between"><span>Deposits (7d)</span><span className="font-semibold text-ink">{last7DaysCount}</span></div>
                     <div className="flex items-center justify-between"><span>Deposits (30d)</span><span className="font-semibold text-ink">{last30DaysCount}</span></div>
                     <div className="flex items-center justify-between"><span>Avg wt (30d)</span><span className="font-semibold text-ink">{avgWeight30G != null ? `${avgWeight30G.toFixed(1)} g` : '—'}</span></div>
                   </div>
-                  <div className="hidden sm:block shrink-0">
+                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
                     <StatRing
                       value={activityRatio7of30}
                       centerText={`${last7DaysCount}`}
                       caption="7d"
+                      size={48}
                     />
                   </div>
                 </div>
@@ -846,16 +849,17 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <Leaf className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
                   <div className="text-sm text-muted">
                     <div className="flex items-center justify-between"><span>Diverted</span><span className="font-semibold text-ink">{formatLbsFromGrams(gramsThisMonth)} lbs</span></div>
                     <div className="flex items-center justify-between"><span>Methane</span><span className="font-semibold text-ink">{methaneThisMonthLbsEq.toFixed(1)} ft³</span></div>
                   </div>
-                  <div className="hidden sm:block shrink-0">
+                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
                     <StatRing
                       value={ecoRatioVsPrev}
                       centerText={`${formatLbsFromGrams(gramsThisMonth)}`}
                       caption="lbs MTD"
+                      size={48}
                     />
                   </div>
                 </div>
