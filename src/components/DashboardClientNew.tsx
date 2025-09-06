@@ -1416,6 +1416,57 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           </Card>
         </TabsContent>
 
+        {/* Billing Tab */}
+        <TabsContent value="billing" className="space-y-6">
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle>Current Plan</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">Status</div>
+                  <div className="text-lg font-semibold text-ink">{user.stripeCustomerId ? 'Active' : 'Not set'}</div>
+                </div>
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">Plan</div>
+                  <div className="text-lg font-semibold text-ink">Weekly Clean</div>
+                </div>
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">Next Charge</div>
+                  <div className="text-lg font-semibold text-ink">{new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}</div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <a className="text-sm text-accent underline" href="/billing">Open Stripe Portal</a>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle>Recent Receipts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                {Array.from({ length: 4 }).map((_, i) => {
+                  const d = new Date();
+                  d.setDate(d.getDate() - i * 7);
+                  return (
+                    <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium">Weekly Clean • {d.toLocaleDateString()}</div>
+                        <div className="text-xs text-muted">Invoice #{1000 + i}</div>
+                      </div>
+                      <a href="#" className="text-accent text-xs underline">Download PDF</a>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Services Tab */}
         <TabsContent value="services" className="space-y-6">
           {/* Service Overview */}
@@ -2152,6 +2203,28 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     </div>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Privacy & Data Controls</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-sm">
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" defaultChecked className="accent-accent" />
+                  Opt-in to anonymous insights (informational only)
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" className="accent-accent" />
+                  Allow report previews in-app
+                </label>
+                <div className="pt-2">
+                  <button className="text-xs underline text-accent">Request data deletion</button>
+                </div>
+                <p className="text-xs text-muted">Insights are informational only and not veterinary advice.</p>
               </div>
             </CardContent>
           </Card>
