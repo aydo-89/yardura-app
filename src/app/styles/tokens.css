@@ -28,9 +28,21 @@
 }
 
 /* Helper utility classes mapping tokens to Tailwind via hsl(var()) */
-.token-ink { color: hsl(var(--ink)); }
-.token-muted { color: hsl(var(--muted)); }
-.token-accent { color: hsl(var(--accent)); }
-.bg-panel { background-color: hsl(var(--panel)); }
-.bg-card { background-color: hsl(var(--card)); }
-.border-subtle { border-color: hsl(var(--ink) / 0.08); }
+.token-ink {
+  color: hsl(var(--ink));
+}
+.token-muted {
+  color: hsl(var(--muted));
+}
+.token-accent {
+  color: hsl(var(--accent));
+}
+.bg-panel {
+  background-color: hsl(var(--panel));
+}
+.bg-card {
+  background-color: hsl(var(--card));
+}
+.border-subtle {
+  border-color: hsl(var(--ink) / 0.08);
+}

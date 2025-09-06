@@ -154,11 +154,11 @@ function getValidatedEnv() {
         // Skip strict email provider validation in dev
         try {
           validateGoogleOAuth(process.env);
-        // eslint-disable-next-line no-empty
+          // eslint-disable-next-line no-empty
         } catch {}
         try {
           validateSupabase(process.env);
-        // eslint-disable-next-line no-empty
+          // eslint-disable-next-line no-empty
         } catch {}
         return fallback as any;
       }

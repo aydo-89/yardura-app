@@ -40,11 +40,13 @@ STRIPE_SECRET_KEY=sk_test_your-stripe-secret-key
 ## 2. Google OAuth Setup
 
 ### Step 1: Create Google Cloud Console Project
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
 3. Enable the Google+ API
 
 ### Step 2: Configure OAuth Consent Screen
+
 1. Go to "OAuth consent screen"
 2. Configure the required fields:
    - User Type: External
@@ -53,6 +55,7 @@ STRIPE_SECRET_KEY=sk_test_your-stripe-secret-key
    - Developer contact information: your-email@gmail.com
 
 ### Step 3: Create OAuth Credentials
+
 1. Go to "Credentials" → "Create Credentials" → "OAuth client ID"
 2. Application type: Web application
 3. Name: Yardura Development
@@ -62,12 +65,14 @@ STRIPE_SECRET_KEY=sk_test_your-stripe-secret-key
    - `http://localhost:3000/api/auth/callback/google`
 
 ### Step 4: Get Your Credentials
+
 - Copy the Client ID and Client Secret
 - Add them to your `.env.local` file
 
 ## 3. Email Magic Link Setup
 
 ### Option A: Gmail SMTP Relay (Production)
+
 1. Go to Google Workspace Admin Console
 2. Navigate to "Apps" → "Google Workspace" → "Gmail"
 3. Enable SMTP relay service
@@ -75,6 +80,7 @@ STRIPE_SECRET_KEY=sk_test_your-stripe-secret-key
 5. Use these credentials in your `.env.local`
 
 ### Option B: Mailtrap (Development)
+
 1. Sign up for [Mailtrap](https://mailtrap.io/)
 2. Create a new inbox
 3. Get SMTP credentials from the "SMTP Settings" tab
@@ -93,6 +99,7 @@ npx prisma db push
 ## 5. Test Authentication
 
 ### Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -106,11 +113,13 @@ npm run dev
 ## 6. Creating Sales Rep Accounts
 
 ### As an Admin:
+
 1. Sign in with an admin email (listed in ADMIN_EMAILS)
 2. Go to `/admin/sales-reps/create`
 3. Fill out the form to create a sales rep account
 
 ### Sales Rep Features:
+
 - Create customer accounts with referral tracking
 - View commission dashboard at `/sales-rep/dashboard`
 - Track earnings from customer referrals
@@ -182,5 +191,3 @@ If you encounter issues:
 5. Check that the database is properly migrated and accessible
 
 For additional help, check the NextAuth.js documentation or create an issue in the project repository.
-
-
