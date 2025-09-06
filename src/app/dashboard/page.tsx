@@ -66,6 +66,7 @@ export default async function DashboardPage() {
     city: user.city,
     zipCode: user.zipCode,
     stripeCustomerId: user.stripeCustomerId,
+    orgId: user.orgId || null,
   } as const;
 
   const clientDogs = user.dogs.map((d: DogRecord) => ({

@@ -24,6 +24,32 @@ import {
   Leaf,
 } from 'lucide-react';
 
+function ReportsList({ orgId }: { orgId: string }) {
+  const now = new Date();
+  const months: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    months.push(label);
+  }
+  return (
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {months.map((m) => (
+        <a
+          key={m}
+          className="border rounded-lg p-3 flex items-center justify-between hover:bg-accent-soft"
+          href={`/api/reports/monthly?orgId=${encodeURIComponent(orgId)}&month=${m}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span className="text-sm">{m}</span>
+          <span className="text-accent text-xs underline">Download</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 type DashboardClientProps = {
   user: {
     id: string;
@@ -34,6 +60,7 @@ type DashboardClientProps = {
     city?: string | null;
     zipCode?: string | null;
     stripeCustomerId?: string | null;
+    orgId?: string | null;
   };
   dogs: Array<{
     id: string;
@@ -970,6 +997,44 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               </CardContent>
             </Card>
           </div>
+          {/* Insights Timeline (stacked markers) */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Insights Timeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <svg viewBox="0 0 800 120" className="w-[800px] h-[120px] max-w-full">
+                  <line x1="20" y1="60" x2="780" y2="60" stroke="hsl(var(--muted))" strokeWidth="1" opacity="0.5" />
+                  {dataReadings.slice(0, 24).map((r, i) => {
+                    const x = 30 + i * 30;
+                    const hasRed = (r.color || '').toLowerCase().includes('red');
+                    const hasBlack = (r.color || '').toLowerCase().includes('black') || (r.color || '').toLowerCase().includes('tarry');
+                    return (
+                      <g key={r.id || i}>
+                        {/* Consistency dot */}
+                        <circle cx={x} cy={45} r={4} fill="hsl(var(--accent))">
+                          <title>{new Date(r.timestamp).toLocaleDateString()} • Consistency: {r.consistency || '—'}</title>
+                        </circle>
+                        {/* Color markers */}
+                        {hasRed && (
+                          <rect x={x - 4} y={64} width={8} height={8} fill="#ef4444">
+                            <title>Color: red</title>
+                          </rect>
+                        )}
+                        {hasBlack && (
+                          <rect x={x - 4} y={76} width={8} height={8} fill="#111827">
+                            <title>Color: black/tarry</title>
+                          </rect>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+              <div className="mt-3 text-xs text-muted">Markers summarize recent color/consistency. Informational only.</div>
+            </CardContent>
+          </Card>
           {/* Week-over-Week Observations */}
           <Card className="motion-hover-lift">
             <CardHeader>
@@ -1231,6 +1296,18 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ReportsList orgId={user.orgId || 'org_demo'} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Services Tab */}
