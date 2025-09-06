@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -444,11 +445,11 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-medium mb-1">Phone</label>
-                        <Input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} />
+                        <Input value={formPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormPhone(e.target.value)} />
                       </div>
                       <div>
                         <label className="block text-xs font-medium mb-1">ZIP</label>
-                        <Input value={formZip} onChange={(e) => setFormZip(e.target.value)} />
+                        <Input value={formZip} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormZip(e.target.value)} />
                       </div>
                     </div>
                     <div>
@@ -466,7 +467,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-medium mb-1">City</label>
-                        <Input value={formCity} onChange={(e) => setFormCity(e.target.value)} />
+                        <Input value={formCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormCity(e.target.value)} />
                       </div>
                       <div className="flex items-end">
                         <Button onClick={submitProfile} disabled={savingProfile}>
@@ -481,7 +482,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                   <div className="mt-4 space-y-3 p-4 border rounded-xl">
                     <div>
                       <label className="block text-xs font-medium mb-1">Dog Name *</label>
-                      <Input value={dogName} onChange={(e) => setDogName(e.target.value)} />
+                      <Input value={dogName} onChange={(e: ChangeEvent<HTMLInputElement>) => setDogName(e.target.value)} />
                     </div>
                     <div className="grid sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-2">
@@ -489,7 +490,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                         <select
                           className="w-full border rounded-md p-2"
                           value={dogBreed}
-                          onChange={(e) => setDogBreed(e.target.value)}
+                          onChange={(e: ChangeEvent<HTMLSelectElement>) => setDogBreed(e.target.value)}
                         >
                           <option value="">Select breed</option>
                           {BREEDS.map((b) => (
@@ -501,13 +502,13 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                       </div>
                       <div>
                         <label className="block text-xs font-medium mb-1">Age</label>
-                        <Input value={dogAge} onChange={(e) => setDogAge(e.target.value)} type="number" min="0" />
+                        <Input value={dogAge} onChange={(e: ChangeEvent<HTMLInputElement>) => setDogAge(e.target.value)} type="number" min="0" />
                       </div>
                     </div>
                     <div className="grid sm:grid-cols-3 gap-3 items-end">
                       <div>
                         <label className="block text-xs font-medium mb-1">Weight (lbs)</label>
-                        <Input value={dogWeight} onChange={(e) => setDogWeight(e.target.value)} type="number" min="0" />
+                        <Input value={dogWeight} onChange={(e: ChangeEvent<HTMLInputElement>) => setDogWeight(e.target.value)} type="number" min="0" />
                       </div>
                       <div className="sm:col-span-2 flex justify-end">
                         <Button onClick={submitDog} disabled={savingDog || !dogName.trim()}>
@@ -798,9 +799,15 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                             {new Date(visit.scheduledDate).toLocaleDateString()}
                           </div>
                         </div>
-                        <Badge variant={badgeVariant}>
-                          <span>{visit.status}</span>
-                        </Badge>
+                        <span
+                          className={
+                            badgeVariant === 'default'
+                              ? 'inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold bg-accent text-white'
+                              : 'inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold border'
+                          }
+                        >
+                          {visit.status}
+                        </span>
                       </div>
                     );
                   })}
