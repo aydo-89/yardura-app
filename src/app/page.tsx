@@ -39,8 +39,9 @@ export default function Page() {
         {/* Backward compatibility anchor for old #quote links */}
         <span id="quote" />
         <Hero />
-        {/* Differentiators + Insights preview moved earlier for conversion */}
+        {/* Differentiators + Why It Matters + Insights preview */}
         <Differentiators />
+        <WhyItMatters />
         <Insights />
         {/* Proof: condensed eco stats + testimonial */}
         <Eco />
