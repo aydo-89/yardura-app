@@ -9,7 +9,6 @@ Update your `.env.local` file with the following:
 ```bash
 # NextAuth Configuration
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-nextauth-secret-here-generate-a-new-one
 
 # Google OAuth (replace with your actual credentials)
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -33,8 +32,8 @@ SUPABASE_URL=your-supabase-url
 SUPABASE_ANON_KEY=your-supabase-anon-key
 
 # Stripe
-STRIPE_PUBLISHABLE_KEY=pk_test_your-stripe-publishable-key
-STRIPE_SECRET_KEY=sk_test_your-stripe-secret-key
+# STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key-here
+# STRIPE_SECRET_KEY=your-stripe-secret-key-here
 ```
 
 ## 2. Google OAuth Setup

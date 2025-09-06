@@ -1,675 +1,473 @@
 'use client';
-import { useState } from 'react';
+
+import { useMemo, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
-  Activity,
-  Award,
-  Bell,
-  Calendar,
-  CheckCircle,
-  Clock,
-  Eye,
   Heart,
-  Leaf,
-  PawPrint,
-  Plus,
-  Recycle,
-  Star,
-  Target,
+  Calendar,
   TrendingUp,
   Users,
-  Zap,
-  ArrowRight,
-  Sparkles,
-  Shield,
-  Droplets,
-  Zap as Lightning,
-  Crown,
-  BarChart3,
-  AlertTriangle,
+  Settings,
+  Share2,
+  Copy,
+  CircleAlert,
+  CheckCircle2,
+  Dog,
 } from 'lucide-react';
 
-// Advanced visual effects and animations
-const advancedStyles = `
-  :root {
-    --dashboard-gradient: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent)) 100%);
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.15);
-    --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.1);
-    --shadow-glow: 0 0 20px hsl(var(--accent) / 0.3);
-    --animation-bounce-in: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    --animation-float: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    --animation-slide-in-up: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  }
-
-  @keyframes shimmer {
-    0% { background-position: -200px 0; }
-    100% { background-position: calc(200px + 100%) 0; }
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 20px hsl(var(--accent) / 0.4); }
-    50% { box-shadow: 0 0 30px hsl(var(--accent) / 0.8); }
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-  }
-
-  @keyframes slideInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes bounceIn {
-    0% { opacity: 0; transform: scale(0.3); }
-    50% { opacity: 1; transform: scale(1.05); }
-    70% { transform: scale(0.9); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-
-  @keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-
-  .animate-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    background-size: 200px 100%;
-    animation: shimmer 2s infinite;
-  }
-
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .animate-slide-in-up {
-    animation: slideInUp 0.6s ease-out;
-  }
-
-  .animate-bounce-in {
-    animation: bounceIn 0.8s ease-out;
-  }
-
-  .animate-gradient-shift {
-    background-size: 200% 200%;
-    animation: gradientShift 3s ease infinite;
-  }
-
-  .glass-card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  }
-
-  .glass-card:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  }
-
-  .gradient-text {
-    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent)) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .hover-lift {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  }
-
-  .metric-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(15px);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .metric-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-    transition: left 0.8s;
-  }
-
-  .metric-card:hover::before {
-    left: 100%;
-  }
-
-  .metric-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-  }
-
-  .floating-particles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
-  .particle {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 50%;
-    animation: float 6s ease-in-out infinite;
-  }
-
-  .particle:nth-child(1) { top: 10%; left: 20%; animation-delay: 0s; width: 4px; height: 4px; }
-  .particle:nth-child(2) { top: 30%; left: 70%; animation-delay: 2s; width: 2px; height: 2px; }
-  .particle:nth-child(3) { top: 60%; left: 40%; animation-delay: 4s; width: 3px; height: 3px; }
-  .particle:nth-child(4) { top: 80%; left: 90%; animation-delay: 1s; width: 2px; height: 2px; }
-  .particle:nth-child(5) { top: 20%; left: 80%; animation-delay: 3s; width: 3px; height: 3px; }
-
-  .progress-ring {
-    transform: rotate(-90deg);
-  }
-
-  .progress-ring circle {
-    transition: stroke-dasharray 0.3s ease;
-  }
-
-  .data-viz {
-    filter: drop-shadow(0 4px 20px hsl(var(--accent) / 0.3));
-  }
-
-  .service-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(15px);
-    transition: all 0.3s ease;
-  }
-
-  .service-card:hover {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  }
-
-  .pack-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(10px);
-  }
-
-  @media (max-width: 768px) {
-    .mobile-stack { flex-direction: column; }
-  }
-`;
-
-interface DashboardClientProps {
+type DashboardClientProps = {
   user: {
     id: string;
-    name: string | null;
+    name?: string | null;
     email: string;
-    dogs: any[];
-    serviceVisits: any[];
-    dataReadings: any[];
+    phone?: string | null;
+    address?: string | null;
+    city?: string | null;
+    zipCode?: string | null;
   };
-  totalWaste: number;
-  avgHealthScore: number;
-  recentVisits: any[];
-  totalSamples: number;
-  ecoImpact: number;
+  dogs: Array<{
+    id: string;
+    name: string;
+    breed?: string | null;
+    age?: number | null;
+    weight?: number | null;
+  }>;
+  serviceVisits: Array<{
+    id: string;
+    scheduledDate: string; // ISO
+    status: string;
+    serviceType: string;
+    yardSize: string;
+  }>;
+  dataReadings: Array<{
+    id: string;
+    timestamp: string; // ISO
+    weight?: number | null;
+    volume?: number | null;
+    color?: string | null;
+    consistency?: string | null;
+  }>;
+};
+
+function formatLbsFromGrams(totalGrams: number): string {
+  const lbs = totalGrams * 0.00220462;
+  return lbs.toFixed(1);
 }
 
-export default function DashboardClient({
-  user,
-  totalWaste,
-  avgHealthScore,
-  recentVisits,
-  totalSamples,
-  ecoImpact,
-}: DashboardClientProps) {
-  const [activeMetric, setActiveMetric] = useState('consistency');
+function getProfileCompleteness(user: DashboardClientProps['user'], dogsCount: number) {
+  const fields: Array<[string, boolean]> = [
+    ['Name', Boolean(user.name && user.name.trim().length > 0)],
+    ['Phone', Boolean(user.phone && user.phone.trim().length > 0)],
+    ['Address', Boolean(user.address && user.address.trim().length > 0)],
+    ['City', Boolean(user.city && user.city.trim().length > 0)],
+    ['ZIP code', Boolean(user.zipCode && user.zipCode.trim().length > 0)],
+    ['At least 1 dog profile', dogsCount > 0],
+  ];
+  const completed = fields.filter(([, ok]) => ok).length;
+  const percent = Math.round((completed / fields.length) * 100);
+  return { percent, fields };
+}
+
+type WeeklyPoint = { weekLabel: string; start: Date; value: number };
+
+function startOfWeek(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday start
+  const start = new Date(d.setDate(diff));
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function formatWeekLabel(d: Date): string {
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${month}/${day}`;
+}
+
+function buildWeeklySeries(
+  readings: DashboardClientProps['dataReadings'],
+  weeks: number = 8
+): WeeklyPoint[] {
+  const now = new Date();
+  const currentStart = startOfWeek(now);
+  const buckets: WeeklyPoint[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const start = new Date(currentStart);
+    start.setDate(start.getDate() - i * 7);
+    buckets.push({ weekLabel: formatWeekLabel(start), start, value: 0 });
+  }
+  readings.forEach((r) => {
+    const t = new Date(r.timestamp);
+    const rStart = startOfWeek(t).getTime();
+    for (let i = 0; i < buckets.length; i++) {
+      if (buckets[i].start.getTime() === rStart) {
+        buckets[i].value += 1; // count observations per week
+        break;
+      }
+    }
+  });
+  return buckets;
+}
+
+function buildSparklinePath(points: WeeklyPoint[], width = 280, height = 60, padding = 16) {
+  if (points.length === 0) return '';
+  const maxVal = Math.max(1, ...points.map((p) => p.value));
+  const innerWidth = width - padding * 2;
+  const innerHeight = height - padding * 2;
+  const stepX = innerWidth / Math.max(1, points.length - 1);
+  const yFor = (v: number) => padding + (innerHeight - (v / maxVal) * innerHeight);
+  const xFor = (i: number) => padding + i * stepX;
+  let d = '';
+  points.forEach((p, i) => {
+    const x = xFor(i);
+    const y = yFor(p.value);
+    d += i === 0 ? `M${x} ${y}` : ` L${x} ${y}`;
+  });
+  return d;
+}
+
+export default function DashboardClientNew(props: DashboardClientProps) {
+  const { user, dogs, serviceVisits, dataReadings } = props;
+  const [copied, setCopied] = useState(false);
+
+  const hasAnyData = dataReadings.length > 0 || serviceVisits.length > 0;
+  const { percent: profilePercent, fields: profileFields } = useMemo(
+    () => getProfileCompleteness(user, dogs.length),
+    [user, dogs.length]
+  );
+
+  const totalGrams = useMemo(
+    () => dataReadings.reduce((sum, r) => sum + (r.weight || 0), 0),
+    [dataReadings]
+  );
+
+  const last30DaysCount = useMemo(() => {
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return dataReadings.filter((r) => new Date(r.timestamp).getTime() >= cutoff).length;
+  }, [dataReadings]);
+
+  const weeklySeries = useMemo(() => buildWeeklySeries(dataReadings, 8), [dataReadings]);
+  const trendPath = useMemo(() => buildSparklinePath(weeklySeries), [weeklySeries]);
+
+  const uniqueColors = useMemo(() => {
+    const set = new Set(
+      dataReadings
+        .map((r) => (r.color || '').trim().toLowerCase())
+        .filter((s) => s && s !== 'normal' && s !== 'healthy')
+    );
+    return set.size;
+  }, [dataReadings]);
+
+  const uniqueConsistency = useMemo(() => {
+    const set = new Set(
+      dataReadings.map((r) => (r.consistency || '').trim().toLowerCase()).filter((s) => s)
+    );
+    return set.size;
+  }, [dataReadings]);
+
+  const referralUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/?ref=${user.id}`
+      : `https://www.yardura.com/?ref=${user.id}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(referralUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Yardura Referral',
+          text: 'Get a clean yard + optional wellness signals. Use my link to join!',
+          url: referralUrl,
+        });
+      } else {
+        await handleCopy();
+      }
+    } catch {
+      // user cancelled
+    }
+  };
 
   return (
-    <section className="min-h-screen bg-gradient-to-br from-white via-accent-soft/20 to-white relative overflow-hidden">
-      <style jsx global>{advancedStyles}</style>
-
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.03]">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `radial-gradient(circle at 25% 25%, hsl(var(--accent)) 2px, transparent 2px),
-                           radial-gradient(circle at 75% 75%, hsl(var(--accent)) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px, 40px 40px',
-            backgroundPosition: '0 0, 30px 30px',
-          }}
-        />
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-ink">
+            Welcome back{user.name ? `, ${user.name}` : ''}!
+          </h1>
+          <p className="text-slate-600">
+            Household: {dogs.length} {dogs.length === 1 ? 'dog' : 'dogs'}. Signals are aggregated
+            across all dogs (non-diagnostic).
+          </p>
+        </div>
+        <Button variant="outline" asChild>
+          <a href="#" aria-label="Open settings">
+            <Settings className="size-4 mr-2" /> Settings
+          </a>
+        </Button>
       </div>
 
-      <div className="relative z-10 container max-w-7xl py-8 px-4">
-        {/* Header Section */}
-        <div className="mb-12 animate-slide-in-up">
-          <div className="relative">
-            <div className="glass-card rounded-3xl p-8 relative overflow-hidden">
-              <div className="floating-particles">
-                <div className="particle"></div>
-                <div className="particle"></div>
-                <div className="particle"></div>
-                <div className="particle"></div>
-                <div className="particle"></div>
-              </div>
-
-              <div className="flex items-center gap-3 mb-6">
-                <div className="relative">
-                  <Eye className="size-6 text-accent animate-float" />
-                  <div className="absolute -inset-2 bg-accent/20 rounded-full blur-lg animate-pulse-glow"></div>
-                </div>
-                <span className="text-sm font-semibold text-accent uppercase tracking-wide">Wellness Dashboard</span>
-                <span className="px-3 py-1 bg-gradient-to-r from-accent to-accent/80 text-white text-xs font-bold rounded-full animate-gradient-shift">
-                  3 C's Analysis
-                </span>
-              </div>
-
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
-            <div className="flex-1">
-              <h1 className="text-4xl lg:text-5xl font-bold text-ink mb-4">
-                Welcome back, {user.name}
-              </h1>
-              <p className="text-lg text-muted leading-relaxed max-w-2xl mb-4">
-                Your {user.dogs.length === 1 ? "dog's" : "pack's"} wellness insights through our AI-powered 3 C's analysis:
-                <strong className="text-accent"> Color, Consistency, Content</strong>
-              </p>
-              {user.dogs.length > 1 && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-200">
-                  <Users className="size-4" />
-                  {user.dogs.length} dogs • Combined insights
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-4">
-              <button className="px-6 py-3 bg-accent text-white rounded-xl font-semibold shadow-soft hover:bg-accent/90 transition-all duration-200 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                View Trends
-              </button>
-              <button className="px-6 py-3 border-2 border-accent text-accent rounded-xl font-semibold hover:bg-accent-soft transition-all duration-200 flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Schedule Service
-              </button>
-            </div>
-          </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Key Stats Row */}
-        <div className="grid md:grid-cols-4 gap-6 mb-12">
-          <div className="metric-card rounded-2xl p-6 text-center animate-bounce-in" style={{ animationDelay: '0.1s' }}>
-            <div className="text-3xl font-bold text-accent mb-2">{recentVisits.length}</div>
-            <div className="text-ink font-medium">Services Completed</div>
-            <div className="text-sm text-muted mt-1">This month</div>
-          </div>
-
-          <div className="metric-card rounded-2xl p-6 text-center animate-bounce-in" style={{ animationDelay: '0.2s' }}>
-            <div className="text-3xl font-bold gradient-text mb-2">{totalSamples}</div>
-            <div className="text-ink font-medium">Wellness Samples</div>
-            <div className="text-sm text-muted mt-1">Analyzed</div>
-          </div>
-
-          <div className="metric-card rounded-2xl p-6 text-center animate-bounce-in" style={{ animationDelay: '0.3s' }}>
-            <div className="text-3xl font-bold gradient-text mb-2">{avgHealthScore}%</div>
-            <div className="text-ink font-medium">Wellness Score</div>
-            <div className="text-sm text-muted mt-1">Combined insights</div>
-          </div>
-
-          <div className="metric-card rounded-2xl p-6 text-center animate-bounce-in" style={{ animationDelay: '0.4s' }}>
-            <div className="text-3xl font-bold gradient-text mb-2">{ecoImpact.toFixed(1)}</div>
-            <div className="text-ink font-medium">lbs Diverted</div>
-            <div className="text-sm text-muted mt-1">Environmental impact</div>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Service Overview */}
-            <div className="service-card rounded-2xl p-8 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-6">
+      {/* Empty State: Profile & Onboarding */}
+      {!hasAnyData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CircleAlert className="size-5 text-accent" />
+              Complete your profile to unlock weekly signals
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-ink mb-1">Service Overview</h2>
-                  <p className="text-muted text-sm">Your waste removal service summary</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-medium text-ink">Profile completeness</div>
+                    <div className="text-sm text-muted">{profilePercent}%</div>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-accent h-2 rounded-full transition-all"
+                      style={{ width: `${profilePercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <ul className="grid sm:grid-cols-2 gap-2">
+                  {profileFields.map(([label, ok]: [string, boolean]) => (
+                    <li key={label} className="flex items-center gap-2 text-sm">
+                      {ok ? (
+                        <CheckCircle2 className="size-4 text-emerald-600" />
+                      ) : (
+                        <CircleAlert className="size-4 text-amber-500" />
+                      )}
+                      <span className={ok ? 'text-slate-600 line-through' : 'text-slate-700'}>
+                        {label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="flex flex-wrap gap-3">
+                  <Button asChild>
+                    <a href="#">Update Profile</a>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <a href="#">Add Dog Profile</a>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Referral Incentives */}
+              <div className="p-4 rounded-xl bg-accent-soft border border-accent/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="size-4 text-accent" />
+                  <div className="text-sm font-medium text-ink">Referral rewards</div>
+                </div>
+                <div className="text-sm text-slate-700 mb-3">
+                  Give $10, Get $10 on your next service.
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="size-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-green-700 font-medium">Active Service</span>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div className="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/50 rounded-xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="size-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                      <Calendar className="size-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-blue-800">Next Service</div>
-                      <div className="text-xs text-blue-600">Scheduled pickup</div>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-800 mb-2">
-                    {recentVisits[0]?.scheduledDate ?
-                      new Date(recentVisits[0].scheduledDate).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric'
-                      }) :
-                      'Schedule'
-                    }
-                  </div>
-                  <div className="text-sm text-blue-600">Weekly maintenance</div>
-                </div>
-
-                <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200/50 rounded-xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="size-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                      <Activity className="size-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-purple-800">Service History</div>
-                      <div className="text-xs text-purple-600">Completed pickups</div>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-purple-800 mb-2">{recentVisits.length}</div>
-                  <div className="text-sm text-purple-600">This month</div>
-                </div>
-              </div>
-
-              {/* Service Status */}
-              <div className="p-4 bg-accent-soft/20 rounded-lg border border-accent/10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="size-5 text-accent" />
-                    <span className="text-sm font-medium text-ink">Service Status</span>
-                  </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
-                    ACTIVE
-                  </span>
-                </div>
-                <div className="mt-2 text-sm text-muted">
-                  Regular weekly service • Eco-friendly disposal • Wellness monitoring included
+                  <input
+                    readOnly
+                    value={referralUrl}
+                    className="flex-1 px-3 py-2 rounded-lg border border-accent/20 text-sm"
+                    aria-label="Your referral link"
+                  />
+                  <Button variant="outline" onClick={handleCopy} aria-label="Copy referral link">
+                    <Copy className="size-4 mr-2" /> {copied ? 'Copied' : 'Copy'}
+                  </Button>
+                  <Button onClick={handleShare} aria-label="Share referral link">
+                    <Share2 className="size-4 mr-2" /> Share
+                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* 3 C's Analysis Dashboard */}
-            <div className="glass-card rounded-2xl p-8 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-ink mb-1">3 C's Wellness Analysis</h2>
-                  <p className="text-muted text-sm">Color • Consistency • Content</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="size-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-green-700 font-medium">All Normal</span>
-                </div>
-              </div>
+            <div className="mt-6 text-xs text-muted">
+              Wellness signals are informational only and not veterinary advice.
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-              {/* Interactive Metrics Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div
-                  onClick={() => setActiveMetric('consistency')}
-                  className={`p-6 rounded-xl cursor-pointer transition-all duration-300 ${
-                    activeMetric === 'consistency'
-                      ? 'bg-accent-soft border-accent-200 shadow-lg scale-105'
-                      : 'bg-white/60 border-slate-200 hover:bg-white/80'
-                  } border`}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`size-10 bg-slate-100 rounded-xl flex items-center justify-center ${activeMetric === 'consistency' ? 'bg-accent-soft' : ''}`}>
-                      <Activity className={`size-5 ${activeMetric === 'consistency' ? 'text-accent' : 'text-slate-600'}`} />
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-ink">Consistency</div>
-                      <div className={`text-xs ${activeMetric === 'consistency' ? 'text-accent' : 'text-slate-500'}`}>
-                        Normal range
-                      </div>
-                    </div>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`bg-gradient-to-r from-accent to-accent/80 h-2 rounded-full transition-all duration-1000 ease-out`}
-                      style={{ width: '85%' }}
-                    ></div>
-                  </div>
-                </div>
+      {/* When data exists */}
+      {hasAnyData && (
+        <>
+          {/* Key Metrics */}
+          <div className="grid md:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Household Dogs</CardTitle>
+                <Dog className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dogs.length}</div>
+                <p className="text-xs text-muted">Aggregated insights</p>
+              </CardContent>
+            </Card>
 
-                <div
-                  onClick={() => setActiveMetric('color')}
-                  className={`p-6 rounded-xl cursor-pointer transition-all duration-300 ${
-                    activeMetric === 'color'
-                      ? 'bg-accent-soft border-accent-200 shadow-lg scale-105'
-                      : 'bg-white/60 border-slate-200 hover:bg-white/80'
-                  } border`}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`size-10 bg-slate-100 rounded-xl flex items-center justify-center ${activeMetric === 'color' ? 'bg-accent-soft' : ''}`}>
-                      <Droplets className={`size-5 ${activeMetric === 'color' ? 'text-accent' : 'text-slate-600'}`} />
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-ink">Color</div>
-                      <div className={`text-xs ${activeMetric === 'color' ? 'text-accent' : 'text-slate-500'}`}>
-                        Normal
-                      </div>
-                    </div>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`bg-gradient-to-r from-accent to-accent/80 h-2 rounded-full transition-all duration-1000 ease-out`}
-                      style={{ width: '90%' }}
-                    ></div>
-                  </div>
-                </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Waste Diverted</CardTitle>
+                <TrendingUp className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatLbsFromGrams(totalGrams)} lbs</div>
+                <p className="text-xs text-muted">Kept out of landfills</p>
+              </CardContent>
+            </Card>
 
-                <div
-                  onClick={() => setActiveMetric('content')}
-                  className={`p-6 rounded-xl cursor-pointer transition-all duration-300 ${
-                    activeMetric === 'content'
-                      ? 'bg-accent-soft border-accent-200 shadow-lg scale-105'
-                      : 'bg-white/60 border-slate-200 hover:bg-white/80'
-                  } border`}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`size-10 bg-slate-100 rounded-xl flex items-center justify-center ${activeMetric === 'content' ? 'bg-accent-soft' : ''}`}>
-                      <Target className={`size-5 ${activeMetric === 'content' ? 'text-accent' : 'text-slate-600'}`} />
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-ink">Content</div>
-                      <div className={`text-xs ${activeMetric === 'content' ? 'text-accent' : 'text-slate-500'}`}>
-                        No anomalies
-                      </div>
-                    </div>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`bg-gradient-to-r from-accent to-accent/80 h-2 rounded-full transition-all duration-1000 ease-out`}
-                      style={{ width: '95%' }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Observations (30d)</CardTitle>
+                <Heart className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{last30DaysCount}</div>
+                <p className="text-xs text-muted">Weekly pickup snapshots</p>
+              </CardContent>
+            </Card>
 
-              {/* Wellness Insights Legend */}
-              <div className="p-6 bg-accent-soft/20 rounded-lg border border-accent/10">
-                <div className="flex items-center gap-2 mb-3">
-                  <Shield className="size-4 text-accent" />
-                  <span className="text-sm font-medium text-ink">What We Monitor</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-muted">
-                  <span>• Color changes</span>
-                  <span>• Texture variations</span>
-                  <span>• Content anomalies</span>
-                  <span>• Frequency patterns</span>
-                  <span>• Hydration indicators</span>
-                  <span>• GI health flags</span>
-                </div>
-                <div className="mt-4 text-xs text-muted/70">
-                  📊 Patterns analyzed from weekly pickups. These are informational only and not
-                  veterinary advice. Always consult your vet for health concerns.
-                </div>
-              </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Service Visits</CardTitle>
+                <Calendar className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{serviceVisits.length}</div>
+                <p className="text-xs text-muted">All time</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Trend (Week over Week) */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Week-over-Week Observations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative h-28 mb-3">
+                    <svg
+                      viewBox="0 0 280 60"
+                      className="w-full h-full"
+                      aria-label="Weekly observations"
+                    >
+                      <defs>
+                        <linearGradient id="wkGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0.1" />
+                        </linearGradient>
+                      </defs>
+
+                      <g stroke="hsl(var(--muted))" strokeWidth="0.5" opacity="0.3">
+                        <line x1="0" y1="15" x2="280" y2="15" />
+                        <line x1="0" y1="30" x2="280" y2="30" />
+                        <line x1="0" y1="45" x2="280" y2="45" />
+                      </g>
+
+                      <path
+                        d={trendPath}
+                        fill="none"
+                        stroke="hsl(var(--accent))"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted">
+                    {weeklySeries.map((p: WeeklyPoint) => (
+                      <span key={p.weekLabel}>{p.weekLabel}</span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Recent Activity */}
-            <div className="bg-gradient-to-br from-white to-accent-soft/10 border-accent/20 shadow-xl rounded-xl border p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-ink flex items-center gap-3">
-                  <Activity className="size-6 text-accent" />
-                  Recent Activity
-                </h2>
-                <button className="text-accent hover:text-accent/80 transition-colors font-medium">
-                  View All
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 p-4 bg-green-50/50 border border-green-200/50 rounded-xl">
-                  <div className="size-12 bg-green-100 rounded-xl flex items-center justify-center">
-                    <CheckCircle className="size-6 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-green-800">Service Completed</h3>
-                      <span className="text-xs text-green-600">2h ago</span>
+            {/* Core Signals (3 Cs) */}
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Core Wellness Signals (3 Cs)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
+                      <div className="text-sm font-medium text-ink">Color</div>
+                      <div className="text-xs text-muted">
+                        {uniqueColors > 1 ? 'Variability detected last weeks' : 'Stable hues'}
+                      </div>
                     </div>
-                    <p className="text-green-700 text-sm">
-                      Weekly pickup completed with normal wellness patterns observed.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 bg-blue-50/50 border border-blue-200/50 rounded-xl">
-                  <div className="size-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <Heart className="size-6 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-blue-800">Wellness Insight Available</h3>
-                      <span className="text-xs text-blue-600">1d ago</span>
+                    <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
+                      <div className="text-sm font-medium text-ink">Consistency</div>
+                      <div className="text-xs text-muted">
+                        {uniqueConsistency > 1 ? 'Mixed textures observed' : 'Consistent patterns'}
+                      </div>
                     </div>
-                    <p className="text-blue-700 text-sm">
-                      New analysis ready showing consistent wellness patterns this week.
-                    </p>
+                    <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
+                      <div className="text-sm font-medium text-ink">Content</div>
+                      <div className="text-xs text-muted">No content anomalies logged</div>
+                    </div>
                   </div>
-                </div>
-              </div>
+
+                  <div className="mt-4 text-xs text-muted">
+                    Informational only, not veterinary advice. Talk to your vet for concerns.
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Your Pack */}
-            <div className="pack-card rounded-xl p-6">
-              <h3 className="text-xl font-bold text-ink mb-6 flex items-center gap-3">
-                <PawPrint className="size-5 text-accent" />
-                Your Pack
-              </h3>
-              <div className="space-y-3">
-                {user.dogs.map((dog: any, index: number) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-accent-soft/20 rounded-lg">
-                    <div className="size-8 bg-accent/20 rounded-full flex items-center justify-center">
-                      <PawPrint className="size-4 text-accent" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-ink">{dog.name}</div>
-                      <div className="text-xs text-muted">{dog.breed}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {user.dogs.length > 1 && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-xs text-blue-700">
-                    <Users className="size-3" />
-                    Combined wellness insights for all dogs
-                  </div>
+          {/* Recent Service Visits */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Service Visits</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {serviceVisits.length > 0 ? (
+                <div className="space-y-3">
+                  {serviceVisits.slice(0, 5).map((visit) => {
+                    const badgeVariant: 'default' | 'secondary' =
+                      visit.status === 'COMPLETED' ? 'default' : 'secondary';
+                    return (
+                      <div
+                        key={visit.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div>
+                          <div className="font-semibold">
+                            {visit.serviceType.replace('_', ' ')} • {visit.yardSize}
+                          </div>
+                          <div className="text-sm text-slate-600">
+                            {new Date(visit.scheduledDate).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <Badge variant={badgeVariant}>{visit.status}</Badge>
+                      </div>
+                    );
+                  })}
                 </div>
+              ) : (
+                <p className="text-slate-600">No visits yet. Schedule your first one!</p>
               )}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-gradient-to-br from-white to-accent-soft/10 border-accent/20 shadow-lg rounded-xl border p-6">
-              <h3 className="text-xl font-bold text-ink mb-6 flex items-center gap-3">
-                <Lightning className="size-5 text-accent" />
-                Quick Actions
-              </h3>
-              <div className="space-y-3">
-                <button className="w-full p-4 bg-gradient-to-r from-accent/10 to-accent/5 hover:from-accent/20 hover:to-accent/10 rounded-xl border border-accent/20 hover:border-accent/40 transition-all duration-300 text-left group">
-                  <div className="flex items-center gap-3">
-                    <Plus className="size-5 text-accent group-hover:scale-110 transition-transform" />
-                    <span className="text-ink font-medium">Schedule Extra Service</span>
-                  </div>
-                </button>
-                <button className="w-full p-4 bg-gradient-to-r from-accent/10 to-accent/5 hover:from-accent/20 hover:to-accent/10 rounded-xl border border-accent/20 hover:border-accent/40 transition-all duration-300 text-left group">
-                  <div className="flex items-center gap-3">
-                    <Eye className="size-5 text-accent group-hover:scale-110 transition-transform" />
-                    <span className="text-ink font-medium">View Full Report</span>
-                  </div>
-                </button>
-                <button className="w-full p-4 bg-gradient-to-r from-accent/10 to-accent/5 hover:from-accent/20 hover:to-accent/10 rounded-xl border border-accent/20 hover:border-accent/40 transition-all duration-300 text-left group">
-                  <div className="flex items-center gap-3">
-                    <Bell className="size-5 text-accent group-hover:scale-110 transition-transform" />
-                    <span className="text-ink font-medium">Alert Settings</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Eco Impact */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200/50 shadow-lg rounded-xl border p-6">
-              <h3 className="text-xl font-bold text-ink mb-6 flex items-center gap-3">
-                <Leaf className="size-5 text-green-600" />
-                Your Eco Impact
-              </h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
-                  <span className="text-ink">Waste Diverted</span>
-                  <span className="font-bold text-green-600">{ecoImpact.toFixed(1)} lbs</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
-                  <span className="text-ink">CO₂ Saved</span>
-                  <span className="font-bold text-green-600">{(ecoImpact * 0.5).toFixed(1)} lbs</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
-                  <span className="text-ink">Trees Equivalent</span>
-                  <span className="font-bold text-green-600">{Math.round(ecoImpact / 50)} trees</span>
-                </div>
-              </div>
-              <div className="mt-6 pt-4 border-t border-green-200/50">
-                <div className="text-center">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm">
-                    🌱 Together we're making a difference
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
   );
 }

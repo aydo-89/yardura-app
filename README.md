@@ -20,7 +20,6 @@ DATABASE_URL="file:./dev.db"
 
 # NextAuth.js
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-key-here
 
 # Email (for authentication)
 EMAIL_SERVER_HOST=smtp.gmail.com
@@ -133,11 +132,10 @@ Create a `.env.local` file in the root directory:
 
 ```env
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/yardura_db?schema=public"
+DATABASE_URL="postgresql://username:password@localhost:5432/yardura_db"
 
 # NextAuth.js
 NEXTAUTH_URL=http://localhost:3002
-NEXTAUTH_SECRET=your-secret-key-here
 
 # Authentication Providers (Optional)
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -342,7 +340,6 @@ Make sure to set these in your production environment:
 ```env
 DATABASE_URL=your-production-db-url
 NEXTAUTH_URL=https://your-domain.com
-NEXTAUTH_SECRET=your-production-secret
 JWT_SECRET=your-production-jwt-secret
 RESEND_API_KEY=your-production-resend-key
 ```
