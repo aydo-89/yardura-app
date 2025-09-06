@@ -220,6 +220,14 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return future[0] || null;
   }, [serviceVisits]);
 
+  const lastCompletedAt = useMemo(() => {
+    const completed = serviceVisits
+      .filter((v) => v.status === 'COMPLETED')
+      .map((v) => new Date(v.scheduledDate))
+      .sort((a, b) => b.getTime() - a.getTime());
+    return completed[0] || null;
+  }, [serviceVisits]);
+
   const serviceStreak = useMemo(() => {
     const sorted = [...serviceVisits].sort(
       (a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
@@ -269,6 +277,43 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     if (gramsPrevWeek === 0) return null as number | null;
     return (gramsLastWeek - gramsPrevWeek) / gramsPrevWeek;
   }, [gramsLastWeek, gramsPrevWeek]);
+
+  const last7DaysCount = useMemo(() => {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return dataReadings.filter((r) => new Date(r.timestamp).getTime() >= cutoff).length;
+  }, [dataReadings]);
+
+  const avgWeight30G = useMemo(() => {
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const weights = dataReadings
+      .filter((r) => r.weight != null && new Date(r.timestamp).getTime() >= cutoff)
+      .map((r) => r.weight as number);
+    if (weights.length === 0) return null as number | null;
+    const sum = weights.reduce((a, b) => a + b, 0);
+    return sum / weights.length;
+  }, [dataReadings]);
+
+  const gramsThisMonth = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return dataReadings.reduce((sum, r) => {
+      const t = new Date(r.timestamp);
+      return inRange(t, monthStart, monthEnd) ? sum + (r.weight || 0) : sum;
+    }, 0);
+  }, [dataReadings]);
+
+  const methaneThisMonthLbsEq = useMemo(() => {
+    return gramsThisMonth * 0.002 * 0.67;
+  }, [gramsThisMonth]);
+
+  const recentInsightsLevel = useMemo(() => {
+    const concerning = dataReadings.some((r) => {
+      const c = (r.color || '').toLowerCase();
+      return c.includes('black') || c.includes('tarry') || c.includes('melena') || c.includes('red');
+    });
+    return concerning ? 'WATCH' : 'NORMAL';
+  }, [dataReadings]);
 
   const consistencyCounts = useMemo(() => {
     const map = new Map<string, number>();
@@ -544,54 +589,91 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </Card>
           )}
 
-          {/* Key Metrics Overview */}
-          <div className="grid md:grid-cols-4 gap-6">
+          {/* Above-the-fold KPIs */}
+          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {/* Next Pickup */}
             <Card className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">My Pack</CardTitle>
-                <Dog className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dogs.length}</div>
-                <p className="text-xs text-muted">
-                  {dogs.length === 1
-                    ? `${dogs[0]?.name || 'Your dog'}`
-                    : `${dogs.length} furry friends`
-                  }
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Environmental Impact</CardTitle>
-                <TrendingUp className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatLbsFromGrams(totalGrams)} lbs</div>
-                <p className="text-xs text-muted">Waste diverted from landfills</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Health Insights</CardTitle>
-                <Heart className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dataReadings.length}</div>
-                <p className="text-xs text-muted">Wellness analyses completed</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Service Streak</CardTitle>
+                <CardTitle className="text-sm font-medium">Next Pickup</CardTitle>
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{serviceStreak}</div>
-                <p className="text-xs text-muted">Consecutive weeks served</p>
+                <div className="text-2xl font-bold">
+                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
+                </div>
+                <p className="text-xs text-muted">Scheduled window</p>
+              </CardContent>
+            </Card>
+
+            {/* Last Pickup */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Last Pickup</CardTitle>
+                <Calendar className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : '—'}
+                </div>
+                <p className="text-xs text-muted">Most recent visit</p>
+              </CardContent>
+            </Card>
+
+            {/* Recent Insights */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Recent Insights</CardTitle>
+                <Heart className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${recentInsightsLevel === 'WATCH' ? 'text-amber-600' : 'text-slate-900'}`}>
+                  {recentInsightsLevel === 'WATCH' ? 'Watch' : 'All normal'}
+                </div>
+                <p className="text-xs text-muted">Informational only</p>
+              </CardContent>
+            </Card>
+
+            {/* Activity */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Activity</CardTitle>
+                <TrendingUp className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted">
+                  <div className="flex items-center justify-between"><span>Deposits (7d)</span><span className="font-semibold text-ink">{last7DaysCount}</span></div>
+                  <div className="flex items-center justify-between"><span>Deposits (30d)</span><span className="font-semibold text-ink">{last30DaysCount}</span></div>
+                  <div className="flex items-center justify-between"><span>Avg wt (30d)</span><span className="font-semibold text-ink">{avgWeight30G != null ? `${avgWeight30G.toFixed(1)} g` : '—'}</span></div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Eco (MTD) */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Eco (MTD)</CardTitle>
+                <Leaf className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted">
+                  <div className="flex items-center justify-between"><span>Diverted</span><span className="font-semibold text-ink">{formatLbsFromGrams(gramsThisMonth)} lbs</span></div>
+                  <div className="flex items-center justify-between"><span>Methane</span><span className="font-semibold text-ink">{methaneThisMonthLbsEq.toFixed(1)} ft³</span></div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Billing */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Billing</CardTitle>
+                <User className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-slate-900">{user.stripeCustomerId ? 'Active' : 'Set up'}</div>
+                <p className="text-xs text-muted">Next charge via portal</p>
+                <div className="mt-2">
+                  <a className="text-xs text-accent underline" href="/billing">Open Billing</a>
+                </div>
               </CardContent>
             </Card>
           </div>
