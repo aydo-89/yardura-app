@@ -1,4 +1,4 @@
-import SiteHeader from '@/components/site-header';
+import AnimatedHeader from '@/components/site/AnimatedHeader';
 import Hero from '@/components/hero';
 import Differentiators from '@/components/Differentiators';
 import WhyItMatters from '@/components/WhyItMatters';
@@ -34,19 +34,23 @@ export default function Page() {
 
   return (
     <>
-      <SiteHeader />
+      <AnimatedHeader />
       <main>
         {/* Backward compatibility anchor for old #quote links */}
         <span id="quote" />
         <Hero />
+        {/* Differentiators + Why It Matters + Insights preview */}
         <Differentiators />
         <WhyItMatters />
         <Insights />
-        <HowItWorks />
-        <Pricing />
-        <QuoteTeaser />
+        {/* Proof: condensed eco stats + testimonial */}
         <Eco />
         <Testimonials />
+        {/* Pricing before How It Works */}
+        <Pricing />
+        <HowItWorks />
+        {/* Optional teaser retained at end before FAQ */}
+        <QuoteTeaser />
         <FAQ />
       </main>
       <Footer />

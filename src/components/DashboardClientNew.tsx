@@ -24,6 +24,32 @@ import {
   Leaf,
 } from 'lucide-react';
 
+function ReportsList({ orgId }: { orgId: string }) {
+  const now = new Date();
+  const months: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    months.push(label);
+  }
+  return (
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {months.map((m) => (
+        <a
+          key={m}
+          className="border rounded-lg p-3 flex items-center justify-between hover:bg-accent-soft"
+          href={`/api/reports/monthly?orgId=${encodeURIComponent(orgId)}&month=${m}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span className="text-sm">{m}</span>
+          <span className="text-accent text-xs underline">Download</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 type DashboardClientProps = {
   user: {
     id: string;
@@ -34,6 +60,7 @@ type DashboardClientProps = {
     city?: string | null;
     zipCode?: string | null;
     stripeCustomerId?: string | null;
+    orgId?: string | null;
   };
   dogs: Array<{
     id: string;
@@ -220,6 +247,14 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return future[0] || null;
   }, [serviceVisits]);
 
+  const lastCompletedAt = useMemo(() => {
+    const completed = serviceVisits
+      .filter((v) => v.status === 'COMPLETED')
+      .map((v) => new Date(v.scheduledDate))
+      .sort((a, b) => b.getTime() - a.getTime());
+    return completed[0] || null;
+  }, [serviceVisits]);
+
   const serviceStreak = useMemo(() => {
     const sorted = [...serviceVisits].sort(
       (a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
@@ -269,6 +304,43 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     if (gramsPrevWeek === 0) return null as number | null;
     return (gramsLastWeek - gramsPrevWeek) / gramsPrevWeek;
   }, [gramsLastWeek, gramsPrevWeek]);
+
+  const last7DaysCount = useMemo(() => {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return dataReadings.filter((r) => new Date(r.timestamp).getTime() >= cutoff).length;
+  }, [dataReadings]);
+
+  const avgWeight30G = useMemo(() => {
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const weights = dataReadings
+      .filter((r) => r.weight != null && new Date(r.timestamp).getTime() >= cutoff)
+      .map((r) => r.weight as number);
+    if (weights.length === 0) return null as number | null;
+    const sum = weights.reduce((a, b) => a + b, 0);
+    return sum / weights.length;
+  }, [dataReadings]);
+
+  const gramsThisMonth = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return dataReadings.reduce((sum, r) => {
+      const t = new Date(r.timestamp);
+      return inRange(t, monthStart, monthEnd) ? sum + (r.weight || 0) : sum;
+    }, 0);
+  }, [dataReadings]);
+
+  const methaneThisMonthLbsEq = useMemo(() => {
+    return gramsThisMonth * 0.002 * 0.67;
+  }, [gramsThisMonth]);
+
+  const recentInsightsLevel = useMemo(() => {
+    const concerning = dataReadings.some((r) => {
+      const c = (r.color || '').toLowerCase();
+      return c.includes('black') || c.includes('tarry') || c.includes('melena') || c.includes('red');
+    });
+    return concerning ? 'WATCH' : 'NORMAL';
+  }, [dataReadings]);
 
   const consistencyCounts = useMemo(() => {
     const map = new Map<string, number>();
@@ -458,7 +530,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
 
       {/* Main Dashboard Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-slate-100 p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-8 bg-slate-100 p-1 rounded-xl">
           <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
             <Home className="size-4 mr-2" />
             Overview
@@ -474,6 +546,14 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           <TabsTrigger value="eco" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
             <Leaf className="size-4 mr-2" />
             Eco Impact
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <TrendingUp className="size-4 mr-2" />
+            Reports
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <User className="size-4 mr-2" />
+            Billing
           </TabsTrigger>
           <TabsTrigger value="rewards" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
             <Trophy className="size-4 mr-2" />
@@ -544,54 +624,91 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </Card>
           )}
 
-          {/* Key Metrics Overview */}
-          <div className="grid md:grid-cols-4 gap-6">
+          {/* Above-the-fold KPIs */}
+          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {/* Next Pickup */}
             <Card className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">My Pack</CardTitle>
-                <Dog className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dogs.length}</div>
-                <p className="text-xs text-muted">
-                  {dogs.length === 1
-                    ? `${dogs[0]?.name || 'Your dog'}`
-                    : `${dogs.length} furry friends`
-                  }
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Environmental Impact</CardTitle>
-                <TrendingUp className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatLbsFromGrams(totalGrams)} lbs</div>
-                <p className="text-xs text-muted">Waste diverted from landfills</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Health Insights</CardTitle>
-                <Heart className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dataReadings.length}</div>
-                <p className="text-xs text-muted">Wellness analyses completed</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Service Streak</CardTitle>
+                <CardTitle className="text-sm font-medium">Next Pickup</CardTitle>
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{serviceStreak}</div>
-                <p className="text-xs text-muted">Consecutive weeks served</p>
+                <div className="text-2xl font-bold">
+                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
+                </div>
+                <p className="text-xs text-muted">Scheduled window</p>
+              </CardContent>
+            </Card>
+
+            {/* Last Pickup */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Last Pickup</CardTitle>
+                <Calendar className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : '—'}
+                </div>
+                <p className="text-xs text-muted">Most recent visit</p>
+              </CardContent>
+            </Card>
+
+            {/* Recent Insights */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Recent Insights</CardTitle>
+                <Heart className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${recentInsightsLevel === 'WATCH' ? 'text-amber-600' : 'text-slate-900'}`}>
+                  {recentInsightsLevel === 'WATCH' ? 'Watch' : 'All normal'}
+                </div>
+                <p className="text-xs text-muted">Informational only</p>
+              </CardContent>
+            </Card>
+
+            {/* Activity */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Activity</CardTitle>
+                <TrendingUp className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted">
+                  <div className="flex items-center justify-between"><span>Deposits (7d)</span><span className="font-semibold text-ink">{last7DaysCount}</span></div>
+                  <div className="flex items-center justify-between"><span>Deposits (30d)</span><span className="font-semibold text-ink">{last30DaysCount}</span></div>
+                  <div className="flex items-center justify-between"><span>Avg wt (30d)</span><span className="font-semibold text-ink">{avgWeight30G != null ? `${avgWeight30G.toFixed(1)} g` : '—'}</span></div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Eco (MTD) */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Eco (MTD)</CardTitle>
+                <Leaf className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted">
+                  <div className="flex items-center justify-between"><span>Diverted</span><span className="font-semibold text-ink">{formatLbsFromGrams(gramsThisMonth)} lbs</span></div>
+                  <div className="flex items-center justify-between"><span>Methane</span><span className="font-semibold text-ink">{methaneThisMonthLbsEq.toFixed(1)} ft³</span></div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Billing */}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Billing</CardTitle>
+                <User className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-slate-900">{user.stripeCustomerId ? 'Active' : 'Set up'}</div>
+                <p className="text-xs text-muted">Manage plan and payments</p>
+                <div className="mt-2">
+                  <a className="text-xs text-accent underline" href="/billing">Open Billing Portal</a>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -880,6 +997,44 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               </CardContent>
             </Card>
           </div>
+          {/* Insights Timeline (stacked markers) */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Insights Timeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <svg viewBox="0 0 800 120" className="w-[800px] h-[120px] max-w-full">
+                  <line x1="20" y1="60" x2="780" y2="60" stroke="hsl(var(--muted))" strokeWidth="1" opacity="0.5" />
+                  {dataReadings.slice(0, 24).map((r, i) => {
+                    const x = 30 + i * 30;
+                    const hasRed = (r.color || '').toLowerCase().includes('red');
+                    const hasBlack = (r.color || '').toLowerCase().includes('black') || (r.color || '').toLowerCase().includes('tarry');
+                    return (
+                      <g key={r.id || i}>
+                        {/* Consistency dot */}
+                        <circle cx={x} cy={45} r={4} fill="hsl(var(--accent))">
+                          <title>{new Date(r.timestamp).toLocaleDateString()} • Consistency: {r.consistency || '—'}</title>
+                        </circle>
+                        {/* Color markers */}
+                        {hasRed && (
+                          <rect x={x - 4} y={64} width={8} height={8} fill="#ef4444">
+                            <title>Color: red</title>
+                          </rect>
+                        )}
+                        {hasBlack && (
+                          <rect x={x - 4} y={76} width={8} height={8} fill="#111827">
+                            <title>Color: black/tarry</title>
+                          </rect>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+              <div className="mt-3 text-xs text-muted">Markers summarize recent color/consistency. Informational only.</div>
+            </CardContent>
+          </Card>
           {/* Week-over-Week Observations */}
           <Card className="motion-hover-lift">
             <CardHeader>
@@ -1077,6 +1232,38 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </CardContent>
           </Card>
 
+          {/* Color Distribution */}
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle>Color Distribution (last 30 days)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {(() => {
+                  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+                  const counts = new Map<string, number>();
+                  dataReadings
+                    .filter((r) => new Date(r.timestamp).getTime() >= cutoff)
+                    .forEach((r) => {
+                      const label = (r.color || 'unknown').toLowerCase();
+                      counts.set(label, (counts.get(label) || 0) + 1);
+                    });
+                  const items = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
+                  const max = Math.max(1, ...items.map(([, c]) => c));
+                  return items.map(([label, count]) => (
+                    <div key={label} className="flex items-center gap-3">
+                      <div className="w-28 text-xs text-muted truncate">{label}</div>
+                      <div className="flex-1 bg-slate-200 rounded-full h-3 overflow-hidden border border-slate-300">
+                        <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600" style={{ width: `${Math.round((count / max) * 100)}%` }} />
+                      </div>
+                      <div className="w-8 text-right text-xs text-muted">{count}</div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Service Streak and Breakdown */}
           <div className="grid lg:grid-cols-3 gap-8">
             <div>
@@ -1141,6 +1328,18 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ReportsList orgId={user.orgId || 'org_demo'} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Services Tab */}
@@ -1300,15 +1499,15 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               </div>
               <h2 className="text-2xl font-bold mb-2">Your Environmental Impact</h2>
               <p className="text-green-100">Together we're making a difference for our planet</p>
-              <div className="mt-4 flex justify-center gap-3">
+              <div className="mt-4 flex justify-center gap-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold">{formatLbsFromGrams(totalGrams)}</div>
-                  <div className="text-sm text-green-100">Waste Diverted</div>
+                  <div className="text-xs text-green-100">MTD Diverted</div>
+                  <div className="text-2xl font-bold">{formatLbsFromGrams(gramsThisMonth)} lbs</div>
                 </div>
                 <div className="w-px h-12 bg-white/30"></div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">{serviceVisits.length}</div>
-                  <div className="text-sm text-green-100">Services Completed</div>
+                  <div className="text-xs text-green-100">MTD Methane Avoided</div>
+                  <div className="text-2xl font-bold">{methaneThisMonthLbsEq.toFixed(1)} ft³</div>
                 </div>
               </div>
             </div>
@@ -1364,41 +1563,20 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </CardContent>
           </Card>
 
-          {/* Monthly Eco Impact */}
+          {/* Monthly Eco Impact (cleaner) */}
           <Card>
             <CardHeader>
               <CardTitle>Monthly Environmental Impact</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {/* Impact Summary */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <div className="text-sm font-medium text-slate-700 mb-1">This Month</div>
-                    <div className="text-2xl font-bold text-slate-900">{formatLbsFromGrams(totalGrams)}</div>
-                    <div className="text-xs text-slate-600">Waste diverted</div>
-                  </div>
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <div className="text-sm font-medium text-green-700 mb-1">Monthly Goal</div>
-                    <div className="text-2xl font-bold text-green-700">50 lbs</div>
-                    <div className="text-xs text-green-600">
-                      {totalGrams >= 25000 ? 'Achieved! 🎉' : `${((totalGrams / 25000) * 100).toFixed(0)}% complete`}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-lg">
+                  <div className="text-sm font-medium text-slate-700 mb-1">Diverted (MTD)</div>
+                  <div className="text-2xl font-bold text-slate-900">{formatLbsFromGrams(gramsThisMonth)}</div>
                 </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Monthly Progress</span>
-                    <span className="font-medium">{((totalGrams / 25000) * 100).toFixed(0)}%</span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-3">
-                    <div
-                      className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-1000 ease-out"
-                      style={{ width: `${Math.min((totalGrams / 25000) * 100, 100)}%` }}
-                    ></div>
-                  </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <div className="text-sm font-medium text-green-700 mb-1">Methane Avoided (MTD)</div>
+                  <div className="text-2xl font-bold text-green-700">{methaneThisMonthLbsEq.toFixed(1)} ft³</div>
                 </div>
               </div>
             </CardContent>
