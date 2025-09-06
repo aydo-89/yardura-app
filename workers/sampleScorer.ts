@@ -29,7 +29,7 @@ function calculateSampleScore(sample: any) {
   else if (moisture > 900) consistencyLabel = 'Very Soft';
 
   // Content flags based on moisture extremes
-  let contentFlags = [] as string[];
+  const contentFlags = [] as string[];
   if (moisture < 200) contentFlags.push('dehydration');
   if (moisture > 1000) contentFlags.push('diarrhea');
 
@@ -90,7 +90,9 @@ async function handleScore({ sampleId }: { sampleId: string }) {
       sampleId,
       colorLabel: score.colorLabel,
       consistencyLabel: score.consistencyLabel,
-      contentFlags: Array.isArray(score.contentFlags) ? score.contentFlags.join(',') : score.contentFlags,
+      contentFlags: Array.isArray(score.contentFlags)
+        ? score.contentFlags.join(',')
+        : score.contentFlags,
       hydrationHint: score.hydrationHint,
       giCluster: score.giCluster,
       confidence: score.confidence ?? 0.7,
@@ -107,7 +109,10 @@ async function handleScore({ sampleId }: { sampleId: string }) {
   console.log(`Sample ${sampleId} processing completed successfully`);
 }
 
-async function sendAlertEmail(sample: any, alert: { level: string; kind: string; message: string }) {
+async function sendAlertEmail(
+  sample: any,
+  alert: { level: string; kind: string; message: string }
+) {
   if (!resend) return;
   const recipients = [
     ...(sample.customer?.email ? [sample.customer.email] : []),
@@ -129,7 +134,11 @@ async function sendAlertEmail(sample: any, alert: { level: string; kind: string;
 }
 
 async function generateAlerts(sample: any, score: any) {
-  const alerts = [] as Array<{ level: 'INFO' | 'WATCH' | 'ATTENTION'; kind: string; message: string }>;
+  const alerts = [] as Array<{
+    level: 'INFO' | 'WATCH' | 'ATTENTION';
+    kind: string;
+    message: string;
+  }>;
 
   // Alert for dehydration
   if ((score.contentFlags as string)?.includes('dehydration')) {
@@ -212,7 +221,8 @@ async function analyzeTrends(sample: any, alerts: any[]) {
       alerts.push({
         level: 'ATTENTION' as const,
         kind: 'digestive_trend',
-        message: 'Pattern of digestive issues detected. Professional veterinary consultation recommended.',
+        message:
+          'Pattern of digestive issues detected. Professional veterinary consultation recommended.',
       });
     }
   }

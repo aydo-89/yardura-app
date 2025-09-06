@@ -61,10 +61,7 @@ const envSchema = z.object({
   ENABLE_MULTI_TENANT: z.string().optional().default('false'),
 
   // Security
-  SECRET_KEY_BASE: z
-    .string()
-    .min(32, 'SECRET_KEY_BASE must be at least 32 characters')
-    .optional(),
+  SECRET_KEY_BASE: z.string().min(32, 'SECRET_KEY_BASE must be at least 32 characters').optional(),
   EDGE_DEVICE_ISSUER: z.string().optional().default('yardura-device'),
   JWT_SIGNING_KEY: z.string().optional(),
 
@@ -163,11 +160,11 @@ function getValidatedEnv() {
         // Skip strict email provider validation in dev
         try {
           validateGoogleOAuth(process.env);
-        // eslint-disable-next-line no-empty
+          // eslint-disable-next-line no-empty
         } catch {}
         try {
           validateSupabase(process.env);
-        // eslint-disable-next-line no-empty
+          // eslint-disable-next-line no-empty
         } catch {}
         return fallback as any;
       }

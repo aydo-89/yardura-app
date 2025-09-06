@@ -5,8 +5,12 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(_req: NextRequest) {
-  const session = (await safeGetServerSession(authOptions as any)) as { user?: { id?: string } } | null;
-  const user = session?.user?.id ? await prisma.user.findUnique({ where: { id: session.user.id } }) : null;
+  const session = (await safeGetServerSession(authOptions as any)) as {
+    user?: { id?: string };
+  } | null;
+  const user = session?.user?.id
+    ? await prisma.user.findUnique({ where: { id: session.user.id } })
+    : null;
   const customerId = user?.stripeCustomerId;
   if (!customerId) return NextResponse.json({ error: 'no_customer' }, { status: 400 });
   const sessionPortal = await stripe.billingPortal.sessions.create({

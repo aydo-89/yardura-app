@@ -33,4 +33,3 @@ export function createWorker(handler: (data: { sampleId: string }) => Promise<vo
     { connection: redis }
   );
 }
-

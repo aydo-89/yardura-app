@@ -22,20 +22,31 @@ async function generatePdf(params: { orgId: string; customerId?: string | null; 
     take: 30,
     include: { scores: true },
   });
-  const weights = samples.map(s => s.weightG || 0).filter(Boolean);
-  const avgWeight = weights.length ? (weights.reduce((a,b)=>a+b,0)/weights.length) : 0;
+  const weights = samples.map((s) => s.weightG || 0).filter(Boolean);
+  const avgWeight = weights.length ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
   const alerts = await prisma.alert.findMany({ where: { orgId: params.orgId } });
 
-  draw(`Samples: ${samples.length}   Avg Weight: ${avgWeight.toFixed(1)} g   Alerts: ${alerts.length}`, 50, 672);
+  draw(
+    `Samples: ${samples.length}   Avg Weight: ${avgWeight.toFixed(1)} g   Alerts: ${alerts.length}`,
+    50,
+    672
+  );
 
   let y = 660;
   draw('Recent Samples:', 50, y);
   y -= 16;
   for (const s of samples) {
     const sc = s.scores[0];
-    draw(`${s.capturedAt.toISOString()}  wt:${s.weightG ?? '-'}g  color:${sc?.colorLabel ?? '-'}  cons:${sc?.consistencyLabel ?? '-'}`, 50, y);
+    draw(
+      `${s.capturedAt.toISOString()}  wt:${s.weightG ?? '-'}g  color:${sc?.colorLabel ?? '-'}  cons:${sc?.consistencyLabel ?? '-'}`,
+      50,
+      y
+    );
     y -= 14;
-    if (y < 60) { y = 740; pdfDoc.addPage([612, 792]); }
+    if (y < 60) {
+      y = 740;
+      pdfDoc.addPage([612, 792]);
+    }
   }
 
   const pdfBytes = await pdfDoc.save();
@@ -47,13 +58,17 @@ export async function GET(req: NextRequest) {
   const orgId = searchParams.get('orgId');
   const customerId = searchParams.get('customerId');
   const month = searchParams.get('month'); // YYYY-MM
-  if (!orgId || !month) return NextResponse.json({ error: 'orgId and month required' }, { status: 400 });
+  if (!orgId || !month)
+    return NextResponse.json({ error: 'orgId and month required' }, { status: 400 });
 
   const pdf = await generatePdf({ orgId, customerId, month });
   const path = `reports/${orgId}/${customerId || 'all'}/${month}.pdf`;
-  await supabaseAdmin.storage.from(process.env.STORAGE_BUCKET || 'stool-samples').upload(path, pdf, {
-    contentType: 'application/pdf', upsert: true,
-  });
+  await supabaseAdmin.storage
+    .from(process.env.STORAGE_BUCKET || 'stool-samples')
+    .upload(path, pdf, {
+      contentType: 'application/pdf',
+      upsert: true,
+    });
   const url = await createSignedUrl(process.env.STORAGE_BUCKET || 'stool-samples', path, 3600);
   return NextResponse.json({ url, path });
 }

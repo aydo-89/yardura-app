@@ -50,7 +50,10 @@ export async function POST(req: NextRequest) {
     const device = await (prisma as any).device.findUnique({ where: { id: data.deviceId } });
     console.log('Found device:', device);
     if (!device || device.orgId !== data.orgId) {
-      console.log('Device validation failed:', { device: !!device, orgMatch: device?.orgId === data.orgId });
+      console.log('Device validation failed:', {
+        device: !!device,
+        orgMatch: device?.orgId === data.orgId,
+      });
       return NextResponse.json({ error: 'Invalid device or org' }, { status: 401 });
     }
     const ok = await bcrypt.compare(data.deviceKey, device.apiKeyHash);
@@ -108,11 +111,14 @@ export async function POST(req: NextRequest) {
     console.error('ingest error:', e);
     console.error('Error message:', e?.message);
     console.error('Error stack:', e?.stack);
-    return NextResponse.json({
-      error: 'server_error',
-      message: e?.message || 'Unknown error',
-      stack: e?.stack || 'No stack'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'server_error',
+        message: e?.message || 'Unknown error',
+        stack: e?.stack || 'No stack',
+      },
+      { status: 500 }
+    );
   }
 }
 

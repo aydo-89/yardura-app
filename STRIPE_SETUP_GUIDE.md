@@ -1,6 +1,7 @@
 # Stripe Setup Guide for Yardura Dog Waste Removal Service
 
 This guide will walk you through setting up Stripe for your dog waste removal business with the following features:
+
 - ✅ Payment method collection during signup
 - ✅ Deferred billing (charge only after service completion)
 - ✅ Flexible service frequencies (weekly, bi-weekly, twice-weekly)
@@ -11,17 +12,20 @@ This guide will walk you through setting up Stripe for your dog waste removal bu
 ## 🔧 Step 1: Stripe Account Setup
 
 ### 1.1 Create Stripe Account
+
 1. Go to [https://dashboard.stripe.com/register](https://dashboard.stripe.com/register)
 2. Complete business verification
 3. Enable test mode for development
 
 ### 1.2 Get API Keys
+
 1. In Stripe Dashboard, go to **Developers → API Keys**
 2. Copy your:
    - **Publishable Key** (starts with `pk_test_`)
    - **Secret Key** (starts with `sk_test_`)
 
 ### 1.3 Create Webhook Endpoint
+
 1. In Stripe Dashboard, go to **Developers → Webhooks**
 2. Click **"Add endpoint"**
 3. Set URL: `https://yourdomain.com/api/stripe/webhook`
@@ -37,37 +41,45 @@ This guide will walk you through setting up Stripe for your dog waste removal bu
 ## 📦 Step 2: Create Products and Prices
 
 You'll need to create products and prices for all combinations of:
+
 - Service frequency: weekly, bi-weekly, twice-weekly, one-time
 - Yard size: small, medium, large, xlarge
 - Number of dogs: 1, 2, 3+
 
 ### 2.1 Create Products
+
 In Stripe Dashboard → **Products**:
 
 **Weekly Service Product:**
+
 - Name: "Weekly Dog Waste Removal Service"
 - ID: `prod_weekly_service`
 - Type: Service
 
 **Bi-Weekly Service Product:**
+
 - Name: "Bi-Weekly Dog Waste Removal Service"
 - ID: `prod_bi_weekly_service`
 - Type: Service
 
 **Twice Weekly Service Product:**
+
 - Name: "Twice Weekly Dog Waste Removal Service"
 - ID: `prod_twice_weekly_service`
 - Type: Service
 
 **One-Time Service Product:**
+
 - Name: "One-Time Dog Waste Removal Service"
 - ID: `prod_one_time_service`
 - Type: Service
 
 ### 2.2 Create Prices
+
 For each product, create prices following this pattern:
 
 **Weekly Service Prices:**
+
 ```
 Small yard, 1 dog: $20/week → ID: price_weekly_small_1dog
 Small yard, 2 dogs: $24/week → ID: price_weekly_small_2dog
@@ -102,12 +114,14 @@ DATABASE_URL=your_database_connection_string
 ## 🗄️ Step 4: Database Setup
 
 ### 4.1 Install Prisma (if not already installed)
+
 ```bash
 npm install prisma @prisma/client
 npx prisma init
 ```
 
 ### 4.2 Update `prisma/schema.prisma`
+
 ```prisma
 datasource db {
   provider = "postgresql"
@@ -159,6 +173,7 @@ model ServiceVisit {
 ```
 
 ### 4.3 Run Migrations
+
 ```bash
 npx prisma migrate dev --name init
 npx prisma generate
@@ -175,12 +190,12 @@ export const STRIPE_PRODUCTS = {
     id: 'prod_weekly_service',
     prices: {
       small: {
-        1: 'price_weekly_small_1dog',     // Your actual price ID
-        2: 'price_weekly_small_2dog',     // Your actual price ID
-        3: 'price_weekly_small_3dog',     // Your actual price ID
+        1: 'price_weekly_small_1dog', // Your actual price ID
+        2: 'price_weekly_small_2dog', // Your actual price ID
+        3: 'price_weekly_small_3dog', // Your actual price ID
       },
       // ... continue for all combinations
-    }
+    },
   },
   // ... continue for other frequencies
 };
@@ -203,6 +218,7 @@ The code already includes a Stripe payment form component. You'll need to integr
 ## 📋 Step 8: Business Operations Workflow
 
 ### Customer Signup Process:
+
 1. Customer fills out quote form
 2. System calculates pricing based on dogs, yard size, frequency
 3. Stripe Elements collects and saves payment method (no immediate charge)
@@ -210,12 +226,14 @@ The code already includes a Stripe payment form component. You'll need to integr
 5. First service visit is scheduled
 
 ### Service Completion Process:
+
 1. After completing service, mark visit as complete via dashboard
 2. System triggers payment using saved payment method
 3. Customer is charged for that specific visit
 4. Next service visit is automatically scheduled
 
 ### Cancellation/Rescheduling:
+
 1. Customer requests cancellation or reschedule
 2. System updates service visit status
 3. No charge for cancelled visits
@@ -224,6 +242,7 @@ The code already includes a Stripe payment form component. You'll need to integr
 ## 🧪 Step 9: Testing
 
 ### Test the Integration:
+
 1. Use Stripe test cards (e.g., `4242424242424242`)
 2. Test subscription creation
 3. Test service completion charging
@@ -233,6 +252,7 @@ The code already includes a Stripe payment form component. You'll need to integr
 ## 🚀 Step 10: Go Live
 
 ### Production Setup:
+
 1. Switch to live Stripe keys
 2. Update webhook URL to production domain
 3. Create live products and prices
@@ -242,6 +262,7 @@ The code already includes a Stripe payment form component. You'll need to integr
 ## 📞 Support and Next Steps
 
 Once you've completed the setup, you'll have:
+
 - ✅ Secure payment collection during signup
 - ✅ Deferred billing system
 - ✅ Flexible service scheduling
@@ -252,6 +273,7 @@ Once you've completed the setup, you'll have:
 ## 🔍 Need Help?
 
 If you encounter any issues:
+
 1. Check Stripe Dashboard logs
 2. Verify webhook endpoints are active
 3. Ensure all price IDs are correct
@@ -260,5 +282,3 @@ If you encounter any issues:
 The system is designed to be flexible and handle your unique business requirements for dog waste removal services with post-service billing.
 
 Would you like me to help you with any specific part of this setup or create additional features like a service management dashboard?
-
-

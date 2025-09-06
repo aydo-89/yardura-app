@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     // Synthetic scoring placeholder
     const rand = (min: number, max: number) => Math.random() * (max - min) + min;
-    const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+    const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
     const color = pick([
       'normal_brown',
       'very_dark_blackish',

@@ -1,5 +1,6 @@
 # Yardura Pricing Competitors Research
-*Research Date: August 30, 2025 | Data Sources: Public websites, pricing pages*
+
+_Research Date: August 30, 2025 | Data Sources: Public websites, pricing pages_
 
 ## Executive Summary
 
@@ -8,6 +9,7 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 ## Competitor Pricing Matrix
 
 ### ScoopyPoo (Edina/Bloomington)
+
 - **Website**: scoopypoo.net
 - **Service Area**: Edina, Bloomington, surrounding Twin Cities
 - **Pricing Structure**:
@@ -18,6 +20,7 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 - **Key Notes**: Prominent pricing on homepage, focuses on "professional" service
 
 ### Dog Gone Waste Removal (Twin Cities)
+
 - **Service Area**: Minneapolis, Richfield, Edina, Bloomington
 - **Pricing Structure**:
   - Weekly: $13.99 per dog
@@ -27,6 +30,7 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 - **Key Notes**: Very competitive pricing, emphasizes frequency flexibility
 
 ### POOP 911 (National Franchise)
+
 - **Service Area**: Twin Cities locations (Edina, Bloomington)
 - **Pricing Structure**:
   - "As low as $14.95/week" promotional pricing
@@ -35,6 +39,7 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 - **Key Notes**: Heavy promotion of low introductory pricing, multiple locations
 
 ### DoodyCalls (National)
+
 - **Service Area**: National coverage including Twin Cities
 - **Pricing Structure**:
   - "Starting as low as $12/visit" floor pricing
@@ -43,6 +48,7 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 - **Key Notes**: Emphasizes competitive introductory pricing
 
 ### JLS Lawn/Snow (Add-on Service)
+
 - **Service Area**: Twin Cities metro
 - **Pricing Structure**:
   - $19 per dog per visit (under ½ acre)
@@ -53,11 +59,13 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 ## Pricing Analysis
 
 ### Local Market Range
+
 - **Budget Tier**: $12-15 per visit ($48-60 monthly)
 - **Mid-Tier**: $16-19 per visit ($64-76 monthly)
 - **Premium Tier**: $20+ per visit ($80+ monthly)
 
 ### Yardura Positioning Strategy
+
 - **Target Price**: $20 weekly per dog (medium yard)
 - **Premium Justification**:
   - Eco diversion included (competitors may charge extra)
@@ -66,6 +74,7 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
   - Consistent quality standards
 
 ### Frequency Multipliers Analysis
+
 - **Bi-weekly (EOW)**: Competitors show 25-30% higher per-visit pricing
   - Dog Gone: Weekly $13.99 → EOW $18.99 (+35%)
   - ScoopyPoo: Weekly $18.50 → EOW $24.50 (+32%)
@@ -78,6 +87,7 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 ## Competitive Advantages
 
 ### Yardura Differentiators
+
 1. **Eco-Focused**: Composting and diversion included vs. competitors
 2. **Health Insights**: Basic stool analysis included
 3. **Technology**: App-based scheduling and tracking
@@ -85,6 +95,7 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 5. **Local Ownership**: Twin Cities focused vs. national franchises
 
 ### Risk Assessment
+
 - **Price Sensitivity**: Local market shows preference for $15-18 range
 - **Value Perception**: Need to clearly communicate eco + insights value
 - **Competition**: Multiple budget-focused competitors in market
@@ -92,42 +103,50 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 ## Recommended Pricing Structure
 
 ### Base Pricing (Weekly, Medium Yard)
+
 - 1 dog: $20.00
 - 2 dogs: $24.00 (+$4)
 - 3 dogs: $28.00 (+$4)
 - 4 dogs: $32.00 (+$4)
 
 ### Yard Size Adders
+
 - Small: No adder
 - Medium: No adder
 - Large: +$4 per visit
 - XL: +$8 per visit
 
 ### Frequency Multipliers
+
 - Weekly: ×1.0 (base)
 - Every-other-week: ×1.25 (+25% per visit)
 - Twice-weekly: ×0.9 (-10% per visit)
 
 ### Add-ons
+
 - Deodorizer: +$5 per visit
 - Litter box service: +$5 per visit
 
 ### Initial Clean
+
 - 2.5× per-visit rate (minimum $89)
 
 ## Implementation Notes
 
 ### Pricing Transparency
+
 - Show per-visit + monthly projections
 - Explain frequency multipliers clearly
 - Highlight included eco diversion value
 
 ### Competitor Monitoring
+
 - Track ScoopyPoo, Dog Gone pricing quarterly
 - Monitor POOP 911 promotions
 - Adjust positioning as market evolves
 
 ### Value Communication
+
 - Emphasize eco impact and health insights
 - Use testimonials showing long-term value
 - Highlight professional service quality
@@ -135,6 +154,7 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 ## Sources & Verification
 
 **Primary Sources**:
+
 - scoopypoo.net (accessed August 30, 2025)
 - doggonewasteremoval.com (accessed August 30, 2025)
 - poop911.com (accessed August 30, 2025)
@@ -146,5 +166,4 @@ Yardura positions as premium eco-focused service with slight premium pricing ($2
 
 ---
 
-*This competitive analysis informs Yardura's premium positioning strategy with clear value differentiation through eco diversion and health insights inclusion.*
-
+_This competitive analysis informs Yardura's premium positioning strategy with clear value differentiation through eco diversion and health insights inclusion._

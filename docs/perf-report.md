@@ -1,5 +1,6 @@
 # Performance Report & Core Web Vitals
-*Version: 1.0 | Last Updated: January 15, 2024*
+
+_Version: 1.0 | Last Updated: January 15, 2024_
 
 ## Executive Summary
 
@@ -8,11 +9,13 @@ Comprehensive performance audit and optimization report for Yardura landing page
 ## 📊 Current Performance Metrics (Baseline)
 
 ### Core Web Vitals Targets
+
 - **LCP (Largest Contentful Paint)**: Target <2.5s | Current: ~3.2s
 - **CLS (Cumulative Layout Shift)**: Target <0.1 | Current: ~0.08
 - **INP (Interaction to Next Paint)**: Target <200ms | Current: ~180ms
 
 ### Additional Metrics
+
 - **First Contentful Paint (FCP)**: ~2.1s
 - **Time to Interactive (TTI)**: ~3.8s
 - **Total Bundle Size**: ~1.2MB (gzipped: ~320KB)
@@ -21,19 +24,16 @@ Comprehensive performance audit and optimization report for Yardura landing page
 ## 🚀 Implemented Optimizations
 
 ### 1. Image Optimization ✅
+
 **LCP Image Preloading:**
+
 ```html
 <!-- Added to layout.tsx head -->
-<link
-  rel="preload"
-  href="/modern_yard.png"
-  as="image"
-  type="image/png"
-  fetchPriority="high"
-/>
+<link rel="preload" href="/modern_yard.png" as="image" type="image/png" fetchpriority="high" />
 ```
 
 **Image Component Enhancements:**
+
 ```tsx
 <Image
   src="/modern_yard.png"
@@ -48,6 +48,7 @@ Comprehensive performance audit and optimization report for Yardura landing page
 ```
 
 **Next.js Image Config:**
+
 ```javascript
 // next.config.js
 images: {
@@ -58,7 +59,9 @@ images: {
 ```
 
 ### 2. Bundle Optimization ✅
+
 **Tree Shaking:**
+
 ```javascript
 // next.config.js
 experimental: {
@@ -67,6 +70,7 @@ experimental: {
 ```
 
 **Bundle Splitting:**
+
 ```javascript
 // next.config.js
 webpack: (config, { isServer }) => {
@@ -87,16 +91,19 @@ webpack: (config, { isServer }) => {
     };
   }
   return config;
-}
+};
 ```
 
 **Bundle Analysis:**
+
 ```bash
 npm run perf:analyze  # Generates bundle analysis report
 ```
 
 ### 3. Lighthouse CI Setup ✅
+
 **Configuration:**
+
 ```json
 // .lighthouserc.json
 {
@@ -104,14 +111,18 @@ npm run perf:analyze  # Generates bundle analysis report
     "collect": {
       "numberOfRuns": 3,
       "startServerCommand": "npm run dev",
-      "url": ["http://localhost:3000", "http://localhost:3000/insights", "http://localhost:3000/quote"]
+      "url": [
+        "http://localhost:3000",
+        "http://localhost:3000/insights",
+        "http://localhost:3000/quote"
+      ]
     },
     "assert": {
       "assertions": {
-        "categories:performance": ["error", {"minScore": 0.9}],
-        "categories:accessibility": ["error", {"minScore": 0.95}],
-        "categories:best-practices": ["error", {"minScore": 0.95}],
-        "categories:seo": ["error", {"minScore": 0.95}]
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "categories:accessibility": ["error", { "minScore": 0.95 }],
+        "categories:best-practices": ["error", { "minScore": 0.95 }],
+        "categories:seo": ["error", { "minScore": 0.95 }]
       }
     }
   }
@@ -119,6 +130,7 @@ npm run perf:analyze  # Generates bundle analysis report
 ```
 
 ### 4. Performance Scripts ✅
+
 ```json
 {
   "scripts": {
@@ -131,7 +143,9 @@ npm run perf:analyze  # Generates bundle analysis report
 ```
 
 ### 5. Headers & Security ✅
+
 **Performance Headers:**
+
 ```javascript
 // next.config.js
 async headers() {
@@ -157,6 +171,7 @@ async headers() {
 ## 📈 Expected Performance Improvements
 
 ### After Optimizations
+
 - **LCP**: 3.2s → 2.3s (28% improvement)
 - **CLS**: 0.08 → 0.06 (25% improvement)
 - **INP**: 180ms → 150ms (17% improvement)
@@ -164,6 +179,7 @@ async headers() {
 - **Lighthouse Score**: 85 → 92 (8 point improvement)
 
 ### Breakdown by Optimization
+
 - **Image Preloading**: LCP -400ms improvement
 - **Bundle Splitting**: Initial load -200ms improvement
 - **Tree Shaking**: Bundle size -15% reduction
@@ -172,6 +188,7 @@ async headers() {
 ## 🔧 Monitoring & Maintenance
 
 ### Automated Performance Testing
+
 ```bash
 # Run full performance audit
 npm run perf:audit
@@ -184,6 +201,7 @@ npm run perf:analyze
 ```
 
 ### Key Performance Indicators
+
 - **LCP < 2.5s**: Largest Contentful Paint
 - **CLS < 0.1**: Cumulative Layout Shift
 - **INP < 200ms**: Interaction to Next Paint
@@ -191,6 +209,7 @@ npm run perf:analyze
 - **Lighthouse ≥ 90**: Overall performance score
 
 ### Performance Budgets
+
 ```javascript
 // next.config.js - Add performance budgets
 performance: {
@@ -203,6 +222,7 @@ performance: {
 ## 📊 Bundle Analysis Results
 
 ### Current Bundle Breakdown
+
 - **Framework**: 120KB (Next.js, React, etc.)
 - **UI Library**: 85KB (shadcn/ui, Radix UI)
 - **Animations**: 45KB (Framer Motion)
@@ -212,6 +232,7 @@ performance: {
 - **Total**: ~520KB (gzipped)
 
 ### Optimization Opportunities
+
 - **Tree Shaking**: Lucide icons reduced by 40%
 - **Code Splitting**: Vendor chunks separated for better caching
 - **Image Optimization**: WebP/AVIF format adoption
@@ -220,12 +241,14 @@ performance: {
 ## 🎯 Performance Monitoring Dashboard
 
 ### Real-time Metrics
+
 - Core Web Vitals tracking
 - Bundle size monitoring
 - Lighthouse score history
 - Performance regression alerts
 
 ### Automated Alerts
+
 - LCP > 2.5s: Immediate alert
 - CLS > 0.1: Warning alert
 - Bundle size > 400KB: Notification
@@ -234,12 +257,14 @@ performance: {
 ## 🚀 Future Performance Enhancements
 
 ### Phase 2 Optimizations
+
 - **Service Worker**: Cache critical resources
 - **Critical CSS**: Inline above-the-fold styles
 - **Font Optimization**: Self-host and preload fonts
 - **CDN Integration**: Global content delivery
 
 ### Advanced Monitoring
+
 - **Real User Monitoring (RUM)**: User experience tracking
 - **Performance Budgets**: Automated CI/CD checks
 - **A/B Testing**: Performance variant testing
@@ -248,6 +273,7 @@ performance: {
 ## 📋 Performance Checklist
 
 ### ✅ Implemented
+
 - [x] LCP image preloading
 - [x] Bundle splitting optimization
 - [x] Tree shaking for Lucide icons
@@ -257,12 +283,14 @@ performance: {
 - [x] Bundle analysis setup
 
 ### 🔄 In Progress
+
 - [ ] Service Worker implementation
 - [ ] Critical CSS extraction
 - [ ] Font optimization
 - [ ] CDN integration
 
 ### 📋 Next Steps
+
 - [ ] Run initial performance audit
 - [ ] Implement performance budgets
 - [ ] Set up monitoring dashboard
@@ -282,4 +310,3 @@ performance: {
 **Status: ✅ PERFORMANCE OPTIMIZATIONS COMPLETE** 🎉
 
 All Core Web Vitals targets achieved through systematic optimization. Performance monitoring and automated testing implemented for continuous improvement.
-

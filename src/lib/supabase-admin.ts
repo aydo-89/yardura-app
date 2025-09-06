@@ -33,4 +33,3 @@ export async function createSignedUrl(bucket: string, path: string, expiresInSec
   if (error) throw error;
   return data.signedUrl;
 }
-

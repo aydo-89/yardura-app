@@ -1,5 +1,6 @@
 # Analytics & Testing Framework
-*Version: 1.0 | Last Updated: January 15, 2024*
+
+_Version: 1.0 | Last Updated: January 15, 2024_
 
 ## Executive Summary
 
@@ -10,6 +11,7 @@ Comprehensive analytics implementation and A/B testing framework to optimize con
 ### Google Analytics 4 (GA4) Setup
 
 #### GA4 Configuration
+
 ```javascript
 // lib/analytics.ts - Enhanced tracking
 import { track } from '@/lib/analytics';
@@ -79,7 +81,9 @@ export const analytics = {
 ```
 
 #### GA4 Events to Track
+
 **Conversion Events:**
+
 - `quote_start` - User initiates quote process
 - `quote_step_1` - Basics form completion
 - `quote_step_2` - Contact info completion
@@ -87,12 +91,14 @@ export const analytics = {
 - `quote_complete` - Final submission
 
 **Engagement Events:**
+
 - `scroll_depth` - Track user engagement depth
 - `time_on_page` - Measure content consumption
 - `button_click` - Track CTA performance
 - `form_interaction` - Monitor form field engagement
 
 **Local SEO Events:**
+
 - `phone_click` - Track local phone call intent
 - `direction_request` - GBP directions clicks
 - `local_search` - Minneapolis-specific searches
@@ -100,6 +106,7 @@ export const analytics = {
 ### Search Console Integration
 
 #### GSC Setup Checklist
+
 - [ ] Verify domain ownership
 - [ ] Submit XML sitemap
 - [ ] Set up local search queries tracking
@@ -107,23 +114,26 @@ export const analytics = {
 - [ ] Enable Core Web Vitals tracking
 
 #### GSC Custom Events
+
 ```javascript
 // Track local search performance
 track('local_search_query', {
   query: searchQuery,
   location: 'Minneapolis',
-  results_position: position
+  results_position: position,
 });
 ```
 
 ### Conversion Funnel Setup
 
 #### Primary Conversion Funnel
+
 ```
 Homepage Visit → Quote Start → Step 1 → Step 2 → Step 3 → Account Created → Success
 ```
 
 #### Micro-Conversion Funnels
+
 ```
 Blog Visit → Insights Click → Quote Start
 Pricing Page → Quote Start
@@ -135,6 +145,7 @@ Local Search → GBP Profile → Contact
 ### Test Planning Template
 
 #### Test Structure
+
 ```javascript
 interface ABTest {
   id: string;
@@ -164,8 +175,10 @@ interface ABTest {
 ### Planned A/B Tests
 
 #### Test 1: Hero Headline Optimization
+
 **Hypothesis:** Local-first headlines will increase quote starts by 25%
 **Variants:**
+
 - Control: "Poop-free yard. Smarter Insights."
 - Variant A: "Clean Yards, Healthy Dogs – Minneapolis"
 - Variant B: "Minneapolis Dog Waste Removal Experts"
@@ -173,8 +186,10 @@ interface ABTest {
 **Metrics:** Quote starts, time on page, bounce rate
 
 #### Test 2: CTA Button Text
+
 **Hypothesis:** Benefit-focused CTAs convert 20% better
 **Variants:**
+
 - Control: "Get My Quote"
 - Variant A: "Get Free Minneapolis Quote"
 - Variant B: "Start Clean Yard Service"
@@ -182,8 +197,10 @@ interface ABTest {
 **Metrics:** Click-through rate, quote completion rate
 
 #### Test 3: Pricing Display
+
 **Hypothesis:** Transparent pricing increases trust and conversions
 **Variants:**
+
 - Control: "Starting at $20/visit"
 - Variant A: "$20-35/visit (based on yard size)"
 - Variant B: "See Minneapolis Pricing"
@@ -191,8 +208,10 @@ interface ABTest {
 **Metrics:** Quote starts from pricing section, trust signals
 
 #### Test 4: Trust Signals Placement
+
 **Hypothesis:** Early trust signals reduce anxiety and increase conversions
 **Variants:**
+
 - Control: Trust signals after hero
 - Variant A: Trust signals in hero
 - Variant B: Trust signals as progress indicators
@@ -200,8 +219,10 @@ interface ABTest {
 **Metrics:** Conversion rate, form abandonment rate
 
 #### Test 5: Local Content Emphasis
+
 **Hypothesis:** Minneapolis-focused content resonates better locally
 **Variants:**
+
 - Control: General Twin Cities messaging
 - Variant A: Specific Minneapolis neighborhoods
 - Variant B: Local landmarks and proof points
@@ -211,6 +232,7 @@ interface ABTest {
 ### Test Execution Framework
 
 #### Test Implementation
+
 ```typescript
 // components/ABTest.tsx
 'use client';
@@ -238,13 +260,14 @@ export function ABTest({ testId, variants, fallback }: ABTestProps) {
 ```
 
 #### Test Analytics Integration
+
 ```typescript
 // Track test performance
 track('ab_test_conversion', {
   test_id: 'hero_headline_test',
   variant: 'variant_a',
   conversion_type: 'quote_start',
-  user_id: anonymousId
+  user_id: anonymousId,
 });
 ```
 
@@ -253,6 +276,7 @@ track('ab_test_conversion', {
 ### Core Web Vitals Tracking
 
 #### CWV Implementation
+
 ```typescript
 // lib/web-vitals.ts
 import { track } from './analytics';
@@ -262,7 +286,7 @@ export function trackWebVitals(metric: any) {
     name: metric.name,
     value: metric.value,
     rating: metric.rating,
-    navigation_type: metric.navigationType
+    navigation_type: metric.navigationType,
   });
 }
 
@@ -281,6 +305,7 @@ if (typeof window !== 'undefined') {
 ### SEO Performance Tracking
 
 #### Ranking Tracking
+
 ```typescript
 // Track keyword rankings
 track('seo_ranking', {
@@ -288,18 +313,19 @@ track('seo_ranking', {
   position: 3,
   search_engine: 'google',
   device: 'desktop',
-  location: 'Minneapolis, MN'
+  location: 'Minneapolis, MN',
 });
 ```
 
 #### SERP Features Tracking
+
 ```typescript
 // Track rich results appearance
 track('serp_feature', {
   feature_type: 'local_pack',
   keyword: 'dog waste removal Minneapolis',
   position: 1,
-  competitors_count: 2
+  competitors_count: 2,
 });
 ```
 
@@ -308,6 +334,7 @@ track('serp_feature', {
 ### Heatmap Integration
 
 #### Hotjar Setup (Recommended)
+
 ```javascript
 // lib/heatmaps.ts
 export const heatmaps = {
@@ -336,6 +363,7 @@ export const heatmaps = {
 ### Session Recording Setup
 
 #### Session Recording Integration
+
 - Record 5% of sessions for qualitative analysis
 - Focus on high-value user journeys
 - Identify friction points in quote flow
@@ -346,6 +374,7 @@ export const heatmaps = {
 ### Multi-Touch Attribution Setup
 
 #### Attribution Model
+
 ```typescript
 // Track conversion attribution
 track('conversion_attribution', {
@@ -356,21 +385,21 @@ track('conversion_attribution', {
       medium: 'organic',
       campaign: '(not set)',
       keyword: 'dog waste removal Minneapolis',
-      timestamp: '2024-01-15T10:00:00Z'
+      timestamp: '2024-01-15T10:00:00Z',
     },
     {
       source: 'direct',
       page: '/insights/dog-poop-color-health',
-      timestamp: '2024-01-15T10:05:00Z'
+      timestamp: '2024-01-15T10:05:00Z',
     },
     {
       source: 'direct',
       page: '/quote',
-      timestamp: '2024-01-15T10:10:00Z'
-    }
+      timestamp: '2024-01-15T10:10:00Z',
+    },
   ],
   conversion_value: 89,
-  attribution_model: 'first_click' // or 'last_click', 'linear', etc.
+  attribution_model: 'first_click', // or 'last_click', 'linear', etc.
 });
 ```
 
@@ -379,18 +408,21 @@ track('conversion_attribution', {
 ### Analytics Dashboard Structure
 
 #### Executive Dashboard
+
 - Overall conversion rate
 - Revenue attribution
 - Customer acquisition cost
 - LTV vs CAC ratio
 
 #### Marketing Dashboard
+
 - Campaign performance
 - Channel attribution
 - SEO rankings
 - Local search performance
 
 #### Product Dashboard
+
 - Feature usage
 - User flow completion
 - Form abandonment rates
@@ -399,12 +431,14 @@ track('conversion_attribution', {
 ### Automated Reporting
 
 #### Weekly SEO Report
+
 - Keyword ranking changes
 - Organic traffic trends
 - Local pack performance
 - GBP insights summary
 
 #### Monthly Conversion Report
+
 - Conversion rate trends
 - A/B test results
 - Customer journey analysis
@@ -413,12 +447,14 @@ track('conversion_attribution', {
 ## Privacy & Compliance
 
 ### GDPR & CCPA Compliance
+
 - [ ] Cookie consent management
 - [ ] Data retention policies
 - [ ] User data export/deletion
 - [ ] Privacy policy updates
 
 ### Analytics Data Retention
+
 - Event data: 26 months
 - User data: 38 months (Google Analytics default)
 - Custom retention for sensitive data
@@ -426,24 +462,28 @@ track('conversion_attribution', {
 ## Implementation Timeline
 
 ### Phase 1: Foundation (Week 1)
+
 - [ ] GA4 setup and configuration
 - [ ] Search Console integration
 - [ ] Basic event tracking implementation
 - [ ] Privacy compliance setup
 
 ### Phase 2: Advanced Tracking (Week 2)
+
 - [ ] Conversion funnel setup
 - [ ] Custom event implementation
 - [ ] Attribution modeling
 - [ ] Heatmap integration
 
 ### Phase 3: Testing Framework (Week 3)
+
 - [ ] A/B testing infrastructure
 - [ ] Test planning and prioritization
 - [ ] Analytics dashboard setup
 - [ ] Automated reporting
 
 ### Phase 4: Optimization (Ongoing)
+
 - [ ] A/B test execution and analysis
 - [ ] Performance monitoring
 - [ ] Dashboard maintenance
@@ -454,18 +494,21 @@ track('conversion_attribution', {
 ## Success Metrics
 
 ### Analytics Implementation KPIs
+
 - **Data Accuracy:** 95%+ event tracking coverage
 - **Real-time Monitoring:** <5 minute data latency
 - **Conversion Attribution:** 90%+ touchpoint coverage
 - **Privacy Compliance:** 100% GDPR/CCPA compliant
 
 ### Testing Framework KPIs
+
 - **Test Velocity:** 2-3 tests running simultaneously
 - **Statistical Significance:** 95% confidence level
 - **Implementation Speed:** <1 week from idea to live
 - **Conversion Impact:** 15-25% improvement per quarter
 
 ### Overall Analytics ROI
+
 - **Conversion Rate:** +30% through data-driven optimization
 - **Customer Acquisition Cost:** -20% through attribution insights
 - **Revenue Attribution:** 85%+ of conversions properly attributed
@@ -473,5 +516,4 @@ track('conversion_attribution', {
 
 ---
 
-*Comprehensive analytics and testing framework for data-driven growth optimization.*
-
+_Comprehensive analytics and testing framework for data-driven growth optimization._

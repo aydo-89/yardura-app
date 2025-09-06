@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,12 +18,15 @@ export default function BillingPage() {
   return (
     <div className="container py-8">
       <Card>
-        <CardHeader><CardTitle>Billing</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Billing</CardTitle>
+        </CardHeader>
         <CardContent>
-          <Button onClick={onOpenPortal} disabled={loading}>Open Customer Portal</Button>
+          <Button onClick={onOpenPortal} disabled={loading}>
+            Open Customer Portal
+          </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
-

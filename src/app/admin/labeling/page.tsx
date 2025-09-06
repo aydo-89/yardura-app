@@ -30,7 +30,9 @@ export default async function LabelingPage() {
         {samples.map((s) => (
           <Card key={s.id}>
             <CardHeader>
-              <CardTitle className="text-sm">{s.id.slice(0, 8)} · {s.capturedAt.toISOString().slice(0,10)}</CardTitle>
+              <CardTitle className="text-sm">
+                {s.id.slice(0, 8)} · {s.capturedAt.toISOString().slice(0, 10)}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {s.imageUrl ? (
@@ -50,26 +52,65 @@ export default async function LabelingPage() {
                     split: 'train',
                     colorLabel: formData.get('colorLabel') as string,
                     consistency: formData.get('consistency') as string,
-                    contentFlags: (formData.get('contentFlags') as string || '').split(',').map(v=>v.trim()).filter(Boolean),
+                    contentFlags: ((formData.get('contentFlags') as string) || '')
+                      .split(',')
+                      .map((v) => v.trim())
+                      .filter(Boolean),
                     freshness: formData.get('freshness') as string,
                     notStool: formData.get('notStool') === 'on',
                     notes: formData.get('notes') as string,
                   };
-                  await fetch('/api/admin/labeling/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                  await fetch('/api/admin/labeling/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                  });
                   revalidatePath('/admin/labeling');
                 }}
               >
                 <div className="space-y-2">
-                  <input name="colorLabel" placeholder="color" className="w-full border p-1 rounded" defaultValue={s.groundTruth?.[0]?.colorLabel || ''} />
-                  <input name="consistency" placeholder="consistency" className="w-full border p-1 rounded" defaultValue={s.groundTruth?.[0]?.consistency || ''} />
-                  <input name="contentFlags" placeholder="flags (comma)" className="w-full border p-1 rounded" defaultValue={s.groundTruth?.[0]?.contentFlags || ''} />
-                  <input name="freshness" placeholder="fresh|stale|old" className="w-full border p-1 rounded" defaultValue={s.groundTruth?.[0]?.freshness || ''} />
+                  <input
+                    name="colorLabel"
+                    placeholder="color"
+                    className="w-full border p-1 rounded"
+                    defaultValue={s.groundTruth?.[0]?.colorLabel || ''}
+                  />
+                  <input
+                    name="consistency"
+                    placeholder="consistency"
+                    className="w-full border p-1 rounded"
+                    defaultValue={s.groundTruth?.[0]?.consistency || ''}
+                  />
+                  <input
+                    name="contentFlags"
+                    placeholder="flags (comma)"
+                    className="w-full border p-1 rounded"
+                    defaultValue={s.groundTruth?.[0]?.contentFlags || ''}
+                  />
+                  <input
+                    name="freshness"
+                    placeholder="fresh|stale|old"
+                    className="w-full border p-1 rounded"
+                    defaultValue={s.groundTruth?.[0]?.freshness || ''}
+                  />
                   <label className="text-sm flex items-center gap-2">
-                    <input type="checkbox" name="notStool" defaultChecked={s.groundTruth?.[0]?.notStool || false} /> Not stool
+                    <input
+                      type="checkbox"
+                      name="notStool"
+                      defaultChecked={s.groundTruth?.[0]?.notStool || false}
+                    />{' '}
+                    Not stool
                   </label>
-                  <input name="notes" placeholder="notes" className="w-full border p-1 rounded" defaultValue={s.groundTruth?.[0]?.notes || ''} />
+                  <input
+                    name="notes"
+                    placeholder="notes"
+                    className="w-full border p-1 rounded"
+                    defaultValue={s.groundTruth?.[0]?.notes || ''}
+                  />
                 </div>
-                <Button type="submit" className="w-full mt-2">Save</Button>
+                <Button type="submit" className="w-full mt-2">
+                  Save
+                </Button>
               </form>
             </CardContent>
           </Card>
@@ -78,4 +119,3 @@ export default async function LabelingPage() {
     </div>
   );
 }
-

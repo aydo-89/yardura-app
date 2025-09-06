@@ -15,8 +15,12 @@ export default async function SamplesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Samples</h1>
         <div className="flex gap-2">
-          <a href="/api/admin/samples/export"><Button variant="outline">Export Samples</Button></a>
-          <a href="/api/admin/labeling/export"><Button variant="outline">Export GroundTruth</Button></a>
+          <a href="/api/admin/samples/export">
+            <Button variant="outline">Export Samples</Button>
+          </a>
+          <a href="/api/admin/labeling/export">
+            <Button variant="outline">Export GroundTruth</Button>
+          </a>
         </div>
       </div>
 
@@ -24,10 +28,14 @@ export default async function SamplesPage() {
         {samples.map((s) => (
           <Card key={s.id}>
             <CardHeader>
-              <CardTitle className="text-sm">{s.id.slice(0, 8)} · {s.capturedAt.toISOString().slice(0,10)}</CardTitle>
+              <CardTitle className="text-sm">
+                {s.id.slice(0, 8)} · {s.capturedAt.toISOString().slice(0, 10)}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xs text-slate-600 break-all mb-2">{s.imageUrl || 'no image'}</div>
+              <div className="text-xs text-slate-600 break-all mb-2">
+                {s.imageUrl || 'no image'}
+              </div>
               <div className="text-sm mb-2">
                 <div>Weight: {s.weightG ?? '—'} g</div>
                 <div>Moisture: {s.moistureRaw ?? '—'}</div>
@@ -37,11 +45,19 @@ export default async function SamplesPage() {
                 <div>Consistency: {s.scores[0]?.consistencyLabel ?? '—'}</div>
                 <div>Flags: {s.scores[0]?.contentFlags ?? '—'}</div>
               </div>
-              <form action={async () => {
-                'use server';
-                await fetch('/api/admin/samples/rescore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sampleId: s.id }) });
-              }}>
-                <Button type="submit" variant="secondary" className="w-full">Re-score</Button>
+              <form
+                action={async () => {
+                  'use server';
+                  await fetch('/api/admin/samples/rescore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sampleId: s.id }),
+                  });
+                }}
+              >
+                <Button type="submit" variant="secondary" className="w-full">
+                  Re-score
+                </Button>
               </form>
             </CardContent>
           </Card>
@@ -50,4 +66,3 @@ export default async function SamplesPage() {
     </div>
   );
 }
-
