@@ -158,7 +158,7 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
               variants={cardHoverVariants}
               whileHover="hover"
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="p-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-soft"
+              className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-soft"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -266,7 +266,7 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
           <motion.div
             variants={cardHoverVariants}
             whileHover="hover"
-            className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-slate-200/60 shadow-soft"
+            className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-soft"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-accent-soft rounded-xl">
@@ -284,7 +284,7 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
           <motion.div
             variants={cardHoverVariants}
             whileHover="hover"
-            className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-slate-200/60 shadow-soft"
+            className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-soft"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-accent-soft rounded-xl">
@@ -302,7 +302,7 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
           <motion.div
             variants={cardHoverVariants}
             whileHover="hover"
-            className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-slate-200/60 shadow-soft"
+            className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-soft"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-accent-soft rounded-xl">
@@ -387,7 +387,7 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
               <motion.div
                 key={item.condition}
                 variants={itemVariants}
-                className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-slate-200/60 shadow-soft hover:shadow-md transition-all duration-300"
+                className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-soft hover:shadow-md transition-all duration-300"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className={`p-2 bg-slate-100 rounded-xl ${item.color}`}>

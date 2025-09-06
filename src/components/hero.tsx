@@ -175,7 +175,7 @@ export default function Hero() {
               </motion.a>
 
               <motion.a
-                href="#how"
+                href="#services"
                 data-analytics="hero_how_it_works"
                 className="px-6 py-3 rounded-xl border border-accent hover:bg-accent-soft font-semibold transition-all duration-200"
                 whileHover={{ scale: 1.02 }}
@@ -203,7 +203,7 @@ export default function Hero() {
             </div>
 
             {/* Customer testimonial preview */}
-            <div className="mt-6 p-4 bg-white/70 rounded-xl border border-brand-200">
+            <div className="mt-6 p-4 bg-white rounded-xl border border-brand-200">
               <div className="flex items-start gap-3">
                 <div className="size-10 bg-brand-100 rounded-full flex items-center justify-center">
                   <Users className="size-5 text-brand-600" />
