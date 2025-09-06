@@ -132,7 +132,7 @@ Create a `.env.local` file in the root directory:
 
 ```env
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/yardura_db"
+# DATABASE_URL="postgresql://username:password@localhost:5432/yardura_db"
 
 # NextAuth.js
 NEXTAUTH_URL=http://localhost:3002
