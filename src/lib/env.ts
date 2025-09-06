@@ -36,6 +36,14 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  STORAGE_BUCKET: z.string().optional(),
+
+  // Optional: Redis (queues/rate limits)
+  REDIS_URL: z.string().optional(),
+
+  // Optional: Edge device provisioning
+  EDGE_DEVICE_ISSUER: z.string().optional(),
+  JWT_SIGNING_KEY: z.string().optional(),
 
   // reCAPTCHA configuration
   NEXT_PUBLIC_RECAPTCHA_SITE_KEY: z.string().optional(),
@@ -65,6 +73,11 @@ const envSchema = z.object({
   // Analytics (optional)
   NEXT_PUBLIC_GA_TRACKING_ID: z.string().optional(),
   NEXT_PUBLIC_GTM_ID: z.string().optional(),
+  NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
+  NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
+
+  // Sentry (optional)
+  SENTRY_DSN: z.string().optional(),
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).optional().default('info'),
