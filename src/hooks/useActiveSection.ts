@@ -37,3 +37,4 @@ export function useActiveSection(sectionIds: string[], rootMargin = '-40% 0px -5
 
   return activeId;
 }
+

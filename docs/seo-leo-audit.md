@@ -448,3 +448,4 @@ Homepage (/) ← All pages
 ---
 
 _Audit completed with automated analysis and manual review. Ready for implementation._
+

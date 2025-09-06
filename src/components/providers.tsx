@@ -9,3 +9,4 @@ interface ProvidersProps {
 export default function Providers({ children }: ProvidersProps) {
   return <SessionProvider>{children}</SessionProvider>;
 }
+

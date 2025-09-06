@@ -15,3 +15,4 @@ export function track(eventName: string, payload: AnalyticsPayload = {}) {
     }
   }
 }
+

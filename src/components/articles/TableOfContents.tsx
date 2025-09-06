@@ -41,3 +41,4 @@ export default function TableOfContents({ items, className = '' }: TableOfConten
     </div>
   );
 }
+

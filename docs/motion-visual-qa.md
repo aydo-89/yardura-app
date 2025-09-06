@@ -409,3 +409,4 @@ All motion and visual systems have been audited and optimized:
 The Yardura landing page now delivers a **Series-A quality** animation experience that enhances rather than detracts from the user journey.
 
 **Status: ✅ APPROVED FOR PRODUCTION** 🎉
+

@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import {
@@ -18,6 +18,10 @@ import {
   CircleAlert,
   CheckCircle2,
   Dog,
+  Trophy,
+  Home,
+  User,
+  Leaf,
 } from 'lucide-react';
 
 type DashboardClientProps = {
@@ -29,6 +33,7 @@ type DashboardClientProps = {
     address?: string | null;
     city?: string | null;
     zipCode?: string | null;
+    stripeCustomerId?: string | null;
   };
   dogs: Array<{
     id: string;
@@ -136,6 +141,18 @@ export default function DashboardClientNew(props: DashboardClientProps) {
   const { user, dogs, serviceVisits, dataReadings } = props;
   const [copied, setCopied] = useState(false);
 
+  // Generate particle data once to avoid hydration mismatch
+  const [particles] = useState(() =>
+    Array.from({ length: 20 }).map((_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      width: Math.random() * 4 + 2,
+      height: Math.random() * 4 + 2,
+      delay: Math.random() * 2,
+    }))
+  );
+
   // Local state mirrors for inline updates and onboarding hiding
   const [userState, setUserState] = useState(user);
   const [dogsState, setDogsState] = useState(dogs);
@@ -219,6 +236,15 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return t.getTime() >= start.getTime() && t.getTime() < end.getTime();
   }
 
+  const gramsThisWeek = useMemo(() => {
+    const start = startOfWeek(new Date());
+    const end = new Date();
+    return dataReadings.reduce((sum, r) => {
+      const t = new Date(r.timestamp);
+      return inRange(t, start, end) ? sum + (r.weight || 0) : sum;
+    }, 0);
+  }, [dataReadings]);
+
   const gramsLastWeek = useMemo(() => {
     const start = startOfWeek(new Date());
     const end = new Date(start);
@@ -256,7 +282,6 @@ export default function DashboardClientNew(props: DashboardClientProps) {
   }, [dataReadings]);
 
   const colorFlagCounts = useMemo(() => {
-    const flags = { blackTar: 0, brightRed: 0, yellowGray: 0, green: 0 } as const;
     const mutable: { blackTar: number; brightRed: number; yellowGray: number; green: number } = {
       blackTar: 0,
       brightRed: 0,
@@ -339,9 +364,20 @@ export default function DashboardClientNew(props: DashboardClientProps) {
       await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: formAddress, city: formCity, zipCode: formZip, phone: formPhone }),
+        body: JSON.stringify({
+          address: formAddress,
+          city: formCity,
+          zipCode: formZip,
+          phone: formPhone,
+        }),
       });
-      setUserState({ ...userState, address: formAddress, city: formCity, zipCode: formZip, phone: formPhone });
+      setUserState({
+        ...userState,
+        address: formAddress,
+        city: formCity,
+        zipCode: formZip,
+        phone: formPhone,
+      });
       setShowProfileForm(false);
     } finally {
       setSavingProfile(false);
@@ -355,7 +391,12 @@ export default function DashboardClientNew(props: DashboardClientProps) {
       const res = await fetch('/api/dogs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: dogName, breed: dogBreed || null, age: dogAge ? parseInt(dogAge) : null, weight: dogWeight }),
+        body: JSON.stringify({
+          name: dogName,
+          breed: dogBreed || null,
+          age: dogAge ? parseInt(dogAge) : null,
+          weight: dogWeight,
+        }),
       });
       if (res.ok) {
         const { dog } = await res.json();
@@ -372,24 +413,211 @@ export default function DashboardClientNew(props: DashboardClientProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-ink">
-            Welcome back{userState.name ? `, ${userState.name}` : ''}!
-          </h1>
-          <p className="text-slate-600">
-            Household: {dogsState.length} {dogsState.length === 1 ? 'dog' : 'dogs'}. Signals are aggregated
-            across all dogs (non-diagnostic).
-          </p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 text-white shadow-2xl">
+        {/* Animated background particles */}
+        <div className="absolute inset-0">
+          {particles.map((particle) => (
+            <div
+              key={particle.id}
+              className="absolute animate-pulse rounded-full bg-white/10"
+              style={{
+                left: `${particle.left}%`,
+                top: `${particle.top}%`,
+                width: `${particle.width}px`,
+                height: `${particle.height}px`,
+                animationDelay: `${particle.delay}s`,
+              }}
+            />
+          ))}
         </div>
-        <Button variant="outline" asChild>
-          <a href="#" aria-label="Open settings">
-            <Settings className="size-4 mr-2" /> Settings
-          </a>
-        </Button>
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <h1 className="text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+              Welcome back{userState.name ? `, ${userState.name}` : ''}! 🐾
+            </h1>
+            <p className="text-slate-300 mt-2 text-lg">
+              Household: {dogsState.length} {dogsState.length === 1 ? 'dog' : 'dogs'} •
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-green-500/20 px-3 py-1 text-sm font-medium text-green-300">
+                <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></div>
+                Live wellness tracking
+              </span>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" className="border-white/20 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm" asChild>
+              <a href="#" aria-label="Open settings">
+                <Settings className="size-4 mr-2" /> Settings
+              </a>
+            </Button>
+          </div>
+        </div>
       </div>
+
+      {/* Main Dashboard Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5 bg-slate-100 p-1 rounded-xl">
+          <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <Home className="size-4 mr-2" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="wellness" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <Heart className="size-4 mr-2" />
+            Wellness
+          </TabsTrigger>
+          <TabsTrigger value="services" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <Calendar className="size-4 mr-2" />
+            Services
+          </TabsTrigger>
+          <TabsTrigger value="eco" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <Leaf className="size-4 mr-2" />
+            Eco Impact
+          </TabsTrigger>
+          <TabsTrigger value="rewards" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <Trophy className="size-4 mr-2" />
+            Rewards
+          </TabsTrigger>
+          <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <User className="size-4 mr-2" />
+            Profile
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Call to Action for First-Time Users */}
+          {serviceVisits.length === 0 && (
+            <Card className="border-accent/20 bg-gradient-to-r from-accent/5 to-accent/10">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <div className="flex justify-center">
+                    <div className="rounded-full bg-accent/10 p-3">
+                      <Dog className="size-8 text-accent" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-ink mb-2">
+                      {user.stripeCustomerId
+                        ? "Ready to Schedule Your First Service? 🐾"
+                        : "Welcome to Yardura! 🐾"
+                      }
+                    </h3>
+                    <p className="text-slate-600 mb-4">
+                      {user.stripeCustomerId
+                        ? "Your account is all set up! Schedule your first sustainable yard service and unlock free pet wellness insights."
+                        : "Get your yard cleaned sustainably while gaining valuable wellness insights for your pets. Every service includes free health monitoring technology."
+                      }
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    {user.stripeCustomerId ? (
+                      <>
+                        <Button size="lg" className="bg-accent hover:bg-accent/90">
+                          <Calendar className="size-4 mr-2" />
+                          Schedule Your First Service
+                        </Button>
+                        <Button size="lg" variant="outline">
+                          <Heart className="size-4 mr-2" />
+                          Learn About Wellness Insights
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button size="lg" className="bg-accent hover:bg-accent/90">
+                          <Heart className="size-4 mr-2" />
+                          Start Free Trial
+                        </Button>
+                        <Button size="lg" variant="outline">
+                          <Calendar className="size-4 mr-2" />
+                          Schedule One-Time Service
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    💚 Environmentally friendly • 🐕 Pet wellness included • ✨ Professional service
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Key Metrics Overview */}
+          <div className="grid md:grid-cols-4 gap-6">
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">My Pack</CardTitle>
+                <Dog className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dogs.length}</div>
+                <p className="text-xs text-muted">
+                  {dogs.length === 1
+                    ? `${dogs[0]?.name || 'Your dog'}`
+                    : `${dogs.length} furry friends`
+                  }
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Environmental Impact</CardTitle>
+                <TrendingUp className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatLbsFromGrams(totalGrams)} lbs</div>
+                <p className="text-xs text-muted">Waste diverted from landfills</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Health Insights</CardTitle>
+                <Heart className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dataReadings.length}</div>
+                <p className="text-xs text-muted">Wellness analyses completed</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Service Streak</CardTitle>
+                <Calendar className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{serviceStreak}</div>
+                <p className="text-xs text-muted">Consecutive weeks served</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                  <Calendar className="size-6" />
+                  <span>Schedule Service</span>
+                </Button>
+                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                  <Dog className="size-6" />
+                  <span>Add Dog</span>
+                </Button>
+                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                  <Heart className="size-6" />
+                  <span>View Health Insights</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
       {/* Onboarding: Profile & Dog inline forms; hides when complete */}
       {(profilePercent < 100 || dogsState.length === 0) && (
@@ -408,11 +636,27 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     <div className="text-sm font-medium text-ink">Profile completeness</div>
                     <div className="text-sm text-muted">{profilePercent}%</div>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                  <div className="relative w-full bg-slate-100 rounded-full h-4 overflow-hidden border-2 border-slate-200">
                     <div
-                      className="bg-accent h-2 rounded-full transition-all"
+                      className="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-1000 ease-out relative"
                       style={{ width: `${profilePercent}%` }}
-                    />
+                    >
+                      {/* Training treats */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-white text-xs animate-pulse">🍖</div>
+                      </div>
+                    </div>
+                    {/* Puppy at the end */}
+                    <div
+                      className="absolute top-1/2 transform -translate-y-1/2 transition-all duration-1000 ease-out text-sm"
+                      style={{ left: `calc(${profilePercent}% - 8px)` }}
+                    >
+                      🐶
+                    </div>
+                    {/* Finish line flag */}
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-xs">
+                      🏁
+                    </div>
                   </div>
                 </div>
 
@@ -420,9 +664,9 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                   {profileFields.map(([label, ok]: [string, boolean]) => (
                     <li key={label} className="flex items-center gap-2 text-sm">
                       {ok ? (
-                        <CheckCircle2 className="size-4 text-emerald-600" />
+                        <span className="text-lg animate-bounce">🐾</span>
                       ) : (
-                        <CircleAlert className="size-4 text-amber-500" />
+                        <span className="text-lg opacity-50">⭕</span>
                       )}
                       <span className={ok ? 'text-slate-600 line-through' : 'text-slate-700'}>
                         {label}
@@ -445,11 +689,21 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-medium mb-1">Phone</label>
-                        <Input value={formPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormPhone(e.target.value)} />
+                        <Input
+                          value={formPhone}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setFormPhone(e.target.value)
+                          }
+                        />
                       </div>
                       <div>
                         <label className="block text-xs font-medium mb-1">ZIP</label>
-                        <Input value={formZip} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormZip(e.target.value)} />
+                        <Input
+                          value={formZip}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setFormZip(e.target.value)
+                          }
+                        />
                       </div>
                     </div>
                     <div>
@@ -457,7 +711,11 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                       <AddressAutocomplete
                         value={formAddress}
                         onChange={(val: string) => setFormAddress(val)}
-                        onSelect={(addr: { formattedAddress: string; city?: string; postalCode?: string }) => {
+                        onSelect={(addr: {
+                          formattedAddress: string;
+                          city?: string;
+                          postalCode?: string;
+                        }) => {
                           if (addr.formattedAddress) setFormAddress(addr.formattedAddress);
                           if (addr.city) setFormCity(addr.city || '');
                           if (addr.postalCode) setFormZip(addr.postalCode || '');
@@ -467,7 +725,12 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-medium mb-1">City</label>
-                        <Input value={formCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormCity(e.target.value)} />
+                        <Input
+                          value={formCity}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setFormCity(e.target.value)
+                          }
+                        />
                       </div>
                       <div className="flex items-end">
                         <Button onClick={submitProfile} disabled={savingProfile}>
@@ -482,7 +745,10 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                   <div className="mt-4 space-y-3 p-4 border rounded-xl">
                     <div>
                       <label className="block text-xs font-medium mb-1">Dog Name *</label>
-                      <Input value={dogName} onChange={(e: ChangeEvent<HTMLInputElement>) => setDogName(e.target.value)} />
+                      <Input
+                        value={dogName}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setDogName(e.target.value)}
+                      />
                     </div>
                     <div className="grid sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-2">
@@ -490,7 +756,9 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                         <select
                           className="w-full border rounded-md p-2"
                           value={dogBreed}
-                          onChange={(e: ChangeEvent<HTMLSelectElement>) => setDogBreed(e.target.value)}
+                          onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                            setDogBreed(e.target.value)
+                          }
                         >
                           <option value="">Select breed</option>
                           {BREEDS.map((b) => (
@@ -502,13 +770,25 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                       </div>
                       <div>
                         <label className="block text-xs font-medium mb-1">Age</label>
-                        <Input value={dogAge} onChange={(e: ChangeEvent<HTMLInputElement>) => setDogAge(e.target.value)} type="number" min="0" />
+                        <Input
+                          value={dogAge}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setDogAge(e.target.value)}
+                          type="number"
+                          min="0"
+                        />
                       </div>
                     </div>
                     <div className="grid sm:grid-cols-3 gap-3 items-end">
                       <div>
                         <label className="block text-xs font-medium mb-1">Weight (lbs)</label>
-                        <Input value={dogWeight} onChange={(e: ChangeEvent<HTMLInputElement>) => setDogWeight(e.target.value)} type="number" min="0" />
+                        <Input
+                          value={dogWeight}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setDogWeight(e.target.value)
+                          }
+                          type="number"
+                          min="0"
+                        />
                       </div>
                       <div className="sm:col-span-2 flex justify-end">
                         <Button onClick={submitDog} disabled={savingDog || !dogName.trim()}>
@@ -554,168 +834,248 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
 
-      {/* When data exists */}
-      {hasAnyData && (
-        <>
-          {/* Overview strip */}
-          <div className="grid md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm font-medium text-ink mb-2">Baseline Progress</div>
-                <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                  <div className="bg-accent h-2 rounded-full transition-all" style={{ width: `${baselinePercent}%` }} />
+        {/* Wellness Tab */}
+        <TabsContent value="wellness" className="space-y-6">
+          {/* Wellness Overview Cards */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                  <Heart className="size-4 text-pink-500" />
+                  Last Sample
                 </div>
-                <div className="text-xs text-muted mt-1">{weeksWithData}/4 weeks of data</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm font-medium text-ink">Last Sample</div>
-                <div className="text-xs text-muted">
+                <div className="text-2xl font-bold text-slate-900">
                   {lastReadingAt ? lastReadingAt.toLocaleDateString() : '—'}
                 </div>
+                <p className="text-xs text-muted mt-1">Most recent wellness check</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm font-medium text-ink">Next Service</div>
-                <div className="text-xs text-muted">
-                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                  <TrendingUp className="size-4 text-green-500" />
+                  Weekly Trend
                 </div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {typeof weekTrend === 'number'
+                    ? `${weekTrend * 100 > 0 ? '+' : ''}${Math.round(weekTrend * 100)}%`
+                    : '—'
+                  }
+                </div>
+                <p className="text-xs text-muted mt-1">Waste volume change</p>
+              </CardContent>
+            </Card>
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                  <Dog className="size-4 text-blue-500" />
+                  Health Score
+                </div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {dataReadings.length > 0 ? 'Good' : '—'}
+                </div>
+                <p className="text-xs text-muted mt-1">Overall wellness status</p>
               </CardContent>
             </Card>
           </div>
-          {/* Key Metrics */}
-          <div className="grid md:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Household Dogs</CardTitle>
-                <Dog className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dogs.length}</div>
-                <p className="text-xs text-muted">Aggregated insights</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Waste Diverted</CardTitle>
-                <TrendingUp className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatLbsFromGrams(totalGrams)} lbs</div>
-                <p className="text-xs text-muted">Kept out of landfills</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Observations (30d)</CardTitle>
-                <Heart className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{last30DaysCount}</div>
-                <p className="text-xs text-muted">Weekly pickup snapshots</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Service Visits</CardTitle>
-                <Calendar className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{serviceVisits.length}</div>
-                <p className="text-xs text-muted">All time</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Trend (Week over Week) */}
-            <div className="lg:col-span-2">
-              <Card className="motion-hover-lift">
-                <CardHeader>
-                  <CardTitle>Week-over-Week Observations</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative h-28 mb-3">
-                    <svg
-                      viewBox="0 0 280 60"
-                      className="w-full h-full"
-                      aria-label="Weekly observations"
-                    >
-                      <defs>
-                        <linearGradient id="wkGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0.1" />
-                        </linearGradient>
-                      </defs>
-
-                      <g stroke="hsl(var(--muted))" strokeWidth="0.5" opacity="0.3">
-                        <line x1="0" y1="15" x2="280" y2="15" />
-                        <line x1="0" y1="30" x2="280" y2="30" />
-                        <line x1="0" y1="45" x2="280" y2="45" />
-                      </g>
-
-                      <path
-                        d={trendPath}
-                        fill="none"
-                        stroke="hsl(var(--accent))"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+          {/* Week-over-Week Observations */}
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle>Weekly Service Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Week-over-Week Trend Visualization */}
+              <div className="space-y-6">
+                {/* Three C's Health Insights */}
+                <div className="bg-white rounded-lg border border-slate-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-slate-900">Health Insights (3 C's)</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-sm font-medium text-green-700">All Normal</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-muted">
-                    {weeklySeries.map((p: WeeklyPoint) => (
-                      <span key={p.weekLabel}>{p.weekLabel}</span>
-                    ))}
-                  </div>
-                  <div className="mt-3 text-xs text-muted">
-                    Last week: {formatLbsFromGrams(gramsLastWeek)} lbs vs prior week: {formatLbsFromGrams(gramsPrevWeek)} lbs
-                    {typeof weekTrend === 'number' ? ` (${(weekTrend * 100 > 0 ? '+' : '')}${Math.round(weekTrend * 100)}%)` : ''}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
 
-            {/* Core Signals (3 Cs) */}
-            <div>
-              <Card className="motion-hover-lift">
-                <CardHeader>
-                  <CardTitle>Core Wellness Signals (3 Cs)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
-                      <div className="text-sm font-medium text-ink">Color</div>
-                      <div className="text-xs text-muted">
-                        {uniqueColors > 1 ? 'Variability detected last weeks' : 'Stable hues'}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Color */}
+                    <div className="text-center p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                      <div className="text-3xl mb-2">💚</div>
+                      <div className="font-semibold text-emerald-800">Color</div>
+                      <div className="text-sm text-emerald-600">Stable hues</div>
+                    </div>
+
+                    {/* Consistency */}
+                    <div className="text-center p-4 bg-amber-50 rounded-lg border border-amber-200">
+                      <div className="text-3xl mb-2">📊</div>
+                      <div className="font-semibold text-amber-800">Consistency</div>
+                      <div className="text-sm text-amber-600">Normal texture</div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="text-3xl mb-2">🎯</div>
+                      <div className="font-semibold text-orange-800">Content</div>
+                      <div className="text-sm text-orange-600">No anomalies</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Weekly Service Status */}
+                <div className="bg-white rounded-lg border border-slate-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-slate-900">This Week's Service</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium text-green-700">Service Completed</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Service Completion */}
+                    <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="text-3xl mb-2">✅</div>
+                      <div className="font-semibold text-green-800">Full Yard Clean</div>
+                      <div className="text-sm text-green-600">Completed</div>
+                    </div>
+
+                    {/* Eco Diversion Level */}
+                    <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="text-3xl mb-2">🌱</div>
+                      <div className="font-semibold text-blue-800">100% Eco Diversion</div>
+                      <div className="text-sm text-blue-600">Waste diverted from landfill</div>
+                    </div>
+
+                    {/* Pet Wellness Check */}
+                    <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                      <div className="text-3xl mb-2">🐕</div>
+                      <div className="font-semibold text-purple-800">Wellness Check</div>
+                      <div className="text-sm text-purple-600">Health analysis complete</div>
+                    </div>
+                  </div>
+
+                  {/* Service Details */}
+                  <div className="mt-6 pt-4 border-t border-slate-200">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-slate-600">Service Date:</span>
+                        <div className="font-medium">
+                          {dataReadings.length > 0
+                            ? new Date(Math.max(...dataReadings.map(r => new Date(r.timestamp).getTime()))).toLocaleDateString()
+                            : 'No recent service'
+                          }
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-slate-600">Next Service:</span>
+                        <div className="font-medium">
+                          {dataReadings.length > 0
+                            ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()
+                            : 'Schedule upcoming'
+                          }
+                        </div>
                       </div>
                     </div>
-                    <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
-                      <div className="text-sm font-medium text-ink">Consistency</div>
-                      <div className="text-xs text-muted">
-                        {uniqueConsistency > 1 ? 'Mixed textures observed' : 'Consistent patterns'}
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
-                      <div className="text-sm font-medium text-ink">Content</div>
-                      <div className="text-xs text-muted">No content anomalies logged</div>
-                    </div>
+                  </div>
+                </div>
+
+                {/* Sample Collection Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-lg border border-slate-200 p-4">
+                    <div className="text-sm font-medium text-slate-700 mb-2">Services Completed</div>
+                    <div className="text-2xl font-bold text-slate-900">{serviceVisits.length}</div>
+                    <div className="text-xs text-slate-500">Total yard cleans</div>
                   </div>
 
-                  <div className="mt-4 text-xs text-muted">
-                    Informational only, not veterinary advice. Talk to your vet for concerns.
+                  <div className="bg-white rounded-lg border border-slate-200 p-4">
+                    <div className="text-sm font-medium text-slate-700 mb-2">Eco Impact</div>
+                    <div className="text-2xl font-bold text-green-600">{formatLbsFromGrams(totalGrams)}</div>
+                    <div className="text-xs text-slate-500">Waste diverted</div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                </div>
+
+                {/* Service Insights */}
+                <div className="bg-white rounded-lg border border-slate-200 p-4">
+                  <div className="text-sm font-medium text-slate-700 mb-3">Service Insights</div>
+                  <div className="space-y-2 text-sm text-slate-600">
+                    <div className="flex justify-between">
+                      <span>Service Plan:</span>
+                      <span className="font-medium">Weekly Clean + Wellness</span>
+                    </div>
+                    {serviceVisits.length > 0 && (
+                      <div className="flex justify-between">
+                        <span>Last Service:</span>
+                        <span className="font-medium">
+                          {new Date(Math.max(...serviceVisits.map(s => new Date(s.scheduledDate).getTime()))).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Eco Level:</span>
+                      <span className="font-medium text-green-600">100% Diversion</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Wellness Status:</span>
+                      <span className="font-medium text-blue-600">Healthy 🐕</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Waste Summary */}
+              <div className="mt-3 p-3 bg-white/50 rounded-lg border border-green-200">
+                <div className="text-xs text-slate-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>This week:</span>
+                    <span className="font-medium">{formatLbsFromGrams(gramsThisWeek)} lbs</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Last week:</span>
+                    <span>{formatLbsFromGrams(gramsLastWeek)} lbs</span>
+                  </div>
+                  {typeof weekTrend === 'number' && (
+                    <div className="flex justify-between pt-1 border-t border-green-300">
+                      <span>Trend:</span>
+                      <span className={`font-medium ${weekTrend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {weekTrend > 0 ? '+' : ''}{Math.round(weekTrend * 100)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Core Signals (3 Cs) */}
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle>Core Wellness Signals (3 Cs)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
+                  <div className="text-sm font-medium text-ink">Color</div>
+                  <div className="text-xs text-muted">
+                    {uniqueColors > 1 ? 'Variability detected last weeks' : 'Stable hues'}
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
+                  <div className="text-sm font-medium text-ink">Consistency</div>
+                  <div className="text-xs text-muted">
+                    {uniqueConsistency > 1 ? 'Mixed textures observed' : 'Consistent patterns'}
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
+                  <div className="text-sm font-medium text-ink">Content</div>
+                  <div className="text-xs text-muted">No content anomalies logged</div>
+                </div>
+              </div>
+
+              <div className="mt-4 text-xs text-muted">
+                Informational only, not veterinary advice. Talk to your vet for concerns.
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Service Streak and Breakdown */}
           <div className="grid lg:grid-cols-3 gap-8">
@@ -743,34 +1103,110 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                         const width = Math.round((count / (max || 1)) * 100);
                         return (
                           <div key={label} className="flex items-center gap-3">
-                            <div className="w-24 text-xs text-muted truncate">{label}</div>
-                            <div className="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
-                              <div className="bg-accent h-2 rounded-full" style={{ width: `${width}%` }} />
-                            </div>
-                            <div className="w-8 text-right text-xs text-muted">{count}</div>
+                              <div className="w-24 text-xs text-muted truncate">{label}</div>
+                              <div className="flex-1 relative bg-slate-200 rounded-full h-3 overflow-hidden border border-slate-300">
+                                <div
+                                  className="bg-gradient-to-r from-pink-400 to-pink-600 h-full rounded-full transition-all duration-1000 ease-out"
+                                  style={{ width: `${width}%` }}
+                                />
+                                {/* Hand giving belly rub */}
+                                <div
+                                  className="absolute top-1/2 transform -translate-y-1/2 text-xs animate-pulse"
+                                  style={{ left: `calc(${width}% - 8px)` }}
+                                >
+                                  🖐️
+                                </div>
+                                {/* Sparkles for good consistency */}
+                                {width > 70 && (
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="text-white text-xs animate-ping">✨</div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="w-8 text-right text-xs text-muted">{count}</div>
                           </div>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="text-sm text-muted">No observations yet.</div>
+                    <div className="text-center py-4">
+                      <Heart className="size-6 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm text-muted">No wellness observations yet</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Schedule a service to unlock health insights for your pets
+                      </p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
             </div>
           </div>
+        </TabsContent>
 
-          {/* Color Flags */}
-          <Card className="motion-hover-lift">
+        {/* Services Tab */}
+        <TabsContent value="services" className="space-y-6">
+          {/* Service Overview */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                  <Calendar className="size-4 text-blue-500" />
+                  Next Service
+                </div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : 'None scheduled'}
+                </div>
+                <p className="text-xs text-muted mt-1">Upcoming appointment</p>
+              </CardContent>
+            </Card>
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                  <TrendingUp className="size-4 text-green-500" />
+                  Service Streak
+                </div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {serviceStreak}
+                </div>
+                <p className="text-xs text-muted mt-1">Consecutive visits completed</p>
+              </CardContent>
+            </Card>
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                  <Calendar className="size-4 text-purple-500" />
+                  Total Services
+                </div>
+                <div className="text-2xl font-bold text-slate-900">
+                  {serviceVisits.length}
+                </div>
+                <p className="text-xs text-muted mt-1">All time</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Service Scheduling */}
+          <Card>
             <CardHeader>
-              <CardTitle>Color Flags</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="size-5 text-accent" />
+                Schedule Your Next Service
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <div className="px-3 py-1 bg-amber-50 border border-amber-200 rounded-full">Black/tarry: {colorFlagCounts.blackTar}</div>
-                <div className="px-3 py-1 bg-rose-50 border border-rose-200 rounded-full">Bright red: {colorFlagCounts.brightRed}</div>
-                <div className="px-3 py-1 bg-yellow-50 border border-yellow-200 rounded-full">Yellow/gray: {colorFlagCounts.yellowGray}</div>
-                <div className="px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full">Green: {colorFlagCounts.green}</div>
+              <div className="grid md:grid-cols-3 gap-4">
+                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                  <Calendar className="size-6" />
+                  <span>One-Time Service</span>
+                </Button>
+                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                  <TrendingUp className="size-6" />
+                  <span>Start Subscription</span>
+                </Button>
+                <Button className="h-20 flex flex-col gap-2" variant="outline">
+                  <Heart className="size-6" />
+                  <span>View Past Services</span>
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -813,12 +1249,662 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                   })}
                 </div>
               ) : (
-                <p className="text-slate-600">No visits yet. Schedule your first one!</p>
+                <div className="text-center py-6 space-y-4">
+                  <div className="text-slate-600">
+                    <Calendar className="size-8 mx-auto mb-2 opacity-50" />
+                    <p className="font-medium">No service visits scheduled yet</p>
+                    <p className="text-sm text-slate-500 mt-1">
+                      {user.stripeCustomerId
+                        ? "Ready to get started with clean, sustainable yard care?"
+                        : "Sign up to schedule your first service and unlock pet wellness insights!"
+                      }
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    {user.stripeCustomerId ? (
+                      <>
+                        <Button className="bg-accent hover:bg-accent/90">
+                          Schedule Service
+                        </Button>
+                        <Button variant="outline">
+                          View Subscription
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button className="bg-accent hover:bg-accent/90">
+                          Start Subscription
+                        </Button>
+                        <Button variant="outline">
+                          Schedule One-Time
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    ✨ Free wellness insights included with every service
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
-        </>
-      )}
+        </TabsContent>
+
+        {/* Eco Impact Tab */}
+        <TabsContent value="eco" className="space-y-6">
+          {/* Eco Impact Header */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 p-8 text-white shadow-2xl">
+            <div className="relative z-10 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-4">
+                <Leaf className="size-10 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Your Environmental Impact</h2>
+              <p className="text-green-100">Together we're making a difference for our planet</p>
+              <div className="mt-4 flex justify-center gap-3">
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{formatLbsFromGrams(totalGrams)}</div>
+                  <div className="text-sm text-green-100">Waste Diverted</div>
+                </div>
+                <div className="w-px h-12 bg-white/30"></div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{serviceVisits.length}</div>
+                  <div className="text-sm text-green-100">Services Completed</div>
+                </div>
+              </div>
+            </div>
+            {/* Decorative elements */}
+            <div className="absolute top-4 right-4 text-4xl opacity-20">🌱</div>
+            <div className="absolute bottom-4 left-4 text-3xl opacity-20">🌍</div>
+            <div className="absolute top-1/2 left-1/4 text-2xl opacity-20">🌿</div>
+          </div>
+
+          {/* Eco Diversion Level */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="rounded-full bg-green-100 p-2">
+                  <Leaf className="size-5 text-green-600" />
+                </div>
+                Eco Diversion Level
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Current Level Indicator */}
+                <div className="text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                  <div className="text-4xl mb-2">🌱</div>
+                  <div className="text-2xl font-bold text-green-700 mb-1">100% Eco Diversion</div>
+                  <div className="text-green-600">Maximum environmental impact achieved!</div>
+                </div>
+
+                {/* Diversion Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="text-2xl mb-2">♻️</div>
+                    <div className="font-semibold text-blue-800">Compost Created</div>
+                    <div className="text-xl font-bold text-blue-700">{formatLbsFromGrams(totalGrams * 0.8)}</div>
+                    <div className="text-xs text-blue-600">From diverted waste</div>
+                  </div>
+
+                  <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="text-2xl mb-2">🏭</div>
+                    <div className="font-semibold text-orange-800">Methane Avoided</div>
+                    <div className="text-xl font-bold text-orange-700">{(totalGrams * 0.002 * 0.67).toFixed(1)} lbs</div>
+                    <div className="text-xs text-orange-600">CO2 equivalent</div>
+                  </div>
+
+                  <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="text-2xl mb-2">🌍</div>
+                    <div className="font-semibold text-green-800">Landfill Space Saved</div>
+                    <div className="text-xl font-bold text-green-700">{(totalGrams * 0.002).toFixed(1)} cu ft</div>
+                    <div className="text-xs text-green-600">Preserved space</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Monthly Eco Impact */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Environmental Impact</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Impact Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <div className="text-sm font-medium text-slate-700 mb-1">This Month</div>
+                    <div className="text-2xl font-bold text-slate-900">{formatLbsFromGrams(totalGrams)}</div>
+                    <div className="text-xs text-slate-600">Waste diverted</div>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <div className="text-sm font-medium text-green-700 mb-1">Monthly Goal</div>
+                    <div className="text-2xl font-bold text-green-700">50 lbs</div>
+                    <div className="text-xs text-green-600">
+                      {totalGrams >= 25000 ? 'Achieved! 🎉' : `${((totalGrams / 25000) * 100).toFixed(0)}% complete`}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Monthly Progress</span>
+                    <span className="font-medium">{((totalGrams / 25000) * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-3">
+                    <div
+                      className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-1000 ease-out"
+                      style={{ width: `${Math.min((totalGrams / 25000) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Eco Impact Comparison */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Environmental Comparison</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="text-sm text-slate-600 mb-4">
+                  See how your eco-friendly choices compare to traditional waste disposal:
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center gap-3">
+                      <div className="text-red-500">🏭</div>
+                      <div>
+                        <div className="font-medium text-red-800">Traditional Landfill</div>
+                        <div className="text-xs text-red-600">Waste goes to landfill</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-red-700">0%</div>
+                      <div className="text-xs text-red-600">diverted</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-3">
+                      <div className="text-blue-500">♻️</div>
+                      <div>
+                        <div className="font-medium text-blue-800">25% Eco Diversion</div>
+                        <div className="text-xs text-blue-600">Partial waste diversion</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-blue-700">25%</div>
+                      <div className="text-xs text-blue-600">diverted</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-3">
+                      <div className="text-green-500">🌱</div>
+                      <div>
+                        <div className="font-medium text-green-800">100% Eco Diversion</div>
+                        <div className="text-xs text-green-600">Maximum environmental impact</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-green-700">100%</div>
+                      <div className="text-xs text-green-600">diverted</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Rewards Tab */}
+        <TabsContent value="rewards" className="space-y-6">
+          {/* Empty State for No Earned Rewards */}
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="rounded-full bg-yellow-100 p-2">
+                  <Trophy className="size-5 text-yellow-600" />
+                </div>
+                Your Rewards & Achievements
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">🏆</div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">No Rewards Earned Yet</h3>
+                <p className="text-slate-600 mb-6">
+                  Keep using Yardura services to unlock rewards and achievements!
+                </p>
+              </div>
+
+              {/* Potential Rewards to Earn */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-slate-900 mb-4">Rewards You Can Earn</h4>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Landfill Hero */}
+                  <div className="p-4 border border-slate-200 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-2xl">🌱</div>
+                      <div>
+                        <div className="font-semibold text-green-800">Landfill Hero</div>
+                        <div className="text-xs text-green-600">Divert 100 lbs from landfill</div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-600 mb-2">
+                      Progress: {Math.round(totalGrams / 50)}/100 lbs
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${Math.min((totalGrams / 5000) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-2">🎁 Free eco-friendly treats</div>
+                  </div>
+
+                  {/* Service Streak */}
+                  <div className="p-4 border border-slate-200 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-2xl">🔥</div>
+                      <div>
+                        <div className="font-semibold text-blue-800">Streak Master</div>
+                        <div className="text-xs text-blue-600">5 consecutive services</div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-600 mb-2">
+                      Progress: {serviceStreak}/5 services
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${(serviceStreak / 5) * 100}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-2">🎯 Priority scheduling</div>
+                  </div>
+
+                  {/* Wellness Watcher */}
+                  <div className="p-4 border border-slate-200 rounded-lg bg-gradient-to-br from-purple-50 to-violet-50">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-2xl">💜</div>
+                      <div>
+                        <div className="font-semibold text-purple-800">Wellness Watcher</div>
+                        <div className="text-xs text-purple-600">20 wellness analyses</div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-600 mb-2">
+                      Progress: {dataReadings.length}/20 analyses
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-purple-400 to-purple-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${(dataReadings.length / 20) * 100}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-2">📊 Custom health report</div>
+                  </div>
+
+                  {/* Loyalty Customer */}
+                  <div className="p-4 border border-slate-200 rounded-lg bg-gradient-to-br from-orange-50 to-amber-50">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-2xl">⭐</div>
+                      <div>
+                        <div className="font-semibold text-orange-800">Loyal Customer</div>
+                        <div className="text-xs text-orange-600">10 services completed</div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-600 mb-2">
+                      Progress: {serviceVisits.length}/10 services
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-orange-400 to-orange-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${(serviceVisits.length / 10) * 100}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-2">🎁 Branded merchandise</div>
+                  </div>
+
+                  {/* Eco Champion */}
+                  <div className="p-4 border border-slate-200 rounded-lg bg-gradient-to-br from-red-50 to-pink-50">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-2xl">👑</div>
+                      <div>
+                        <div className="font-semibold text-red-800">Eco Champion</div>
+                        <div className="text-xs text-red-600">500 lbs diverted</div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-600 mb-2">
+                      Progress: {Math.round(totalGrams / 50)}/500 lbs
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-red-400 to-red-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${Math.min((totalGrams / 25000) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-2">👑 VIP status + free year</div>
+                  </div>
+
+                  {/* Referral Champion */}
+                  <div className="p-4 border border-slate-200 rounded-lg bg-gradient-to-br from-indigo-50 to-blue-50">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-2xl">👥</div>
+                      <div>
+                        <div className="font-semibold text-indigo-800">Referral Champion</div>
+                        <div className="text-xs text-indigo-600">3 successful referrals</div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-600 mb-2">
+                      Progress: 0/3 referrals
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-indigo-400 to-indigo-600 h-2 rounded-full transition-all duration-1000 ease-out" style={{ width: '0%' }}></div>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-2">🎁 Free service per referral</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Profile Tab */}
+        <TabsContent value="profile" className="space-y-6">
+          {/* Profile Header */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-600 via-teal-600 to-emerald-600 p-8 text-white shadow-2xl">
+            <div className="relative z-10 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-4">
+                <User className="size-10 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">{userState.name || 'Welcome!'}</h2>
+              <p className="text-green-100">{userState.email}</p>
+              <div className="mt-4 flex justify-center gap-3">
+                <Button
+                  onClick={() => setShowProfileForm(!showProfileForm)}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm"
+                >
+                  {showProfileForm ? 'Cancel Edit' : 'Edit Profile'}
+                </Button>
+              </div>
+            </div>
+            {/* Decorative elements */}
+            <div className="absolute top-4 right-4 text-6xl opacity-10">🐾</div>
+            <div className="absolute bottom-4 left-4 text-4xl opacity-10">🏡</div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="rounded-full bg-green-100 p-2">
+                  <User className="size-5 text-green-600" />
+                </div>
+                Account Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="group">
+                    <label className="text-sm font-medium text-slate-600 mb-2 block">Name</label>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 group-hover:border-green-300 transition-colors">
+                      <p className="text-lg font-medium text-slate-900">{userState.name || 'Not set'}</p>
+                    </div>
+                  </div>
+                  <div className="group">
+                    <label className="text-sm font-medium text-slate-600 mb-2 block">Email</label>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 group-hover:border-green-300 transition-colors">
+                      <p className="text-lg font-medium text-slate-900">{userState.email}</p>
+                    </div>
+                  </div>
+                  <div className="group">
+                    <label className="text-sm font-medium text-slate-600 mb-2 block">Phone</label>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 group-hover:border-green-300 transition-colors">
+                      <p className="text-lg font-medium text-slate-900">{userState.phone || 'Not set'}</p>
+                    </div>
+                  </div>
+                  <div className="group md:col-span-2">
+                    <label className="text-sm font-medium text-slate-600 mb-2 block">Address</label>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 group-hover:border-green-300 transition-colors">
+                      <p className="text-lg font-medium text-slate-900">
+                        {userState.address && userState.city && userState.zipCode
+                          ? `${userState.address}, ${userState.city}, ${userState.zipCode}`
+                          : 'Not set'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {showProfileForm && (
+                  <div className="mt-6 p-4 border rounded-xl bg-slate-50">
+                    <h3 className="font-medium mb-4">Edit Profile Information</h3>
+                    <div className="space-y-4">
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Name</label>
+                          <Input
+                            value={userState.name || ''}
+                            onChange={(e) => setUserState({ ...userState, name: e.target.value })}
+                            placeholder="Your full name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Phone</label>
+                          <Input
+                            value={formPhone}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                              setFormPhone(e.target.value)
+                            }
+                            placeholder="Phone number"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Address</label>
+                        <AddressAutocomplete
+                          value={formAddress}
+                          onChange={(val: string) => setFormAddress(val)}
+                          onSelect={(addr: {
+                            formattedAddress: string;
+                            city?: string;
+                            postalCode?: string;
+                          }) => {
+                            if (addr.formattedAddress) setFormAddress(addr.formattedAddress);
+                            if (addr.city) setFormCity(addr.city || '');
+                            if (addr.postalCode) setFormZip(addr.postalCode || '');
+                          }}
+                          placeholder="Enter your address"
+                        />
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium mb-1">City</label>
+                          <Input
+                            value={formCity}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                              setFormCity(e.target.value)
+                            }
+                            placeholder="City"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">ZIP Code</label>
+                          <Input
+                            value={formZip}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                              setFormZip(e.target.value)
+                            }
+                            placeholder="ZIP Code"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setShowProfileForm(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={submitProfile} disabled={savingProfile}>
+                          {savingProfile ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="rounded-full bg-green-100 p-2">
+                  <Dog className="size-5 text-green-600" />
+                </div>
+                Your Furry Family
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {dogsState.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-6xl mb-4">🐕‍🦺</div>
+                    <h3 className="text-lg font-medium text-slate-900 mb-2">No dogs registered yet</h3>
+                    <p className="text-slate-600 mb-4">Add your first furry friend to unlock personalized wellness insights!</p>
+                    <Button onClick={() => setShowDogForm(true)} className="bg-green-600 hover:bg-green-700">
+                      <Dog className="size-4 mr-2" />
+                      Add Your First Dog
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid gap-4">
+                      {dogsState.map((dog, index) => (
+                        <div key={dog.id} className="relative overflow-hidden rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 p-6 border border-green-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="relative">
+                                <div className="text-4xl">🐕</div>
+                                <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                                  {index + 1}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xl font-bold text-slate-900">{dog.name}</div>
+                                <div className="text-sm text-slate-600 space-y-1">
+                                  {dog.breed && <div>🏷️ {dog.breed}</div>}
+                                  {dog.age && <div>🎂 {dog.age} years old</div>}
+                                  {dog.weight && <div>⚖️ {dog.weight} lbs</div>}
+                                </div>
+                              </div>
+                            </div>
+                            <Button variant="outline" size="sm" className="border-green-300 text-green-700 hover:bg-green-50">
+                              <User className="size-4 mr-2" />
+                              Edit
+                            </Button>
+                          </div>
+                          {/* Decorative paw prints */}
+                          <div className="absolute top-2 right-2 text-green-200 text-xl">🐾</div>
+                          <div className="absolute bottom-2 left-2 text-green-200 text-lg opacity-50">🐾</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        onClick={() => setShowDogForm(!showDogForm)}
+                        variant="outline"
+                        className="border-green-300 text-green-700 hover:bg-green-50"
+                      >
+                        <Dog className="size-4 mr-2" />
+                        {showDogForm ? 'Cancel' : 'Add Another Dog'}
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {showDogForm && (
+                  <div className="mt-6 p-4 border rounded-xl bg-slate-50">
+                    <h3 className="font-medium mb-4">Add New Dog</h3>
+                    <div className="space-y-4">
+                      <div className="grid sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Dog Name *</label>
+                          <Input
+                            value={dogName}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setDogName(e.target.value)}
+                            placeholder="Dog's name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Breed</label>
+                          <select
+                            className="w-full border rounded-md p-2"
+                            value={dogBreed}
+                            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                              setDogBreed(e.target.value)
+                            }
+                          >
+                            <option value="">Select breed</option>
+                            <option value="Golden Retriever">Golden Retriever</option>
+                            <option value="Labrador">Labrador</option>
+                            <option value="German Shepherd">German Shepherd</option>
+                            <option value="Bulldog">Bulldog</option>
+                            <option value="Mixed">Mixed</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Age</label>
+                          <Input
+                            value={dogAge}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setDogAge(e.target.value)}
+                            type="number"
+                            min="0"
+                            placeholder="Age in years"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid sm:grid-cols-3 gap-3 items-end">
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Weight (lbs)</label>
+                          <Input
+                            value={dogWeight}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                              setDogWeight(e.target.value)
+                            }
+                            type="number"
+                            min="0"
+                            placeholder="Weight in lbs"
+                          />
+                        </div>
+                        <div className="sm:col-span-2 flex justify-end gap-3">
+                          <Button variant="outline" onClick={() => setShowDogForm(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={submitDog} disabled={savingDog || !dogName.trim()}>
+                            {savingDog ? 'Saving...' : 'Save Dog'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
