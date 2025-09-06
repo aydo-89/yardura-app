@@ -164,6 +164,71 @@ function buildSparklinePath(points: WeeklyPoint[], width = 280, height = 60, pad
   return d;
 }
 
+type StatRingProps = {
+  value: number; // 0..1
+  size?: number;
+  thickness?: number;
+  centerText?: string;
+  caption?: string;
+  accentColorClassName?: string; // e.g. text-accent
+};
+
+function StatRing({
+  value,
+  size = 56,
+  thickness = 6,
+  centerText,
+  caption,
+  accentColorClassName = 'text-accent',
+}: StatRingProps) {
+  const radius = (size - thickness) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.max(0, Math.min(1, value || 0));
+  const dash = clamped * circumference;
+  const remainder = circumference - dash;
+  return (
+    <div className="inline-flex flex-col items-center justify-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="hsl(var(--muted))"
+          strokeWidth={thickness}
+          fill="none"
+          opacity="0.35"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={thickness}
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${remainder}`}
+          fill="none"
+          className={accentColorClassName}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+        {centerText && (
+          <text
+            x="50%"
+            y="50%"
+            dominantBaseline="middle"
+            textAnchor="middle"
+            className="fill-slate-900"
+            fontSize={Math.max(12, size * 0.28)}
+            fontWeight={700}
+          >
+            {centerText}
+          </text>
+        )}
+      </svg>
+      {caption && <div className="text-[10px] leading-none text-muted mt-1">{caption}</div>}
+    </div>
+  );
+}
+
 export default function DashboardClientNew(props: DashboardClientProps) {
   const { user, dogs, serviceVisits, dataReadings } = props;
   const [copied, setCopied] = useState(false);
@@ -255,6 +320,28 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return completed[0] || null;
   }, [serviceVisits]);
 
+  const daysUntilNext = useMemo(() => {
+    if (!nextServiceAt) return null as number | null;
+    const ms = nextServiceAt.getTime() - Date.now();
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+  }, [nextServiceAt]);
+
+  const nextServiceProgress = useMemo(() => {
+    if (daysUntilNext == null) return 0;
+    return 1 - Math.min(1, daysUntilNext / 7);
+  }, [daysUntilNext]);
+
+  const daysSinceLast = useMemo(() => {
+    if (!lastCompletedAt) return null as number | null;
+    const ms = Date.now() - lastCompletedAt.getTime();
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+  }, [lastCompletedAt]);
+
+  const lastServiceRecency = useMemo(() => {
+    if (daysSinceLast == null) return 0;
+    return Math.min(1, daysSinceLast / 7);
+  }, [daysSinceLast]);
+
   const serviceStreak = useMemo(() => {
     const sorted = [...serviceVisits].sort(
       (a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
@@ -330,9 +417,27 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     }, 0);
   }, [dataReadings]);
 
+  const gramsPrevMonth = useMemo(() => {
+    const now = new Date();
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+    return dataReadings.reduce((sum, r) => {
+      const t = new Date(r.timestamp);
+      return inRange(t, prevMonthStart, prevMonthEnd) ? sum + (r.weight || 0) : sum;
+    }, 0);
+  }, [dataReadings]);
+
   const methaneThisMonthLbsEq = useMemo(() => {
     return gramsThisMonth * 0.002 * 0.67;
   }, [gramsThisMonth]);
+
+  const activityRatio7of30 = useMemo(() => {
+    return last30DaysCount > 0 ? Math.min(1, last7DaysCount / last30DaysCount) : 0;
+  }, [last7DaysCount, last30DaysCount]);
+
+  const ecoRatioVsPrev = useMemo(() => {
+    return gramsPrevMonth > 0 ? Math.min(1.25, gramsThisMonth / gramsPrevMonth) / 1.25 : 0.6; // normalize, cap for ring
+  }, [gramsThisMonth, gramsPrevMonth]);
 
   const recentInsightsLevel = useMemo(() => {
     const concerning = dataReadings.some((r) => {
@@ -633,10 +738,21 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-2xl font-bold">
+                      {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
+                    </div>
+                    <p className="text-xs text-muted">Scheduled window</p>
+                  </div>
+                  <div className="hidden sm:block">
+                    <StatRing
+                      value={nextServiceProgress}
+                      centerText={daysUntilNext != null ? `${daysUntilNext}d` : '—'}
+                      caption="to next"
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-muted">Scheduled window</p>
               </CardContent>
             </Card>
 
@@ -647,10 +763,21 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <Calendar className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : '—'}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-2xl font-bold">
+                      {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : '—'}
+                    </div>
+                    <p className="text-xs text-muted">Most recent visit</p>
+                  </div>
+                  <div className="hidden sm:block">
+                    <StatRing
+                      value={lastServiceRecency}
+                      centerText={daysSinceLast != null ? `${daysSinceLast}d` : '—'}
+                      caption="since"
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-muted">Most recent visit</p>
               </CardContent>
             </Card>
 
@@ -675,10 +802,19 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <TrendingUp className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-muted">
-                  <div className="flex items-center justify-between"><span>Deposits (7d)</span><span className="font-semibold text-ink">{last7DaysCount}</span></div>
-                  <div className="flex items-center justify-between"><span>Deposits (30d)</span><span className="font-semibold text-ink">{last30DaysCount}</span></div>
-                  <div className="flex items-center justify-between"><span>Avg wt (30d)</span><span className="font-semibold text-ink">{avgWeight30G != null ? `${avgWeight30G.toFixed(1)} g` : '—'}</span></div>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="text-sm text-muted">
+                    <div className="flex items-center justify-between"><span>Deposits (7d)</span><span className="font-semibold text-ink">{last7DaysCount}</span></div>
+                    <div className="flex items-center justify-between"><span>Deposits (30d)</span><span className="font-semibold text-ink">{last30DaysCount}</span></div>
+                    <div className="flex items-center justify-between"><span>Avg wt (30d)</span><span className="font-semibold text-ink">{avgWeight30G != null ? `${avgWeight30G.toFixed(1)} g` : '—'}</span></div>
+                  </div>
+                  <div className="hidden sm:block">
+                    <StatRing
+                      value={activityRatio7of30}
+                      centerText={`${last7DaysCount}`}
+                      caption="7d"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -690,9 +826,18 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 <Leaf className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-muted">
-                  <div className="flex items-center justify-between"><span>Diverted</span><span className="font-semibold text-ink">{formatLbsFromGrams(gramsThisMonth)} lbs</span></div>
-                  <div className="flex items-center justify-between"><span>Methane</span><span className="font-semibold text-ink">{methaneThisMonthLbsEq.toFixed(1)} ft³</span></div>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="text-sm text-muted">
+                    <div className="flex items-center justify-between"><span>Diverted</span><span className="font-semibold text-ink">{formatLbsFromGrams(gramsThisMonth)} lbs</span></div>
+                    <div className="flex items-center justify-between"><span>Methane</span><span className="font-semibold text-ink">{methaneThisMonthLbsEq.toFixed(1)} ft³</span></div>
+                  </div>
+                  <div className="hidden sm:block">
+                    <StatRing
+                      value={ecoRatioVsPrev}
+                      centerText={`${formatLbsFromGrams(gramsThisMonth)}`}
+                      caption="lbs MTD"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1035,168 +1180,52 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               <div className="mt-3 text-xs text-muted">Markers summarize recent color/consistency. Informational only.</div>
             </CardContent>
           </Card>
-          {/* Week-over-Week Observations */}
+          {/* Key Signals (compact) */}
           <Card className="motion-hover-lift">
             <CardHeader>
-              <CardTitle>Weekly Service Status</CardTitle>
+              <CardTitle>Key Signals</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Week-over-Week Trend Visualization */}
-              <div className="space-y-6">
-                {/* Three C's Health Insights */}
-                <div className="bg-white rounded-lg border border-slate-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Health Insights (3 C's)</h3>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-700">All Normal</span>
-                    </div>
+              <div className="grid md:grid-cols-3 gap-4 items-start">
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">Last sample</div>
+                  <div className="text-2xl font-bold text-slate-900">
+                    {lastReadingAt ? lastReadingAt.toLocaleDateString() : '—'}
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Color */}
-                    <div className="text-center p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                      <div className="text-3xl mb-2">💚</div>
-                      <div className="font-semibold text-emerald-800">Color</div>
-                      <div className="text-sm text-emerald-600">Stable hues</div>
-                    </div>
-
-                    {/* Consistency */}
-                    <div className="text-center p-4 bg-amber-50 rounded-lg border border-amber-200">
-                      <div className="text-3xl mb-2">📊</div>
-                      <div className="font-semibold text-amber-800">Consistency</div>
-                      <div className="text-sm text-amber-600">Normal texture</div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-                      <div className="text-3xl mb-2">🎯</div>
-                      <div className="font-semibold text-orange-800">Content</div>
-                      <div className="text-sm text-orange-600">No anomalies</div>
-                    </div>
+                  <div className="mt-2 inline-flex items-center gap-2 rounded-full border px-2 py-1 text-xs bg-white">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Most recent check
                   </div>
                 </div>
 
-                {/* Weekly Service Status */}
-                <div className="bg-white rounded-lg border border-slate-200 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-slate-900">This Week's Service</h3>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm font-medium text-green-700">Service Completed</span>
-                    </div>
+                <div className="p-4 rounded-xl border bg-white/60">
+                  <div className="text-xs text-muted mb-1">WoW change</div>
+                  <div className={`text-2xl font-bold ${typeof weekTrend === 'number' ? (weekTrend >= 0 ? 'text-emerald-700' : 'text-rose-700') : 'text-slate-900'}`}>
+                    {typeof weekTrend === 'number' ? `${weekTrend >= 0 ? '+' : ''}${Math.round(weekTrend * 100)}%` : '—'}
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Service Completion */}
-                    <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                      <div className="text-3xl mb-2">✅</div>
-                      <div className="font-semibold text-green-800">Full Yard Clean</div>
-                      <div className="text-sm text-green-600">Completed</div>
-                    </div>
-
-                    {/* Eco Diversion Level */}
-                    <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="text-3xl mb-2">🌱</div>
-                      <div className="font-semibold text-blue-800">100% Eco Diversion</div>
-                      <div className="text-sm text-blue-600">Waste diverted from landfill</div>
-                    </div>
-
-                    {/* Pet Wellness Check */}
-                    <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
-                      <div className="text-3xl mb-2">🐕</div>
-                      <div className="font-semibold text-purple-800">Wellness Check</div>
-                      <div className="text-sm text-purple-600">Health analysis complete</div>
-                    </div>
-                  </div>
-
-                  {/* Service Details */}
-                  <div className="mt-6 pt-4 border-t border-slate-200">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-slate-600">Service Date:</span>
-                        <div className="font-medium">
-                          {dataReadings.length > 0
-                            ? new Date(Math.max(...dataReadings.map(r => new Date(r.timestamp).getTime()))).toLocaleDateString()
-                            : 'No recent service'
-                          }
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-slate-600">Next Service:</span>
-                        <div className="font-medium">
-                          {dataReadings.length > 0
-                            ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()
-                            : 'Schedule upcoming'
-                          }
-                        </div>
-                      </div>
-                    </div>
+                  <div className="mt-2 text-xs text-muted">
+                    vs prior week volume
                   </div>
                 </div>
 
-                {/* Sample Collection Summary */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-lg border border-slate-200 p-4">
-                    <div className="text-sm font-medium text-slate-700 mb-2">Services Completed</div>
-                    <div className="text-2xl font-bold text-slate-900">{serviceVisits.length}</div>
-                    <div className="text-xs text-slate-500">Total yard cleans</div>
-                  </div>
-
-                  <div className="bg-white rounded-lg border border-slate-200 p-4">
-                    <div className="text-sm font-medium text-slate-700 mb-2">Eco Impact</div>
-                    <div className="text-2xl font-bold text-green-600">{formatLbsFromGrams(totalGrams)}</div>
-                    <div className="text-xs text-slate-500">Waste diverted</div>
-                  </div>
-                </div>
-
-                {/* Service Insights */}
-                <div className="bg-white rounded-lg border border-slate-200 p-4">
-                  <div className="text-sm font-medium text-slate-700 mb-3">Service Insights</div>
-                  <div className="space-y-2 text-sm text-slate-600">
-                    <div className="flex justify-between">
-                      <span>Service Plan:</span>
-                      <span className="font-medium">Weekly Clean + Wellness</span>
-                    </div>
-                    {serviceVisits.length > 0 && (
-                      <div className="flex justify-between">
-                        <span>Last Service:</span>
-                        <span className="font-medium">
-                          {new Date(Math.max(...serviceVisits.map(s => new Date(s.scheduledDate).getTime()))).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>Eco Level:</span>
-                      <span className="font-medium text-green-600">100% Diversion</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Wellness Status:</span>
-                      <span className="font-medium text-blue-600">Healthy 🐕</span>
-                    </div>
+                <div className="md:col-span-1 md:row-span-1 col-span-3">
+                  <div className="p-4 rounded-xl border bg-white/60">
+                    <div className="text-xs text-muted mb-2">8-week activity</div>
+                    <svg viewBox="0 0 300 60" className="w-full h-[60px]">
+                      <g stroke="hsl(var(--muted))" strokeWidth="0.5" opacity="0.3">
+                        <line x1="0" y1="10" x2="300" y2="10" />
+                        <line x1="0" y1="30" x2="300" y2="30" />
+                        <line x1="0" y1="50" x2="300" y2="50" />
+                      </g>
+                      {trendPath && (
+                        <path d={trendPath} fill="none" stroke="hsl(var(--accent))" strokeWidth="2" strokeLinecap="round" />
+                      )}
+                    </svg>
                   </div>
                 </div>
               </div>
-              {/* Waste Summary */}
-              <div className="mt-3 p-3 bg-white/50 rounded-lg border border-green-200">
-                <div className="text-xs text-slate-600 space-y-1">
-                  <div className="flex justify-between">
-                    <span>This week:</span>
-                    <span className="font-medium">{formatLbsFromGrams(gramsThisWeek)} lbs</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Last week:</span>
-                    <span>{formatLbsFromGrams(gramsLastWeek)} lbs</span>
-                  </div>
-                  {typeof weekTrend === 'number' && (
-                    <div className="flex justify-between pt-1 border-t border-green-300">
-                      <span>Trend:</span>
-                      <span className={`font-medium ${weekTrend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {weekTrend > 0 ? '+' : ''}{Math.round(weekTrend * 100)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
+              <div className="mt-3 text-xs text-muted">
+                Insights are informational only and not veterinary advice.
               </div>
             </CardContent>
           </Card>
