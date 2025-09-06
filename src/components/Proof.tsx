@@ -1,6 +1,17 @@
 import Link from 'next/link';
+import useSWR from 'swr';
+
+type PublicEcoStats = {
+  totalWasteDiverted: number; // lbs
+  totalMethaneAvoided: number; // ft^3 or lbs eq
+};
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function Proof() {
+  const { data } = useSWR<PublicEcoStats>('/api/stats', fetcher, { refreshInterval: 60000 });
+  const waste = data?.totalWasteDiverted ?? 250;
+  const methane = data?.totalMethaneAvoided ?? 400;
   return (
     <section id="proof" className="bg-gradient-to-br from-accent-soft/20 via-white to-accent-soft/10 border-t border-b">
       <div className="container py-16">
@@ -10,13 +21,13 @@ export default function Proof() {
             <div className="p-6 rounded-2xl bg-white border border-accent/20 shadow-soft">
               <div className="text-xs font-semibold text-muted mb-1">Monthly impact</div>
               <div className="text-2xl font-extrabold text-ink">Methane avoided</div>
-              <div className="text-3xl font-extrabold text-accent mt-2">400+ ft³</div>
+              <div className="text-3xl font-extrabold text-accent mt-2">{Math.round(methane)} ft³</div>
               <div className="text-xs text-muted mt-2">Pilot routes expanding</div>
             </div>
             <div className="p-6 rounded-2xl bg-white border border-accent/20 shadow-soft">
               <div className="text-xs font-semibold text-muted mb-1">Per dog (annual)</div>
               <div className="text-2xl font-extrabold text-ink">Waste diverted</div>
-              <div className="text-3xl font-extrabold text-accent mt-2">250+ lbs</div>
+              <div className="text-3xl font-extrabold text-accent mt-2">{Math.round(waste)} lbs</div>
               <div className="text-xs text-muted mt-2">From landfill to better outcomes</div>
             </div>
           </div>
