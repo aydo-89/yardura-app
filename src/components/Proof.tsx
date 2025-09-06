@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function Proof() {
   return (
-    <section className="bg-gradient-to-br from-accent-soft/20 via-white to-accent-soft/10 border-t border-b">
+    <section id="proof" className="bg-gradient-to-br from-accent-soft/20 via-white to-accent-soft/10 border-t border-b">
       <div className="container py-16">
         <div className="grid lg:grid-cols-3 gap-8 items-stretch">
           {/* Eco KPIs (condensed) */}
