@@ -503,7 +503,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
 
       {/* Main Dashboard Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-slate-100 p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-8 bg-slate-100 p-1 rounded-xl">
           <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
             <Home className="size-4 mr-2" />
             Overview
@@ -519,6 +519,14 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           <TabsTrigger value="eco" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
             <Leaf className="size-4 mr-2" />
             Eco Impact
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <TrendingUp className="size-4 mr-2" />
+            Reports
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
+            <User className="size-4 mr-2" />
+            Billing
           </TabsTrigger>
           <TabsTrigger value="rewards" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all duration-200">
             <Trophy className="size-4 mr-2" />
