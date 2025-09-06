@@ -141,6 +141,7 @@ export default function AnimatedHeader() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   transition={spring.snappy}
+                  onClick={() => track('nav_click', { section: item.id })}
                 >
                   {item.icon && <item.icon className="size-4" />}
                   {item.label}
@@ -166,6 +167,7 @@ export default function AnimatedHeader() {
               }}
               whileTap={{ scale: 0.98 }}
               transition={spring.snappy}
+              onClick={() => track('cta_header_get_quote')}
             >
               Get My Quote
             </motion.a>
@@ -203,6 +205,7 @@ export default function AnimatedHeader() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               transition={spring.snappy}
+              onClick={() => track('header_phone_call')}
             >
               <PhoneCall className="size-4" /> Call
             </motion.a>
@@ -214,6 +217,7 @@ export default function AnimatedHeader() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               transition={spring.snappy}
+              onClick={() => track('cta_header_get_quote')}
             >
               Get Quote
             </motion.a>
@@ -287,6 +291,7 @@ export default function AnimatedHeader() {
                     onClick={() => setIsMenuOpen(false)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClickCapture={() => track('cta_header_get_quote')}
                   >
                     Get My Quote
                   </motion.a>
@@ -296,6 +301,7 @@ export default function AnimatedHeader() {
                     onClick={() => setIsMenuOpen(false)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClickCapture={() => track('cta_header_signup')}
                   >
                     Create Account
                   </motion.a>
@@ -305,6 +311,7 @@ export default function AnimatedHeader() {
                     onClick={() => setIsMenuOpen(false)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClickCapture={() => track('cta_header_login')}
                   >
                     Log in
                   </motion.a>

@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Reveal from '@/components/Reveal';
 import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
 import { splitHeadline, dur, ease, spring } from '@/lib/motion/presets';
+import { track } from '@/lib/analytics';
 
 export default function Hero() {
   const heroRef = useRef<HTMLElement>(null);
@@ -163,6 +164,7 @@ export default function Hero() {
                 }}
                 whileTap={{ scale: 0.98 }}
                 transition={spring.snappy}
+                onClick={() => track('cta_hero_get_quote')}
               >
                 {/* Shimmer effect */}
                 <motion.div
@@ -181,6 +183,7 @@ export default function Hero() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 transition={spring.snappy}
+                onClick={() => track('cta_hero_how_it_works')}
               >
                 How it works
               </motion.a>
