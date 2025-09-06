@@ -261,36 +261,38 @@ export default function DashboardClientNew(props: DashboardClientProps) {
 
                 <div className="flex flex-wrap gap-3">
                   <Button asChild>
-                    <a href="#">Update Profile</a>
+                    <a href="/signup">Update Profile</a>
                   </Button>
                   <Button variant="outline" asChild>
-                    <a href="#">Add Dog Profile</a>
+                    <a href="/signup">Add Dog Profile</a>
                   </Button>
                 </div>
               </div>
 
               {/* Referral Incentives */}
-              <div className="p-4 rounded-xl bg-accent-soft border border-accent/20">
+              <div className="p-4 rounded-xl bg-accent-soft border border-accent/20 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="size-4 text-accent" />
                   <div className="text-sm font-medium text-ink">Referral rewards</div>
                 </div>
                 <div className="text-sm text-slate-700 mb-3">
-                  Give $10, Get $10 on your next service.
+                  Get a free visit for every referral.
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <input
                     readOnly
                     value={referralUrl}
-                    className="flex-1 px-3 py-2 rounded-lg border border-accent/20 text-sm"
+                    className="min-w-0 flex-1 px-3 py-2 rounded-lg border border-accent/20 text-sm"
                     aria-label="Your referral link"
                   />
-                  <Button variant="outline" onClick={handleCopy} aria-label="Copy referral link">
-                    <Copy className="size-4 mr-2" /> {copied ? 'Copied' : 'Copy'}
-                  </Button>
-                  <Button onClick={handleShare} aria-label="Share referral link">
-                    <Share2 className="size-4 mr-2" /> Share
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleCopy} aria-label="Copy referral link">
+                      <Copy className="size-4 mr-2" /> {copied ? 'Copied' : 'Copy'}
+                    </Button>
+                    <Button onClick={handleShare} aria-label="Share referral link">
+                      <Share2 className="size-4 mr-2" /> Share
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
