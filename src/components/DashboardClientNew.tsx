@@ -1,9 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 import {
   Heart,
   Calendar,
@@ -133,10 +136,13 @@ export default function DashboardClientNew(props: DashboardClientProps) {
   const { user, dogs, serviceVisits, dataReadings } = props;
   const [copied, setCopied] = useState(false);
 
+  // Local state mirrors for inline updates and onboarding hiding
+  const [userState, setUserState] = useState(user);
+  const [dogsState, setDogsState] = useState(dogs);
   const hasAnyData = dataReadings.length > 0 || serviceVisits.length > 0;
   const { percent: profilePercent, fields: profileFields } = useMemo(
-    () => getProfileCompleteness(user, dogs.length),
-    [user, dogs.length]
+    () => getProfileCompleteness(userState, dogsState.length),
+    [userState, dogsState.length]
   );
 
   const totalGrams = useMemo(
@@ -294,16 +300,87 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     }
   };
 
+  // Inline onboarding forms
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [showDogForm, setShowDogForm] = useState(false);
+  const [formPhone, setFormPhone] = useState(userState.phone || '');
+  const [formAddress, setFormAddress] = useState(userState.address || '');
+  const [formCity, setFormCity] = useState(userState.city || '');
+  const [formZip, setFormZip] = useState(userState.zipCode || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const [dogName, setDogName] = useState('');
+  const [dogBreed, setDogBreed] = useState('');
+  const [dogAge, setDogAge] = useState('');
+  const [dogWeight, setDogWeight] = useState('');
+  const [savingDog, setSavingDog] = useState(false);
+
+  const BREEDS = [
+    'Mixed Breed',
+    'Labrador Retriever',
+    'Golden Retriever',
+    'German Shepherd',
+    'French Bulldog',
+    'Bulldog',
+    'Poodle',
+    'Beagle',
+    'Rottweiler',
+    'Yorkshire Terrier',
+    'Dachshund',
+    'Boxer',
+    'Australian Shepherd',
+    'Cavalier King Charles Spaniel',
+    'Shih Tzu',
+  ];
+
+  async function submitProfile() {
+    setSavingProfile(true);
+    try {
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: formAddress, city: formCity, zipCode: formZip, phone: formPhone }),
+      });
+      setUserState({ ...userState, address: formAddress, city: formCity, zipCode: formZip, phone: formPhone });
+      setShowProfileForm(false);
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function submitDog() {
+    if (!dogName.trim()) return;
+    setSavingDog(true);
+    try {
+      const res = await fetch('/api/dogs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: dogName, breed: dogBreed || null, age: dogAge ? parseInt(dogAge) : null, weight: dogWeight }),
+      });
+      if (res.ok) {
+        const { dog } = await res.json();
+        setDogsState([...dogsState, dog]);
+        setDogName('');
+        setDogBreed('');
+        setDogAge('');
+        setDogWeight('');
+        setShowDogForm(false);
+      }
+    } finally {
+      setSavingDog(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-ink">
-            Welcome back{user.name ? `, ${user.name}` : ''}!
+            Welcome back{userState.name ? `, ${userState.name}` : ''}!
           </h1>
           <p className="text-slate-600">
-            Household: {dogs.length} {dogs.length === 1 ? 'dog' : 'dogs'}. Signals are aggregated
+            Household: {dogsState.length} {dogsState.length === 1 ? 'dog' : 'dogs'}. Signals are aggregated
             across all dogs (non-diagnostic).
           </p>
         </div>
@@ -314,8 +391,8 @@ export default function DashboardClientNew(props: DashboardClientProps) {
         </Button>
       </div>
 
-      {/* Empty State: Profile & Onboarding */}
-      {!hasAnyData && (
+      {/* Onboarding: Profile & Dog inline forms; hides when complete */}
+      {(profilePercent < 100 || dogsState.length === 0) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -355,13 +432,92 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                 </ul>
 
                 <div className="flex flex-wrap gap-3">
-                  <Button asChild>
-                    <a href="/account">Update Profile</a>
+                  <Button onClick={() => setShowProfileForm(!showProfileForm)}>
+                    {showProfileForm ? 'Close Profile Form' : 'Update Profile'}
                   </Button>
-                  <Button variant="outline" asChild>
-                    <a href="/dogs/new">Add Dog Profile</a>
+                  <Button variant="outline" onClick={() => setShowDogForm(!showDogForm)}>
+                    {showDogForm ? 'Close Dog Form' : 'Add Dog Profile'}
                   </Button>
                 </div>
+
+                {showProfileForm && (
+                  <div className="mt-4 space-y-3 p-4 border rounded-xl">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Phone</label>
+                        <Input value={formPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormPhone(e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">ZIP</label>
+                        <Input value={formZip} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormZip(e.target.value)} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Address</label>
+                      <AddressAutocomplete
+                        value={formAddress}
+                        onChange={(val: string) => setFormAddress(val)}
+                        onSelect={(addr: { formattedAddress: string; city?: string; postalCode?: string }) => {
+                          if (addr.formattedAddress) setFormAddress(addr.formattedAddress);
+                          if (addr.city) setFormCity(addr.city || '');
+                          if (addr.postalCode) setFormZip(addr.postalCode || '');
+                        }}
+                      />
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium mb-1">City</label>
+                        <Input value={formCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormCity(e.target.value)} />
+                      </div>
+                      <div className="flex items-end">
+                        <Button onClick={submitProfile} disabled={savingProfile}>
+                          {savingProfile ? 'Saving…' : 'Save Profile'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {showDogForm && (
+                  <div className="mt-4 space-y-3 p-4 border rounded-xl">
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Dog Name *</label>
+                      <Input value={dogName} onChange={(e: ChangeEvent<HTMLInputElement>) => setDogName(e.target.value)} />
+                    </div>
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-medium mb-1">Breed</label>
+                        <select
+                          className="w-full border rounded-md p-2"
+                          value={dogBreed}
+                          onChange={(e: ChangeEvent<HTMLSelectElement>) => setDogBreed(e.target.value)}
+                        >
+                          <option value="">Select breed</option>
+                          {BREEDS.map((b) => (
+                            <option key={b} value={b}>
+                              {b}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Age</label>
+                        <Input value={dogAge} onChange={(e: ChangeEvent<HTMLInputElement>) => setDogAge(e.target.value)} type="number" min="0" />
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-3 gap-3 items-end">
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Weight (lbs)</label>
+                        <Input value={dogWeight} onChange={(e: ChangeEvent<HTMLInputElement>) => setDogWeight(e.target.value)} type="number" min="0" />
+                      </div>
+                      <div className="sm:col-span-2 flex justify-end">
+                        <Button onClick={submitDog} disabled={savingDog || !dogName.trim()}>
+                          {savingDog ? 'Saving…' : 'Save Dog'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Referral Incentives */}
@@ -480,7 +636,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Trend (Week over Week) */}
             <div className="lg:col-span-2">
-              <Card>
+              <Card className="motion-hover-lift">
                 <CardHeader>
                   <CardTitle>Week-over-Week Observations</CardTitle>
                 </CardHeader>
@@ -529,7 +685,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
 
             {/* Core Signals (3 Cs) */}
             <div>
-              <Card>
+              <Card className="motion-hover-lift">
                 <CardHeader>
                   <CardTitle>Core Wellness Signals (3 Cs)</CardTitle>
                 </CardHeader>
@@ -564,7 +720,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           {/* Service Streak and Breakdown */}
           <div className="grid lg:grid-cols-3 gap-8">
             <div>
-              <Card>
+              <Card className="motion-hover-lift">
                 <CardHeader>
                   <CardTitle>Service Streak</CardTitle>
                 </CardHeader>
@@ -575,7 +731,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
               </Card>
             </div>
             <div className="lg:col-span-2">
-              <Card>
+              <Card className="motion-hover-lift">
                 <CardHeader>
                   <CardTitle>Observations Breakdown</CardTitle>
                 </CardHeader>
@@ -605,7 +761,7 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           </div>
 
           {/* Color Flags */}
-          <Card>
+          <Card className="motion-hover-lift">
             <CardHeader>
               <CardTitle>Color Flags</CardTitle>
             </CardHeader>
@@ -643,9 +799,15 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                             {new Date(visit.scheduledDate).toLocaleDateString()}
                           </div>
                         </div>
-                        <Badge variant={badgeVariant}>
-                          <span>{visit.status}</span>
-                        </Badge>
+                        <span
+                          className={
+                            badgeVariant === 'default'
+                              ? 'inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold bg-accent text-white'
+                              : 'inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold border'
+                          }
+                        >
+                          {visit.status}
+                        </span>
                       </div>
                     );
                   })}

@@ -8,6 +8,23 @@ import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 
 export default function NewDogPage() {
+  const BREEDS = [
+    'Mixed Breed',
+    'Labrador Retriever',
+    'Golden Retriever',
+    'German Shepherd',
+    'French Bulldog',
+    'Bulldog',
+    'Poodle',
+    'Beagle',
+    'Rottweiler',
+    'Yorkshire Terrier',
+    'Dachshund',
+    'Boxer',
+    'Australian Shepherd',
+    'Cavalier King Charles Spaniel',
+    'Shih Tzu',
+  ];
   const router = useRouter();
   const [name, setName] = useState('');
   const [breed, setBreed] = useState('');
@@ -53,7 +70,18 @@ export default function NewDogPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Breed</label>
-              <Input value={breed} onChange={(e: ChangeEvent<HTMLInputElement>) => setBreed(e.target.value)} />
+              <select
+                className="w-full border rounded-md p-2"
+                value={breed}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => setBreed(e.target.value)}
+              >
+                <option value="">Select breed</option>
+                {BREEDS.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
