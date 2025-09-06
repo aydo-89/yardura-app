@@ -77,7 +77,7 @@ export default function AnimatedHeader() {
     <>
       <motion.header
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-sticky bg-white/90 backdrop-blur-md border-b border-accent/10 shadow-sm"
+        className="fixed top-0 left-0 right-0 z-[1000] bg-white/90 backdrop-blur-md border-b border-accent/10 shadow-sm"
         style={{
           height: prefersReducedMotion ? 88 : headerHeight,
           y: prefersReducedMotion ? 0 : translateY,
