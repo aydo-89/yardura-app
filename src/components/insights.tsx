@@ -19,6 +19,7 @@ import { useInViewCountUp } from '@/hooks/useInViewCountUp';
 import { useRef, useState } from 'react';
 import Reveal from '@/components/Reveal';
 import { liftHover, spring } from '@/lib/motion/presets';
+import { track } from '@/lib/analytics';
 
 export default function Insights() {
   const [activeMetric, setActiveMetric] = useState('color');
@@ -502,12 +503,14 @@ export default function Insights() {
                   href="/quote"
                   data-analytics="cta_quote"
                   className="px-6 py-3 bg-accent text-white rounded-xl font-semibold shadow-soft hover:bg-accent/90 transition-all duration-200 hover:scale-105"
+                  onClick={() => track('cta_insights_get_quote')}
                 >
                   Get My Quote
                 </a>
                 <a
                   href="#why-matters"
                   className="px-6 py-3 border border-accent text-accent rounded-xl font-semibold hover:bg-accent-soft transition-all duration-200"
+                  onClick={() => track('cta_insights_learn_more')}
                 >
                   Learn More
                 </a>

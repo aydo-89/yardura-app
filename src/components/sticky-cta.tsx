@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { track } from '@/lib/analytics';
 
 export default function StickyCTA() {
   const [isVisible, setIsVisible] = useState(false);
@@ -26,6 +27,7 @@ export default function StickyCTA() {
         href="/quote"
         data-analytics="cta_quote"
         className="flex items-center gap-2 px-4 py-3 bg-brand-600 text-white rounded-full shadow-lg hover:bg-brand-700 transition-all duration-200 hover:scale-105"
+        onClick={() => track('cta_sticky_get_quote')}
       >
         <span className="text-sm font-semibold">Get Quote</span>
         <span className="text-lg">📞</span>
