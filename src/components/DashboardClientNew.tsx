@@ -1232,6 +1232,38 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             </CardContent>
           </Card>
 
+          {/* Color Distribution */}
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle>Color Distribution (last 30 days)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {(() => {
+                  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+                  const counts = new Map<string, number>();
+                  dataReadings
+                    .filter((r) => new Date(r.timestamp).getTime() >= cutoff)
+                    .forEach((r) => {
+                      const label = (r.color || 'unknown').toLowerCase();
+                      counts.set(label, (counts.get(label) || 0) + 1);
+                    });
+                  const items = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
+                  const max = Math.max(1, ...items.map(([, c]) => c));
+                  return items.map(([label, count]) => (
+                    <div key={label} className="flex items-center gap-3">
+                      <div className="w-28 text-xs text-muted truncate">{label}</div>
+                      <div className="flex-1 bg-slate-200 rounded-full h-3 overflow-hidden border border-slate-300">
+                        <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600" style={{ width: `${Math.round((count / max) * 100)}%` }} />
+                      </div>
+                      <div className="w-8 text-right text-xs text-muted">{count}</div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Service Streak and Breakdown */}
           <div className="grid lg:grid-cols-3 gap-8">
             <div>
