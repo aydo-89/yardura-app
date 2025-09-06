@@ -43,6 +43,7 @@ function ReportsList({ orgId }: { orgId: string }) {
           href={`/api/reports/monthly?orgId=${encodeURIComponent(orgId)}&month=${m}`}
           target="_blank"
           rel="noreferrer"
+          onClick={() => track('report_download', { month: m, orgId })}
         >
           <span className="text-sm">{m}</span>
           <span className="text-accent text-xs underline">Download</span>
