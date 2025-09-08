@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useRef, useState } from 'react';
+// import { motion } from 'framer-motion';
 import type { ChangeEvent } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,13 +18,29 @@ import {
   Share2,
   Copy,
   CircleAlert,
-  CheckCircle2,
+  // CheckCircle2,
   Dog,
   Trophy,
   Home,
   User,
   Leaf,
+  Bug,
+  Eye,
+  History,
+  AlertTriangle,
+  AlertCircle,
+  Download,
+  Palette,
+  BarChart3,
+  Lightbulb,
+  Waves,
+  Activity,
+  Search,
+  CheckCircle,
+  Info,
+  Droplets,
 } from 'lucide-react';
+import { generateWeekReadings, getScenario, getRandomScenarioKey, MOCK_SCENARIOS } from '@/data/mockWellnessData';
 
 function ReportsList({ orgId }: { orgId: string }) {
   const now = new Date();
@@ -150,123 +166,70 @@ function buildWeeklySeries(
   return buckets;
 }
 
-function buildSparklinePath(points: WeeklyPoint[], width = 280, height = 60, padding = 16) {
-  if (points.length === 0) return '';
-  const maxVal = Math.max(1, ...points.map((p) => p.value));
-  const innerWidth = width - padding * 2;
-  const innerHeight = height - padding * 2;
-  const stepX = innerWidth / Math.max(1, points.length - 1);
-  const yFor = (v: number) => padding + (innerHeight - (v / maxVal) * innerHeight);
-  const xFor = (i: number) => padding + i * stepX;
-  let d = '';
-  points.forEach((p, i) => {
-    const x = xFor(i);
-    const y = yFor(p.value);
-    d += i === 0 ? `M${x} ${y}` : ` L${x} ${y}`;
-  });
-  return d;
-}
+// function buildSparklinePath(points: WeeklyPoint[], width = 280, height = 60, padding = 16) {
+//   if (points.length === 0) return '';
+//   const maxVal = Math.max(1, ...points.map((p) => p.value));
+//   const innerWidth = width - padding * 2;
+//   const innerHeight = height - padding * 2;
+//   const stepX = innerWidth / Math.max(1, points.length - 1);
+//   const yFor = (v: number) => padding + (innerHeight - (v / maxVal) * innerHeight);
+//   const xFor = (i: number) => padding + i * stepX;
+//   let d = '';
+//   points.forEach((p, i) => {
+//     const x = xFor(i);
+//     const y = yFor(p.value);
+//     d += i === 0 ? `M${x} ${y}` : ` L${x} ${y}`;
+//   });
+//   return d;
+// }
 
-type StatRingProps = {
-  value: number; // 0..1
-  size?: number;
-  thickness?: number;
-  centerText?: string;
-  caption?: string;
-  accentColorClassName?: string; // e.g. text-accent
-};
-
-function StatRing({
-  value,
-  size = 56,
-  thickness = 6,
-  centerText,
-  caption,
-  accentColorClassName = 'text-accent',
-}: StatRingProps) {
-  const gradId = `ringGrad-${size}-${thickness}`;
-  const radius = (size - thickness) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const clamped = Math.max(0, Math.min(1, value || 0));
-  const dash = clamped * circumference;
-  const remainder = circumference - dash;
-  return (
-    <div className="inline-flex flex-col items-center justify-center">
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="block"
-        role="img"
-        aria-label={`Progress ${Math.round(clamped * 100)}%`}
-      >
-        <defs>
-          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0.65" />
-          </linearGradient>
-        </defs>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="hsl(var(--muted))"
-          strokeWidth={thickness}
-          fill="none"
-          opacity="0.35"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={`url(#${gradId})`}
-          strokeWidth={thickness}
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${remainder}`}
-          fill="none"
-          className={accentColorClassName}
-          style={{ transition: 'stroke-dasharray 600ms ease' }}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-        {centerText && (
-          <text
-            x="50%"
-            y="50%"
-            dominantBaseline="middle"
-            textAnchor="middle"
-            className="fill-slate-900"
-            fontSize={Math.max(12, size * 0.28)}
-            fontWeight={700}
-          >
-            {centerText}
-          </text>
-        )}
-      </svg>
-      {caption && <div className="text-[10px] leading-none text-muted mt-1">{caption}</div>}
-    </div>
-  );
-}
+// StatRing component removed per design simplification
 
 export default function DashboardClientNew(props: DashboardClientProps) {
   const { user, dogs, serviceVisits, dataReadings } = props;
   const [copied, setCopied] = useState(false);
+  const [showColorDetails, setShowColorDetails] = useState(true);
+  const [timelineHover, setTimelineHover] = useState<null | { x: number; y: number; text: string; href?: string; i: number; severity: 0 | 1 | 2 }>(null);
+  const hoverTimerRef = useRef<number | null>(null);
+  const setHoverDelayed = (payload: { x: number; y: number; text: string; href?: string; i: number; severity: 0 | 1 | 2 }) => {
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current);
+    }
+    hoverTimerRef.current = window.setTimeout(() => setTimelineHover(payload), 50) as unknown as number;
+  };
+  const clearHoverDelayed = () => {
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setTimelineHover(null);
+  };
+
+  // Track user-reviewed warnings/needs-attention by week index
+  const [reviewedByIndex, setReviewedByIndex] = useState<Record<number, boolean>>({});
 
   // Generate particle data once to avoid hydration mismatch
-  const [particles] = useState(() =>
-    Array.from({ length: 20 }).map((_, i) => ({
+  const [particles] = useState(() => {
+    // Use deterministic seeded random for consistent particles between SSR and client
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed * 1000) * 10000;
+      return Math.abs(x - Math.floor(x));
+    };
+
+    return Array.from({ length: 20 }).map((_, i) => ({
       id: i,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      width: Math.random() * 4 + 2,
-      height: Math.random() * 4 + 2,
-      delay: Math.random() * 2,
-    }))
-  );
+      left: Math.floor(seededRandom(i * 1) * 100),
+      top: Math.floor(seededRandom(i * 2) * 100),
+      width: Math.floor(seededRandom(i * 3) * 4) + 2,
+      height: Math.floor(seededRandom(i * 4) * 4) + 2,
+      delay: Math.floor(seededRandom(i * 5) * 2),
+    }));
+  });
 
   // Local state mirrors for inline updates and onboarding hiding
   const [userState, setUserState] = useState(user);
   const [dogsState, setDogsState] = useState(dogs);
-  const hasAnyData = dataReadings.length > 0 || serviceVisits.length > 0;
+  // const hasAnyData = dataReadings.length > 0 || serviceVisits.length > 0;
   const { percent: profilePercent, fields: profileFields } = useMemo(
     () => getProfileCompleteness(userState, dogsState.length),
     [userState, dogsState.length]
@@ -283,23 +246,23 @@ export default function DashboardClientNew(props: DashboardClientProps) {
   }, [dataReadings]);
 
   const weeklySeries = useMemo(() => buildWeeklySeries(dataReadings, 8), [dataReadings]);
-  const trendPath = useMemo(() => buildSparklinePath(weeklySeries), [weeklySeries]);
+  // const trendPath = useMemo(() => buildSparklinePath(weeklySeries), [weeklySeries]);
 
-  const uniqueColors = useMemo(() => {
-    const set = new Set(
-      dataReadings
-        .map((r) => (r.color || '').trim().toLowerCase())
-        .filter((s) => s && s !== 'normal' && s !== 'healthy')
-    );
-    return set.size;
-  }, [dataReadings]);
+  // const uniqueColors = useMemo(() => {
+  //   const unique = new Set(
+  //     dataReadings
+  //       .map((r) => (r.color || '').trim().toLowerCase())
+  //       .filter((s) => s && s !== 'normal' && s !== 'healthy')
+  //   );
+  //   return unique.size;
+  // }, [dataReadings]);
 
-  const uniqueConsistency = useMemo(() => {
-    const set = new Set(
-      dataReadings.map((r) => (r.consistency || '').trim().toLowerCase()).filter((s) => s)
-    );
-    return set.size;
-  }, [dataReadings]);
+  // const uniqueConsistency = useMemo(() => {
+  //   const unique = new Set(
+  //     dataReadings.map((r) => (r.consistency || '').trim().toLowerCase()).filter((s) => s)
+  //   );
+  //   return unique.size;
+  // }, [dataReadings]);
 
   const referralUrl =
     typeof window !== 'undefined'
@@ -311,10 +274,10 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     [weeklySeries]
   );
 
-  const baselinePercent = useMemo(
-    () => Math.min(100, Math.round((weeksWithData / 4) * 100)),
-    [weeksWithData]
-  );
+  // const baselinePercent = useMemo(
+  //   () => Math.min(100, Math.round((weeksWithData / 4) * 100)),
+  //   [weeksWithData]
+  // );
 
   const lastReadingAt = useMemo(() => {
     if (dataReadings.length === 0) return null as Date | null;
@@ -323,11 +286,35 @@ export default function DashboardClientNew(props: DashboardClientProps) {
   }, [dataReadings]);
 
   const nextServiceAt = useMemo(() => {
-    const future = serviceVisits
+    const nowTs = Date.now();
+    // Candidate 1: earliest explicitly scheduled visit in the future
+    const futureScheduled = serviceVisits
+      .filter((v) => v.status === 'SCHEDULED')
       .map((v) => new Date(v.scheduledDate))
-      .filter((d) => d.getTime() >= Date.now())
+      .filter((d) => d.getTime() >= nowTs)
       .sort((a, b) => a.getTime() - b.getTime());
-    return future[0] || null;
+
+    // Candidate 2: weekly cadence computed from most recent COMPLETED
+    let cadenceNext: Date | null = null;
+    const isWeekly = serviceVisits.some((v) => (v.serviceType || '').includes('WEEKLY'));
+    if (isWeekly) {
+      const mostRecentCompleted = serviceVisits
+        .filter((v) => v.status === 'COMPLETED')
+        .map((v) => new Date(v.scheduledDate))
+        .sort((a, b) => b.getTime() - a.getTime())[0] || null;
+      if (mostRecentCompleted) {
+        const n = new Date(mostRecentCompleted);
+        // Advance by 7-day steps until strictly in the future (>= now)
+        do { n.setDate(n.getDate() + 7); } while (n.getTime() < nowTs);
+        cadenceNext = n;
+      }
+    }
+
+    // Choose the earliest valid candidate
+    const candidates = [futureScheduled[0], cadenceNext].filter(Boolean) as Date[];
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.getTime() - b.getTime());
+    return candidates[0];
   }, [serviceVisits]);
 
   const lastCompletedAt = useMemo(() => {
@@ -344,10 +331,10 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
   }, [nextServiceAt]);
 
-  const nextServiceProgress = useMemo(() => {
-    if (daysUntilNext == null) return 0;
-    return 1 - Math.min(1, daysUntilNext / 7);
-  }, [daysUntilNext]);
+  // const nextServiceProgress = useMemo(() => {
+  //   if (daysUntilNext == null) return 0;
+  //   return 1 - Math.min(1, daysUntilNext / 7);
+  // }, [daysUntilNext]);
 
   const daysSinceLast = useMemo(() => {
     if (!lastCompletedAt) return null as number | null;
@@ -355,10 +342,10 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
   }, [lastCompletedAt]);
 
-  const lastServiceRecency = useMemo(() => {
-    if (daysSinceLast == null) return 0;
-    return Math.min(1, daysSinceLast / 7);
-  }, [daysSinceLast]);
+  // const lastServiceRecency = useMemo(() => {
+  //   if (daysSinceLast == null) return 0;
+  //   return Math.min(1, daysSinceLast / 7);
+  // }, [daysSinceLast]);
 
   const serviceStreak = useMemo(() => {
     const sorted = [...serviceVisits].sort(
@@ -376,14 +363,14 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return t.getTime() >= start.getTime() && t.getTime() < end.getTime();
   }
 
-  const gramsThisWeek = useMemo(() => {
-    const start = startOfWeek(new Date());
-    const end = new Date();
-    return dataReadings.reduce((sum, r) => {
-      const t = new Date(r.timestamp);
-      return inRange(t, start, end) ? sum + (r.weight || 0) : sum;
-    }, 0);
-  }, [dataReadings]);
+  // const gramsThisWeek = useMemo(() => {
+  //   const start = startOfWeek(new Date());
+  //   const end = new Date();
+  //   return dataReadings.reduce((sum, r) => {
+  //     const t = new Date(r.timestamp);
+  //     return inRange(t, start, end) ? sum + (r.weight || 0) : sum;
+  //   }, 0);
+  // }, [dataReadings]);
 
   const gramsLastWeek = useMemo(() => {
     const start = startOfWeek(new Date());
@@ -449,13 +436,13 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return gramsThisMonth * 0.002 * 0.67;
   }, [gramsThisMonth]);
 
-  const activityRatio7of30 = useMemo(() => {
-    return last30DaysCount > 0 ? Math.min(1, last7DaysCount / last30DaysCount) : 0;
-  }, [last7DaysCount, last30DaysCount]);
+  // const activityRatio7of30 = useMemo(() => {
+  //   return last30DaysCount > 0 ? Math.min(1, last7DaysCount / last30DaysCount) : 0;
+  // }, [last7DaysCount, last30DaysCount]);
 
-  const ecoRatioVsPrev = useMemo(() => {
-    return gramsPrevMonth > 0 ? Math.min(1.25, gramsThisMonth / gramsPrevMonth) / 1.25 : 0.6; // normalize, cap for ring
-  }, [gramsThisMonth, gramsPrevMonth]);
+  // const ecoRatioVsPrev = useMemo(() => {
+  //   return gramsPrevMonth > 0 ? Math.min(1.25, gramsThisMonth / gramsPrevMonth) / 1.25 : 0.6; // normalize, cap for ring
+  // }, [gramsThisMonth, gramsPrevMonth]);
 
   const recentInsightsLevel = useMemo(() => {
     const concerning = dataReadings.some((r) => {
@@ -465,34 +452,70 @@ export default function DashboardClientNew(props: DashboardClientProps) {
     return concerning ? 'WATCH' : 'NORMAL';
   }, [dataReadings]);
 
-  const consistencyCounts = useMemo(() => {
-    const map = new Map<string, number>();
-    dataReadings.forEach((r) => {
-      const key = (r.consistency || 'unknown').toLowerCase();
-      map.set(key, (map.get(key) || 0) + 1);
-    });
-    return Array.from(map.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4);
-  }, [dataReadings]);
+  // Unified categorization helpers for colors and consistency
+  const colorKeyFor = (raw: string | null | undefined): string => {
+    const c = (raw || '').toLowerCase();
+    if (!c) return 'normal';
+    if (c.includes('red')) return 'red';
+    if (c.includes('black') || c.includes('tarry') || c.includes('melena')) return 'black';
+    if (c.includes('yellow') || c.includes('gray') || c.includes('grey')) return 'yellow';
+    if (c.includes('green')) return 'normal';
+    // Treat common healthy hues as normal (collapsed category)
+    if (c.includes('brown') || c.includes('tan') || c.includes('normal') || c.includes('healthy')) return 'normal';
+    return 'normal';
+  };
 
-  const colorFlagCounts = useMemo(() => {
-    const mutable: { blackTar: number; brightRed: number; yellowGray: number; green: number } = {
-      blackTar: 0,
-      brightRed: 0,
-      yellowGray: 0,
-      green: 0,
-    };
-    dataReadings.forEach((r) => {
-      const c = (r.color || '').toLowerCase();
-      if (!c) return;
-      if (c.includes('black') || c.includes('tarry') || c.includes('melena')) mutable.blackTar += 1;
-      if (c.includes('red')) mutable.brightRed += 1;
-      if (c.includes('yellow') || c.includes('gray') || c.includes('grey')) mutable.yellowGray += 1;
-      if (c.includes('green')) mutable.green += 1;
-    });
-    return mutable;
-  }, [dataReadings]);
+  const COLOR_HEX: Record<string, string> = {
+    normal: '#10b981', // green for normal (good)
+    red: '#ef4444',
+    black: '#111827',
+    yellow: '#f59e0b',
+    green: '#10b981',
+    other: '#64748b',
+    unknown: '#94a3b8',
+  };
+
+  const consistencyKeyFor = (raw: string | null | undefined): string => {
+    const v = (raw || '').toLowerCase();
+    if (!v) return 'normal';
+    if (v.includes('firm') || v.includes('formed') || v.includes('normal') || v.includes('healthy')) return 'normal';
+    // Treat "loose" as "soft" to avoid duplicate categories
+    if (v.includes('soft') || v.includes('loose')) return 'soft';
+    if (v.includes('dry') || v.includes('hard')) return 'dry';
+    if (v.includes('mucous') || v.includes('mucus')) return 'mucous';
+    if (v.includes('greasy') || v.includes('fatty')) return 'greasy';
+    return 'normal';
+  };
+
+  const CONS_HEX: Record<string, string> = {
+    normal: '#10b981', // green for normal
+    soft: '#fbbf24',
+    dry: '#60a5fa',
+    mucous: '#8b5cf6',
+    greasy: '#3b82f6',
+    other: '#64748b',
+    unknown: '#94a3b8',
+  };
+
+  // const consistencyCounts = useMemo(() => {
+  //   const map = new Map<string, number>();
+  //   dataReadings.forEach((r) => {
+  //     const key = consistencyKeyFor(r.consistency);
+  //     map.set(key, (map.get(key) || 0) + 1);
+  //   });
+  //   return Array.from(map.entries())
+  //     .sort((a, b) => b[1] - a[1])
+  //     .slice(0, 4);
+  // }, [dataReadings]);
+
+  // const colorFlagCounts = useMemo(() => {
+  //   const counts: Record<string, number> = {};
+  //   dataReadings.forEach((r) => {
+  //     const key = colorKeyFor(r.color);
+  //     counts[key] = (counts[key] || 0) + 1;
+  //   });
+  //   return counts;
+  // }, [dataReadings]);
 
   const handleCopy = async () => {
     try {
@@ -635,19 +658,48 @@ export default function DashboardClientNew(props: DashboardClientProps) {
             <h1 className="text-4xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
               Welcome back{userState.name ? `, ${userState.name}` : ''}! 🐾
             </h1>
-            <p className="text-slate-300 mt-2 text-lg">
+            <div className="text-slate-300 mt-2 text-lg">
               Household: {dogsState.length} {dogsState.length === 1 ? 'dog' : 'dogs'} •
               <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-green-500/20 px-3 py-1 text-sm font-medium text-green-300">
                 <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></div>
                 Live wellness tracking
               </span>
-            </p>
+            </div>
+            {/* Quick Stats */}
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <Heart className="size-4 text-pink-300" />
+                <span className="text-slate-200">
+                  {recentInsightsLevel === 'WATCH' ? 'Needs attention' : 'All normal'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Leaf className="size-4 text-green-300" />
+                <span className="text-slate-200">
+                  {formatLbsFromGrams(gramsThisMonth)} lbs diverted
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="size-4 text-blue-300" />
+                <span className="text-slate-200">
+                  {daysUntilNext ? `${daysUntilNext} days` : 'No service scheduled'}
+                </span>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="border-white/20 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm" asChild>
-              <a href="#" aria-label="Open settings">
-                <Settings className="size-4 mr-2" /> Settings
-              </a>
+            <Button
+              variant="outline"
+              className="border-white/20 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
+              onClick={() => {
+                // Navigate to profile tab and show settings
+                const profileTab = document.querySelector('[value="profile"]') as HTMLElement;
+                if (profileTab) profileTab.click();
+                setTimeout(() => setShowProfileForm(true), 100);
+              }}
+            >
+              <Settings className="size-4 mr-2" />
+              Settings
             </Button>
           </div>
         </div>
@@ -750,133 +802,131 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           )}
 
           {/* Above-the-fold KPIs */}
-          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {/* Next Pickup */}
-            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 auto-rows-fr items-stretch gap-6">
+            {/* Next Service */}
+            <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Next Pickup</CardTitle>
-                <Calendar className="h-4 w-4 text-accent" />
+                <CardTitle className="text-sm font-medium">Next Service</CardTitle>
+                <Calendar className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
-                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-2xl font-bold">
-                      {nextServiceAt ? nextServiceAt.toLocaleDateString() : '—'}
+                <div className="text-2xl font-bold text-slate-900">
+                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : 'Not scheduled'}
                     </div>
-                    <p className="text-xs text-muted">Scheduled window</p>
+                <p className="text-xs text-muted mt-1">
+                  {daysUntilNext ? `${daysUntilNext} days away` : 'Schedule your next pickup'}
+                </p>
+                {nextServiceAt && (
+                  <div className="mt-2 text-xs text-blue-600">
+                    {nextServiceAt.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
                   </div>
-                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
-                    <StatRing
-                      value={nextServiceProgress}
-                      centerText={daysUntilNext != null ? `${daysUntilNext}d` : '—'}
-                      caption="to next"
-                      size={48}
-                    />
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Last Pickup */}
-            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+            {/* Wellness Status */}
+            <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Last Pickup</CardTitle>
-                <Calendar className="h-4 w-4 text-accent" />
+                <CardTitle className="text-sm font-medium">Pet Wellness</CardTitle>
+                <Heart className="h-4 w-4 text-pink-500" />
               </CardHeader>
               <CardContent>
-                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-2xl font-bold">
-                      {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : '—'}
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    recentInsightsLevel === 'WATCH' ? 'bg-amber-500' : 'bg-green-500'
+                  }`}></div>
+                  <span className="text-lg font-bold text-slate-900">
+                    {recentInsightsLevel === 'WATCH' ? 'Needs Attention' : 'All Normal'}
+                  </span>
                     </div>
-                    <p className="text-xs text-muted">Most recent visit</p>
-                  </div>
-                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
-                    <StatRing
-                      value={lastServiceRecency}
-                      centerText={daysSinceLast != null ? `${daysSinceLast}d` : '—'}
-                      caption="since"
-                      size={48}
-                    />
-                  </div>
+                <p className="text-xs text-muted mt-1">
+                  {dataReadings.length} wellness checks this month
+                </p>
+                <div className="mt-2 flex items-center gap-2 text-xs">
+                  <span className="text-slate-600">Last check:</span>
+                  <span className="font-medium">
+                    {lastReadingAt ? lastReadingAt.toLocaleDateString() : 'Never'}
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Recent Insights */}
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Recent Insights</CardTitle>
-                <Heart className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${recentInsightsLevel === 'WATCH' ? 'text-amber-600' : 'text-slate-900'}`}>
-                  {recentInsightsLevel === 'WATCH' ? 'Watch' : 'All normal'}
-                </div>
-                <p className="text-xs text-muted">Informational only</p>
-              </CardContent>
-            </Card>
-
-            {/* Activity */}
-            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+            {/* Activity Summary */}
+            <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Activity</CardTitle>
-                <TrendingUp className="h-4 w-4 text-accent" />
+                <TrendingUp className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
-                  <div className="text-sm text-muted">
-                    <div className="flex items-center justify-between"><span>Deposits (7d)</span><span className="font-semibold text-ink">{last7DaysCount}</span></div>
-                    <div className="flex items-center justify-between"><span>Deposits (30d)</span><span className="font-semibold text-ink">{last30DaysCount}</span></div>
-                    <div className="flex items-center justify-between"><span>Avg wt (30d)</span><span className="font-semibold text-ink">{avgWeight30G != null ? `${avgWeight30G.toFixed(1)} g` : '—'}</span></div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">This week:</span>
+                    <span className="font-bold text-slate-900">{last7DaysCount}</span>
+                </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">This month:</span>
+                    <span className="font-bold text-slate-900">{last30DaysCount}</span>
                   </div>
-                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
-                    <StatRing
-                      value={activityRatio7of30}
-                      centerText={`${last7DaysCount}`}
-                      caption="7d"
-                      size={48}
-                    />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Avg weight:</span>
+                    <span className="font-bold text-slate-900">
+                      {avgWeight30G != null ? `${(avgWeight30G as number).toFixed(1)}g` : '—'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 pt-2 border-t">
+                  <div className="text-xs text-slate-500">
+                    {weekTrend != null ?
+                      `Week-over-week: ${weekTrend > 0 ? '+' : ''}${(weekTrend * 100).toFixed(0)}%` :
+                      'Compare with last week'
+                    }
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Eco (MTD) */}
-            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+            {/* Eco Impact */}
+            <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Eco (MTD)</CardTitle>
-                <Leaf className="h-4 w-4 text-accent" />
+                <CardTitle className="text-sm font-medium">Eco Impact</CardTitle>
+                <Leaf className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-3">
-                  <div className="text-sm text-muted">
-                    <div className="flex items-center justify-between"><span>Diverted</span><span className="font-semibold text-ink">{formatLbsFromGrams(gramsThisMonth)} lbs</span></div>
-                    <div className="flex items-center justify-between"><span>Methane</span><span className="font-semibold text-ink">{methaneThisMonthLbsEq.toFixed(1)} ft³</span></div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Diverted:</span>
+                    <span className="font-bold text-green-700">{formatLbsFromGrams(gramsThisMonth)} lbs</span>
                   </div>
-                  <div className="mt-2 md:mt-0 self-start md:self-auto shrink-0">
-                    <StatRing
-                      value={ecoRatioVsPrev}
-                      centerText={`${formatLbsFromGrams(gramsThisMonth)}`}
-                      caption="lbs MTD"
-                      size={48}
-                    />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Methane saved:</span>
+                    <span className="font-bold text-green-700">{methaneThisMonthLbsEq.toFixed(1)} ft³</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Total diverted:</span>
+                    <span className="font-bold text-slate-900">{formatLbsFromGrams(totalGrams)} lbs</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Billing */}
-            <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+            {/* Service Streak */}
+            <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Billing</CardTitle>
-                <User className="h-4 w-4 text-accent" />
+                <CardTitle className="text-sm font-medium">Service Streak</CardTitle>
+                <Trophy className="h-4 w-4 text-yellow-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{user.stripeCustomerId ? 'Active' : 'Set up'}</div>
-                <p className="text-xs text-muted">Manage plan and payments</p>
-                <div className="mt-2">
-                  <a className="text-xs text-accent underline" href="/billing" onClick={() => track('billing_portal_opened', { location: 'overview_kpi' })}>Open Billing Portal</a>
+                <div className="text-2xl font-bold text-slate-900">{serviceStreak}</div>
+                <p className="text-xs text-muted mt-1">
+                  {serviceStreak === 1 ? 'service' : 'services'} in a row
+                </p>
+                <div className="mt-2 space-y-1">
+                  <div className="text-xs text-slate-600">
+                    Total services: {serviceVisits.length}
+                </div>
+                  <div className="text-xs text-slate-600">
+                    Since: {lastCompletedAt ? lastCompletedAt.toLocaleDateString() : 'Never'}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1124,286 +1174,1418 @@ export default function DashboardClientNew(props: DashboardClientProps) {
 
         {/* Wellness Tab */}
         <TabsContent value="wellness" className="space-y-6">
-          {/* Wellness Overview Cards */}
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
-                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
-                  <Heart className="size-4 text-pink-500" />
-                  Last Sample
-                </div>
-                <div className="text-2xl font-bold text-slate-900">
-                  {lastReadingAt ? lastReadingAt.toLocaleDateString() : '—'}
-                </div>
-                <p className="text-xs text-muted mt-1">Most recent wellness check</p>
-              </CardContent>
-            </Card>
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
-                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
-                  <TrendingUp className="size-4 text-green-500" />
-                  Weekly Trend
-                </div>
-                <div className="text-2xl font-bold text-slate-900">
-                  {typeof weekTrend === 'number'
-                    ? `${weekTrend * 100 > 0 ? '+' : ''}${Math.round(weekTrend * 100)}%`
-                    : '—'
-                  }
-                </div>
-                <p className="text-xs text-muted mt-1">Waste volume change</p>
-              </CardContent>
-            </Card>
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
-                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
-                  <Dog className="size-4 text-blue-500" />
-                  Health Score
-                </div>
-                <div className="text-2xl font-bold text-slate-900">
-                  {dataReadings.length > 0 ? 'Good' : '—'}
-                </div>
-                <p className="text-xs text-muted mt-1">Overall wellness status</p>
-              </CardContent>
-            </Card>
-          </div>
-          {/* Insights Timeline (stacked markers) */}
-          <Card className="motion-hover-lift">
-            <CardHeader>
-              <CardTitle>Insights Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto" role="img" aria-label="Recent color and consistency events timeline">
-                <svg viewBox="0 0 800 120" className="w-[800px] h-[120px] max-w-full">
-                  <line x1="20" y1="60" x2="780" y2="60" stroke="hsl(var(--muted))" strokeWidth="1" opacity="0.5" />
-                  {dataReadings.slice(0, 24).map((r, i) => {
-                    const x = 30 + i * 30;
-                    const hasRed = (r.color || '').toLowerCase().includes('red');
-                    const hasBlack = (r.color || '').toLowerCase().includes('black') || (r.color || '').toLowerCase().includes('tarry');
-                    return (
-                      <g key={r.id || i}>
-                        {/* Consistency dot */}
-                        <circle
-                          cx={x}
-                          cy={45}
-                          r={4}
-                          fill="hsl(var(--accent))"
-                          className="transition-transform duration-150 hover:scale-125"
-                        >
-                          <title>{new Date(r.timestamp).toLocaleDateString()} • Consistency: {r.consistency || '—'}</title>
-                        </circle>
-                        {/* Color markers */}
-                        {hasRed && (
-                          <rect
-                            x={x - 4}
-                            y={64}
-                            width={8}
-                            height={8}
-                            fill="#ef4444"
-                            className="transition-transform duration-150 hover:scale-110"
-                          >
-                            <title>Color: red</title>
-                          </rect>
-                        )}
-                        {hasBlack && (
-                          <rect
-                            x={x - 4}
-                            y={76}
-                            width={8}
-                            height={8}
-                            fill="#111827"
-                            className="transition-transform duration-150 hover:scale-110"
-                          >
-                            <title>Color: black/tarry</title>
-                          </rect>
-                        )}
-                      </g>
-                    );
-                  })}
-                </svg>
-              </div>
-              <div className="mt-3 text-xs text-muted flex items-center gap-4">
-                <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 rounded-full bg-[hsl(var(--accent))]"></span> Consistency</div>
-                <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 bg-[#ef4444]"></span> Red color</div>
-                <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 bg-[#111827]"></span> Black/tarry</div>
-                <span className="ml-auto">Informational only</span>
-              </div>
-            </CardContent>
-          </Card>
-          {/* Key Signals (compact) */}
-          <Card className="motion-hover-lift">
-            <CardHeader>
-              <CardTitle>Key Signals</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4 items-start">
-                <div className="p-4 rounded-xl border bg-white/60">
-                  <div className="text-xs text-muted mb-1">Last sample</div>
-                  <div className="text-2xl font-bold text-slate-900">
-                    {lastReadingAt ? lastReadingAt.toLocaleDateString() : '—'}
-                  </div>
-                  <div className="mt-2 inline-flex items-center gap-2 rounded-full border px-2 py-1 text-xs bg-white">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    Most recent check
-                  </div>
-                </div>
+          {(() => {
+            // Create SINGLE SHARED byWeek map for ENTIRE wellness tab
+            const mondayStart = (d: Date) => { const t = new Date(d); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); t.setHours(0,0,0,0); return t; };
+            const now = new Date();
+            const sharedByWeek = new Map<string, typeof dataReadings>();
 
-                <div className="p-4 rounded-xl border bg-white/60">
-                  <div className="text-xs text-muted mb-1">WoW change</div>
-                  <div className={`text-2xl font-bold ${typeof weekTrend === 'number' ? (weekTrend >= 0 ? 'text-emerald-700' : 'text-rose-700') : 'text-slate-900'}`}>
-                    {typeof weekTrend === 'number' ? `${weekTrend >= 0 ? '+' : ''}${Math.round(weekTrend * 100)}%` : '—'}
-                  </div>
-                  <div className="mt-2 text-xs text-muted">
-                    vs prior week volume
-                  </div>
-                </div>
+            // Process existing readings
+            dataReadings.forEach((r) => {
+              const ds = mondayStart(new Date(r.timestamp));
+              const key = ds.toISOString().slice(0,10);
+              const arr = sharedByWeek.get(key) || [];
+              arr.push(r);
+              sharedByWeek.set(key, arr);
+            });
 
-                <div className="md:col-span-1 md:row-span-1 col-span-3">
-                  <div className="p-4 rounded-xl border bg-white/60">
-                    <div className="text-xs text-muted mb-2">8-week activity</div>
-                    <svg viewBox="0 0 300 60" className="w-full h-[60px]">
-                      <g stroke="hsl(var(--muted))" strokeWidth="0.5" opacity="0.3">
-                        <line x1="0" y1="10" x2="300" y2="10" />
-                        <line x1="0" y1="30" x2="300" y2="30" />
-                        <line x1="0" y1="50" x2="300" y2="50" />
-                      </g>
-                      {trendPath && (
-                        <path d={trendPath} fill="none" stroke="hsl(var(--accent))" strokeWidth="2" strokeLinecap="round" />
-                      )}
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 text-xs text-muted">
-                Insights are informational only and not veterinary advice.
-              </div>
-            </CardContent>
-          </Card>
+            // Generate unified mock data for recent weeks
+            let cur = mondayStart(now);
+            const mockProfile = process.env.DASHBOARD_MOCK_PROFILE || 'diverse';
+            const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+            const selectedScenario = urlParams?.get('scenario') as keyof typeof MOCK_SCENARIOS;
 
-          {/* Core Signals (3 Cs) */}
-          <Card className="motion-hover-lift">
-            <CardHeader>
-              <CardTitle>Core Wellness Signals (3 Cs)</CardTitle>
-            </CardHeader>
-            <CardContent>
+            for (let i = 0; i < 8; i++) {
+              const key = cur.toISOString().slice(0,10);
+              let arr = sharedByWeek.get(key) || [];
+
+              if (arr.length === 0) {
+                const weekStart = new Date(cur);
+
+                // Apply scenario selection logic
+                let scenarioKey: keyof typeof MOCK_SCENARIOS;
+                if (selectedScenario && MOCK_SCENARIOS[selectedScenario]) {
+                  scenarioKey = selectedScenario;
+                } else if (mockProfile === 'normal') {
+                  scenarioKey = i < 2 ? 'normal_mix' : 'perfect';
+                } else {
+                  // Default diverse profile
+                  if (i === 0) scenarioKey = 'red_alert';
+                  else if (i === 1) scenarioKey = 'mucous_alert';
+                  else if (i === 2) scenarioKey = 'yellow_alert';
+                  else if (i === 3) scenarioKey = 'soft_alert';
+                  else if (i === 4) scenarioKey = 'dry_alert';
+                  else if (i === 5) scenarioKey = 'black_alert';
+                  else if (i === 6) scenarioKey = 'normal_mix';
+                  else scenarioKey = 'perfect';
+                }
+
+                const scenario = MOCK_SCENARIOS[scenarioKey];
+                arr = generateWeekReadings(weekStart, scenario);
+                sharedByWeek.set(key, arr);
+              }
+
+              cur = new Date(cur);
+              cur.setDate(cur.getDate() - 7);
+            }
+
+            // Store shared data in a way accessible to all sections
+            if (typeof window !== 'undefined') {
+              (window as any).sharedWellnessData = { sharedByWeek, mondayStart, now, mockProfile, selectedScenario };
+            }
+
+            return null; // Just set up the data, don't render anything
+                      })()}
+
+
+
+          {/* Wellness Summary and Early Warning */}
+          {(() => {
+            // Use the SHARED byWeek map created at the top of the wellness tab
+            const sharedData = (typeof window !== 'undefined' && (window as any).sharedWellnessData) || {};
+            const byWeek = sharedData.sharedByWeek || new Map<string, typeof dataReadings>();
+            const mondayStart = sharedData.mondayStart || ((d: Date) => { const t = new Date(d); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); t.setHours(0,0,0,0); return t; });
+            const now = sharedData.now || new Date();
+
+            let cur = mondayStart(now);
+            let softWeeks = 0; let consecutiveHighSoft = 0; let maxConsec = 0; let coverageWeeks = 0; let weeksTotal = 0; let normalWeeks = 0;
+            const isNormalReading = (r: any) => consistencyKeyFor(r.consistency) === 'normal' && (['red','black','yellow'].indexOf(colorKeyFor(r.color)) === -1);
+            let normalCount = 0, totalCount = 0, abnormalCount = 0;
+            // content-derived helpers for parasite proxy
+            let mucousWeeks = 0, greasyWeeks = 0;
+            let alertWeeks = 0; // red/black color weeks
+
+            // Process weeks with enhanced mock data for recent weeks
+            for (let i=0;i<8;i++) {
+              const key = cur.toISOString().slice(0,10);
+              const arr = byWeek.get(key) || [];
+
+              weeksTotal++;
+              if (arr.length>0) coverageWeeks++;
+              const total = Math.max(1, arr.length);
+              const soft = arr.filter((r: any) => consistencyKeyFor(r.consistency) !== 'normal').length;
+              const softShare = soft/total;
+              if (softShare >= 0.3) { softWeeks++; consecutiveHighSoft++; maxConsec = Math.max(maxConsec, consecutiveHighSoft); } else { consecutiveHighSoft = 0; }
+              arr.forEach((r: any)=>{
+                totalCount++;
+                if (isNormalReading(r)) {
+                  normalCount++;
+                } else {
+                  abnormalCount++;
+                }
+              });
+              const hasCritical = arr.some((r: any)=> (colorKeyFor(r.color)==='red' || colorKeyFor(r.color)==='black'));
+              if (hasCritical) alertWeeks++;
+              if (softShare < 0.3 && !hasCritical) normalWeeks++;
+              if (arr.some((r: any)=> consistencyKeyFor(r.consistency)==='mucous')) mucousWeeks++;
+              if (arr.some((r: any)=> consistencyKeyFor(r.consistency)==='greasy')) greasyWeeks++;
+              cur = new Date(cur); cur.setDate(cur.getDate()-7);
+            }
+            // Overall normal rate: percentage of normal readings across all data
+            const normalRate = totalCount>0 ? Math.round((normalCount/totalCount)*100) : 0;
+            const severity = (softWeeks>=4 || maxConsec>=2) ? 'red' : (softWeeks>=2 ? 'amber' : 'green');
+            return (
               <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
-                  <div className="text-sm font-medium text-ink">Color</div>
-                  <div className="text-xs text-muted">
-                    {uniqueColors > 1 ? 'Variability detected last weeks' : 'Stable hues'}
-                  </div>
-                </div>
-                <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
-                  <div className="text-sm font-medium text-ink">Consistency</div>
-                  <div className="text-xs text-muted">
-                    {uniqueConsistency > 1 ? 'Mixed textures observed' : 'Consistent patterns'}
-                  </div>
-                </div>
-                <div className="p-3 rounded-lg bg-white/60 border border-slate-200/60">
-                  <div className="text-sm font-medium text-ink">Content</div>
-                  <div className="text-xs text-muted">No content anomalies logged</div>
-                </div>
-              </div>
-
-              <div className="mt-4 text-xs text-muted">
-                Informational only, not veterinary advice. Talk to your vet for concerns.
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Color Distribution */}
-          <Card className="motion-hover-lift">
-            <CardHeader>
-              <CardTitle>Color Distribution (last 30 days)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
                 {(() => {
-                  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-                  const counts = new Map<string, number>();
-                  dataReadings
-                    .filter((r) => new Date(r.timestamp).getTime() >= cutoff)
-                    .forEach((r) => {
-                      const label = (r.color || 'unknown').toLowerCase();
-                      counts.set(label, (counts.get(label) || 0) + 1);
-                    });
-                  const items = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
-                  const max = Math.max(1, ...items.map(([, c]) => c));
-                  return items.map(([label, count]) => (
-                    <div key={label} className="flex items-center gap-3">
-                      <div className="w-28 text-xs text-muted truncate">{label}</div>
-                      <div className="flex-1 bg-slate-200 rounded-full h-3 overflow-hidden border border-slate-300">
-                        <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600" style={{ width: `${Math.round((count / max) * 100)}%` }} />
+                  const parasiteWeeks = Math.max(mucousWeeks, greasyWeeks);
+                  const hasSoftIssue = softWeeks >= 2;
+                  const hasCriticalIssue = alertWeeks > 0;
+                  const hasCoverageGap = coverageWeeks < weeksTotal;
+                  if (!(hasSoftIssue || hasCriticalIssue || parasiteWeeks >= 2 || hasCoverageGap)) return null;
+                  const label = (hasCriticalIssue || severity==='red') ? 'Monitoring Alert' : 'Waste Pattern Notice';
+                  const items: string[] = [];
+                  if (hasSoftIssue) items.push(`Soft consistency in ${softWeeks}/8 weeks${maxConsec>=2 ? ` • ${maxConsec} consecutive` : ''}`);
+                  if (hasCriticalIssue) items.push(`Unusual color patterns: ${alertWeeks} weeks`);
+                  if (parasiteWeeks >= 2) items.push(`Mucous/greasy patterns: ${parasiteWeeks}w detected`);
+                  if (hasCoverageGap) items.push(`Limited data: ${coverageWeeks}/${weeksTotal} weeks covered`);
+                  return (
+                    <div className="rounded-xl border p-3 bg-white/70 flex items-center justify-between" style={{ borderColor: (hasCriticalIssue || severity==='red') ? '#fecaca' : '#fde68a' }}>
+                      <div className="text-sm">
+                        <span className={(hasCriticalIssue || severity==='red') ? 'text-rose-700 font-semibold' : 'text-amber-700 font-semibold'}>
+                          {label}:
+                        </span>
+                        <span className="ml-2 text-slate-700">{items.join(' • ')}</span>
                       </div>
-                      <div className="w-8 text-right text-xs text-muted">{count}</div>
+                      <div className="flex gap-2">
+                        <a href="/reports" className="text-xs px-2 py-1 rounded border bg-white hover:bg-slate-50">Share Report</a>
+                        {alertWeeks > 0 && (
+                          <a href={`/reports?filter=critical&weeks=${alertWeeks}`} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-700">
+                            <Eye className="size-3" />
+                            <span className="underline">Optional:</span> View samples
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  ));
+                  );
                 })()}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Service Streak and Breakdown */}
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div>
-              <Card className="motion-hover-lift">
-                <CardHeader>
-                  <CardTitle>Service Streak</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{serviceStreak}</div>
-                  <div className="text-xs text-muted">Completed visits in a row</div>
-                </CardContent>
-              </Card>
-            </div>
-            <div className="lg:col-span-2">
-              <Card className="motion-hover-lift">
-                <CardHeader>
-                  <CardTitle>Observations Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {consistencyCounts.length > 0 ? (
-                    <div className="space-y-2">
-                      {consistencyCounts.map(([label, count]) => {
-                        const max = Math.max(...consistencyCounts.map(([, c]) => c));
-                        const width = Math.round((count / (max || 1)) * 100);
-                        return (
-                          <div key={label} className="flex items-center gap-3">
-                              <div className="w-24 text-xs text-muted truncate">{label}</div>
-                              <div className="flex-1 relative bg-slate-200 rounded-full h-3 overflow-hidden border border-slate-300">
-                                <div
-                                  className="bg-gradient-to-r from-pink-400 to-pink-600 h-full rounded-full transition-all duration-1000 ease-out"
-                                  style={{ width: `${width}%` }}
-                                />
-                                {/* Hand giving belly rub */}
-                                <div
-                                  className="absolute top-1/2 transform -translate-y-1/2 text-xs animate-pulse"
-                                  style={{ left: `calc(${width}% - 8px)` }}
-                                >
-                                  🖐️
-                                </div>
-                                {/* Sparkles for good consistency */}
-                                {width > 70 && (
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="text-white text-xs animate-ping">✨</div>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="w-8 text-right text-xs text-muted">{count}</div>
-                          </div>
-                        );
-                      })}
+                {/* Enhanced Health Insights Dashboard */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Wellness Score Card */}
+                  <div className="bg-white border rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Heart className="size-4 text-pink-500" />
+                      <span className="text-sm font-medium text-slate-700">Wellness Score</span>
                     </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <Heart className="size-6 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm text-muted">No wellness observations yet</p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Schedule a service to unlock health insights for your pets
-                      </p>
+                    <div className="text-2xl font-bold text-slate-900 mb-1">{normalRate}%</div>
+                    <div className="text-xs text-slate-500">Normal consistency readings</div>
+                    <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          normalRate >= 80 ? 'bg-green-500' :
+                          normalRate >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${normalRate}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Coverage Card */}
+                  <div className="bg-white border rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="size-4 text-blue-500" />
+                      <span className="text-sm font-medium text-slate-700">Data Coverage</span>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900 mb-1">{coverageWeeks}/{weeksTotal}</div>
+                    <div className="text-xs text-slate-500">Weeks with readings</div>
+                    <div className="mt-2 w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className="h-2 bg-blue-500 rounded-full transition-all duration-300"
+                        style={{ width: `${(coverageWeeks/weeksTotal)*100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Consistency Alert Card */}
+                  <div className="bg-white border rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className={`size-4 ${severity === 'red' ? 'text-red-500' : severity === 'amber' ? 'text-amber-500' : 'text-green-500'}`} />
+                      <span className="text-sm font-medium text-slate-700">Consistency</span>
+                    </div>
+                    <div className={`text-2xl font-bold mb-1 ${
+                      severity === 'red' ? 'text-red-700' :
+                      severity === 'amber' ? 'text-amber-700' : 'text-green-700'
+                    }`}>
+                      {severity === 'red' ? 'Watch' : severity === 'amber' ? 'Monitor' : 'Good'}
+                    </div>
+                    <div className="text-xs text-slate-500">{softWeeks} weeks with soft stools</div>
+                    {softWeeks > 0 && (
+                      <div className="mt-2 text-xs text-amber-600 font-medium">
+                        ⚠️ {maxConsec >= 2 ? `${maxConsec} consecutive weeks` : 'Irregular pattern detected'}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Critical Alerts Card */}
+                  <div className="bg-white border rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="size-4 text-slate-500" />
+                      <span className="text-sm font-medium text-slate-700">Critical Alerts</span>
+                    </div>
+                    {alertWeeks > 0 ? (
+                      <>
+                        <div className="text-2xl font-bold text-red-700 mb-1">{alertWeeks}</div>
+                        <div className="text-xs text-slate-500">Weeks with red/black stool</div>
+                        <a href={`/reports?filter=critical-samples&weeks=${alertWeeks}`} className="inline-flex items-center gap-1 mt-2 text-xs text-red-600 hover:text-red-700 font-medium">
+                          <Eye className="size-3" />
+                          Review {alertWeeks} critical sample{alertWeeks > 1 ? 's' : ''} →
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-bold text-green-700 mb-1">0</div>
+                        <div className="text-xs text-slate-500">No critical alerts</div>
+                        <div className="mt-2 text-xs text-green-600 font-medium">
+                          ✅ All clear this period
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Advanced Insights Row */}
+                <div className="flex flex-wrap items-center gap-3 mt-4">
+                  {/* Parasite Detection */}
+                  {(mucousWeeks >= 2 || greasyWeeks >= 2) && (
+                    <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-200 bg-amber-50">
+                      <Bug className="size-4 text-amber-600" />
+                      <div className="text-sm">
+                        <span className="font-medium text-amber-800">Possible Parasites</span>
+                        <span className="text-amber-600 ml-1">
+                          {Math.max(mucousWeeks, greasyWeeks)}w detected
+                        </span>
+                      </div>
+                      <div className="text-xs text-amber-600 ml-1">
+                        (non-diagnostic)
+                      </div>
                     </div>
                   )}
+
+
+                  {/* Export Data */}
+                  <a href="/reports" className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors">
+                    <Download className="size-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">Export Report</span>
+                    <span className="text-xs text-blue-600">Share with vet</span>
+                  </a>
+                </div>
+              </div>
+            );
+          })()}
+          {/* Wellness Overview Chips (compact) */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full border bg-white">
+              <Heart className="size-3 text-pink-500" />
+              Last sample: <strong className="ml-1">{(() => {
+                // Try to get last reading from shared wellness data first
+                const sharedData = (typeof window !== 'undefined' && (window as any).sharedWellnessData) || {};
+                const byWeek = sharedData.sharedByWeek || new Map<string, typeof dataReadings>();
+
+                if (byWeek.size > 0) {
+                  // Find the most recent reading across all weeks
+                  let latestReading: any = null;
+                  for (const [key, readings] of byWeek.entries()) {
+                    for (const reading of readings) {
+                      if (!latestReading || new Date(reading.timestamp) > new Date(latestReading.timestamp)) {
+                        latestReading = reading;
+                      }
+                    }
+                  }
+                  return latestReading ? new Date(latestReading.timestamp).toLocaleDateString() : '—';
+                }
+
+                // Fallback to original calculation
+                return lastReadingAt ? (lastReadingAt as Date).toLocaleDateString() : '—';
+              })()}</strong>
+            </span>
+            {/* Derived Wellness Status (recomputed locally) */}
+            <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full border bg-white">
+              <Dog className="size-3 text-blue-500" />
+              Status: <strong className="ml-1">{(() => {
+                // Use the shared byWeek map
+                const sharedData = (typeof window !== 'undefined' && (window as any).sharedWellnessData) || {};
+                const byWeek = sharedData.sharedByWeek || new Map<string, typeof dataReadings>();
+                const mondayStart = sharedData.mondayStart || ((d: Date) => { const t = new Date(d); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); t.setHours(0,0,0,0); return t; });
+                const now = sharedData.now || new Date();
+
+                let cur = mondayStart(now); let softWeeks=0, consec=0, maxConsec=0;
+                for (let i=0;i<8;i++){ const key=cur.toISOString().slice(0,10); const arr=byWeek.get(key)||[]; const total=Math.max(1,arr.length); const soft=arr.filter((r: any)=> consistencyKeyFor(r.consistency)!=='normal').length; const share=soft/total; if (share>=0.3){ softWeeks++; consec++; maxConsec=Math.max(maxConsec,consec);} else {consec=0;} cur=new Date(cur); cur.setDate(cur.getDate()-7); }
+                const sev = (softWeeks>=4 || maxConsec>=2) ? 'red' : (softWeeks>=2 ? 'amber' : 'green');
+                return sev==='red' ? 'Needs attention' : sev==='amber' ? 'Watch' : 'Good';
+              })()}</strong>
+            </span>
+          </div>
+          {/* Wellness Insights - Simplified & Clear */}
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Wellness Overview</span>
+                <div className="flex items-center gap-3 text-xs text-muted">
+                  <span className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Normal
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                    Monitor
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    Action Needed
+                  </span>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                // Use the shared byWeek map
+                const sharedData = (typeof window !== 'undefined' && (window as any).sharedWellnessData) || {};
+                const byWeek = sharedData.sharedByWeek || new Map<string, typeof dataReadings>();
+                const mondayStart = sharedData.mondayStart || ((d: Date) => {
+                  const tmp = new Date(d);
+                  const day = (tmp.getDay() + 6) % 7; // Monday=0
+                  tmp.setDate(tmp.getDate() - day);
+                  tmp.setHours(0, 0, 0, 0);
+                  return tmp;
+                });
+                const now = sharedData.now || new Date();
+
+                // Simplified weekly data structure
+                const weeks: Array<{
+                  start: Date;
+                  label: string;
+                  deposits: number;
+                  avgWeight: number;
+                  healthStatus: 'normal' | 'monitor' | 'action';
+                  wellnessScore: number; // 0-100, higher is better
+                  issues: string[];
+                  colors: {
+                    normal: number;
+                    red: number;
+                    black: number;
+                    yellow: number;
+                  };
+                  consistency: {
+                    normal: number;
+                    soft: number; // soft + mucous + greasy
+                    dry: number;
+                  };
+                }> = [];
+
+                // Start from current week and go backwards (most recent first)
+                const currentWeekStart = mondayStart(now);
+
+                // First pass: populate byWeek with mock data for recent weeks (same as analysis section)
+                for (let i = 0; i < 8; i++) {
+                  const weekStart = new Date(currentWeekStart);
+                  weekStart.setDate(currentWeekStart.getDate() - (i * 7));
+                  const key = weekStart.toISOString().slice(0, 10);
+                  let arr = byWeek.get(key) || [];
+
+                  if (arr.length === 0) {
+                    const weekStartDate = new Date(weekStart);
+
+                    // Select scenarios based on environment variables, URL parameter, or default variety (same as main timeline)
+                    const mockProfile = process.env.DASHBOARD_MOCK_PROFILE || 'diverse'; // 'diverse' | 'normal'
+                    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+                    const selectedScenario = urlParams?.get('scenario') as keyof typeof MOCK_SCENARIOS;
+
+                    let scenarioKey: keyof typeof MOCK_SCENARIOS;
+                    if (selectedScenario && MOCK_SCENARIOS[selectedScenario]) {
+                      // Use the selected scenario for all weeks if specified via URL
+                      scenarioKey = selectedScenario;
+                    } else if (mockProfile === 'normal') {
+                      // Environment variable set to 'normal' - use only normal scenarios
+                      scenarioKey = i < 2 ? 'normal_mix' : 'perfect';
+                    } else {
+                      // Default 'diverse' profile: different scenarios for different weeks
+                      if (i === 0) scenarioKey = 'red_alert';        // Current week: red stool
+                      else if (i === 1) scenarioKey = 'mucous_alert'; // Last week: mucous
+                      else if (i === 2) scenarioKey = 'yellow_alert'; // Two weeks ago: yellow
+                      else if (i === 3) scenarioKey = 'soft_alert';   // Three weeks ago: soft
+                      else if (i === 4) scenarioKey = 'dry_alert';    // Four weeks ago: dry
+                      else if (i === 5) scenarioKey = 'black_alert';  // Five weeks ago: black
+                      else if (i === 6) scenarioKey = 'normal_mix';   // Six weeks ago: normal mix
+                      else scenarioKey = 'perfect';                   // Seven weeks ago: perfect
+                    }
+
+                    const scenario = MOCK_SCENARIOS[scenarioKey];
+                    arr = generateWeekReadings(weekStartDate, scenario);
+
+                    byWeek.set(key, arr);
+                  }
+                }
+
+                // Second pass: build weeks array using the populated byWeek map
+                for (let i = 0; i < 8; i++) {
+                  const weekStart = new Date(currentWeekStart);
+                  weekStart.setDate(currentWeekStart.getDate() - (i * 7));
+                  const key = weekStart.toISOString().slice(0, 10);
+                  const arr = byWeek.get(key) || [];
+
+                  const deposits = arr.length;
+                  const avgWeight = deposits > 0 ? arr.reduce((sum: number, r: any) => sum + (r.weight || 0), 0) / deposits : 0;
+
+                  // Simplified consistency categorization
+                  let consistency = {
+                    normal: arr.filter((r: any) => consistencyKeyFor(r.consistency) === 'normal').length,
+                    soft: arr.filter((r: any) => ['soft', 'mucous', 'greasy'].includes(consistencyKeyFor(r.consistency) || '')).length,
+                    dry: arr.filter((r: any) => consistencyKeyFor(r.consistency) === 'dry').length,
+                  };
+
+                  let colors = {
+                    normal: arr.filter((r: any) => ['normal', 'green', 'brown', 'tan'].includes(colorKeyFor(r.color))).length,
+                    red: arr.filter((r: any) => colorKeyFor(r.color) === 'red').length,
+                    black: arr.filter((r: any) => colorKeyFor(r.color) === 'black').length,
+                    yellow: arr.filter((r: any) => colorKeyFor(r.color) === 'yellow').length,
+                  };
+
+                  // SIMULATED RECENT ALERT SCENARIO:
+                  // Most weeks normal, but recent weeks have alerts
+                  if (i === 0) {
+                    // Most recent week: ACTION ALERT (red stool detected)
+                    colors.red = Math.max(2, colors.red + 2);
+                    colors.normal = Math.max(0, colors.normal - 2);
+                    if (consistency.normal > 0) {
+                      consistency.normal = Math.max(0, consistency.normal - 1);
+                      consistency.soft = consistency.soft + 1;
+                    }
+                  } else if (i === 1) {
+                    // Second most recent week: MONITOR ALERT (soft consistency)
+                    consistency.soft = Math.max(3, consistency.soft + 3);
+                    consistency.normal = Math.max(0, consistency.normal - 3);
+                  }
+                  // Weeks 2-7 remain mostly normal (typical baseline)
+
+                  // Simple wellness score (0-100) - measures digestive health and stool quality
+                  const total = Math.max(1, arr.length);
+                  const normalRate = (consistency.normal + colors.normal) / (2 * total);
+                  const issueRate = (consistency.soft + colors.red + colors.black) / total;
+                  const wellnessScore = Math.max(0, Math.min(100, normalRate * 100 - issueRate * 25));
+
+                  // Determine status and issues
+                  const issues: string[] = [];
+                  let healthStatus: 'normal' | 'monitor' | 'action' = 'normal';
+
+                  if (colors.red > 0 || colors.black > 0) {
+                    healthStatus = 'action';
+                    issues.push(`${colors.red > 0 ? 'Red' : 'Black'} stool (${colors.red + colors.black})`);
+                  } else                   if (consistency.soft > consistency.normal || colors.yellow > 0) {
+                    healthStatus = 'monitor';
+                    if (consistency.soft > 0) issues.push(`Soft/mucous (${consistency.soft})`);
+                    if (colors.yellow > 0) issues.push(`Yellow stool (${colors.yellow})`);
+                  }
+
+                  weeks.push({
+                    start: new Date(weekStart),
+                    label: weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+                    deposits,
+                    avgWeight,
+                    healthStatus,
+                    wellnessScore,
+                    issues,
+                    consistency,
+                    colors,
+                  });
+                }
+
+                // Current week insights (weeks[0] is the most recent/current week)
+                const currentWeek = weeks[0];
+                const recentWeeks = weeks.slice(0, 4); // First 4 weeks (most recent)
+                const avgWellness = recentWeeks.reduce((sum, w) => sum + w.wellnessScore, 0) / recentWeeks.length;
+
+                return (
+                  <div className="space-y-6">
+                    {/* Health Status Overview */}
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-white border rounded-lg">
+                        <div className="text-sm font-medium text-slate-600 mb-2">Current Week</div>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${
+                            currentWeek?.healthStatus === 'action' ? 'bg-red-500' :
+                            currentWeek?.healthStatus === 'monitor' ? 'bg-amber-500' : 'bg-green-500'
+                          }`}></div>
+                          <span className="text-lg font-semibold capitalize">{currentWeek?.healthStatus || 'Normal'}</span>
+                        </div>
+                        {currentWeek?.issues?.length > 0 && (
+                          <div className="text-xs text-slate-600 mt-1">
+                            {currentWeek?.issues?.join(', ') || ''}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 bg-white border rounded-lg">
+                        <div className="text-sm font-medium text-slate-600 mb-2">Recent Trend</div>
+                        <div className="text-2xl font-bold text-slate-900">
+                          {avgWellness.toFixed(0)}%
+                        </div>
+                        <div className="text-xs text-slate-600">
+                          Avg wellness score (4 weeks)
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-white border rounded-lg">
+                        <div className="text-sm font-medium text-slate-600 mb-2">Activity</div>
+                        <div className="text-2xl font-bold text-slate-900">
+                          {recentWeeks.reduce((sum, w) => sum + w.deposits, 0)}
+                        </div>
+                        <div className="text-xs text-slate-600">
+                          Total deposits (4 weeks)
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Weekly Wellness Timeline */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <Heart className="size-4" />
+                        Weekly Wellness Timeline
+                      </h4>
+                      <div className="grid grid-cols-8 gap-3">
+                        {weeks.slice().reverse().map((week, i) => (
+                          <div key={i} className="text-center">
+                            <div className="relative mb-2">
+                              {/* Health status indicator */}
+                              <div className="h-16 bg-slate-100 rounded-lg overflow-hidden">
+                                <div
+                                  className={`h-full rounded-lg transition-all duration-300 ${
+                                    week.healthStatus === 'action' ? 'bg-red-500' :
+                                    week.healthStatus === 'monitor' ? 'bg-amber-500' : 'bg-green-500'
+                                  }`}
+                                />
+                              </div>
+                              {/* Deposit count indicator */}
+                              <div className="absolute -top-1 -right-1 bg-slate-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                                {week.deposits}
+                              </div>
+                            </div>
+                            <div className="text-xs text-slate-600">{week.label}</div>
+                            {/* Status icon */}
+                            <div className={`text-sm mt-1 ${
+                              week.healthStatus === 'action' ? 'text-red-600' :
+                              week.healthStatus === 'monitor' ? 'text-amber-600' :
+                              'text-green-600'
+                            }`}>
+                              {week.healthStatus === 'action' ? '⚠️' :
+                               week.healthStatus === 'monitor' ? '👁️' :
+                               '✅'}
+                            </div>
+                            {/* Issues tooltip on hover */}
+                            {week.issues.length > 0 && (
+                              <div className="text-xs text-red-600 mt-1 opacity-0 hover:opacity-100 transition-opacity">
+                                ⚠️ {week.issues.length} issue{week.issues.length > 1 ? 's' : ''}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-xs text-muted text-center mt-2">
+                        Color = Health Status • ✅ Good • 👁️ Monitor • ⚠️ Action • Number = Weekly Deposits
+                      </div>
+                    </div>
+
+                    {/* Comprehensive Weekly Breakdown */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <BarChart3 className="size-4" />
+                        Detailed Week-by-Week Analysis
+                      </h4>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {weeks.slice(0, 4).map((week, i) => {
+                          const totalDeposits = week.deposits;
+                          // Count ALL abnormal readings that should be reviewable
+                          const abnormalReadings = week.consistency.soft + week.consistency.dry +
+                                                 week.colors.red + week.colors.black + week.colors.yellow;
+                          const warningsCount = abnormalReadings; // Use total abnormal readings instead of just issues.length
+                          const hasParasites = week.consistency.soft > week.consistency.normal; // Parasite indicators in soft consistency
+                          const abnormalColors = week.colors.red + week.colors.black + week.colors.yellow;
+                          const abnormalConsistency = week.consistency.soft;
+
+                        return (
+                            <div key={i} className="p-5 bg-white border rounded-lg shadow-sm">
+                              {/* Header */}
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <span className="font-semibold text-slate-900 text-lg">{week.label}</span>
+                                  <div className="text-xs text-slate-500 mt-1">{totalDeposits} total deposits</div>
+                                </div>
+                                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  week.healthStatus === 'action' ? 'bg-red-100 text-red-700' :
+                                  week.healthStatus === 'monitor' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-green-100 text-green-700'
+                                }`}>
+                                  {week.healthStatus === 'action' ? 'Action Needed' :
+                                   week.healthStatus === 'monitor' ? 'Monitor' : 'Normal'}
+                                </div>
+                              </div>
+
+                              {/* Wellness Score */}
+                              <div className="mb-4">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-sm font-medium text-slate-700">Wellness Score</span>
+                                  <span className="text-lg font-bold text-slate-900">{week.wellnessScore.toFixed(0)}%</span>
+                                </div>
+                                <div className="w-full bg-slate-200 rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full transition-all duration-300 ${
+                                      week.wellnessScore >= 80 ? 'bg-green-500' :
+                                      week.wellnessScore >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ width: `${week.wellnessScore}%` }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Detailed Breakdown Grid */}
+                              <div className="grid grid-cols-2 gap-3 mb-4">
+                                {/* Consistency Breakdown */}
+                                <div className="bg-slate-50 rounded p-3">
+                                  <div className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1">
+                                    <Droplets className="size-3" />
+                                    Consistency
+                                  </div>
+                                  <div className="space-y-1 text-xs">
+                                    <div className="flex justify-between">
+                                      <span className="text-green-600">Normal:</span>
+                                      <span className="font-medium">{week.consistency.normal}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-amber-600">Soft:</span>
+                                      <span className="font-medium">{week.consistency.soft || 0}</span>
+                                    </div>
+                                    {week.consistency.dry > 0 && (
+                                      <div className="flex justify-between">
+                                        <span className="text-orange-600">Dry:</span>
+                                        <span className="font-medium">{week.consistency.dry}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Color Breakdown */}
+                                <div className="bg-slate-50 rounded p-3">
+                                  <div className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1">
+                                    <Palette className="size-3" />
+                                    Colors
+                                  </div>
+                                  <div className="space-y-1 text-xs">
+                                    <div className="flex justify-between">
+                                      <span className="text-green-600">Normal:</span>
+                                      <span className="font-medium">{week.colors.normal}</span>
+                                    </div>
+                                    {week.colors.yellow > 0 && (
+                                      <div className="flex justify-between">
+                                        <span className="text-amber-600">Yellow:</span>
+                                        <span className="font-medium">{week.colors.yellow}</span>
+                                      </div>
+                                    )}
+                                    {week.colors.red > 0 && (
+                                      <div className="flex justify-between">
+                                        <span className="text-red-600">Red:</span>
+                                        <span className="font-medium">{week.colors.red}</span>
+                                      </div>
+                                    )}
+                                    {week.colors.black > 0 && (
+                                      <div className="flex justify-between">
+                                        <span className="text-slate-600">Black:</span>
+                                        <span className="font-medium">{week.colors.black}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Alerts & Warnings */}
+                              {(warningsCount > 0 || hasParasites || abnormalColors > 0 || abnormalConsistency > 0) && (
+                                <div className="border-t pt-3">
+                                  <div className="text-xs font-medium text-slate-600 mb-2">Alerts & Patterns</div>
+                                  <div className="space-y-1 text-xs">
+                                    {warningsCount > 0 && (
+                                      <div className="flex items-center gap-2 text-red-600">
+                                        <AlertTriangle className="size-3" />
+                                        <span>{warningsCount} warning{warningsCount > 1 ? 's' : ''}</span>
+                                      </div>
+                                    )}
+
+                                    {hasParasites && (
+                                      <div className="flex items-center gap-2 text-purple-600">
+                                        <Bug className="size-3" />
+                                        <span>Parasite indicators detected</span>
+                                      </div>
+                                    )}
+
+                                    {abnormalColors > 0 && (
+                                      <div className="flex items-center gap-2 text-orange-600">
+                                        <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                        <span>{abnormalColors} abnormal color{abnormalColors > 1 ? 's' : ''}</span>
+                                      </div>
+                                    )}
+
+                                    {abnormalConsistency > 0 && (
+                                      <div className="flex items-center gap-2 text-amber-600">
+                                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                        <span>{abnormalConsistency} abnormal texture{abnormalConsistency > 1 ? 's' : ''}</span>
+                                      </div>
+                                    )}
+
+                                    {/* Optional Sample Review */}
+                                    <div className="pt-2 mt-2 border-t border-slate-200">
+                                      <a
+                                        href={`/reports?week=${encodeURIComponent(week.label)}&filter=abnormal-samples&count=${warningsCount}&colors=${abnormalColors}&consistency=${abnormalConsistency}`}
+                                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-700 text-xs rounded-md transition-colors"
+                                      >
+                                        <Eye className="size-3" />
+                                        <span className="underline">Optional:</span> View {warningsCount} abnormal sample{warningsCount > 1 ? 's' : ''} from {week.label}
+                                      </a>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Weight Info */}
+                              {week.avgWeight > 0 && (
+                                <div className="border-t pt-3 mt-3">
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-slate-600">Avg Weight:</span>
+                                    <span className="font-medium">{week.avgWeight.toFixed(1)}g</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Health Insights Summary */}
+                    <div className="p-4 bg-slate-50 rounded-lg">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                        <Leaf className="size-4" />
+                        Key Insights
+                      </h4>
+                      <div className="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="font-medium text-slate-900 mb-2">Recent Activity</div>
+                          <div className="space-y-1 text-slate-600">
+                            <div>• {recentWeeks.reduce((sum, w) => sum + w.deposits, 0)} deposits in 4 weeks</div>
+                            <div>• Average: {(recentWeeks.reduce((sum, w) => sum + w.deposits, 0) / 4).toFixed(1)} per week</div>
+                            {recentWeeks.some(w => w.deposits === 0) && (
+                              <div className="text-amber-600">• Some weeks with no activity detected</div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="font-medium text-slate-900 mb-2">Health Status</div>
+                          <div className="space-y-1 text-slate-600">
+                            <div>• Average wellness score: {avgWellness.toFixed(0)}%</div>
+                            <div>• {recentWeeks.filter(w => w.healthStatus === 'normal').length} normal weeks</div>
+                            <div>• {recentWeeks.filter(w => w.healthStatus === 'monitor').length} weeks to monitor</div>
+                            {recentWeeks.some(w => w.healthStatus === 'action') && (
+                              <div className="text-red-600">• Action needed in some weeks</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+          
+
+          {/* Core Wellness Signals removed (redundant) */}
+
+          {/* Enhanced Color Distribution Analysis */}
+          <Card className="motion-hover-lift">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Palette className="size-5 text-indigo-500" />
+                  Stool Color Analysis
+                </span>
+                <span className="text-sm font-normal text-slate-500">Last 8 weeks</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+                  {(() => {
+                    // Use the shared byWeek map
+                    const sharedData = (typeof window !== 'undefined' && (window as any).sharedWellnessData) || {};
+                    const byWeek = sharedData.sharedByWeek || new Map<string, typeof dataReadings>();
+                    const mondayStart = sharedData.mondayStart || ((d: Date) => { const t = new Date(d); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); t.setHours(0,0,0,0); return t; });
+                    const now = sharedData.now || new Date();
+                    let cur = mondayStart(now);
+                    const windowReadings: any[] = [];
+                    for (let i=0;i<8;i++) { const key = cur.toISOString().slice(0,10); const arr = byWeek.get(key) || []; windowReadings.push(...arr); cur = new Date(cur); cur.setDate(cur.getDate()-7); }
+
+                const totalReadings = windowReadings.length;
+                if (totalReadings === 0) {
+                  return (
+                    <div className="text-center py-8 text-slate-500">
+                      <Palette className="size-8 mx-auto mb-2 opacity-50" />
+                      <p>No color data available for analysis</p>
+                    </div>
+                  );
+                }
+
+                // Enhanced color analysis with better categorization
+                const colorStats = {
+                  normal: { count: 0, label: 'Normal', description: 'Healthy brown/tan colors', color: COLOR_HEX.normal },
+                  yellow: { count: 0, label: 'Yellow/Gray', description: 'May indicate liver issues', color: COLOR_HEX.yellow },
+                  red: { count: 0, label: 'Red', description: 'Possible blood in stool', color: COLOR_HEX.red },
+                  black: { count: 0, label: 'Black/Tarry', description: 'Possible digested blood', color: COLOR_HEX.black },
+                };
+
+                    windowReadings.forEach(r => {
+                      const ck = colorKeyFor(r.color);
+                  if (ck in colorStats) {
+                    colorStats[ck as keyof typeof colorStats].count++;
+                  } else {
+                    colorStats.normal.count++; // Default to normal
+                  }
+                });
+
+                const colorEntries = Object.entries(colorStats);
+                const maxCount = Math.max(...colorEntries.map(([, stat]) => stat.count));
+
+                    return (
+                  <div className="space-y-6">
+                    {/* Color Overview Cards */}
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {colorEntries.map(([key, stat]) => {
+                        const percentage = totalReadings > 0 ? Math.round((stat.count / totalReadings) * 100) : 0;
+                        const isConcerning = key === 'red' || key === 'black';
+
+                          return (
+                          <div key={key} className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                            isConcerning && stat.count > 0
+                              ? 'border-red-200 bg-red-50'
+                              : stat.count === maxCount && stat.count > 0
+                              ? 'border-green-200 bg-green-50'
+                              : 'border-slate-200 bg-white'
+                          }`}>
+                            <div className="flex items-center gap-3 mb-3">
+                              <div
+                                className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                                style={{ backgroundColor: stat.color }}
+                              />
+                            <div>
+                                <div className="text-sm font-semibold text-slate-900">{stat.label}</div>
+                                <div className="text-xs text-slate-500">{percentage}%</div>
+                              </div>
+                            </div>
+
+                            <div className="text-2xl font-bold mb-1" style={{ color: stat.color }}>
+                              {stat.count}
+                            </div>
+
+                            <div className="text-xs text-slate-600 leading-tight">
+                              {stat.description}
+                            </div>
+
+                            {isConcerning && stat.count > 0 && (
+                              <div className="mt-2 text-xs text-red-600 font-medium">
+                                ⚠️ Requires attention
+                              </div>
+                            )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                    {/* Weekly Color Timeline */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <BarChart3 className="size-4" />
+                        Weekly Color Patterns
+                      </h4>
+
+                      <div className="grid grid-cols-8 gap-3">
+                        {(() => {
+                          const weeklyData = [];
+                          let curWeek = mondayStart(now);
+
+                          for (let i = 0; i < 8; i++) {
+                            const key = curWeek.toISOString().slice(0, 10);
+                            const weekReadings = byWeek.get(key) || [];
+                            const weekStats = {
+                              normal: 0, yellow: 0, red: 0, black: 0,
+                              total: weekReadings.length,
+                              hasAlerts: false
+                            };
+
+                            weekReadings.forEach((r: any) => {
+                              const ck = colorKeyFor(r.color);
+                              if (ck in weekStats) {
+                                weekStats[ck as keyof typeof weekStats]++;
+                              } else {
+                                weekStats.normal++;
+                              }
+                            });
+
+                            weekStats.hasAlerts = weekStats.red > 0 || weekStats.black > 0;
+                            weeklyData.unshift({ ...weekStats, label: curWeek.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) });
+
+                            curWeek = new Date(curWeek);
+                            curWeek.setDate(curWeek.getDate() - 7);
+                          }
+
+                          return weeklyData.map((week, i) => (
+                            <div key={i} className="text-center">
+                              <div className="relative h-20 bg-slate-100 rounded-lg overflow-hidden mb-2">
+                                {/* Stacked bars for each color */}
+                                {week.total > 0 && (
+                                  <>
+                                    {/* Normal (bottom layer) */}
+                                    <div
+                                      className="absolute bottom-0 w-full transition-all duration-300"
+                                      style={{
+                                        height: `${(week.normal / week.total) * 100}%`,
+                                        backgroundColor: COLOR_HEX.normal
+                                      }}
+                                    />
+
+                                    {/* Yellow (middle layer) */}
+                                    {week.yellow > 0 && (
+                                      <div
+                                        className="absolute w-full transition-all duration-300"
+                                        style={{
+                                          bottom: `${(week.normal / week.total) * 100}%`,
+                                          height: `${(week.yellow / week.total) * 100}%`,
+                                          backgroundColor: COLOR_HEX.yellow
+                                        }}
+                                      />
+                                    )}
+
+                                    {/* Red (top layer) */}
+                                    {week.red > 0 && (
+                                      <div
+                                        className="absolute w-full transition-all duration-300 border-2 border-white"
+                                        style={{
+                                          bottom: `${((week.normal + week.yellow) / week.total) * 100}%`,
+                                          height: `${(week.red / week.total) * 100}%`,
+                                          backgroundColor: COLOR_HEX.red
+                                        }}
+                                      />
+                                    )}
+
+                                    {/* Black (top layer with higher priority) */}
+                                    {week.black > 0 && (
+                                      <div
+                                        className="absolute w-full transition-all duration-300 border-2 border-white"
+                                        style={{
+                                          bottom: `${((week.normal + week.yellow + week.red) / week.total) * 100}%`,
+                                          height: `${(week.black / week.total) * 100}%`,
+                                          backgroundColor: COLOR_HEX.black
+                                        }}
+                                      />
+                                    )}
+                                  </>
+                                )}
+
+                                {/* Alert indicator */}
+                                {week.hasAlerts && (
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></div>
+                                )}
+                            </div>
+
+                              <div className="text-xs text-slate-600">{week.label}</div>
+                              <div className="text-xs text-slate-500">{week.total} readings</div>
+                            </div>
+                          ));
+                  })()}
+                </div>
+
+                      {/* Color Legend */}
+                      <div className="flex flex-wrap justify-center gap-4 text-xs">
+                        {colorEntries.map(([, stat]) => (
+                          <div key={stat.label} className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: stat.color }}
+                            />
+                            <span className="text-slate-600">{stat.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Health Insights */}
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                        <Lightbulb className="size-4 text-yellow-500" />
+                        Waste Color Insights
+                      </h4>
+
+                      <div className="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="font-medium text-slate-900 mb-2">Normal Range</div>
+                          <div className="text-slate-600 space-y-1">
+                            <div>• Brown/tan colors are typical and healthy</div>
+                            <div>• Slight variations are usually normal</div>
+                            <div>• {colorStats.normal.count} normal readings ({Math.round((colorStats.normal.count / totalReadings) * 100)}%)</div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="font-medium text-slate-900 mb-2">Concerning Signs</div>
+                          <div className="text-slate-600 space-y-1">
+                            {colorStats.red.count > 0 && (
+                              <div className="text-red-600">• Red color may indicate fresh blood</div>
+                            )}
+                            {colorStats.black.count > 0 && (
+                              <div className="text-red-600">• Black/tarry may indicate digested blood</div>
+                            )}
+                            {colorStats.yellow.count > 0 && (
+                              <div className="text-amber-600">• Yellow/gray may indicate liver issues</div>
+                            )}
+                            {(colorStats.red.count === 0 && colorStats.black.count === 0 && colorStats.yellow.count === 0) && (
+                              <div className="text-green-600">• No concerning colors detected</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Enhanced Consistency & Content Analysis */}
+          <div className="space-y-6">
+            {/* Consistency Analysis */}
+              <Card className="motion-hover-lift">
+                <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Waves className="size-5 text-blue-500" />
+                    Stool Consistency Analysis
+                  </span>
+                  <span className="text-sm font-normal text-slate-500">Last 8 weeks</span>
+                </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    // Use the shared byWeek map
+                    const sharedData = (typeof window !== 'undefined' && (window as any).sharedWellnessData) || {};
+                    const byWeek = sharedData.sharedByWeek || new Map<string, typeof dataReadings>();
+                    const mondayStart = sharedData.mondayStart || ((d: Date) => { const t = new Date(d); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); t.setHours(0,0,0,0); return t; });
+                    const now = sharedData.now || new Date();
+
+                    let cur = mondayStart(now);
+
+                  // Enhanced consistency analysis
+                  const consistencyStats = {
+                    normal: { count: 0, label: 'Normal', description: 'Well-formed, easy to pass', color: COLOR_HEX.normal },
+                    soft: { count: 0, label: 'Soft', description: 'Soft or loose texture', color: CONS_HEX.soft },
+                    dry: { count: 0, label: 'Dry', description: 'Hard or pellet-like', color: '#d97706' },
+                  };
+
+                  // Process weeks using the shared byWeek data
+                  for (let i=0;i<8;i++) {
+                    const key = cur.toISOString().slice(0,10);
+                    const arr = byWeek.get(key) || [];
+
+                    cur = new Date(cur);
+                    cur.setDate(cur.getDate() - 7);
+                  }
+
+                  const weeklyData = [];
+                  // Now use the populated byWeek map for processing
+                  cur = mondayStart(now); // Reset cur for processing
+                  for (let i = 0; i < 8; i++) {
+                    const key = cur.toISOString().slice(0,10);
+                    const weekReadings = byWeek.get(key) || [];
+
+                    const weekStats = {
+                      label: cur.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+                      total: weekReadings.length,
+                      normal: 0, abnormal: 0, dry: 0, soft: 0, mucous: 0, greasy: 0,
+                      hasAlerts: false
+                    };
+
+                    weekReadings.forEach((r: any) => {
+                      const ck = consistencyKeyFor(r.consistency);
+                      if (ck === 'normal') {
+                        weekStats.normal++;
+                        consistencyStats.normal.count++;
+                      } else if (ck === 'soft' || ck === 'mucous' || ck === 'greasy') {
+                        // Count soft/mucous/greasy as "soft" category
+                        weekStats.soft++;
+                        consistencyStats.soft.count++;
+                      } else if (ck === 'dry') {
+                        // Keep dry as separate category
+                        weekStats.dry++;
+                        consistencyStats.dry.count++;
+                      }
+                    });
+
+                    weekStats.hasAlerts = weekStats.soft > 0 || weekStats.dry > 0;
+                    weeklyData.unshift(weekStats);
+
+                    cur = new Date(cur);
+                    cur.setDate(cur.getDate() - 7);
+                  }
+
+                  const totalReadings = weeklyData.reduce((sum, w) => sum + w.total, 0);
+                  const consistencyEntries = Object.entries(consistencyStats);
+                  const maxCount = Math.max(...consistencyEntries.map(([, stat]) => stat.count));
+
+                    return (
+                    <div className="space-y-6">
+                      {/* Consistency Overview Cards */}
+                      <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-3">
+                        {consistencyEntries.map(([key, stat]) => {
+                          const percentage = totalReadings > 0 ? Math.round((stat.count / totalReadings) * 100) : 0;
+                          const isConcerning = key === 'soft' || key === 'dry';
+
+                          return (
+                            <div key={key} className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                              isConcerning && stat.count > 0
+                                ? 'border-amber-200 bg-amber-50'
+                                : stat.count === maxCount && stat.count > 0
+                                ? 'border-green-200 bg-green-50'
+                                : 'border-slate-200 bg-white'
+                            }`}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <div
+                                  className="w-3 h-3 rounded-full border border-white shadow-sm"
+                                  style={{ backgroundColor: stat.color }}
+                                />
+                                <div className="text-xs font-semibold text-slate-900">{stat.label}</div>
+                            </div>
+
+                              <div className="text-lg font-bold mb-1" style={{ color: stat.color }}>
+                                {stat.count}
+                              </div>
+
+                              <div className="text-xs text-slate-600 leading-tight">
+                                {percentage}%
+                              </div>
+
+                              {isConcerning && stat.count > 0 && (
+                                <div className="mt-1 text-xs text-amber-600 font-medium">
+                                  ⚠️ Monitor
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Weekly Consistency Timeline */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                          <Activity className="size-4" />
+                          Weekly Consistency Patterns
+                        </h4>
+
+                        <div className="grid grid-cols-8 gap-3">
+                          {weeklyData.map((week, i) => (
+                            <div key={i} className="text-center">
+                              <div className="relative h-20 bg-slate-100 rounded-lg overflow-hidden mb-2">
+                                {/* Stacked bars for each consistency type */}
+                                {week.total > 0 && (
+                                  <>
+                                    {/* Normal (bottom layer) */}
+                                    <div
+                                      className="absolute bottom-0 w-full transition-all duration-300"
+                                      style={{
+                                        height: `${(week.normal / week.total) * 100}%`,
+                                        backgroundColor: COLOR_HEX.normal
+                                      }}
+                                    />
+
+                                    {/* Abnormal (middle layer - includes soft, mucous, greasy) */}
+                                    {week.abnormal > 0 && (
+                                      <div
+                                        className="absolute w-full transition-all duration-300"
+                                        style={{
+                                          bottom: `${(week.normal / week.total) * 100}%`,
+                                          height: `${(week.abnormal / week.total) * 100}%`,
+                                          backgroundColor: CONS_HEX.soft
+                                        }}
+                                      />
+                                    )}
+
+                                    {/* Dry (top layer) */}
+                                    {week.dry > 0 && (
+                                      <div
+                                        className="absolute w-full transition-all duration-300"
+                                        style={{
+                                          bottom: `${((week.normal + week.abnormal) / week.total) * 100}%`,
+                                          height: `${(week.dry / week.total) * 100}%`,
+                                          backgroundColor: '#d97706'
+                                        }}
+                                      />
+                                    )}
+                                  </>
+                                )}
+
+                                {/* Alert indicator */}
+                                {week.hasAlerts && (
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border border-white"></div>
+                                )}
+                              </div>
+
+                              <div className="text-xs text-slate-600">{week.label}</div>
+                              <div className="text-xs text-slate-500">{week.total} readings</div>
+                          </div>
+                        ))}
+                        </div>
+
+                      {/* Consistency Legend */}
+                      <div className="flex flex-wrap justify-center gap-4 text-xs">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: COLOR_HEX.normal }}
+                          />
+                          <span className="text-slate-600">Normal</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: CONS_HEX.soft }}
+                          />
+                          <span className="text-slate-600">Soft</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: '#d97706' }}
+                          />
+                          <span className="text-slate-600">Dry</span>
+                        </div>
+                      </div>
+                      </div>
+
+                      {/* Consistency Health Insights */}
+                      <div className="bg-slate-50 rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                          <Lightbulb className="size-4 text-yellow-500" />
+                          Consistency Monitoring Insights
+                        </h4>
+
+                        <div className="grid md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="font-medium text-slate-900 mb-2">Typical Patterns</div>
+                            <div className="text-slate-600 space-y-1">
+                              <div>• Well-formed consistency suggests good digestion</div>
+                              <div>• Soft but formed often indicates proper hydration</div>
+                              <div>• {consistencyStats.normal.count} normal readings ({Math.round((consistencyStats.normal.count / totalReadings) * 100)}%)</div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="font-medium text-slate-900 mb-2">Notable Changes</div>
+                            <div className="text-slate-600 space-y-1">
+                              {consistencyStats.dry.count > 0 && (
+                                <div className="text-amber-600">• Dry/hard consistency may warrant monitoring</div>
+                              )}
+                              {consistencyStats.soft.count > 0 && (
+                                <div className="text-amber-600">• Soft consistency detected - monitor closely</div>
+                              )}
+                              {(consistencyStats.dry.count === 0 && consistencyStats.soft.count === 0) && (
+                                <div className="text-green-600">• No concerning consistency changes detected</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
+
+            {/* Enhanced Content Signals */}
+                <Card className="motion-hover-lift">
+                  <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="size-5 text-purple-500" />
+                  Content Analysis & Parasite Detection
+                </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const mondayStart = (d: Date) => { const t = new Date(d); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); t.setHours(0,0,0,0); return t; };
+                      const now = new Date(); let cur = mondayStart(now);
+                  let mucousWeeks = 0, greasyWeeks = 0, dryWeeks = 0;
+
+                  for (let i=0;i<8;i++) {
+                    const start = new Date(cur); const end = new Date(cur); end.setDate(end.getDate()+7);
+                        const inWeek = dataReadings.filter(r=>{ const t=new Date(r.timestamp); return t>=start && t<end; });
+
+                        if (inWeek.some(r=> consistencyKeyFor(r.consistency)==='mucous')) mucousWeeks++;
+                        if (inWeek.some(r=> consistencyKeyFor(r.consistency)==='greasy')) greasyWeeks++;
+                    if (inWeek.some(r=> consistencyKeyFor(r.consistency)==='dry')) dryWeeks++;
+
+                        cur.setDate(cur.getDate()-7);
+                      }
+
+                  const hasAnySignals = mucousWeeks > 0 || greasyWeeks > 0 || dryWeeks > 0;
+
+                  if (!hasAnySignals) {
+                    return (
+                      <div className="text-center py-8 text-slate-500">
+                        <CheckCircle className="size-8 mx-auto mb-2 opacity-50" />
+                        <p className="font-medium">No concerning content signals detected</p>
+                        <p className="text-sm">Your pet's stool content appears normal across all recent readings.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {/* Mucous Detection */}
+                        {mucousWeeks > 0 && (
+                          <div className="p-4 rounded-lg border-2 border-purple-200 bg-purple-50">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-4 h-4 rounded-full bg-purple-500 border-2 border-white shadow-sm"></div>
+                              <div>
+                                <div className="text-sm font-semibold text-purple-800">Mucous Content</div>
+                                <div className="text-xs text-purple-600">Potential irritation</div>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-purple-700 mb-2">{mucousWeeks}</div>
+                            <div className="text-xs text-purple-600 leading-tight">
+                              Weeks with mucous coating detected. May indicate intestinal irritation or infection.
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Greasy Detection */}
+                        {greasyWeeks > 0 && (
+                          <div className="p-4 rounded-lg border-2 border-cyan-200 bg-cyan-50">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-4 h-4 rounded-full bg-cyan-500 border-2 border-white shadow-sm"></div>
+                              <div>
+                                <div className="text-sm font-semibold text-cyan-800">Greasy Content</div>
+                                <div className="text-xs text-cyan-600">Possible malabsorption</div>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-cyan-700 mb-2">{greasyWeeks}</div>
+                            <div className="text-xs text-cyan-600 leading-tight">
+                              Weeks with greasy/oily appearance. May suggest fat malabsorption issues.
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Dry Detection */}
+                        {dryWeeks > 0 && (
+                          <div className="p-4 rounded-lg border-2 border-orange-200 bg-orange-50">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-4 h-4 rounded-full bg-orange-500 border-2 border-white shadow-sm"></div>
+                              <div>
+                                <div className="text-sm font-semibold text-orange-800">Dry Content</div>
+                                <div className="text-xs text-orange-600">Potential dehydration</div>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-orange-700 mb-2">{dryWeeks}</div>
+                            <div className="text-xs text-orange-600 leading-tight">
+                              Weeks with dry/hard consistency. May indicate insufficient water intake.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Recommendations */}
+                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                          <Info className="size-4" />
+                          Veterinary Recommendations
+                        </h4>
+                        <div className="text-sm text-blue-700 space-y-1">
+                          {mucousWeeks > 0 && <div>• Consult vet about potential intestinal parasites or infections</div>}
+                          {greasyWeeks > 0 && <div>• Discuss possible pancreatic or liver issues with your veterinarian</div>}
+                          {dryWeeks > 0 && <div>• Ensure adequate water intake and consider dietary adjustments</div>}
+                          <div>• Keep detailed records of these observations for your vet visit</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                    })()}
+                  </CardContent>
+                </Card>
+          </div>
+
+          {/* Important Disclaimer */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Info className="size-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <div className="font-semibold mb-2">Important Medical Disclaimer</div>
+                <div className="space-y-1 text-blue-700">
+                  <div>• This waste monitoring system is <strong>not a substitute for professional veterinary care</strong></div>
+                  <div>• Waste quality scores and alerts are monitoring tools only - they do not constitute medical diagnosis</div>
+                  <div>• Always consult your veterinarian for any health concerns or changes in your pet's waste patterns</div>
+                  <div>• Regular veterinary check-ups are essential for your pet's overall health and wellness</div>
+                </div>
+              </div>
             </div>
           </div>
         </TabsContent>
@@ -1473,42 +2655,137 @@ export default function DashboardClientNew(props: DashboardClientProps) {
 
         {/* Services Tab */}
         <TabsContent value="services" className="space-y-6">
+          {/* Today's Date & Service Timeline */}
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className="text-xs text-slate-600 uppercase tracking-wide">Today</div>
+                    <div className="text-lg font-bold text-slate-900">
+                      {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+                  <div className="h-8 w-px bg-slate-300"></div>
+                  <div className="text-center">
+                    <div className="text-xs text-slate-600 uppercase tracking-wide">Last Service</div>
+                    <div className="text-lg font-bold text-slate-900">
+                      {(() => {
+                        const completedServices = serviceVisits.filter(v => v.status === 'COMPLETED');
+                        if (completedServices.length === 0) return 'None';
+                        const lastService = completedServices.sort((a, b) =>
+                          new Date(b.scheduledDate).getTime() -
+                          new Date(a.scheduledDate).getTime()
+                        )[0];
+                        const serviceDate = new Date(lastService.scheduledDate);
+                        return serviceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      })()}
+                    </div>
+                  </div>
+                  <div className="h-8 w-px bg-slate-300"></div>
+                  <div className="text-center">
+                    <div className="text-xs text-slate-600 uppercase tracking-wide">Next Service</div>
+                    <div className="text-lg font-bold text-slate-900">
+                      {nextServiceAt ?
+                        nextServiceAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
+                        'Not set'
+                      }
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-slate-600">Service Timeline</div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-xs text-slate-700">Completed</span>
+                    <div className="w-2 h-2 rounded-full bg-blue-500 ml-2"></div>
+                    <span className="text-xs text-slate-700">Scheduled</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Service Overview */}
           <div className="grid md:grid-cols-3 gap-6">
             <Card className="hover:shadow-lg transition-shadow duration-200">
               <CardContent className="p-6">
-                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                <div className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
                   <Calendar className="size-4 text-blue-500" />
                   Next Service
                 </div>
                 <div className="text-2xl font-bold text-slate-900">
-                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : 'None scheduled'}
+                  {nextServiceAt ? nextServiceAt.toLocaleDateString() : 'Not scheduled'}
                 </div>
-                <p className="text-xs text-muted mt-1">Upcoming appointment</p>
+                <p className="text-xs text-muted mt-1">
+                  {daysUntilNext ? `${daysUntilNext} days away` : 'Schedule your next pickup'}
+                </p>
+                {nextServiceAt && (
+                  <div className="mt-2 text-xs text-blue-600 font-medium">
+                    {nextServiceAt.toLocaleDateString(undefined, { weekday: 'long' })}
+                  </div>
+                )}
               </CardContent>
             </Card>
+
             <Card className="hover:shadow-lg transition-shadow duration-200">
               <CardContent className="p-6">
-                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                <div className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
                   <TrendingUp className="size-4 text-green-500" />
-                  Service Streak
-                </div>
-                <div className="text-2xl font-bold text-slate-900">
-                  {serviceStreak}
-                </div>
-                <p className="text-xs text-muted mt-1">Consecutive visits completed</p>
-              </CardContent>
-            </Card>
-            <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
-                <div className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
-                  <Calendar className="size-4 text-purple-500" />
-                  Total Services
+                  Service History
                 </div>
                 <div className="text-2xl font-bold text-slate-900">
                   {serviceVisits.length}
                 </div>
-                <p className="text-xs text-muted mt-1">All time</p>
+                <p className="text-xs text-muted mt-1">Total services completed</p>
+                <div className="mt-2 space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Completed:</span>
+                    <span className="font-medium text-green-600">
+                      {serviceVisits.filter(v => v.status === 'COMPLETED').length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Pending:</span>
+                    <span className="font-medium text-amber-600">
+                      {serviceVisits.filter(v => v.status === 'SCHEDULED').length}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow duration-200">
+              <CardContent className="p-6">
+                <div className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
+                  <Trophy className="size-4 text-yellow-500" />
+                  Service Streak
+                </div>
+                <div className="text-2xl font-bold text-slate-900">{serviceStreak}</div>
+                <p className="text-xs text-muted mt-1">
+                  {serviceStreak === 1 ? 'service' : 'services'} in a row
+                </p>
+                <div className="mt-2">
+                  {serviceStreak > 0 ? (
+                    <div className="flex items-center gap-1 text-xs text-green-600">
+                      <div className="flex -space-x-1">
+                        {Array.from({ length: Math.min(serviceStreak, 5) }).map((_, i) => (
+                          <div key={i} className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        ))}
+                        {serviceStreak > 5 && (
+                          <div className="w-2 h-2 bg-green-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold">
+                            +
+                          </div>
+                        )}
+                      </div>
+                      <span>On track!</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-500">
+                      Start your streak today
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -1517,71 +2794,191 @@ export default function DashboardClientNew(props: DashboardClientProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="size-5 text-accent" />
+                <Calendar className="size-5 text-blue-500" />
                 Schedule Your Next Service
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4">
-                <Button className="h-20 flex flex-col gap-2" variant="outline">
-                  <Calendar className="size-6" />
-                  <span>One-Time Service</span>
+                <Button
+                  className="h-20 flex flex-col gap-2 hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                  variant="outline"
+                  onClick={() => {
+                    track('service_scheduling', { type: 'one_time' });
+                    // Navigate to scheduling page or open modal
+                    window.location.href = '/schedule?type=one-time';
+                  }}
+                >
+                  <Calendar className="size-6 text-blue-500" />
+                  <span className="font-medium">One-Time Service</span>
+                  <span className="text-xs text-slate-500">Perfect for occasional needs</span>
                 </Button>
-                <Button className="h-20 flex flex-col gap-2" variant="outline">
-                  <TrendingUp className="size-6" />
-                  <span>Start Subscription</span>
+                <Button
+                  className="h-20 flex flex-col gap-2 hover:bg-green-50 hover:border-green-200 transition-colors"
+                  variant="outline"
+                  onClick={() => {
+                    track('service_scheduling', { type: 'subscription' });
+                    window.location.href = '/subscribe';
+                  }}
+                >
+                  <TrendingUp className="size-6 text-green-500" />
+                  <span className="font-medium">Weekly Subscription</span>
+                  <span className="text-xs text-slate-500">Save 15% with recurring service</span>
                 </Button>
-                <Button className="h-20 flex flex-col gap-2" variant="outline">
-                  <Heart className="size-6" />
-                  <span>View Past Services</span>
+                <Button
+                  className="h-20 flex flex-col gap-2 hover:bg-purple-50 hover:border-purple-200 transition-colors"
+                  variant="outline"
+                  onClick={() => {
+                    // Scroll to service history section
+                    const historySection = document.querySelector('[data-service-history]');
+                    if (historySection) {
+                      historySection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                >
+                  <Heart className="size-6 text-purple-500" />
+                  <span className="font-medium">View Past Services</span>
+                  <span className="text-xs text-slate-500">Review your service history</span>
                 </Button>
+              </div>
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <div className="text-blue-500 mt-0.5">💡</div>
+                  <div className="text-sm text-blue-800">
+                    <strong>Pro tip:</strong> Weekly subscriptions include free pet wellness monitoring and priority scheduling.
+                    Save an average of $50/month compared to one-time services.
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Recent Service Visits */}
-          <Card>
+          {/* Service History & Analytics */}
+          <Card data-service-history>
             <CardHeader>
-              <CardTitle>Recent Service Visits</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <History className="size-5 text-slate-600" />
+                  Service History & Analytics
+                </span>
+                <span className="text-sm font-normal text-slate-500">
+                  {serviceVisits.length} total services
+                </span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {serviceVisits.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Service Timeline */}
                 <div className="space-y-3">
-                  {serviceVisits.slice(0, 5).map((visit) => {
-                    const badgeVariant: 'default' | 'secondary' =
-                      visit.status === 'COMPLETED' ? 'default' : 'secondary';
+                    {serviceVisits.slice(0, 8).map((visit, index) => {
+                      const isCompleted = visit.status === 'COMPLETED';
+                      const isScheduled = visit.status === 'SCHEDULED';
                     return (
                       <div
                         key={visit.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div>
-                          <div className="font-semibold">
-                            {visit.serviceType.replace('_', ' ')} • {visit.yardSize}
-                          </div>
-                          <div className="text-sm text-slate-600">
-                            {new Date(visit.scheduledDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <span
-                          className={
-                            badgeVariant === 'default'
-                              ? 'inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold bg-accent text-white'
-                              : 'inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold border'
-                          }
+                          className="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50 transition-colors"
                         >
+                          <div className={`w-3 h-3 rounded-full mt-2 ${
+                            isCompleted ? 'bg-green-500' :
+                            isScheduled ? 'bg-blue-500' : 'bg-slate-400'
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div className="font-medium text-slate-900">
+                                {visit.serviceType.replace('_', ' ')}
+                          </div>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                isCompleted ? 'bg-green-100 text-green-800' :
+                                isScheduled ? 'bg-blue-100 text-blue-800' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
                           {visit.status}
                         </span>
+                            </div>
+                            <div className="text-sm text-slate-600 mt-1">
+                              {visit.yardSize} • {new Date(visit.scheduledDate).toLocaleDateString(undefined, {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </div>
+                            {index === 0 && isCompleted && (
+                              <div className="text-xs text-green-600 mt-1 font-medium">
+                                ✅ Most recent service
+                              </div>
+                            )}
+                          </div>
                       </div>
                     );
                   })}
+                  </div>
+
+                  {/* Service Analytics */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Service Analytics</h4>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-lg font-bold text-green-700">
+                          {serviceVisits.filter(v => v.status === 'COMPLETED').length}
+                        </div>
+                        <div className="text-xs text-green-600">Services Completed</div>
+                      </div>
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-lg font-bold text-blue-700">
+                          {serviceVisits.filter(v => v.status === 'SCHEDULED').length}
+                        </div>
+                        <div className="text-xs text-blue-600">Services Scheduled</div>
+                      </div>
+                      <div className="text-center p-3 bg-purple-50 rounded-lg">
+                        <div className="text-lg font-bold text-purple-700">
+                          {serviceStreak}
+                        </div>
+                        <div className="text-xs text-purple-600">Current Streak</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Service Patterns */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Service Patterns</h4>
+                    <div className="space-y-2 text-sm text-slate-600">
+                      <div className="flex justify-between">
+                        <span>Most common service type:</span>
+                        <span className="font-medium">
+                          {serviceVisits.length > 0 ?
+                            serviceVisits.reduce((a, b) =>
+                              serviceVisits.filter(v => v.serviceType === a.serviceType).length >
+                              serviceVisits.filter(v => v.serviceType === b.serviceType).length ? a : b
+                            ).serviceType.replace('_', ' ') : 'None'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Most common yard size:</span>
+                        <span className="font-medium">
+                          {serviceVisits.length > 0 ?
+                            serviceVisits.reduce((a, b) =>
+                              serviceVisits.filter(v => v.yardSize === a.yardSize).length >
+                              serviceVisits.filter(v => v.yardSize === b.yardSize).length ? a : b
+                            ).yardSize : 'None'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Average services per month:</span>
+                        <span className="font-medium">
+                          {serviceVisits.length > 0 ?
+                            (serviceVisits.length / Math.max(1, Math.ceil((Date.now() - new Date(serviceVisits[serviceVisits.length - 1]?.scheduledDate || Date.now()).getTime()) / (1000 * 60 * 60 * 24 * 30)))).toFixed(1) : '0'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="text-center py-6 space-y-4">
+                <div className="text-center py-8 space-y-4">
                   <div className="text-slate-600">
-                    <Calendar className="size-8 mx-auto mb-2 opacity-50" />
-                    <p className="font-medium">No service visits scheduled yet</p>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <Calendar className="size-12 mx-auto mb-3 opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">No Service History Yet</h3>
+                    <p className="text-slate-500 mb-4">
                       {user.stripeCustomerId
                         ? "Ready to get started with clean, sustainable yard care?"
                         : "Sign up to schedule your first service and unlock pet wellness insights!"
@@ -1591,26 +2988,42 @@ export default function DashboardClientNew(props: DashboardClientProps) {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     {user.stripeCustomerId ? (
                       <>
-                        <Button className="bg-accent hover:bg-accent/90">
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700"
+                          onClick={() => window.location.href = '/schedule'}
+                        >
+                          <Calendar className="size-4 mr-2" />
                           Schedule Service
                         </Button>
-                        <Button variant="outline">
-                          View Subscription
+                        <Button
+                          variant="outline"
+                          onClick={() => window.location.href = '/subscribe'}
+                        >
+                          <TrendingUp className="size-4 mr-2" />
+                          Start Subscription
                         </Button>
                       </>
                     ) : (
                       <>
-                        <Button className="bg-accent hover:bg-accent/90">
-                          Start Subscription
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700"
+                          onClick={() => window.location.href = '/subscribe'}
+                        >
+                          <Heart className="size-4 mr-2" />
+                          Start Free Trial
                         </Button>
-                        <Button variant="outline">
+                        <Button
+                          variant="outline"
+                          onClick={() => window.location.href = '/schedule?type=one-time'}
+                        >
+                          <Calendar className="size-4 mr-2" />
                           Schedule One-Time
                         </Button>
                       </>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400">
-                    ✨ Free wellness insights included with every service
+                  <p className="text-xs text-slate-400 bg-slate-50 p-3 rounded-lg">
+                    ✨ Free wellness insights included with every service • 🏆 Build your service streak • 🌱 Contribute to environmental impact
                   </p>
                 </div>
               )}

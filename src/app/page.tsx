@@ -54,7 +54,6 @@ export default function Page() {
         {/** Proper dynamic component usage with fallback **/}
         {(() => {
           const Insights = dynamic(() => import('@/components/insights'), {
-            ssr: false,
             loading: () => (
               <div className="container py-16">
                 <div className="h-48 rounded-2xl bg-accent-soft/20 border border-accent/10 animate-pulse" />

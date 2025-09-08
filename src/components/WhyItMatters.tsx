@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Activity,
   Biohazard,
@@ -14,7 +14,7 @@ import {
   Shield,
   TrendingUp,
   AlertTriangle,
-  CheckCircle,
+  // CheckCircle,
   ArrowRight,
 } from 'lucide-react';
 import { useInViewCountUp } from '../hooks/useInViewCountUp';
@@ -163,88 +163,127 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="size-5 text-accent" />
-                  <span className="text-sm font-medium text-ink">Last 7 Days</span>
+                  <span className="text-sm font-medium text-ink">Last 30 Days</span>
                 </div>
                 <div className="px-2 py-1 bg-accent-soft text-accent text-xs font-medium rounded-full">
                   Black/tarry? Possible upper GI blood
                 </div>
               </div>
 
-              {/* Sparkline Chart */}
-              <div className="mb-4 h-20 relative">
+              {/* Weekly Timeline Chart (like wellness tab) */}
+              <div className="mb-4 h-24 relative">
                 <svg
-                  viewBox="0 0 200 60"
+                  viewBox="0 0 300 80"
                   className="w-full h-full"
-                  aria-labelledby="sparkline-desc"
+                  aria-labelledby="timeline-desc"
                 >
                   <defs>
-                    <linearGradient id="sparklineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0.1" />
+                    <linearGradient id="timelineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
                     </linearGradient>
                   </defs>
 
-                  {/* Background grid */}
-                  <g stroke="hsl(var(--muted))" strokeWidth="0.5" opacity="0.3">
-                    <line x1="0" y1="15" x2="200" y2="15" />
-                    <line x1="0" y1="30" x2="200" y2="30" />
-                    <line x1="0" y1="45" x2="200" y2="45" />
-                  </g>
+                  {/* Weekly data points - Realistic numbers: ~14 per dog (2/day) */}
+                  {[
+                    { week: 'Aug 4', deposits: 14, status: 'normal' },
+                    { week: 'Aug 11', deposits: 13, status: 'monitor' },
+                    { week: 'Aug 18', deposits: 15, status: 'normal' },
+                    { week: 'Aug 25', deposits: 12, status: 'attention' },
+                    { week: 'Sep 1', deposits: 16, status: 'normal' },
+                    { week: 'Sep 8', deposits: 14, status: 'normal' },
+                  ].map((point, index) => {
+                    const x = 40 + (index * 45);
+                    const maxDeposits = 16; // Realistic for 1 dog: ~14-16 per week
+                    const y = 60 - ((point.deposits / maxDeposits) * 40);
 
-                  {/* Sparkline path */}
-                  <path
-                    d="M10 35 L30 32 L50 28 L70 35 L90 25 L110 30 L130 22 L150 28 L170 25 L190 20"
-                    fill="none"
-                    stroke="hsl(var(--accent))"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                    let color = '#10b981'; // normal
+                    if (point.status === 'monitor') color = '#f59e0b';
+                    if (point.status === 'attention') color = '#ef4444';
 
-                  {/* Area fill */}
-                  <path
-                    d="M10 35 L30 32 L50 28 L70 35 L90 25 L110 30 L130 22 L150 28 L170 25 L190 20 L190 60 L10 60 Z"
-                    fill="url(#sparklineGradient)"
-                  />
+                    return (
+                      <g key={index}>
+                        {/* Line to next point */}
+                        {index < 5 && (
+                          <line
+                            x1={x}
+                            y1={y}
+                            x2={40 + ((index + 1) * 45)}
+                            y2={60 - (([
+                              { deposits: 14 }, { deposits: 13 }, { deposits: 15 },
+                              { deposits: 12 }, { deposits: 16 }, { deposits: 14 }
+                            ][index + 1].deposits / maxDeposits) * 40)}
+                            stroke="#10b981"
+                            strokeWidth="2"
+                            opacity="0.6"
+                          />
+                        )}
 
-                  {/* Data points with tooltips */}
-                  <circle
-                    cx="50"
-                    cy="28"
-                    r="3"
-                    fill="hsl(var(--accent))"
-                    className="drop-shadow-sm"
-                  >
-                    <title>Softer than usual</title>
-                  </circle>
-                  <circle
-                    cx="90"
-                    cy="25"
-                    r="3"
-                    fill="hsl(var(--accent))"
-                    className="drop-shadow-sm"
-                  >
-                    <title>Red streaks</title>
-                  </circle>
-                  <circle
-                    cx="130"
-                    cy="22"
-                    r="3"
-                    fill="hsl(var(--warning))"
-                    className="drop-shadow-sm"
-                  >
-                    <title>Black/tarry</title>
-                  </circle>
-                  <circle
-                    cx="170"
-                    cy="25"
-                    r="3"
-                    fill="hsl(var(--accent))"
-                    className="drop-shadow-sm"
-                  >
-                    <title>Normal</title>
-                  </circle>
+                        {/* Data point */}
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r="4"
+                          fill={color}
+                          className="drop-shadow-sm"
+                        >
+                          <title>{point.week}: {point.deposits} deposits</title>
+                        </circle>
+
+                        {/* Week label */}
+                        <text
+                          x={x}
+                          y="75"
+                          textAnchor="middle"
+                          className="fill-slate-500"
+                          fontSize="9"
+                        >
+                          {point.week}
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  {/* Y-axis labels */}
+                  <text x="10" y="20" textAnchor="middle" className="fill-slate-400" fontSize="9">16</text>
+                  <text x="10" y="35" textAnchor="middle" className="fill-slate-400" fontSize="9">8</text>
+                  <text x="10" y="50" textAnchor="middle" className="fill-slate-400" fontSize="9">0</text>
                 </svg>
+              </div>
+
+              {/* Bristol Scale & Consistency (like wellness tab) */}
+              <div className="mt-4 space-y-3">
+                <div className="text-xs text-muted mb-2">Consistency Analysis</div>
+
+                {/* Bristol Scale Visual */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-600">
+                    <span>Hard</span>
+                    <span>Normal</span>
+                    <span>Soft</span>
+                  </div>
+                  <div className="relative h-3 bg-gradient-to-r from-red-200 via-green-200 to-yellow-200 rounded-full overflow-hidden">
+                    <div className="absolute inset-y-0 left-1/3 right-1/3 bg-green-400 bg-opacity-60 rounded-full"></div>
+                    <div className="absolute top-0 bottom-0 w-0.5 bg-slate-700 rounded-full transform -translate-x-0.5 left-3/4"></div>
+                  </div>
+                  <div className="text-center text-xs text-slate-600">Mostly Normal</div>
+                </div>
+
+                {/* Consistency Distribution */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center p-2 bg-green-50 rounded">
+                    <div className="text-lg font-bold text-green-700">70%</div>
+                    <div className="text-xs text-green-600">Normal</div>
+                  </div>
+                  <div className="text-center p-2 bg-yellow-50 rounded">
+                    <div className="text-lg font-bold text-yellow-700">20%</div>
+                    <div className="text-xs text-yellow-600">Soft</div>
+                  </div>
+                  <div className="text-center p-2 bg-orange-50 rounded">
+                    <div className="text-lg font-bold text-orange-700">10%</div>
+                    <div className="text-xs text-orange-600">Dry</div>
+                  </div>
+                </div>
               </div>
 
               <div className="text-center">
@@ -436,7 +475,7 @@ export default function WhyItMatters({ onGetQuoteClick, onInsightsClick }: WhyIt
               'Rapid weight loss or pale gums',
               'Greasy, gray/tan stools with increased volume',
               'Any sudden change that lasts >48 hours',
-            ].map((item, index) => (
+            ].map((item) => (
               <motion.div
                 key={item}
                 variants={itemVariants}

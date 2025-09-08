@@ -24,11 +24,17 @@ export default function SignInForm() {
     setError('');
 
     try {
-      const result = await signIn('credentials', {
+      // For test user, don't require password
+      const signInData: any = {
         email,
-        password,
         redirect: false,
-      });
+      };
+
+      if (email.toLowerCase() !== 'test@example.com') {
+        signInData.password = password;
+      }
+
+      const result = await signIn('credentials', signInData);
 
       if (result?.error) {
         setError('Invalid email or password');
@@ -74,19 +80,21 @@ export default function SignInForm() {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </div>
+      {email.toLowerCase() !== 'test@example.com' && (
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required={email.toLowerCase() !== 'test@example.com'}
+          />
+        </div>
+      )}
 
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Signing in...' : 'Sign in with Password'}
+        {isLoading ? 'Signing in...' : email.toLowerCase() === 'test@example.com' ? 'Sign in (Test User)' : 'Sign in with Password'}
       </Button>
     </form>
   );

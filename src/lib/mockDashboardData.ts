@@ -29,21 +29,121 @@ export function generateMockDashboardData() {
 		};
 	});
 
-	const colors = ['brown', 'tan', 'yellow', 'green', 'black', 'red'];
-	const consistencies = ['firm', 'soft', 'loose', 'mucous', 'greasy'];
+	// Generate realistic volume: ~14 deposits per dog each week over 8 weeks
+	const weeks = 8;
+	const normalColors = ['brown', 'tan'];
+	const dataReadings: Array<{ id: string; timestamp: string; weight: number; volume: number; color: string; consistency: string; }> = [];
 
-	const dataReadings = Array.from({ length: 24 }).map((_, i) => {
-		const d = new Date(now);
-		d.setDate(d.getDate() - i);
-		return {
-			id: `reading_${i}`,
-			timestamp: d.toISOString(),
-			weight: Math.round(120 + Math.random() * 180),
-			volume: Math.round(1 + Math.random() * 3),
-			color: colors[Math.floor(Math.random() * colors.length)],
-			consistency: consistencies[Math.floor(Math.random() * consistencies.length)],
-		};
-	});
+	// Create mostly normal scenarios with just a few minor abnormalities
+	const weekScenarios = [
+		{ color: 'normal', consistency: 'normal', alertType: 'none' },     // Week 0: Normal - all good
+		{ color: 'normal', consistency: 'normal', alertType: 'none' },     // Week 1: Normal - all good
+		{ color: 'normal', consistency: 'soft', alertType: 'soft' },       // Week 2: Minor soft consistency (just monitor)
+		{ color: 'normal', consistency: 'normal', alertType: 'none' },     // Week 3: Normal - all good
+		{ color: 'normal', consistency: 'normal', alertType: 'none' },     // Week 4: Normal - all good
+		{ color: 'yellow', consistency: 'normal', alertType: 'color' },    // Week 5: Slight yellow tint (monitor)
+		{ color: 'normal', consistency: 'normal', alertType: 'none' },     // Week 6: Normal - all good
+		{ color: 'normal', consistency: 'normal', alertType: 'none' },     // Week 7: Normal - all good
+	];
+
+	for (let w = 0; w < weeks; w++) {
+		for (let di = 0; di < dogs.length; di++) {
+			const perWeek = 12 + Math.floor(Math.random() * 6); // 12-17 per dog/week
+			const scenario = weekScenarios[w];
+
+			for (let r = 0; r < perWeek; r++) {
+				const d = new Date(now);
+				// spread readings within the week at reasonable daytime hours
+				d.setDate(d.getDate() - w * 7 - Math.floor(Math.random() * 7));
+				d.setHours(7 + Math.floor(Math.random() * 12), Math.floor(Math.random() * 60), 0, 0);
+
+				// Use scenario-based distribution with some randomization
+				let color = scenario.color;
+				let consistency = scenario.consistency;
+
+				// Add some variation - not all readings should be the alert type
+				const variationRoll = Math.random();
+				if (variationRoll < 0.3) { // 30% chance of normal variation
+					color = normalColors[Math.floor(Math.random() * normalColors.length)];
+					consistency = 'firm';
+				} else if (variationRoll < 0.5) { // 20% chance of partial alert
+					if (scenario.alertType === 'soft') consistency = 'soft';
+					if (scenario.alertType === 'color') color = scenario.color;
+					if (scenario.alertType === 'parasite') {
+						consistency = r % 2 === 0 ? 'mucous' : 'greasy';
+					}
+				}
+
+				dataReadings.push({
+					id: `reading_${w}_${di}_${r}`,
+					timestamp: d.toISOString(),
+					weight: Math.round(120 + Math.random() * 180),
+					volume: 1,
+					color,
+					consistency,
+				});
+			}
+		}
+	}
 
 	return { user, dogs, serviceVisits, dataReadings };
+}
+
+// Mostly normal dataset: all normal readings except one soft week
+export function generateMockDashboardDataNormal() {
+  const now = new Date();
+  const user = {
+    id: 'mock_user_normal_1',
+    name: 'Jordan Smith',
+    email: 'jordan@example.com',
+    phone: '+1 (555) 010-4567',
+    address: '742 Evergreen Terrace',
+    city: 'Springfield',
+    zipCode: '62704',
+    stripeCustomerId: 'cus_mock_456',
+    orgId: 'org_demo',
+  } as const;
+
+  const dogs = [
+    { id: 'dog_norm_1', name: 'Luna', breed: 'Border Collie', age: 5, weight: 42 },
+  ];
+
+  // 8 weekly visits, last is scheduled
+  const serviceVisits = Array.from({ length: 8 }).map((_, i) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i * 7);
+    return {
+      id: `visit_norm_${i}`,
+      scheduledDate: d.toISOString(),
+      status: i === 0 ? 'SCHEDULED' : 'COMPLETED',
+      serviceType: 'WEEKLY_CLEAN',
+      yardSize: 'medium',
+    };
+  });
+
+  // Build readings: ~14 per week, almost all normal; a single soft week as a warning only
+  const normalColors = ['brown', 'tan'];
+  const dataReadings: Array<{ id: string; timestamp: string; weight: number; volume: number; color: string; consistency: string; }> = [];
+  const weeks = 8;
+  const softWeek = 3; // ~3 weeks ago
+  for (let w = 0; w < weeks; w++) {
+    // Ensure at least 1 reading every week so deposits aren't zero when weight/moisture exist
+    const perWeek = Math.max(1, 13 + Math.floor(Math.random() * 3)); // 13-15/week
+    for (let r = 0; r < perWeek; r++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - w * 7 - Math.floor(Math.random() * 7));
+      d.setHours(7 + Math.floor(Math.random() * 12), Math.floor(Math.random() * 60), 0, 0);
+      const isSoft = (w === softWeek) && r < 3; // a few soft that week
+      dataReadings.push({
+        id: `reading_norm_${w}_${r}`,
+        timestamp: d.toISOString(),
+        weight: Math.round(120 + (r % 5) * 20),
+        volume: 1,
+        color: normalColors[(w + r) % normalColors.length],
+        consistency: isSoft ? 'soft' : 'firm',
+      });
+    }
+  }
+
+  return { user, dogs, serviceVisits, dataReadings };
 }
