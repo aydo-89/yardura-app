@@ -14,7 +14,7 @@ import {
   MapPin,
   Sparkles,
   Heart,
-  Dog,
+  Dog as DogIcon,
   Building
 } from 'lucide-react';
 import type { User, Dog } from '../types';
@@ -150,7 +150,7 @@ export default function BillingTab({ user, dogs = [] }: BillingTabProps) {
 
             <div className="text-center">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Dog className="size-6 text-purple-600" />
+                <DogIcon className="size-6 text-purple-600" />
               </div>
               <div className="text-sm text-slate-600">Dogs</div>
               <div className="font-semibold text-slate-900">{serviceDetails.dogs}</div>
