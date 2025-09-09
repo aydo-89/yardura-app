@@ -7,7 +7,15 @@ export default async function SchedulePage() {
   const session = (await safeGetServerSession(authOptions as any)) as {
     user?: { id?: string };
   } | null;
-  const jobs = await prisma.job.findMany({ orderBy: { nextVisitAt: 'asc' }, take: 10 });
+
+  // Prevent database queries during build time
+  let jobs = [];
+  try {
+    jobs = await prisma.job.findMany({ orderBy: { nextVisitAt: 'asc' }, take: 10 });
+  } catch (error) {
+    console.warn('Database not available during build:', error);
+    jobs = [];
+  }
   const first = jobs[0];
   return (
     <div className="container py-8">
