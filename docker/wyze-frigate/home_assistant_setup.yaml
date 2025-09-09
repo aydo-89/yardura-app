@@ -1,0 +1,149 @@
+# Home Assistant configuration for Dog Behavior Alerts
+# Add this to your Home Assistant configuration.yaml
+
+# MQTT Integration (if not already configured)
+mqtt:
+  broker: localhost  # or your MQTT broker IP
+  port: 1883
+  discovery: true
+
+# Frigate Integration
+frigate:
+  url: http://localhost:5001
+
+# Input Boolean for behavior tracking
+input_boolean:
+  dog_behavior_alerts:
+    name: "Dog Behavior Alerts"
+    initial: on
+    icon: mdi:dog
+
+# Input Select for behavior types
+input_select:
+  last_dog_behavior:
+    name: "Last Dog Behavior"
+    options:
+      - "None"
+      - "Digging"
+      - "Rolling"
+      - "Eating/Sniffing"
+      - "Prolonged Barking"
+    initial: "None"
+
+# Sensors for behavior tracking
+sensor:
+  - platform: mqtt
+    name: "Dog Behavior Detector"
+    state_topic: "frigate/yard/dog_behavior"
+    json_attributes_topic: "frigate/yard/dog_behavior"
+    value_template: "{{ value_json.behavior }}"
+    
+  - platform: template
+    sensors:
+      dog_behavior_confidence:
+        friendly_name: "Behavior Confidence"
+        value_template: "{{ state_attr('sensor.dog_behavior_detector', 'confidence') | round(2) }}"
+        unit_of_measurement: '%'
+
+# Automations for behavior alerts
+automation:
+  - alias: "Dog Digging Alert"
+    trigger:
+      platform: mqtt
+      topic: "frigate/yard/dog_behavior"
+      payload: "digging"
+    condition:
+      condition: state
+      entity_id: input_boolean.dog_behavior_alerts
+      state: 'on'
+    action:
+      - service: notify.mobile_app_your_phone  # Replace with your device
+        data:
+          title: "🕳️ Dog Digging Detected!"
+          message: "Your dog is digging in the yard for {{ trigger.payload_json.duration }}s"
+          data:
+            actions:
+              - action: "view_camera"
+                title: "View Camera"
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.last_dog_behavior
+        data:
+          option: "Digging"
+
+  - alias: "Dog Rolling Alert"
+    trigger:
+      platform: mqtt
+      topic: "frigate/yard/dog_behavior"
+      payload: "rolling"
+    condition:
+      condition: state
+      entity_id: input_boolean.dog_behavior_alerts
+      state: 'on'
+    action:
+      - service: notify.mobile_app_your_phone  # Replace with your device
+        data:
+          title: "🐕 Dog Rolling Detected!"
+          message: "Your dog is rolling in the grass!"
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.last_dog_behavior
+        data:
+          option: "Rolling"
+
+  - alias: "Dog Eating Alert"
+    trigger:
+      platform: mqtt
+      topic: "frigate/yard/dog_behavior"
+      payload: "eating_or_sniffing"
+    condition:
+      condition: state
+      entity_id: input_boolean.dog_behavior_alerts
+      state: 'on'
+    action:
+      - service: notify.mobile_app_your_phone  # Replace with your device
+        data:
+          title: "🌱 Dog Eating/Sniffing Detected!"
+          message: "Your dog might be eating grass or investigating something on the ground"
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.last_dog_behavior
+        data:
+          option: "Eating/Sniffing"
+
+  - alias: "Prolonged Barking Alert"
+    trigger:
+      platform: mqtt
+      topic: "frigate/yard/dog_behavior"
+      payload: "prolonged_barking"
+    condition:
+      condition: state
+      entity_id: input_boolean.dog_behavior_alerts
+      state: 'on'
+    action:
+      - service: notify.mobile_app_your_phone  # Replace with your device
+        data:
+          title: "🔊 Prolonged Barking!"
+          message: "Your dog has been barking for {{ trigger.payload_json.duration }}s"
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.last_dog_behavior
+        data:
+          option: "Prolonged Barking"
+
+# Script to manually check camera
+script:
+  check_dog_camera:
+    alias: "Check Dog Camera"
+    sequence:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.yard_frigate
+        data:
+          filename: "/tmp/dog_snapshot.jpg"
+      - service: notify.mobile_app_your_phone
+        data:
+          title: "Dog Camera Snapshot"
+          message: "Current view of the yard"
+          data:
+            image: "/tmp/dog_snapshot.jpg"

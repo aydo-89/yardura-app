@@ -1,0 +1,80 @@
+# Frigate configuration for Wyze Bridge input + audio bark detection
+
+mqtt:
+  host: mosquitto
+  topic_prefix: frigate
+
+detectors:
+  cpu1:
+    type: cpu
+    # To use Intel OpenVINO on Intel/Apple/AMD, see docs and switch to:
+    # ov:
+    #   type: openvino
+    #   device: CPU
+
+audio:
+  enabled: true
+  listen:
+    - bark  # add more global classes if desired (e.g., glass_break, scream)
+
+record:
+  enabled: true
+  retain:
+    days: 3
+    mode: motion   # all | motion | active_objects
+  alerts:
+    retain: { days: 30, mode: motion }
+  detections:
+    retain: { days: 14, mode: motion }
+  export:
+    # Example timelapse defaults (60x at 25fps)
+    timelapse_args: "-vf setpts=PTS/60 -r 25"
+
+# Enable semantic search for natural language event queries
+semantic_search:
+  enabled: true
+  # generative:
+  #   enabled: true
+
+# Review system to help improve behavior detection
+review:
+  alerts:
+    required_zones: []
+  detections:
+    required_zones: []
+
+cameras:
+  yard:
+    ffmpeg:
+      inputs:
+        # Stream name from Wyze Bridge UI
+        - path: rtsp://10.0.0.214:8554/back-yard-cam
+          roles: [record]
+        - path: rtsp://10.0.0.214:8554/back-yard-cam
+          roles: [audio, detect]
+    audio:
+      enabled: true
+      listen: [bark]  # Camera-specific bark detection
+    objects:
+      track: [dog, person, cat]
+      filters:
+        dog:
+          min_area: 500  # Minimum pixels for dog detection
+          max_area: 50000  # Maximum pixels (prevents false positives)
+          min_score: 0.5  # Confidence threshold
+    motion:
+      mask: ""  # Add motion mask coordinates here if needed
+    zones:
+      entire_yard:
+        coordinates: 0,0,1920,0,1920,1080,0,1080  # Full frame - adjust based on your resolution
+      grass_area:
+        coordinates: 100,200,1800,200,1800,900,100,900  # Adjust based on where grass/digging happens
+      feeding_area:
+        coordinates: 200,300,600,300,600,700,200,700  # Adjust based on where dog eats
+
+snapshots:
+  enabled: true
+  retain:
+    default: 7
+
+

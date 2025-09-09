@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Yardura™ – Premium Outdoor Pet & Yard Solutions</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description"
+        content="Premium outdoor pet and yard products designed for beautiful spaces. Quality design that finally belongs in your backyard. Starting with WasteWell™ LED waste station." />
+  
+  <!-- Model Viewer for AR functionality -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  
+  <!-- Three.js for 3D scene rendering -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js",
+        "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="early-access-badge">
+          ✨ Premium Outdoor Solutions
+        </div>
+        <div class="hero-accent"></div>
+        <h1 class="hero-title">Premium Outdoor Pet & Yard Products</h1>
+        <p class="lead">Finally, outdoor solutions designed for beautiful spaces. Quality gear that brings together pet care and yard aesthetics in premium outdoor living.</p>
+        
+        <div class="waitlist-form">
+          <input type="email" placeholder="Enter your email for early access" id="hero-waitlist-email">
+          <button onclick="joinWaitlist('hero')">Join Waitlist</button>
+        </div>
+        
+        <div class="hero-actions">
+          <a href="#mission" class="btn btn-secondary btn-large">Our Mission</a>
+          <a href="#products" class="btn btn-secondary btn-large">View Products</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mission Section -->
+  <section id="mission" class="section section-preview">
+    <div class="container">
+      <div class="grid grid-2">
+        <div>
+                     <div class="early-access-badge">
+             🎨 Quality Design
+           </div>
+           <h2>Outdoor Living Done Right</h2>
+          <p class="lead">We believe your outdoor space should be beautiful AND functional. Every product we design harmonizes pet care with premium aesthetics.</p>
+          <p>Our journey started when we realized every pet product looked like plastic utility equipment. So we designed our own—starting with outdoor waste solutions that look like elegant lighting fixtures.</p>
+          <p><strong>Because your pets deserve a clean space, and you deserve a yard that still looks like your vision.</strong></p>
+        </div>
+        <div>
+          <img src="/img/luxury_patio_hero.jpg" alt="Premium outdoor living space" class="product-image" style="border-radius: 1rem;">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Spotlight Section -->
+  <section id="products" class="section section-dark">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 4rem;">
+                 <h2>Introducing BarkYard Basics</h2>
+         <p class="lead">Our first product: LED waste stations that look like premium outdoor lighting.</p>
+      </div>
+
+      <div class="product-grid">
+        <!-- WasteWell with AR Accessories -->
+        <div class="luxury-card">
+          <img src="/img/luxury_patio_hero.jpg" alt="WasteWell LED Waste Station" class="product-image" style="border-radius: 1rem;">
+          <div class="product-content">
+                         <h3 style="color: var(--yardura-warm-white); margin-bottom: 1rem;">WasteWell™</h3>
+             <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem;">Premium LED waste station that integrates seamlessly with your outdoor lighting design.</p>
+            
+            <!-- Pre-AR Configuration -->
+            <div class="pre-ar-config">
+              <h4 style="color: var(--yardura-warm-white); margin-bottom: 0.75rem; font-size: 0.95rem;">📦 Configure Your Setup</h4>
+                          <div class="config-toggles">
+              <label class="toggle-option">
+                <input type="checkbox" id="main-scoop-toggle" onchange="updatePreviewConfiguration()">
+                <span class="toggle-switch"></span>
+                <span class="toggle-label">CleanClip™</span>
+              </label>
+              <label class="toggle-option">
+                <input type="checkbox" id="main-dolly-toggle" onchange="updatePreviewConfiguration()">
+                <span class="toggle-switch"></span>
+                <span class="toggle-label">RollRover™</span>
+              </label>
+            </div>
+            </div>
+            
+            <button class="view-in-yard-btn" onclick="openARViewer('wastewell')" data-product="wastewell">
+              <span>📱</span> View in My Space
+            </button>
+          </div>
+        </div>
+
+        <!-- WasteWell Accessories -->
+        <div class="accessories-section">
+          <h4 class="accessories-title">WasteWell™ Accessories</h4>
+          <div class="accessories-grid">
+            <div class="accessory-card">
+              <div class="accessory-icon">🧲</div>
+              <h5>CleanClip™</h5>
+              <p>Magnetic scooper that clips seamlessly to your WasteWell when not in use.</p>
+            </div>
+            <div class="accessory-card">
+              <div class="accessory-icon">🎯</div>
+              <h5>RollRover™</h5>
+              <p>Smooth-rolling mobility system for effortless repositioning throughout your outdoor space.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- MarkMate Training Post -->
+        <div class="luxury-card">
+          <div class="product-image-container">
+            <img src="/img/markmate.png" alt="MarkMate Training Post" class="product-image">
+          </div>
+          <div class="product-content">
+            <h3 style="color: var(--yardura-warm-white); margin-bottom: 1rem;">MarkMate™</h3>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem;">Smart training post with LED guidance and turf system for targeted relief.</p>
+            
+            <button class="view-in-yard-btn" onclick="openARViewer('markmate')" data-product="markmate">
+              <span>📱</span> View in My Space
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Future Solutions Section -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 3rem;">
+        <h2>Coming Soon: Complete Yard Solutions</h2>
+        <p class="lead">WasteWell™ is just the beginning. We're designing a complete ecosystem of premium outdoor products.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="feature-icon">🗂️</div>
+          <h3>Modular Storage</h3>
+          <p>Weather-resistant storage solutions that integrate beautifully with your landscape design.</p>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🌱</div>
+          <h3>Composting Systems</h3>
+          <p>Elegant composting solutions that turn waste into garden gold without compromising aesthetics.</p>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🪴</div>
+          <h3>Integrated Planters</h3>
+          <p>Smart planters that combine beautiful design with practical pet-friendly functionality.</p>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">⚡</div>
+          <h3>Smart Yard Tech</h3>
+          <p>Connected outdoor solutions that maintain your space automatically while you enjoy it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Yardura Section -->
+  <section class="section" style="background: var(--gray-50);">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 3rem;">
+        <h2>Why Choose Yardura</h2>
+        <p class="lead">Premium quality meets thoughtful design in every product we create.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="feature-icon">🎨</div>
+          <h3>Design-First Approach</h3>
+          <p>Every product starts with aesthetics. Function follows beautiful form in all our solutions.</p>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">♻️</div>
+          <h3>Sustainable Materials</h3>
+          <p>Premium, weather-resistant materials chosen for longevity and environmental responsibility.</p>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🏡</div>
+          <h3>Landscape Integration</h3>
+          <p>Designed to enhance, not detract from your outdoor living investment.</p>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">⭐</div>
+          <h3>Premium Quality</h3>
+          <p>Built to maintain beauty and performance through years of outdoor use.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Kick-Start Quiz Section -->
+  <section class="section" style="background: linear-gradient(135deg, var(--yardura-cream) 0%, var(--yardura-warm-white) 100%);">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 3rem;">
+        <div class="early-access-badge">
+          🎯 Personalized Recommendations
+        </div>
+        <h2>Find Your Perfect Yardura Setup</h2>
+        <p class="lead">Answer a few quick questions to get personalized recommendations for your space.</p>
+      </div>
+
+      <div id="kickstart-quiz" class="quiz-container" style="max-width: 800px; margin: 0 auto;">
+        <!-- Quiz Start Screen -->
+        <div id="quiz-start" class="quiz-screen active">
+          <div style="text-align: center; padding: 3rem; background: var(--yardura-warm-white); border-radius: 2rem; box-shadow: var(--shadow-luxury);">
+            <h3 style="margin-bottom: 1.5rem;">Let's Design Your Ideal Outdoor Pet Setup</h3>
+            <p style="margin-bottom: 2rem; color: var(--gray-600);">We'll help you choose the perfect combination of products for your space, style, and needs.</p>
+            <button onclick="startQuiz()" class="btn btn-primary btn-large">Start Quiz (2 minutes)</button>
+          </div>
+        </div>
+
+        <!-- Question 1: Space Type -->
+        <div id="quiz-q1" class="quiz-screen">
+          <div class="quiz-question-card">
+            <h3>What's your outdoor space like?</h3>
+            <p>This helps us recommend the best placement and mobility options.</p>
+            <div class="quiz-options">
+              <button class="quiz-option" onclick="selectAnswer('q1', 'large-yard')">
+                <span class="option-icon">🏡</span>
+                <span class="option-text">Large Yard<br><small>Multiple areas, lawn, garden beds</small></span>
+              </button>
+              <button class="quiz-option" onclick="selectAnswer('q1', 'patio-deck')">
+                <span class="option-icon">🏠</span>
+                <span class="option-text">Patio/Deck<br><small>Defined outdoor living space</small></span>
+              </button>
+              <button class="quiz-option" onclick="selectAnswer('q1', 'small-yard')">
+                <span class="option-icon">🏘️</span>
+                <span class="option-text">Small Yard<br><small>Compact, efficient use of space</small></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question 2: Mobility Needs -->
+        <div id="quiz-q2" class="quiz-screen">
+          <div class="quiz-question-card">
+            <h3>How often do you rearrange your outdoor space?</h3>
+            <p>This determines if you'd benefit from our mobility system.</p>
+            <div class="quiz-options">
+              <button class="quiz-option" onclick="selectAnswer('q2', 'frequently')">
+                <span class="option-icon">🔄</span>
+                <span class="option-text">Frequently<br><small>Seasonal changes, entertaining</small></span>
+              </button>
+              <button class="quiz-option" onclick="selectAnswer('q2', 'occasionally')">
+                <span class="option-icon">🔀</span>
+                <span class="option-text">Occasionally<br><small>A few times per year</small></span>
+              </button>
+              <button class="quiz-option" onclick="selectAnswer('q2', 'rarely')">
+                <span class="option-icon">📍</span>
+                <span class="option-text">Rarely<br><small>Set it and forget it</small></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question 3: Maintenance Preference -->
+        <div id="quiz-q3" class="quiz-screen">
+          <div class="quiz-question-card">
+            <h3>What's your cleaning style?</h3>
+            <p>This helps us recommend the right tools for your routine.</p>
+            <div class="quiz-options">
+              <button class="quiz-option" onclick="selectAnswer('q3', 'immediate')">
+                <span class="option-icon">⚡</span>
+                <span class="option-text">Immediate Action<br><small>Clean up right away</small></span>
+              </button>
+              <button class="quiz-option" onclick="selectAnswer('q3', 'scheduled')">
+                <span class="option-icon">📅</span>
+                <span class="option-text">Scheduled Cleaning<br><small>Regular routine times</small></span>
+              </button>
+              <button class="quiz-option" onclick="selectAnswer('q3', 'minimal')">
+                <span class="option-icon">🎯</span>
+                <span class="option-text">Minimal Effort<br><small>Simple, efficient solutions</small></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quiz Results -->
+        <div id="quiz-results" class="quiz-screen">
+          <div class="quiz-results-card">
+            <h3>Your Personalized Yardura Setup</h3>
+            <div id="recommended-setup" class="recommended-setup">
+              <!-- Dynamic content populated by JavaScript -->
+            </div>
+            <div style="text-align: center; margin-top: 2rem;">
+              <button onclick="viewRecommendedAR()" class="btn btn-primary btn-large" style="margin-right: 1rem;">
+                <span>📱</span> View in Your Yard
+              </button>
+              <button onclick="restartQuiz()" class="btn btn-secondary">Take Quiz Again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="section">
+    <div class="container">
+             <div style="text-align: center; margin-bottom: 3rem;">
+         <h2>The Premium Difference</h2>
+         <p class="lead">Quality approach to outdoor pet and yard products.</p>
+       </div>
+      
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-number">100%</span>
+          <p>Design-First Philosophy</p>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">0</span>
+          <p>Ugly Plastic Components</p>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">365</span>
+          <p>Days Weatherproof Beauty</p>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">∞</span>
+          <p>Compliments on Your Yard</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 3rem;">
+        <h2>Frequently Asked Questions</h2>
+        <p class="lead">Everything you need to know about our premium outdoor solutions.</p>
+      </div>
+
+      <div style="max-width: 800px; margin: 0 auto;">
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            What makes Yardura different from other outdoor pet products?
+            <span>+</span>
+          </button>
+          <div class="faq-answer">
+            <p>Yardura is the first brand to design outdoor pet products specifically for premium spaces. We start with aesthetics and integrate function, rather than hiding ugly utility equipment.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            How does the WasteWell LED system work?
+            <span>+</span>
+          </button>
+          <div class="faq-answer">
+            <p>WasteWell integrates subtle LED lighting that makes it look like premium outdoor lighting rather than a waste station. It enhances your evening outdoor experience while providing superior functionality.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            When will products be available?
+            <span>+</span>
+          </button>
+          <div class="faq-answer">
+            <p>We're building our early adopter community now. Join our waitlist to be among the first notified when pre-orders open and receive exclusive founding member benefits.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            What other products are you developing?
+            <span>+</span>
+          </button>
+          <div class="faq-answer">
+            <p>We're developing a complete ecosystem: modular outdoor storage, elegant composting systems, integrated planters, and smart yard technology. All designed with the same premium aesthetic philosophy.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-section">
+        <div class="cta-content">
+          <div class="early-access-badge">
+            🎯 Limited Early Access
+          </div>
+                     <h2>Ready to Transform Your Outdoor Space?</h2>
+           <p class="lead">Upgrade your outdoor living. Be among the first to experience premium solutions designed for beautiful spaces.</p>
+          
+          <div class="waitlist-form">
+            <input type="email" placeholder="Enter your email for early access" id="final-waitlist-email">
+            <button onclick="joinWaitlist('final')">Get Early Access</button>
+          </div>
+          
+          <p style="margin-top: 1rem; opacity: 0.8; font-size: 0.875rem;">Early access, exclusive pricing, and founding member benefits.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AR Viewer Container -->
+  <div id="arViewerContainer" class="ar-viewer-container">
+    <div class="ar-viewer-content">
+      <div class="ar-viewer-header">
+        <h3 id="arViewerTitle">WasteWell™</h3>
+        <button class="ar-close-btn" onclick="closeARViewer()">×</button>
+      </div>
+
+      <!-- AR Configuration Controls -->
+      <div class="ar-config-controls">
+        <div class="ar-config-title">Configuration:</div>
+        <div class="ar-toggles">
+          <label class="ar-toggle">
+            <input type="checkbox" id="ar-scoop-toggle" onchange="updateARConfiguration()">
+            <span class="ar-toggle-slider"></span>
+            <span class="ar-toggle-label">CleanClip™ Scooper</span>
+          </label>
+          <label class="ar-toggle">
+            <input type="checkbox" id="ar-dolly-toggle" onchange="updateARConfiguration()">
+            <span class="ar-toggle-slider"></span>
+            <span class="ar-toggle-label">RollRover™ Dolly</span>
+          </label>
+                </div>
+      </div>
+
+      <model-viewer
+        id="arModelViewer"
+        crossorigin="anonymous"
+        src=""
+        ios-src=""
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        shadow-intensity="1"
+        shadow-softness="0.3"
+        auto-rotate
+        auto-rotate-delay="3000">
+        
+        <!-- Photo Upload Section -->
+        <div class="photo-upload-section" id="photoUploadSection">
+          <div class="photo-upload-description">Upload a photo of your space to see how it looks with the WasteWell</div>
+          <div class="photo-upload-controls">
+            <input type="file" id="photoUpload" accept="image/*" onchange="handlePhotoUpload(event)" style="display: none;">
+            <button onclick="document.getElementById('photoUpload').click()" class="photo-upload-btn">
+              📷 Upload Photo
+            </button>
+            <button onclick="clearPhotoBackground()" class="photo-clear-btn" id="photoClearBtn" style="display: none;">
+              🗑️ Remove Photo
+            </button>
+          </div>
+        </div>
+
+        <div id="arLoading" class="ar-loading">
+          Loading 3D model...
+        </div>
+
+        <div id="arInstructions" class="ar-instructions"></div>
+      </model-viewer>
+
+      <model-viewer
+        id="fallbackModelViewer"
+        crossorigin="anonymous"
+        camera-controls
+        shadow-intensity="1"
+        shadow-softness="0.3"
+        auto-rotate
+        auto-rotate-delay="3000"
+        style="display: none;">
+      </model-viewer>
+    </div>
+  </div>
+
+  <!-- Sticky Waitlist Bar -->
+  <div class="waitlist-bar">
+    <form id="waitlist-footer">
+      <input type="email" placeholder="Join the waitlist for early access">
+      <button type="submit">Join Waitlist</button>
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="#" class="footer-link">Privacy Policy</a>
+        <a href="#" class="footer-link">Terms of Service</a>
+        <a href="#" class="footer-link">Contact</a>
+        <a href="#" class="footer-link">Support</a>
+      </div>
+      <p style="opacity: 0.6; margin: 0;">&copy; 2024 Yardura™. Premium outdoor pet & yard solutions.</p>
+      <p style="opacity: 0.6; margin: 0.5rem 0 0; font-size: 0.875rem;">🌿 Designed for spaces that deserve better</p>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+  
+  <script>
+    // Quiz functionality
+    const quizData = {
+      answers: {},
+      currentQuestion: 0
+    };
+
+    function startQuiz() {
+      showScreen('quiz-q1');
+    }
+
+    function showScreen(screenId) {
+      // Hide all screens
+      document.querySelectorAll('.quiz-screen').forEach(screen => {
+        screen.classList.remove('active');
+      });
+      // Show target screen
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    function selectAnswer(questionId, answer) {
+      quizData.answers[questionId] = answer;
+      
+      // Update visual feedback
+      const questionScreen = document.getElementById(`quiz-${questionId}`);
+      questionScreen.querySelectorAll('.quiz-option').forEach(option => {
+        option.classList.remove('selected');
+      });
+      event.target.classList.add('selected');
+      
+      // Auto-advance after brief delay
+      setTimeout(() => {
+        if (questionId === 'q1') {
+          showScreen('quiz-q2');
+        } else if (questionId === 'q2') {
+          showScreen('quiz-q3');
+        } else if (questionId === 'q3') {
+          showResults();
+        }
+      }, 800);
+    }
+
+    function showResults() {
+      const { q1: space, q2: mobility, q3: maintenance } = quizData.answers;
+      let recommendations = [];
+      let configuration = 'base';
+
+      // Base WasteWell is always recommended
+      recommendations.push({
+        icon: '✨',
+        name: 'WasteWell™ LED Waste Station',
+        description: 'The foundation of your premium outdoor pet setup'
+      });
+
+      // Recommend accessories based on answers
+      if (maintenance === 'immediate' || maintenance === 'scheduled') {
+        recommendations.push({
+          icon: '🎯',
+          name: 'CleanClip™ Scooper',
+          description: 'Magnetic scooper always within reach for quick cleanup'
+        });
+                        configuration = configuration === 'base' ? 'withScoop' : 'complete';
+      }
+
+      if (mobility === 'frequently' || mobility === 'occasionally' || space === 'large-yard') {
+        recommendations.push({
+          icon: '🔄',
+          name: 'RollRover™ Dolly System',
+          description: 'Smooth mobility for flexible placement options'
+        });
+                        configuration = configuration === 'base' ? 'withDolly' : 'complete';
+      }
+
+      // Store recommendation for AR viewing
+      quizData.recommendedConfig = configuration;
+
+      // Generate results HTML
+      const setupHTML = recommendations.map(item => `
+        <div class="setup-item">
+          <div class="setup-item-icon">${item.icon}</div>
+          <div class="setup-item-content">
+            <h4>${item.name}</h4>
+            <p>${item.description}</p>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('recommended-setup').innerHTML = setupHTML;
+      showScreen('quiz-results');
+    }
+
+    function viewRecommendedAR() {
+      // Set the accessories based on recommendation
+      const config = quizData.recommendedConfig;
+      
+      // Update accessory toggles
+      const scoopToggle = document.getElementById('scoop-toggle');
+      const dollyToggle = document.getElementById('dolly-toggle');
+      
+      if (scoopToggle && dollyToggle) {
+                        scoopToggle.checked = config.includes('Scoop') || config === 'complete';
+                dollyToggle.checked = config.includes('Dolly') || config === 'complete';
+        
+        // Trigger AR configuration update
+        if (window.updateARConfiguration) {
+          updateARConfiguration();
+        }
+      }
+      
+      // Open AR viewer
+      if (window.openARViewer) {
+        openARViewer('wastewell');
+      }
+    }
+
+    function restartQuiz() {
+      quizData.answers = {};
+      quizData.currentQuestion = 0;
+      showScreen('quiz-start');
+      
+      // Clear all selections
+      document.querySelectorAll('.quiz-option').forEach(option => {
+        option.classList.remove('selected');
+      });
+    }
+  </script>
+</body>
+</html> 

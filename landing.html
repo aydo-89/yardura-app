@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Yardura™ – Revolutionary Outdoor Pet‑Waste System with Premium Design</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description"
+        content="Breakthrough design that finally belongs in your beautiful yard. Premium pet‑waste solutions with LED elegance. Pre‑order WasteWell™ and accessories today." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Model Viewer for AR functionality -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  
+  <style>
+    :root{
+      /* Brand colors - Premium eco-luxury palette */
+      --yardura-bronze: #D4A574;
+      --yardura-gold: #F4D03F;
+      --yardura-amber: #E8B84D;
+      --yardura-dark-bronze: #8B6F47;
+      --yardura-charcoal: #2C2C2C;
+      --yardura-warm-black: #1A1A1A;
+      --yardura-sage: #8B9D6B;
+      --yardura-sage-light: #A8B88A;
+      --yardura-cream: #F8F6F0;
+      --yardura-warm-white: #FFFEF9;
+      
+      /* Supporting grays */
+      --gray-50: #FAFAFA;
+      --gray-100: #F5F5F5;
+      --gray-200: #E5E5E5;
+      --gray-300: #D4D4D4;
+      --gray-600: #525252;
+      --gray-800: #262626;
+      
+      /* Typography - All Poppins */
+      --primary-font: 'Poppins', system-ui, sans-serif;
+      --display-font: 'Poppins', system-ui, sans-serif;
+      
+      /* Shadows using brand colors */
+      --shadow-warm: 0 4px 20px rgba(212, 165, 116, 0.15);
+      --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.1);
+      --shadow-luxury: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      font-family: var(--primary-font);
+      color: var(--yardura-charcoal);
+      background: var(--yardura-warm-white);
+      line-height: 1.6;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Typography - All Poppins */
+    h1, h2, h3, h4 {
+      font-family: var(--display-font);
+      font-weight: 700;
+      line-height: 1.2;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    h1 { 
+      font-size: clamp(2.5rem, 5vw, 4.5rem); 
+      margin-bottom: 1.5rem;
+      font-weight: 800;
+    }
+    h2 { 
+      font-size: clamp(1.75rem, 3vw, 3rem); 
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+    h3 { 
+      font-size: clamp(1.25rem, 2vw, 1.75rem); 
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+
+    p { margin: 0 0 1.25rem; font-weight: 400; }
+    .lead { 
+      font-size: 1.25rem; 
+      font-weight: 400; 
+      color: var(--gray-600);
+      line-height: 1.7;
+    }
+
+    /* Layout */
+    .container { width: min(90%, 1400px); margin: 0 auto; padding: 0 1rem; }
+    .section { padding: 6rem 0; }
+    .section-sm { padding: 4rem 0; }
+
+    /* Grid System */
+    .grid { display: grid; gap: 3rem; }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 1rem;
+      font-family: var(--primary-font);
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+      transition: left 0.6s;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--yardura-bronze) 0%, var(--yardura-amber) 100%);
+      color: var(--yardura-warm-white);
+      box-shadow: var(--shadow-warm);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(212, 165, 116, 0.3);
+      background: linear-gradient(135deg, var(--yardura-amber) 0%, var(--yardura-gold) 100%);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--yardura-warm-white);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: var(--yardura-bronze);
+    }
+
+    .btn-large {
+      padding: 1.25rem 2.5rem;
+      font-size: 1.125rem;
+      border-radius: 1.25rem;
+    }
+
+    .btn-small {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, var(--yardura-warm-black) 0%, var(--yardura-charcoal) 40%, #3A3A3A 100%);
+      color: var(--yardura-warm-white);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0.6;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(212, 165, 116, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(139, 157, 107, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .hero-accent {
+      display: inline-block;
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, transparent 0%, var(--yardura-bronze) 50%, transparent 100%);
+      margin-bottom: 2rem;
+    }
+
+    .hero-title {
+      background: linear-gradient(135deg, var(--yardura-warm-white) 0%, var(--yardura-bronze) 70%, var(--yardura-gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 2rem;
+      font-weight: 800;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 640px) {
+      .hero-actions { flex-direction: column; align-items: center; }
+    }
+
+    /* Luxury Card Component */
+    .luxury-card {
+      background: var(--yardura-warm-white);
+      border-radius: 2rem;
+      padding: 3rem;
+      box-shadow: var(--shadow-luxury);
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .luxury-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--yardura-bronze), var(--yardura-gold), var(--yardura-amber));
+    }
+
+    .luxury-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Product Grid */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 4rem;
+    }
+
+    .product-card {
+      background: var(--yardura-warm-white);
+      border-radius: 1.5rem;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      transition: all 0.3s ease;
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-luxury);
+    }
+
+    .product-image {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+    }
+
+    .product-content {
+      padding: 2rem;
+    }
+
+    .product-price {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--yardura-bronze);
+      margin-bottom: 1rem;
+    }
+
+    /* AR Accessory Toggle System */
+    .ar-accessories {
+      margin: 1.5rem 0;
+      padding: 1rem;
+      background: var(--gray-50);
+      border-radius: 1rem;
+    }
+
+    .ar-accessories h4 {
+      margin-bottom: 1rem;
+      color: var(--yardura-charcoal);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .accessory-toggles {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .accessory-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--yardura-warm-white);
+      border: 2px solid var(--gray-200);
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .accessory-toggle:hover {
+      border-color: var(--yardura-bronze);
+    }
+
+    .accessory-toggle.active {
+      background: var(--yardura-bronze);
+      border-color: var(--yardura-bronze);
+      color: var(--yardura-warm-white);
+    }
+
+    .accessory-toggle input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+    }
+
+    /* View in AR Button */
+    .view-in-yard-btn {
+      background: linear-gradient(135deg, var(--yardura-sage) 0%, var(--yardura-sage-light) 100%);
+      color: var(--yardura-warm-white);
+      border: none;
+      padding: 1rem 1.5rem;
+      border-radius: 1rem;
+      font-family: var(--primary-font);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+
+    .view-in-yard-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(139, 157, 107, 0.3);
+    }
+
+    .view-in-yard-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Current AR configuration display */
+    .ar-config-display {
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background: var(--yardura-cream);
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--yardura-charcoal);
+      text-align: center;
+    }
+
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .feature-item {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .feature-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(135deg, var(--yardura-bronze), var(--yardura-gold));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    /* Dark section styling for products */
+    .section-dark {
+      background: linear-gradient(135deg, var(--yardura-warm-black) 0%, var(--yardura-charcoal) 100%);
+      color: var(--yardura-warm-white);
+    }
+
+    .section-dark .luxury-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .section-dark .product-image-placeholder {
+      background: linear-gradient(135deg, var(--yardura-bronze), var(--yardura-gold));
+      color: var(--yardura-warm-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-align: center;
+      border-radius: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Testimonials */
+    .testimonial-luxury {
+      background: var(--yardura-warm-white);
+      padding: 3rem;
+      border-radius: 2rem;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    .testimonial-luxury:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-luxury);
+    }
+
+    .testimonial-luxury::before {
+      content: '"';
+      position: absolute;
+      top: -10px;
+      left: 2rem;
+      font-size: 4rem;
+      color: var(--yardura-bronze);
+      font-family: serif;
+    }
+
+    /* Stats Section */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+      text-align: center;
+      margin: 3rem 0;
+    }
+
+    .stat-item {
+      padding: 2rem;
+    }
+
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--yardura-bronze);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    /* FAQ Section */
+    .faq-item {
+      margin-bottom: 1.5rem;
+      background: var(--yardura-warm-white);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .faq-question {
+      padding: 1.5rem;
+      background: var(--gray-50);
+      border: none;
+      width: 100%;
+      text-align: left;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .faq-answer {
+      padding: 0 1.5rem;
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .faq-answer.active {
+      padding: 1.5rem;
+      max-height: 200px;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      background: linear-gradient(135deg, var(--yardura-sage) 0%, var(--yardura-sage-light) 100%);
+      color: var(--yardura-warm-white);
+      text-align: center;
+      border-radius: 2rem;
+      margin: 4rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+      pointer-events: none;
+      }
+      
+    .cta-content {
+      position: relative;
+      z-index: 2;
+      padding: 4rem 2rem;
+      }
+
+    /* Footer */
+    .footer {
+      background: var(--yardura-warm-black);
+      color: var(--yardura-warm-white);
+      padding: 3rem 0 2rem;
+      text-align: center;
+      }
+      
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      }
+
+    .footer-link {
+      color: var(--yardura-warm-white);
+      text-decoration: none;
+      opacity: 0.8;
+      transition: opacity 0.3s ease;
+      }
+
+    .footer-link:hover {
+      opacity: 1;
+      color: var(--yardura-bronze);
+      }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container { padding: 0 1.5rem; }
+      .section { padding: 3rem 0; }
+      .grid { gap: 2rem; }
+      .luxury-card { padding: 2rem; }
+      h1 { font-size: 2.5rem; }
+      h2 { font-size: 2rem; }
+      .hero { min-height: 80vh; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+      .features-grid { grid-template-columns: 1fr; }
+      .product-grid { grid-template-columns: 1fr; }
+    }
+
+    /* AR Viewer Styling */
+    .ar-viewer-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ar-viewer-content {
+      width: 90%;
+      max-width: 800px;
+      height: 80%;
+      background: var(--yardura-warm-white);
+      border-radius: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ar-viewer-header {
+      padding: 1rem;
+      background: var(--yardura-charcoal);
+      color: var(--yardura-warm-white);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ar-close-btn {
+      background: none;
+      border: none;
+      color: var(--yardura-warm-white);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      transition: background 0.3s ease;
+    }
+
+    .ar-close-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    model-viewer {
+      width: 100%;
+      height: calc(100% - 60px);
+      background: var(--gray-100);
+    }
+
+    .ar-loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+    }
+
+    .ar-instructions {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 2rem;
+      font-size: 0.875rem;
+      text-align: center;
+      max-width: 300px;
+    }
+
+    /* Early Access Badge */
+    .early-access-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, var(--yardura-gold), var(--yardura-amber));
+      color: var(--yardura-warm-black);
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    /* Startup messaging styles */
+    .innovation-callout {
+      background: linear-gradient(135deg, var(--yardura-bronze), var(--yardura-gold));
+      color: var(--yardura-warm-white);
+      padding: 2rem;
+      border-radius: 1rem;
+      text-align: center;
+      margin: 2rem 0;
+    }
+
+    .waitlist-form {
+      display: flex;
+      gap: 1rem;
+      max-width: 400px;
+      margin: 2rem auto;
+    }
+
+    .waitlist-form input {
+      flex: 1;
+      padding: 1rem;
+      border: 2px solid var(--gray-200);
+      border-radius: 0.75rem;
+      font-family: var(--primary-font);
+    }
+
+    .waitlist-form button {
+      padding: 1rem 1.5rem;
+      background: var(--yardura-bronze);
+      color: var(--yardura-warm-white);
+      border: none;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    @media (max-width: 640px) {
+      .waitlist-form {
+        flex-direction: column;
+      }
+      .accessory-toggles {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="early-access-badge">
+          ✨ Revolutionary New Design - Be Among the First
+        </div>
+        <div class="hero-accent"></div>
+        <h1 class="hero-title">Finally, Pet Waste Solutions That Look Like They Belong in Your Beautiful Yard</h1>
+        <p class="lead">We ended the era of ugly plastic that detracts from your landscape. Introducing design-grade outdoor pet waste systems with premium materials and LED elegance.</p>
+        
+        <div class="hero-actions">
+          <a href="#products" class="btn btn-primary btn-large">Join the Revolution</a>
+          <a href="#story" class="btn btn-secondary btn-large">Our Innovation Story</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Story Section -->
+  <section id="story" class="section">
+    <div class="container">
+      <div class="grid grid-2">
+              <div>
+          <div class="early-access-badge">
+            🚀 Startup Innovation
+              </div>
+          <h2>Why We're Building Yardura</h2>
+          <p class="lead">We spent weekends turning our backyard into an oasis... until soggy toys, tennis balls, and poop bags ruined the view.</p>
+          <p>Every 'solution' we found was cheap plastic and an eyesore. So we built our own. Yardura brings order — and design-grade style — back to the yard.</p>
+          <p><strong>Because your dog deserves a clean space, and you deserve a yard that still looks like your yard.</strong></p>
+          
+          <div class="innovation-callout">
+            <h3>Join the Design Revolution</h3>
+            <p>Be among the first to experience outdoor pet products that finally belong in beautiful spaces. This is your chance to be part of something completely new.</p>
+            </div>
+              </div>
+              <div>
+          <img src="runway_outputs/simple_test/premium_garden_test.jpg" alt="WasteWell in premium garden setting" class="product-image" style="border-radius: 1rem;">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Products Section -->
+  <section id="products" class="section section-dark">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 4rem;">
+        <h2>Revolutionary Design Meets Premium Function</h2>
+        <p class="lead">Join early adopters who refuse to compromise on style or performance.</p>
+      </div>
+
+      <div class="product-grid">
+        <!-- WasteWell with AR Accessories -->
+        <div class="luxury-card">
+          <img src="runway_outputs/simple_test/luxury_patio_test.jpg" alt="WasteWell" class="product-image" style="border-radius: 1rem;">
+          <div class="product-content">
+          <h3 style="color: var(--yardura-warm-white); margin-bottom: 1rem;">WasteWell™</h3>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem;">Revolutionary LED waste station that looks like premium outdoor lighting.</p>
+            
+            <!-- AR Accessories Toggle System -->
+            <div class="ar-accessories">
+              <h4>Customize Your Setup</h4>
+              <div class="accessory-toggles">
+                <label class="accessory-toggle" data-accessory="scoop">
+                  <input type="checkbox" id="scoop-toggle" onchange="updateARConfiguration()">
+                  <span>CleanClip™ Scooper</span>
+                </label>
+                <label class="accessory-toggle" data-accessory="dolly">
+                  <input type="checkbox" id="dolly-toggle" onchange="updateARConfiguration()">
+                  <span>RollRover™ Dolly</span>
+                </label>
+              </div>
+              <div class="ar-config-display" id="ar-config-display">
+                Base WasteWell™ Unit
+              </div>
+            </div>
+            
+          <button class="view-in-yard-btn" onclick="openARViewer('wastewell')" data-product="wastewell">
+            <span>📱</span> View in My Space
+          </button>
+        </div>
+        </div>
+
+        <!-- WasteWell Accessories -->
+        <div class="accessories-section">
+          <h4 class="accessories-title">WasteWell™ Accessories</h4>
+          <div class="accessories-grid">
+            <div class="accessory-card">
+              <div class="accessory-icon">🧲</div>
+              <h5>CleanClip™</h5>
+              <p>Magnetic scooper that clips elegantly to your WasteWell, always within reach.</p>
+            </div>
+            <div class="accessory-card">
+              <div class="accessory-icon">🎯</div>
+              <h5>RollRover™</h5>
+              <p>Smooth-rolling dolly system for effortless repositioning anywhere in your yard.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="luxury-card">
+          <div class="product-image-container">
+            <img src="/img/markmate.png" alt="MarkMate Training Post" class="product-image">
+          </div>
+          <h3 style="color: var(--yardura-warm-white); margin-bottom: 1rem;">MarkMate™</h3>
+          <p style="color: rgba(255,255,255,0.8); margin-bottom: 1.5rem;">Smart training post with LED guidance and turf system for targeted relief.</p>
+          <button class="view-in-yard-btn" onclick="openARViewer('markmate')" data-product="markmate">
+            <span>📱</span> View in My Space
+          </button>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 3rem;">
+        <h2>Designed for Beautiful Spaces</h2>
+        <p class="lead">Experience breakthrough features that finally make outdoor pet waste management elegant.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="feature-icon">💡</div>
+          <h3>LED Elegance</h3>
+          <p>Subtle lighting that looks like premium outdoor fixtures, not utility equipment.</p>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🌿</div>
+          <h3>Landscape Integration</h3>
+          <p>Designed to complement your outdoor aesthetic, not detract from it.</p>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🔒</div>
+          <h3>Odor-Free Seal</h3>
+          <p>Magnetic closure technology keeps odors contained and your space fresh.</p>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">⚡</div>
+          <h3>Weather Resilient</h3>
+          <p>Premium materials built to maintain beauty through all seasons.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Early Adopter CTA -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-section">
+        <div class="cta-content">
+          <h2>Join the Early Adopter Community</h2>
+          <p class="lead">Be among the first to experience pet waste solutions that finally belong in premium outdoor spaces. Help us shape the future of yard aesthetics.</p>
+          
+          <div class="waitlist-form">
+            <input type="email" placeholder="Enter your email" id="waitlist-email">
+            <button onclick="joinWaitlist()">Join Waitlist</button>
+      </div>
+          
+          <p style="margin-top: 1rem; opacity: 0.8; font-size: 0.875rem;">Early access, exclusive updates, and founding member benefits.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Revolutionary Stats -->
+  <section class="section" style="background: var(--gray-50);">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 3rem;">
+        <h2>The Design Revolution Starts Here</h2>
+        <p class="lead">Revolutionary approach to everyday outdoor products.</p>
+        </div>
+        
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-number">100%</span>
+          <p>Design-First Approach</p>
+          </div>
+        <div class="stat-item">
+          <span class="stat-number">0</span>
+          <p>Ugly Plastic Components</p>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">365</span>
+          <p>Days Weatherproof Beauty</p>
+          </div>
+        <div class="stat-item">
+          <span class="stat-number">∞</span>
+          <p>Compliments on Your Yard</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 3rem;">
+        <h2>Frequently Asked Questions</h2>
+        <p class="lead">Everything you need to know about our revolutionary products.</p>
+      </div>
+
+      <div style="max-width: 800px; margin: 0 auto;">
+          <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            What makes WasteWell different from other waste stations?
+            <span>+</span>
+            </button>
+          <div class="faq-answer">
+            <p>WasteWell is the first waste station designed specifically for premium outdoor spaces. Instead of hiding an ugly utility, it adds elegant LED lighting that enhances your landscape design while providing superior odor control and weather resistance.</p>
+            </div>
+          </div>
+          
+          <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            How does the LED lighting system work?
+            <span>+</span>
+            </button>
+          <div class="faq-answer">
+            <p>The integrated LED system provides subtle, attractive lighting that makes WasteWell look like premium outdoor lighting rather than a waste station. It's designed to complement your existing landscape lighting and enhance evening outdoor experiences.</p>
+            </div>
+          </div>
+          
+          <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            When will WasteWell be available?
+            <span>+</span>
+            </button>
+          <div class="faq-answer">
+            <p>We're currently in the final development phase and building our early adopter community. Join our waitlist to be among the first notified when pre-orders open and to receive exclusive founding member benefits.</p>
+            </div>
+          </div>
+          
+          <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            What's included with early access?
+            <span>+</span>
+            </button>
+          <div class="faq-answer">
+            <p>Early adopters receive priority access, exclusive pricing, direct communication with our founding team, and the opportunity to influence final design details. You'll also receive lifetime customer support and satisfaction guarantee.</p>
+            </div>
+          </div>
+          
+        <!-- Commented out MarkMate FAQ until product is ready
+          <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            Is the MarkMate turf system dishwasher safe?
+            <span>+</span>
+            </button>
+          <div class="faq-answer">
+            <p>Yes, the MarkMate turf components are designed for easy cleaning and are dishwasher safe on the top rack. The smart base unit should be cleaned with a damp cloth.</p>
+            </div>
+          </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFAQ(this)">
+            What if my dog won't use the MarkMate training system?
+            <span>+</span>
+          </button>
+          <div class="faq-answer">
+            <p>MarkMate includes a comprehensive training guide and LED guidance system to encourage proper use. If you're not satisfied within 30 days, we offer a full refund as part of our satisfaction guarantee.</p>
+        </div>
+        </div>
+        -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align: center; max-width: 800px; margin: 0 auto;">
+        <div class="early-access-badge">
+          🎯 Limited Early Access
+        </div>
+        <h2>Ready to Transform Your Outdoor Space?</h2>
+        <p class="lead">Join the revolution in outdoor pet products. Be among the first to experience design that finally belongs in beautiful spaces.</p>
+        
+        <div class="waitlist-form" style="max-width: 500px;">
+          <input type="email" placeholder="Enter your email for early access" id="final-waitlist-email">
+          <button onclick="joinWaitlist('final')">Get Early Access</button>
+        </div>
+        
+        <!-- Commented out until we have real customer base
+        <p style="margin-top: 2rem; color: var(--gray-600);">Join thousands of early adopters who refuse to compromise on yard aesthetics.</p>
+        -->
+        <p style="margin-top: 2rem; color: var(--gray-600);">Revolutionary design meets premium function. Early access, exclusive pricing, and founding member benefits.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AR Viewer Container -->
+  <div id="arViewerContainer" class="ar-viewer-container">
+    <div class="ar-viewer-content">
+      <div class="ar-viewer-header">
+        <h3 id="arViewerTitle">WasteWell™</h3>
+        <button class="ar-close-btn" onclick="closeARViewer()">×</button>
+          </div>
+
+      <model-viewer
+        id="arModelViewer"
+        src=""
+        ios-src=""
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+      camera-controls
+      shadow-intensity="1"
+        shadow-softness="0.3"
+        auto-rotate
+        auto-rotate-delay="3000">
+        
+        <!-- Photo Upload Section -->
+        <div class="photo-upload-section" id="photoUploadSection">
+          <div class="photo-upload-description">Upload a photo of your space to see how it looks with the WasteWell</div>
+          <div class="photo-upload-controls">
+            <input type="file" id="photoUpload" accept="image/*" onchange="handlePhotoUpload(event)" style="display: none;">
+            <button onclick="document.getElementById('photoUpload').click()" class="photo-upload-btn">
+              📷 Upload Photo
+            </button>
+            <button onclick="clearPhotoBackground()" class="photo-clear-btn" id="photoClearBtn" style="display: none;">
+              🗑️ Remove Photo
+            </button>
+          </div>
+        </div>
+
+        <div id="arLoading" class="ar-loading">
+          Loading 3D model...
+      </div>
+
+        <div id="arInstructions" class="ar-instructions">
+          Tap the AR button to place in your space
+        </div>
+    </model-viewer>
+
+      <model-viewer
+        id="fallbackModelViewer"
+        camera-controls
+        shadow-intensity="1"
+        shadow-softness="0.3"
+        auto-rotate
+        auto-rotate-delay="3000"
+        style="display: none;">
+      </model-viewer>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="#" class="footer-link">Privacy Policy</a>
+        <a href="#" class="footer-link">Terms of Service</a>
+        <a href="#" class="footer-link">Contact</a>
+        <a href="#" class="footer-link">Support</a>
+        </div>
+      <p style="opacity: 0.6; margin: 0;">&copy; 2024 Yardura™. Revolutionary design for beautiful outdoor spaces.</p>
+      <p style="opacity: 0.6; margin: 0.5rem 0 0; font-size: 0.875rem;">🌿 Designed for yards that deserve better</p>
+    </div>
+  </footer>
+
+  <script>
+    // AR Viewer Functionality with USDZ Toggle System
+    const ARViewer = {
+      container: null,
+      modelViewer: null,
+      fallbackViewer: null,
+      loading: null,
+      instructions: null,
+      isARSupported: false,
+      currentProduct: null,
+      
+      // Product model configurations with USDZ variants
+      products: {
+              wastewell: {
+        name: 'WasteWell™',
+          // Base configuration - just the WasteWell unit
+          base: {
+            model: '/wastewell_only.usdz',
+            iosModel: '/wastewell_only.usdz'
+          },
+          // Configuration with scoop accessory
+          withScoop: {
+            model: '/wastewell_and_scoop.usdz',
+            iosModel: '/wastewell_and_scoop.usdz'
+          },
+          // Configuration with dolly accessory  
+          withDolly: {
+            model: '/wastewell_and_dolly.usdz',
+            iosModel: '/wastewell_and_dolly.usdz'
+          },
+          // Configuration with both accessories
+                      complete: {
+            model: '/wastewell_both_scoop_and_dolly.usdz',
+            iosModel: '/wastewell_both_scoop_and_dolly.usdz'
+          },
+          scale: '1 1 1',
+          cameraOrbit: '0deg 75deg 2.5m'
+        },
+        markmate: {
+          name: 'MarkMate™ Training Post',
+          base: {
+            model: '/markmate.glb',
+            iosModel: '/markmate.glb'  // Using GLB for both since we don't have USDZ yet
+          },
+          scale: '1 1 1',
+          cameraOrbit: '0deg 75deg 3m'
+        }
+      },
+
+      init() {
+        this.container = document.getElementById('arViewerContainer');
+        this.modelViewer = document.getElementById('arModelViewer');
+        this.fallbackViewer = document.getElementById('fallbackModelViewer');
+        this.loading = document.getElementById('arLoading');
+        this.instructions = document.getElementById('arInstructions');
+        
+        this.checkARSupport();
+        this.setupEventListeners();
+        this.setupAnalytics();
+        
+        // Initialize AR configuration display
+        this.updateARConfigurationDisplay();
+      },
+
+      checkARSupport() {
+        if (this.modelViewer) {
+          // Check for WebXR support
+          if ('xr' in navigator) {
+            navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+              this.isARSupported = supported;
+              this.updateARButtons();
+            }).catch(() => {
+              this.isARSupported = false;
+              this.updateARButtons();
+            });
+          } else {
+            // Check for iOS Quick Look support
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            this.isARSupported = isIOS;
+            this.updateARButtons();
+          }
+        }
+      },
+
+      updateARButtons() {
+        const buttons = document.querySelectorAll('.view-in-yard-btn');
+        buttons.forEach(button => {
+          if (!this.isARSupported) {
+            button.innerHTML = '<span>🔄</span> View in 3D';
+            button.title = 'Interactive 3D preview (AR not supported on this device)';
+          }
+        });
+      },
+
+      // Get current USDZ configuration based on accessory toggles
+      getCurrentConfiguration(productId) {
+        if (productId !== 'wastewell') {
+          return this.products[productId]?.base || null;
+        }
+
+        const scoopChecked = document.getElementById('scoop-toggle')?.checked || false;
+        const dollyChecked = document.getElementById('dolly-toggle')?.checked || false;
+
+        if (scoopChecked && dollyChecked) {
+                        return this.products.wastewell.complete;
+        } else if (scoopChecked) {
+          return this.products.wastewell.withScoop;
+        } else if (dollyChecked) {
+          return this.products.wastewell.withDolly;
+        } else {
+          return this.products.wastewell.base;
+        }
+      },
+
+      // Update the AR configuration display
+      updateARConfigurationDisplay() {
+        const display = document.getElementById('ar-config-display');
+        if (!display) return;
+
+        const scoopChecked = document.getElementById('scoop-toggle')?.checked || false;
+        const dollyChecked = document.getElementById('dolly-toggle')?.checked || false;
+
+        let configText = 'Base WasteWell™ Unit';
+        
+        if (scoopChecked && dollyChecked) {
+          configText = 'WasteWell™ + CleanClip™ + RollRover™';
+        } else if (scoopChecked) {
+          configText = 'WasteWell™ + CleanClip™ Scooper';
+        } else if (dollyChecked) {
+          configText = 'WasteWell™ + RollRover™ Dolly';
+        }
+
+        display.textContent = configText;
+      },
+
+      setupEventListeners() {
+        if (this.modelViewer) {
+          this.modelViewer.addEventListener('load', () => {
+            console.log('Model loaded successfully');
+            this.hideLoading();
+          });
+
+          this.modelViewer.addEventListener('error', (event) => {
+            console.error('Model loading error:', event);
+            console.error('Failed model URL:', this.modelViewer.src);
+            
+            // Check if it's a network issue
+            const config = this.getCurrentConfiguration(this.currentProduct);
+            if (config) {
+              fetch(config.model || config.iosModel)
+              .then(response => {
+                if (!response.ok) {
+                  this.showError(`Model file not found (${response.status}). Please check the file path.`);
+                } else {
+                    this.showError('Model loading failed. Please try again.');
+                }
+              })
+              .catch(() => {
+                  this.showError('Network error loading model. Please check your connection.');
+              });
+            }
+          });
+
+          this.modelViewer.addEventListener('ar-status', (event) => {
+            if (event.detail.status === 'session-started') {
+              this.trackEvent('ar_session_started', this.currentProduct);
+            }
+          });
+        }
+
+        // Close viewer when clicking outside
+        if (this.container) {
+        this.container.addEventListener('click', (e) => {
+          if (e.target === this.container) {
+            this.close();
+          }
+        });
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && this.container.style.display === 'flex') {
+            this.close();
+          }
+        });
+      },
+
+      open(productId) {
+        console.log('Opening AR viewer for:', productId);
+        
+        this.currentProduct = productId;
+        const config = this.getCurrentConfiguration(productId);
+        const product = this.products[productId];
+        
+        if (!config || !product) {
+          console.error('Product not found:', productId);
+          this.showError('Product configuration not found');
+          return;
+        }
+
+        // Update title
+        const title = document.getElementById('arViewerTitle');
+        if (title) {
+          const displayText = productId === 'wastewell' ? 
+            this.getWasteWellDisplayName() : 
+            product.name;
+          title.textContent = displayText;
+        }
+        
+        // Configure model viewer
+        if (this.modelViewer) {
+          this.modelViewer.src = config.model || '';
+          this.modelViewer.setAttribute('ios-src', config.iosModel || '');
+          
+          if (product.scale) {
+        this.modelViewer.scale = product.scale;
+          }
+          if (product.cameraOrbit) {
+        this.modelViewer.cameraOrbit = product.cameraOrbit;
+          }
+        }
+
+        // Show viewer
+        this.container.style.display = 'flex';
+        this.showLoading();
+        
+        // Track analytics
+        this.trackEvent('ar_viewer_opened', productId);
+        
+        console.log('Model URL:', config.model);
+        console.log('iOS Model URL:', config.iosModel);
+      },
+
+      getWasteWellDisplayName() {
+        const scoopChecked = document.getElementById('scoop-toggle')?.checked || false;
+        const dollyChecked = document.getElementById('dolly-toggle')?.checked || false;
+
+        if (scoopChecked && dollyChecked) {
+          return 'WasteWell™ Complete Setup';
+        } else if (scoopChecked) {
+          return 'WasteWell™ with CleanClip™';
+        } else if (dollyChecked) {
+          return 'WasteWell™ with RollRover™';
+        } else {
+          return 'WasteWell™ Base Unit';
+        }
+      },
+
+      close() {
+        this.container.style.display = 'none';
+        this.currentProduct = null;
+        this.hideLoading();
+        this.trackEvent('ar_viewer_closed');
+      },
+
+      showLoading() {
+        if (this.loading) {
+          this.loading.style.display = 'block';
+        }
+      },
+
+      hideLoading() {
+        if (this.loading) {
+          this.loading.style.display = 'none';
+        }
+      },
+
+      showError(message) {
+        if (this.loading) {
+          this.loading.textContent = `Error: ${message}`;
+          this.loading.style.display = 'block';
+        }
+      },
+
+      setupAnalytics() {
+        // Google Analytics 4 events
+        this.trackEvent = (eventName, productId = null) => {
+          if (typeof gtag !== 'undefined') {
+            gtag('event', eventName, {
+              'event_category': 'AR_Feature',
+              'event_label': productId ? (this.products[productId]?.name || 'Unknown') : 'General'
+            });
+          }
+        }
+      }
+    };
+
+    // Global functions for AR and accessories
+    function openARViewer(productId) {
+      ARViewer.open(productId);
+    }
+
+    function closeARViewer() {
+      ARViewer.close();
+    }
+
+    function updateARConfiguration() {
+      ARViewer.updateARConfigurationDisplay();
+      
+      // Update toggle visual states
+      const scoopToggle = document.querySelector('[data-accessory="scoop"]');
+      const dollyToggle = document.querySelector('[data-accessory="dolly"]');
+      
+      if (scoopToggle) {
+        scoopToggle.classList.toggle('active', document.getElementById('scoop-toggle').checked);
+      }
+      if (dollyToggle) {
+        dollyToggle.classList.toggle('active', document.getElementById('dolly-toggle').checked);
+      }
+    }
+
+    // Waitlist functionality
+    function joinWaitlist(source = 'main') {
+      const emailInput = source === 'final' ? 
+        document.getElementById('final-waitlist-email') : 
+        document.getElementById('waitlist-email');
+      
+      const email = emailInput?.value?.trim();
+      
+      if (!email) {
+        alert('Please enter your email address');
+        return;
+      }
+      
+      if (!isValidEmail(email)) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      
+      // Here you would typically send to your backend
+      console.log('Joining waitlist:', email, 'Source:', source);
+      
+      // Show success message
+      alert('Thanks for joining! You\'ll be among the first to know when WasteWell is available.');
+        
+      // Clear input
+      emailInput.value = '';
+      
+      // Track analytics
+        if (typeof gtag !== 'undefined') {
+        gtag('event', 'waitlist_signup', {
+          'event_category': 'Marketing',
+          'event_label': source
+          });
+        }
+      }
+
+    function isValidEmail(email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    }
+
+    // FAQ functionality
+    function toggleFAQ(button) {
+      const answer = button.nextElementSibling;
+      const icon = button.querySelector('span');
+      
+      answer.classList.toggle('active');
+      icon.textContent = answer.classList.contains('active') ? '−' : '+';
+    }
+
+    // Initialize AR Viewer when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Add a small delay to ensure model-viewer is loaded
+      setTimeout(() => {
+        ARViewer.init();
+      }, 100);
+      
+      // Initialize accessory toggle states
+      updateARConfiguration();
+    });
+
+    // Smooth scrolling for anchor links
+    document.addEventListener('DOMContentLoaded', () => {
+      const links = document.querySelectorAll('a[href^="#"]');
+      links.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const target = document.querySelector(link.getAttribute('href'));
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

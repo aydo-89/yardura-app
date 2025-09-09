@@ -1,0 +1,134 @@
+{
+  "model_requested": "gpt-5-nano",
+  "results": [
+    {
+      "idx": 1,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/85d5e146d2402a8408754ff8d5b47ded/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [
+        "Normal"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    },
+    {
+      "idx": 2,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/a3c1874bacf17b3e0377a1753f1fac53/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [
+        "Normal"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    },
+    {
+      "idx": 3,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/33681800ad36242af4dbd7e7ff707d88/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [
+        "Normal",
+        "Soft"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    },
+    {
+      "idx": 4,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/c47ddd214dc31f4a718992243a68995d/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [
+        "Normal"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    },
+    {
+      "idx": 5,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/819ea576db5ef22516abbc93b18d77de/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [
+        "Normal"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    },
+    {
+      "idx": 6,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/1112ff3d327741475a32a84f4bbc70e3/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [
+        "Soft"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    },
+    {
+      "idx": 7,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/c126f99547bf265f4480e297e453fbf6/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [
+        "Normal",
+        "Soft"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    },
+    {
+      "idx": 8,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/df26913686eb372e8ee110528dd4020f/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [
+        "Normal"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    },
+    {
+      "idx": 9,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/b4c9d5d837fd2668f6ffc95fe5fbfa84/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [
+        "Diarrhoea",
+        "Soft"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    },
+    {
+      "idx": 10,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/026d4cffc99262ada684e12f834b5e50/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [
+        "Normal",
+        "Soft"
+      ],
+      "model_used": "gpt-4o-mini",
+      "error": null
+    }
+  ],
+  "metrics": {
+    "precision": 0.2857142857142857,
+    "recall": 0.4,
+    "f1": 0.3333333333333333
+  }
+}

@@ -1,0 +1,99 @@
+services:
+  # 1) Expose Wyze cameras locally as RTSP/HLS/WebRTC without flashing
+  wyze-bridge:
+    image: mrlt8/wyze-bridge:latest
+    container_name: wyze-bridge
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Use env-based login (WebUI auth disabled)
+      - WB_AUTH=false
+      # Optional: host IP for WebRTC/STUN hints
+      - WB_IP=${HOST_IP-}
+      # Keep streams up (avoid on-demand flapping)
+      - ON_DEMAND=false
+      # Credentials (provided via .env)
+      - WYZE_EMAIL=${WYZE_EMAIL-}
+      - WYZE_PASSWORD=${WYZE_PASSWORD-}
+      # Wyze Developer API credentials (bridge expects API_ID/API_KEY)
+      - API_ID=${API_ID-}
+      - API_KEY=${API_KEY-}
+    ports:
+      - "8554:8554"     # RTSP
+      - "8888:8888"     # HLS / LL-HLS
+      - "5002:5000"     # Web UI (macOS may reserve 5000 for AirPlay; use 5002)
+      - "8889:8889"     # WebRTC (optional)
+      - "8189:8189/udp" # WebRTC ICE (optional)
+    volumes:
+      - wyzebridge:/config
+
+  # 2) MQTT broker for Frigate <-> Home Assistant/events
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - mosq-data:/mosquitto/data
+      - mosq-conf:/mosquitto/config
+
+  # 3) Frigate NVR for detection, events, clips, and timelapses
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: frigate
+    restart: unless-stopped
+    shm_size: "512m"
+    depends_on:
+      - mosquitto
+    env_file:
+      - .env
+    environment:
+      - TZ=${TZ-UTC}
+    ports:
+      - "5001:5000"   # Frigate Web UI
+      - "8971:8971"   # Authenticated API/UI (for HA integration)
+      - "8555:8554"   # go2rtc RTSP restream (for HA live)
+    volumes:
+      - ./frigate.yml:/config/config.yml:ro
+      - frigate-storage:/media/frigate
+      - frigate-db:/db
+    # If you have accelerators, add devices per docs (Intel iGPU, NVIDIA, Coral, Hailo)
+
+  # 4) Advanced Dog Behavior Detection
+  behavior-detector:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.11-slim
+        WORKDIR /app
+        RUN apt-get update && apt-get install -y \
+            libglib2.0-0 \
+            libsm6 \
+            libxext6 \
+            libxrender-dev \
+            libgomp1 \
+            libglib2.0-0 \
+            libgthread-2.0-0 \
+            && rm -rf /var/lib/apt/lists/*
+        RUN pip install opencv-python-headless requests numpy
+        COPY behavior_detector.py .
+        CMD ["python", "behavior_detector.py"]
+    container_name: behavior-detector
+    restart: unless-stopped
+    depends_on:
+      - frigate
+    environment:
+      - FRIGATE_URL=http://frigate:5000
+    volumes:
+      - behavior-data:/app/data
+
+volumes:
+  wyzebridge:
+  mosq-data:
+  mosq-conf:
+  frigate-storage:
+  frigate-db:
+  behavior-data:
+

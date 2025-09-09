@@ -1,0 +1,1874 @@
+{
+  "model": "gpt-5",
+  "sample": 100,
+  "metrics": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "per_class": {
+      "Blood": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 2
+      },
+      "Diarrhoea": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 17
+      },
+      "Lack Of Water": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 29
+      },
+      "Mucus": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0
+      },
+      "Normal": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 34
+      },
+      "Soft": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 20
+      },
+      "Worms": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 2
+      }
+    },
+    "errors": 0
+  },
+  "rows": [
+    {
+      "idx": 1,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/85d5e146d2402a8408754ff8d5b47ded/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 2,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/a3c1874bacf17b3e0377a1753f1fac53/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 3,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/33681800ad36242af4dbd7e7ff707d88/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 4,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/c47ddd214dc31f4a718992243a68995d/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 5,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/819ea576db5ef22516abbc93b18d77de/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 6,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/1112ff3d327741475a32a84f4bbc70e3/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 7,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/c126f99547bf265f4480e297e453fbf6/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 8,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/df26913686eb372e8ee110528dd4020f/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 9,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/b4c9d5d837fd2668f6ffc95fe5fbfa84/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 10,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/026d4cffc99262ada684e12f834b5e50/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 11,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/8831e0c5102c03b14c37a073a24d804b/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 12,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/524cd787bb207b41beeff0ada05a6c21/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 13,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/9386d4d6fc3e14f9761134b7947a687f/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 14,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/10da43821a01b7c423bf8e140dc17326/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 15,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/40516f4af0644d8de360dbfa2a9b5457/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 16,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/545eae1264a326c1229ab7d4c2e818d4/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 17,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/ecc011e56fd2c4fa1e9384929469257e/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 18,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/babacbed020a851dfd62eeade06be573/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 19,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/074b6539b36eae0a31eb04872b7c0576/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 20,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/ad9ed2f03b63a368b036f07bd4250f66/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 21,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/a256f3ef8bdb7458d16316054fba82fd/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 22,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/60d8183b8498328da768a871deda398e/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 23,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/feda2a354e5cdc4ce760d6241a738bf5/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 24,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/3bd9768fe9db6ada4a05acbe6877d679/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 25,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/38c810e61e5e15dc8d897d7de6a0f7cc/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 26,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/09d5092df5838d859e640b3741917368/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 27,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/50b95b1b577850b1d24048ddf4bcedf6/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 28,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/6e668afe6406c09669f487a1d1878cae/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 29,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/d17aee8bc3c49abe5485224917ea88a3/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 30,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/624aa7050ee751684bc9f936e26ed05b/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 31,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/1503a7c6182c6cda56a34078e1fdef5c/transformed.jpg",
+      "ground": [
+        "Normal",
+        "Worms"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 32,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/e4c0dfc5422355a6a21e4dece293b7ce/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 33,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/1b8d0a46469e8752e47fb8dee940c6df/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 34,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/0efbbeef338d71f161942e61c0e89387/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 35,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/d0b0cd604bf063c525d28bd2cb1b5c54/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 36,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/28b8a54a0fd1951ae54770d51b4b3cc1/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 37,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/e83eb69e0ff7164d98d2c3939c0e429b/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 38,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/68343d24aa7d417f3d88d7861cfcba8e/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 39,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/c5ff7ef31187205805073b872cc33e0d/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 40,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/66a5dbdd7e4be3fba654db67386c0c01/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 41,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/25e5d92c9d2765e826c2bb223262740b/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 42,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/de44b5f05d210fbffc528c3ce373c7fa/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 43,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/f097ccdd4b782c40eb75a928ef949bda/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 44,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/bad909070b6be1359957ed814d049b96/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 45,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/cc0239a76a3330775c8c1060a123cb46/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 46,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/d5b6f971e0319232ee984b5c81dd2b28/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 47,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/e8960ebfff0921a451022ff659e165dc/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 48,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/8dcabfc94e48280fd0534be6073bc987/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 49,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/f246414d23d9bc761bb158a008961ad2/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 50,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/12a10bf90291ef09c81421dc7e2f21f4/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 51,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/0b86b079f48e3f7529dfa9f705c8d764/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 52,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/33a676c3dd214d7bfc47a9ac739873fa/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 53,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/382f4bb251f074984336c54729cd4b89/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 54,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/3a85d6001ed9fe02fe37ae2e3003dd5f/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 55,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/8b4c47ae2b9482783a481e86fde0fb83/transformed.jpg",
+      "ground": [
+        "Blood",
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 56,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/8a9a04eef9f1269389782d0e88c602cb/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 57,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/5eea5adeb0ea4ad57cce5c81ee36aed1/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 58,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/d25593093f56b0cb0b4739ea385845f9/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 59,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/d2c99333427c0f538d5ec081c22d36d0/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 60,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/2e46cc57c18962e1ad60ec008790ef81/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 61,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/65945564e210f43c52d2986f5372e099/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 62,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/e63b1b0adef3b78c5f8113c393117ffe/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 63,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/b5e3df4e57c22f4556c501bbb890ac01/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 64,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/07eeb64e93ed749a5009a6513541d3bd/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 65,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/606a28dbefce2c5cb31a83ec70525d94/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 66,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/1d3826580b0f598567ed7705fc595ebb/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 67,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/2bcf24151455f3646e8f6c3d5e3a2cd8/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 68,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/770f4e06ac3b6d5932ca51645b84373e/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 69,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/384bf761fa5dc4ba6344fb5947af5078/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 70,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/470922a36fe3ba9b094dec44a17ac1ae/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 71,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/e1df97c527eba6cd76c2b7f6de65bf14/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 72,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/e82d9b2af5371fcc0c174b096f783010/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 73,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/2141914b9c76fc086004b4e45ef4cdf8/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 74,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/6392dab2bb875e47c9769e3c8518acbb/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 75,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/89c159a65b7976124729d9851aaae3e5/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 76,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/980b8d14fbc6b5d059d079527f1ad707/transformed.jpg",
+      "ground": [
+        "Blood",
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 77,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/16dc0d4da97be4b373d14f29fbd98dd5/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 78,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/14bfdb16299a577c2535f1628dbb2724/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 79,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/bebb018cfe2d7ccfb2d567631d5180b9/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 80,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/96f10b6b7b918a79378fbd82028f1251/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 81,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/5c0f5a13d07d5930c1a7533385ae4318/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 82,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/57bfb723db7dffb5e7ef55d523beeb50/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 83,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/2a922a7f725ab2304d53ea00a0f1a628/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 84,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/462278318a702499b44eda029ae3d170/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 85,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/932121e99102cae98e6139cfbca1c682/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 86,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/61729d1bd2a28b9fbb620137a4777bc6/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 87,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/37c54b774334310e982c87887fc8d2f4/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 88,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/e152ee158da910e5113e269c9fed5e7f/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 89,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/56d92bd0e671be553eeb9bc8c4363b2b/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 90,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/172de62237459be28644a2afba620aeb/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 91,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/d592378a54975de17e0baf71c6f3828c/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 92,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/3d394556798f77849ba72e19c2e16fad/transformed.jpg",
+      "ground": [
+        "Lack Of Water"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 93,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/84f50870a4f6097ef48b4e3e1c1eb204/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 94,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/8b8ec004d970cc6a9641a06db23b618c/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 95,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/bdba13c28d2d352f48deda6e3ca500ac/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 96,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/5d752fea4755432bad97ea9595a41a29/transformed.jpg",
+      "ground": [
+        "Normal",
+        "Worms"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 97,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/600e1770b5781f82c98fcf6640a91989/transformed.jpg",
+      "ground": [
+        "Normal"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 98,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/ba3db370f712eba65ebd245d95482d1b/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 99,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/f170bf5d5a1e0878ff5945650277220b/transformed.jpg",
+      "ground": [
+        "Diarrhoea"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    },
+    {
+      "idx": 100,
+      "image_url": "https://transform.roboflow.com/nLxVmg7gZ4fREIdb4l0mpx4Uj4v1/f97ee5d2e3fe9ec619752a1022350495/transformed.jpg",
+      "ground": [
+        "Soft"
+      ],
+      "predicted": [],
+      "confidence": {
+        "Blood": 0.0,
+        "Diarrhoea": 0.0,
+        "Lack Of Water": 0.0,
+        "Mucus": 0.0,
+        "Normal": 0.0,
+        "Soft": 0.0,
+        "Worms": 0.0
+      },
+      "error": null
+    }
+  ]
+}

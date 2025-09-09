@@ -1,0 +1,323 @@
+// Import all partials
+@use 'variables';
+@use 'layout';
+@use 'components';
+
+// Google Fonts import
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+// Hero Section Specific Styles
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, 
+    var(--yardura-charcoal) 0%, 
+    #2c2c2c 40%, 
+    #3a3a3a 100%
+  );
+  color: var(--yardura-warm-white);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.4;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(212, 165, 116, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(139, 157, 107, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.hero-accent {
+  display: inline-block;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent 0%, var(--yardura-bronze) 50%, transparent 100%);
+  margin-bottom: 2rem;
+}
+
+.hero-title {
+  background: linear-gradient(135deg, var(--yardura-warm-white) 0%, var(--yardura-bronze) 70%, var(--yardura-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 2rem;
+  font-weight: 800;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 3rem;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+// AR Viewer Styling
+.ar-viewer-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.ar-viewer-content {
+  width: 90%;
+  max-width: 800px;
+  height: 85%;
+  background: var(--yardura-warm-white);
+  border-radius: 1rem;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ar-viewer-header {
+  padding: 0.5rem 0.75rem;
+  background: var(--yardura-charcoal);
+  color: var(--yardura-warm-white);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 50px;
+  
+  h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+}
+
+.ar-close-btn {
+  background: none;
+  border: none;
+  color: var(--yardura-warm-white);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 0.3rem;
+  transition: background 0.3s ease;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+model-viewer {
+  width: 100%;
+  height: calc(100% - 60px);
+  background: var(--gray-100);
+}
+
+.ar-loading {
+  display: none !important;
+}
+
+.ar-instructions {
+  position: absolute;
+  bottom: 2rem;
+  left: 2rem;
+  right: 2rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1.5rem;
+  font-size: 0.8rem;
+  text-align: center;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+  
+  p {
+    margin: 0;
+    line-height: 1.2;
+  }
+}
+
+// Section specific background styles
+.section-dark .luxury-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// Scaling controls removed - using scroll zoom only
+
+// Photo Upload Section - Overlapping single line
+.photo-upload-section {
+  background: linear-gradient(135deg, rgba(139, 157, 107, 0.06) 0%, rgba(139, 157, 107, 0.1) 100%);
+  border: 1px solid rgba(139, 157, 107, 0.2);
+  border-radius: 0.3rem;
+  padding: 0.25rem 0.4rem;
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  max-width: calc(100% - 1rem);
+  overflow: visible;
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-height: 32px;
+}
+
+.photo-upload-title {
+  font-weight: 600;
+  margin: 0;
+  color: var(--yardura-charcoal);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.photo-upload-description {
+  font-size: 0.65rem;
+  color: var(--yardura-charcoal);
+  opacity: 0.7;
+  margin: 0;
+  line-height: 1.2;
+  flex: 1;
+  min-width: 120px;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.photo-upload-controls {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.photo-upload-btn, .photo-clear-btn {
+  background: linear-gradient(135deg, var(--yardura-sage) 0%, #8fa572 100%);
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  height: 24px;
+  min-width: auto;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(139, 157, 107, 0.3);
+  }
+}
+
+.photo-clear-btn {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  
+  &:hover {
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+  }
+}
+
+.photo-upload-tips {
+  display: none; // Hide tips to save space
+}
+
+// All scaling and drag resize controls removed
+
+// AR viewer layout improvements
+.ar-viewer-content {
+  overflow: visible;
+  
+  model-viewer {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+  
+  .ar-config-controls,
+  .photo-upload-section {
+    flex-shrink: 0;
+  }
+  
+  // Fix photo upload positioning - make it part of the normal flow
+  .photo-upload-section {
+    position: static !important;
+    margin: 0.5rem;
+    width: auto !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+  }
+}
+
+// Scaling controls removed
+
+// Additional responsive styles
+@media (max-width: 768px) {
+  .hero {
+    min-height: 80vh;
+  }
+  
+  .photo-upload-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+    padding: 0.3rem 0.4rem;
+    margin: 0.2rem;
+    
+    .photo-upload-title,
+    .photo-upload-description {
+      text-align: center;
+      flex: none;
+      min-width: auto;
+    }
+    
+    .photo-upload-controls {
+      justify-content: center;
+      gap: 0.3rem;
+    }
+    
+    .photo-upload-tips {
+      text-align: center;
+      margin-top: 0.15rem;
+    }
+  }
+  
+  .ar-viewer-content {
+    height: 90%;
+  }
+} 

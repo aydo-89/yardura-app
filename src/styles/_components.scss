@@ -1,0 +1,1429 @@
+@use 'variables' as *;
+
+// Buttons
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 1rem;
+  font-family: $primary-font;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    transition: left 0.6s;
+  }
+
+  &:hover::before {
+    left: 100%;
+  }
+
+  &-primary {
+    background: linear-gradient(135deg, $yardura-bronze 0%, $yardura-amber 100%);
+    color: $yardura-warm-white;
+    box-shadow: $shadow-warm;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(212, 165, 116, 0.3);
+      background: linear-gradient(135deg, $yardura-amber 0%, $yardura-gold 100%);
+    }
+  }
+
+  &-secondary {
+    background: transparent;
+    color: $yardura-warm-white;
+    border: 2px solid rgba(255,255,255,0.3);
+
+    &:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: $yardura-bronze;
+    }
+  }
+
+  &-large {
+    padding: 1.25rem 2.5rem;
+    font-size: 1.125rem;
+    border-radius: 1.25rem;
+  }
+
+  &-small {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+// Luxury Card Component
+.luxury-card {
+  background: $yardura-warm-white;
+  border-radius: 2rem;
+  padding: 3rem;
+  box-shadow: $shadow-luxury;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, $yardura-bronze, $yardura-gold, $yardura-amber);
+  }
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (max-width: 768px) {
+    padding: 2rem;
+  }
+}
+
+// Accessories Section
+.accessories-section {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(139, 115, 85, 0.1), rgba(183, 155, 83, 0.1));
+  border-radius: 1rem;
+  border: 1px solid rgba(139, 115, 85, 0.2);
+}
+
+.accessories-title {
+  color: $yardura-warm-white;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, $yardura-bronze, $yardura-gold);
+    border-radius: 1px;
+  }
+}
+
+.accessories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.accessory-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(183, 155, 83, 0.3);
+  }
+
+  h5 {
+    color: $yardura-warm-white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0.75rem 0 0.5rem 0;
+  }
+
+  p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 0;
+  }
+}
+
+.accessory-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+// Product Components
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 4rem;
+}
+
+.product-card {
+  background: $yardura-warm-white;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: $shadow-soft;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: $shadow-luxury;
+  }
+}
+
+.product-image-container {
+  border-radius: 1rem;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.product-image {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.product-content {
+  padding: 2rem;
+}
+
+.product-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: $yardura-bronze;
+  margin-bottom: 1rem;
+}
+
+.product-image-placeholder {
+  background: linear-gradient(135deg, $yardura-bronze, $yardura-gold);
+  color: $yardura-warm-white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  font-weight: 700;
+  font-size: 1.5rem;
+  text-align: center;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+}
+
+// AR Components
+
+.view-in-yard-btn {
+  background: linear-gradient(135deg, $yardura-sage 0%, $yardura-sage-light 100%);
+  color: $yardura-warm-white;
+  border: none;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  font-family: $primary-font;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+  margin-top: 1rem;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 157, 107, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Pre-AR Configuration Styles - Sleek & Mobile-Optimized
+.pre-ar-config {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+
+  h4 {
+    font-size: 0.85rem;
+    color: $yardura-warm-white;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+}
+
+.config-toggles {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 2rem;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-width: fit-content;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 157, 107, 0.2);
+  }
+
+  // Hide the actual checkbox
+  input[type="checkbox"] {
+    display: none;
+  }
+
+  // Custom iOS-style toggle
+  .toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  // When checked
+  input:checked + .toggle-switch {
+    background: linear-gradient(135deg, $yardura-sage 0%, $yardura-sage-light 100%);
+    border-color: $yardura-sage-light;
+    
+    &::before {
+      transform: translateX(20px);
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .toggle-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    line-height: 1.2;
+  }
+
+  &:hover .toggle-label {
+    color: $yardura-warm-white;
+  }
+
+  // When option is active/selected
+  &.active {
+    background: rgba(139, 157, 107, 0.15);
+    border-color: rgba(139, 157, 107, 0.3);
+    
+    .toggle-label {
+      color: $yardura-warm-white;
+      font-weight: 600;
+    }
+  }
+}
+
+// Mobile-friendly adjustments - Ultra compact
+@media (max-width: 768px) {
+  .pre-ar-config {
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+    
+    h4 {
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  .config-toggles {
+    gap: 0.5rem;
+    flex-direction: column;
+  }
+
+  .toggle-option {
+    padding: 0.4rem 0.6rem;
+    justify-content: space-between;
+    border-radius: 1.5rem;
+    
+    .toggle-switch {
+      width: 38px;
+      height: 20px;
+      border-radius: 10px;
+      
+      &::before {
+        width: 16px;
+        height: 16px;
+        top: 1px;
+        left: 1px;
+      }
+    }
+
+    input:checked + .toggle-switch::before {
+      transform: translateX(18px);
+    }
+
+    .toggle-label {
+      font-size: 0.75rem;
+      flex: 1;
+    }
+  }
+}
+
+
+
+// Features Components
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.feature-item {
+  text-align: center;
+  padding: 2rem;
+}
+
+.feature-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, $yardura-bronze, $yardura-gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+// Stats Components
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  text-align: center;
+  margin: 3rem 0;
+}
+
+.stat-item {
+  padding: 2rem;
+}
+
+.stat-number {
+  font-size: 3rem;
+  font-weight: 800;
+  color: $yardura-bronze;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+// Testimonials
+.testimonial-luxury {
+  background: $yardura-warm-white;
+  padding: 3rem;
+  border-radius: 2rem;
+  box-shadow: $shadow-soft;
+  position: relative;
+  margin-bottom: 2rem;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: $shadow-luxury;
+  }
+
+  &::before {
+    content: '"';
+    position: absolute;
+    top: -10px;
+    left: 2rem;
+    font-size: 4rem;
+    color: $yardura-bronze;
+    font-family: serif;
+  }
+}
+
+// FAQ Components
+.faq-item {
+  margin-bottom: 1.5rem;
+  background: $yardura-warm-white;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: $shadow-soft;
+}
+
+.faq-question {
+  padding: 1.5rem;
+  background: $gray-50;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faq-answer {
+  padding: 0 1.5rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  &.active {
+    padding: 1.5rem;
+    max-height: 200px;
+  }
+}
+
+// CTA Section
+.cta-section {
+  background: linear-gradient(135deg, $yardura-sage 0%, $yardura-sage-light 100%);
+  color: $yardura-warm-white;
+  text-align: center;
+  border-radius: 2rem;
+  margin: 4rem 0;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+}
+
+.cta-content {
+  position: relative;
+  z-index: 2;
+  padding: 4rem 2rem;
+}
+
+// Forms
+.waitlist-form {
+  display: flex;
+  gap: 1rem;
+  max-width: 400px;
+  margin: 2rem auto;
+
+  input {
+    flex: 1;
+    padding: 1rem;
+    border: 2px solid $gray-200;
+    border-radius: 0.75rem;
+    font-family: $primary-font;
+  }
+
+  button {
+    padding: 1rem 1.5rem;
+    background: $yardura-bronze;
+    color: $yardura-warm-white;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
+}
+
+// Badges
+.early-access-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, $yardura-gold, $yardura-amber);
+  color: $yardura-warm-black;
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+// Innovation callout
+.innovation-callout {
+  background: linear-gradient(135deg, $yardura-bronze, $yardura-gold);
+  color: $yardura-warm-white;
+  padding: 2rem;
+  border-radius: 1rem;
+  text-align: center;
+  margin: 2rem 0;
+}
+
+// Footer
+.footer {
+  background: $yardura-warm-black;
+  color: $yardura-warm-white;
+  padding: 3rem 0 2rem;
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.footer-link {
+  color: $yardura-warm-white;
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+
+  &:hover {
+    opacity: 1;
+    color: $yardura-bronze;
+  }
+}
+
+// Quiz Styles
+.quiz-container {
+  position: relative;
+}
+
+.quiz-screen {
+  display: none;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.quiz-screen.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.quiz-question-card, .quiz-results-card {
+  background: $yardura-warm-white;
+  border-radius: 2rem;
+  padding: 3rem;
+  box-shadow: $shadow-luxury;
+  text-align: center;
+}
+
+.quiz-question-card h3, .quiz-results-card h3 {
+  color: $yardura-charcoal;
+  margin-bottom: 1rem;
+}
+
+.quiz-question-card p {
+  color: $gray-600;
+  margin-bottom: 2rem;
+}
+
+.quiz-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.quiz-option {
+  background: $gray-50;
+  border: 2px solid $gray-200;
+  border-radius: 1rem;
+  padding: 1.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  font-family: $primary-font;
+  font-size: 0.9rem;
+}
+
+.quiz-option:hover {
+  border-color: $yardura-bronze;
+  background: $yardura-cream;
+  transform: translateY(-2px);
+}
+
+.quiz-option.selected {
+  background: $yardura-bronze;
+  border-color: $yardura-bronze;
+  color: $yardura-warm-white;
+}
+
+.option-icon {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.option-text {
+  display: block;
+  font-weight: 600;
+}
+
+.option-text small {
+  font-weight: 400;
+  opacity: 0.8;
+  font-size: 0.8rem;
+}
+
+.recommended-setup {
+  background: $gray-50;
+  border-radius: 1rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.setup-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: $yardura-warm-white;
+  border-radius: 0.5rem;
+}
+
+.setup-item-icon {
+  font-size: 1.5rem;
+  width: 50px;
+  text-align: center;
+}
+
+.setup-item-content h4 {
+  margin: 0 0 0.25rem 0;
+  color: $yardura-charcoal;
+}
+
+.setup-item-content p {
+  margin: 0;
+  color: $gray-600;
+  font-size: 0.9rem;
+} 
+
+// AR Viewer Components
+.ar-viewer-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  &.active {
+    display: flex;
+  }
+
+  model-viewer {
+    width: 95%;
+    height: 90%;
+    max-width: 900px;
+    max-height: 700px;
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    
+    // Ensure AR button is visible and accessible
+    --poster-color: transparent;
+    
+    // Enhanced AR button styling (targets model-viewer's internal AR button)
+    button[slot="ar-button"] {
+      background: linear-gradient(135deg, #007AFF 0%, #0056CC 100%) !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 12px !important;
+      padding: 12px 20px !important;
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3) !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
+      position: absolute !important;
+      bottom: 20px !important;
+      right: 20px !important;
+      z-index: 100 !important;
+      
+      &:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 16px rgba(0, 122, 255, 0.4) !important;
+      }
+      
+      &:active {
+        transform: translateY(0) !important;
+      }
+      
+      // Icon styling
+      &::before {
+        content: "📱 " !important;
+        margin-right: 4px !important;
+      }
+    }
+  }
+
+  .ar-header {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    text-align: center;
+    z-index: 1001;
+    
+    h3 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+  }
+
+  .ar-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: scale(1.1);
+    }
+  }
+
+  // AR Configuration Controls
+  .ar-config-controls {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    border-radius: 6px;
+    padding: 6px 10px;
+    z-index: 1001;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: opacity 0.3s ease, pointer-events 0.3s ease;
+
+    &.loading {
+      opacity: 0.5;
+      pointer-events: none;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 16px;
+        height: 16px;
+        margin: -8px 0 0 -8px;
+        border: 2px solid transparent;
+        border-top: 2px solid #FFD700;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+    }
+
+    input.loading, button.loading {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .ar-config-title {
+      color: #FFD700;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    
+    .ar-toggles {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      
+      @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+    
+    .ar-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      
+      input[type="checkbox"] {
+        display: none;
+      }
+      
+      .ar-toggle-slider {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        
+        &::before {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 14px;
+          height: 14px;
+          background: white;
+          border-radius: 50%;
+          transition: all 0.3s ease;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+      }
+      
+      input:checked + .ar-toggle-slider {
+        background: linear-gradient(135deg, #007AFF 0%, #0056CC 100%);
+        border-color: #007AFF;
+        
+        &::before {
+          transform: translateX(16px);
+          background: white;
+        }
+      }
+      
+      .ar-toggle-label {
+        color: white;
+        font-size: 11px;
+        font-weight: 400;
+        white-space: nowrap;
+      }
+      
+      &:hover .ar-toggle-slider {
+        background: rgba(255, 255, 255, 0.3);
+        
+        &::before {
+          transform: scale(1.1);
+        }
+      }
+      
+      &:hover input:checked + .ar-toggle-slider {
+        background: linear-gradient(135deg, #1a8eff 0%, #0066dd 100%);
+      }
+    }
+  }
+
+  // Photo Upload Section for Desktop
+  .photo-upload-section {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 16px;
+    z-index: 1001;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 280px;
+    display: none; /* Hidden by default, shown on desktop */
+
+    &.desktop-only {
+      display: block;
+    }
+
+    .photo-upload-title {
+      color: #FFD700;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .photo-upload-description {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 11px;
+      line-height: 1.3;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .photo-upload-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .photo-upload-btn, .photo-clear-btn {
+      background: linear-gradient(135deg, #8b9d6b 0%, #a8b88a 100%);
+      color: white;
+      border: none;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(139, 157, 107, 0.3);
+        background: linear-gradient(135deg, #9aae75 0%, #b5c595 100%);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
+    .photo-clear-btn {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, #e74c3c 0%, #dc2626 100%);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      }
+    }
+
+    .photo-upload-tips {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 10px;
+      line-height: 1.3;
+      text-align: center;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  // Custom background for model viewer when photo is uploaded
+  model-viewer.with-photo-background {
+    background-size: 115% auto;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    
+    // EXTREME 3D perspective transforms for obvious depth effect
+    transform: perspective(2000px) rotateX(8deg) translateZ(25px) scale(1.03);
+    transform-style: preserve-3d;
+    
+    // Depth mapping styling only
+    position: relative;
+    
+    // Enhanced dramatic lighting
+    --neutral-lighting: neutral;
+    --exposure: 2.1;
+    --shadow-intensity: 3.5;
+    --shadow-softness: 0.1;
+    --tone-mapping: aces;
+    
+    // Dramatic visual enhancements
+    filter: contrast(1.25) saturate(1.3) brightness(1.1);
+    border-radius: 16px;
+    overflow: hidden;
+    
+    // Enhanced depth shadows
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 8px 20px rgba(0, 0, 0, 0.3),
+      0 2px 8px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    
+    // Smooth transitions
+    transition: all 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+    
+    // Add depth animation
+    @keyframes depthPulse {
+      0%, 100% { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+      }
+      50% { 
+        opacity: 0.8; 
+        transform: scale(1.05) translateY(-2px); 
+      }
+    }
+    
+    // Add depth overlay effect
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(
+        ellipse at center bottom,
+        rgba(0, 0, 0, 0.05) 0%,
+        rgba(0, 0, 0, 0.15) 50%,
+        rgba(0, 0, 0, 0.25) 100%
+      );
+      pointer-events: none;
+      z-index: 1;
+      mix-blend-mode: multiply;
+      border-radius: 16px;
+    }
+  }
+
+  // Enhanced 3D depth-mapped backgrounds
+  model-viewer.with-depth-background {
+    background-size: 120% auto;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    
+    // Extreme 3D depth transforms
+    transform: perspective(1800px) rotateX(6deg) translateZ(20px);
+    transform-style: preserve-3d;
+    
+    // Advanced lighting for 3D depth environments
+    --environment-image: neutral;
+    --exposure: 2.5;
+    --shadow-intensity: 4.0;
+    --shadow-softness: 0.05;
+    --tone-mapping: aces;
+    
+    // Enhanced realism for depth-mapped scenes
+    --ar-scale: auto;
+    --progress-bar-color: transparent;
+    
+    // Smooth transitions when switching environments
+    transition: all 0.3s ease-in-out;
+    
+    // Enhanced model integration with depth scene
+    .model-viewer__container {
+      mix-blend-mode: multiply;
+    }
+  }
+
+  // Processing indicator animations
+  @keyframes depthProcessingPulse {
+    0%, 100% { 
+      opacity: 0.8;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 1;
+      transform: scale(1.05);
+    }
+  }
+
+  // Enhanced photo upload button styling
+  .photo-upload-btn {
+    &[title*="3D"] {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      
+      &:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        transform: translateY(-2px);
+      }
+      
+      &::before {
+        content: "";
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+        border-radius: inherit;
+        z-index: -1;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      &:hover::before {
+        opacity: 0.3;
+        animation: depthProcessingPulse 2s infinite;
+      }
+    }
+  }
+
+  // Depth processing overlay styles
+  #depthProcessingIndicator {
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #fff;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    .processing-text {
+      background: linear-gradient(90deg, #fff, #ccc);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .ar-loading {
+    display: none !important;
+  }
+
+  .ar-instructions {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    white-space: nowrap;
+    
+    p {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.2;
+      opacity: 0.9;
+    }
+  }
+
+  // Fallback viewer (for error states)
+  .fallback-viewer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    max-width: 500px;
+    text-align: center;
+    
+    h3 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    
+    .fallback-options {
+      display: grid;
+      gap: 20px;
+      margin-top: 24px;
+    }
+    
+    .fallback-section {
+      padding: 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      
+      h4 {
+        margin: 0 0 12px 0;
+        color: #444;
+      }
+      
+      .download-link {
+        display: inline-block;
+        padding: 12px 24px;
+        background: #007AFF;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 500;
+        margin: 8px;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          background: #0056CC;
+          transform: translateY(-2px);
+        }
+        
+        &.primary {
+          background: linear-gradient(135deg, #007AFF 0%, #0056CC 100%);
+          box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+      }
+      
+      .option-note {
+        font-size: 14px;
+        color: #666;
+        margin-top: 8px;
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Ensure AR works well on mobile
+@media (max-width: 768px) {
+  .ar-viewer-container {
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      
+      button[slot="ar-button"] {
+        bottom: 100px !important;
+        right: 50% !important;
+        transform: translateX(50%) !important;
+        padding: 16px 32px !important;
+        font-size: 18px !important;
+      }
+    }
+    
+    .ar-instructions {
+      bottom: 20px;
+      left: 10px;
+      right: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.7rem;
+    }
+
+    // Hide photo upload on mobile (AR camera available)
+    .photo-upload-section {
+      display: none !important;
+    }
+    
+    // Mobile-specific AR controls positioning
+    .ar-config-controls {
+      top: 15px;
+      right: 15px;
+      left: auto;
+      padding: 10px 12px;
+      min-width: 140px;
+      
+      .ar-config-title {
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+      
+      .ar-toggles {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .ar-toggle {
+        .ar-toggle-label {
+          font-size: 12px;
+          margin-left: 8px;
+        }
+        
+        .ar-toggle-slider {
+          width: 40px;
+          height: 22px;
+          
+          &::before {
+            width: 16px;
+            height: 16px;
+            top: 2px;
+            left: 2px;
+          }
+        }
+        
+        input:checked + .ar-toggle-slider::before {
+          transform: translateX(18px);
+        }
+      }
+    }
+    
+    .ar-instructions {
+      bottom: 10px;
+      left: 10px;
+      padding: 6px 8px;
+      white-space: nowrap;
+      
+      p {
+        font-size: 10px;
+      }
+    }
+  }
+} 

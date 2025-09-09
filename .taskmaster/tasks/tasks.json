@@ -1,0 +1,280 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Fix AR Viewer Issues",
+        "description": "Resolve connection errors and JSON parsing issues in the AR viewer to ensure proper model loading from Sanity.io CDN URLs.",
+        "details": "Update the AR viewer to handle connections to Sanity.io CDN URLs instead of localhost. Ensure that USDZ files are correctly interpreted and not parsed as JSON. Implement platform-specific handling for iOS and web, and add fallbacks for unsupported formats.",
+        "testStrategy": "Test AR viewer on iOS, Android, and desktop browsers to ensure models load correctly without errors. Verify fallback mechanisms work on unsupported platforms.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update Connection Handling for Sanity.io CDN",
+            "description": "Modify the AR viewer to establish and manage connections with Sanity.io CDN URLs, replacing localhost references.",
+            "dependencies": [],
+            "details": "Ensure the AR viewer can fetch and load models from Sanity.io CDN URLs by updating connection settings and handling potential network errors.\n<info added on 2025-07-20T03:14:32.382Z>\nImplemented Sanity client to dynamically fetch model CDN URLs, replacing local paths and localhost references. This resolves connection issues by utilizing the production Sanity API.\n</info added on 2025-07-20T03:14:32.382Z>",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Ensure Proper Interpretation of USDZ Files",
+            "description": "Implement mechanisms to correctly interpret and display USDZ files, preventing them from being misparsed as JSON.",
+            "dependencies": [
+              1
+            ],
+            "details": "Update the AR viewer to recognize and process USDZ files appropriately, leveraging libraries or frameworks that support the USDZ format.\n<info added on 2025-07-20T03:15:06.331Z>\nAdd logic to prevent loading USDZ files on non-iOS platforms by not setting the source attribute for web, thereby avoiding JSON parse errors.\n</info added on 2025-07-20T03:15:06.331Z>",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Platform-Specific Handling for iOS and Web",
+            "description": "Develop platform-specific code to handle AR model loading and display on both iOS and web platforms.",
+            "dependencies": [
+              2
+            ],
+            "details": "For iOS, integrate with AR Quick Look to display USDZ files natively. For web, implement a compatible 3D model viewer that supports USDZ or alternative formats.\n<info added on 2025-07-20T03:15:24.938Z>\nImplemented isIOS detection and configured platform-specific handling by using iosSrc and quick-look for iOS, while hiding the model-viewer for web platforms.\n</info added on 2025-07-20T03:15:24.938Z>",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add Fallbacks for Unsupported Formats",
+            "description": "Implement fallback mechanisms to handle scenarios where certain 3D model formats are unsupported on specific platforms.",
+            "dependencies": [
+              3
+            ],
+            "details": "Detect unsupported formats and provide alternative solutions, such as converting models to a supported format or displaying a placeholder message.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Conduct Comprehensive Testing Across Platforms",
+            "description": "Perform thorough testing of the AR viewer across iOS, Android, and desktop browsers to ensure correct model loading and display.",
+            "dependencies": [
+              4
+            ],
+            "details": "Test the AR viewer on various devices and browsers to verify that models load correctly, fallbacks function as intended, and there are no errors or performance issues.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Improve Background Visuals",
+        "description": "Redesign the landing page background to replace full-background waves with creative bubble elements for enhanced visual appeal.",
+        "details": "Modify the CSS to replace the full-background waves with smaller, creatively placed bubble elements in beige and green. Ensure the design is visually appealing and consistent across devices.",
+        "testStrategy": "Check the landing page on various screen sizes and devices to ensure the new background design is responsive and visually appealing.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Creative Bubble Elements",
+            "description": "Create visually appealing bubble elements in beige and green to replace the current full-background waves on the landing page.",
+            "dependencies": [],
+            "details": "Develop a set of bubble graphics that align with the website's aesthetic. Ensure the design is versatile for various screen sizes and devices.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement CSS Changes for New Background",
+            "description": "Modify the CSS to integrate the newly designed bubble elements as the background of the landing page.",
+            "dependencies": [
+              1
+            ],
+            "details": "Replace the existing full-background waves with the new bubble elements using CSS. Ensure the background is responsive and maintains visual appeal across different devices.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Test Design Across Devices and Screen Sizes",
+            "description": "Verify that the new background design is responsive and visually appealing on various devices and screen sizes.",
+            "dependencies": [
+              2
+            ],
+            "details": "Conduct thorough testing on multiple devices and screen sizes to ensure the bubble background adapts well and maintains consistency. Make necessary adjustments based on test results.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Remove Placeholder Testimonials",
+        "description": "Comment out or remove the placeholder testimonial blocks from the landing page until real testimonials are available.",
+        "details": "Locate the testimonial sections in the HTML and either comment them out or remove them entirely. Ensure the layout remains intact without these sections.",
+        "testStrategy": "Verify that the landing page displays correctly without testimonial sections and that there are no layout issues.",
+        "priority": "low",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Locate and Remove or Comment Out Testimonial Sections",
+            "description": "Identify the testimonial sections in the HTML code and either remove them or comment them out to prevent display.",
+            "dependencies": [],
+            "details": "Open the landing page's HTML file and search for the sections containing testimonial content. Once located, you can either delete these sections or enclose them within HTML comment tags (`<!--` and `-->`) to hide them from the browser. Ensure that the removal or commenting does not affect other parts of the page.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Implement Kick-Start Quiz",
+        "description": "Develop a multi-step quiz to guide users and recommend products based on their answers.",
+        "details": "Use vanilla JS to create a multi-step quiz with questions about pet type, yard size, frustration, and email capture. Calculate recommended bundles based on user responses and integrate with the AR viewer and waitlist features.",
+        "testStrategy": "Test the quiz flow to ensure it captures user input correctly, computes recommendations accurately, and integrates seamlessly with the AR viewer and waitlist.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Quiz Flow",
+            "description": "Outline the structure and sequence of the multi-step quiz, including question types and progression logic.",
+            "dependencies": [],
+            "details": "Define the number of steps, types of questions (e.g., multiple-choice, open-ended), and the logic for navigating between steps.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Quiz Steps in Vanilla JavaScript",
+            "description": "Develop each step of the quiz using vanilla JavaScript, ensuring smooth transitions and user interactions.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create functions to handle displaying questions, capturing user inputs, and navigating between steps without relying on external libraries.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Integrate Quiz with AR Viewer",
+            "description": "Connect the quiz functionality with the AR viewer to display relevant 3D models based on user responses.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement logic to trigger the AR viewer with appropriate models corresponding to quiz answers, ensuring seamless integration.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Capture and Store User Data",
+            "description": "Implement mechanisms to collect and securely store user responses and information throughout the quiz.",
+            "dependencies": [
+              2
+            ],
+            "details": "Ensure that all user inputs are validated, stored securely, and comply with data protection regulations.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Calculate Product Recommendations",
+            "description": "Develop algorithms to analyze user responses and generate personalized product recommendations.",
+            "dependencies": [
+              4
+            ],
+            "details": "Create logic to map user answers to product bundles, ensuring recommendations are accurate and relevant.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Test and Validate Quiz Flow",
+            "description": "Conduct comprehensive testing to ensure the quiz functions correctly, captures data accurately, and integrates seamlessly with other features.",
+            "dependencies": [
+              3,
+              4,
+              5
+            ],
+            "details": "Perform unit and integration tests to verify all components work as intended, identifying and fixing any issues.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Accessibility and Responsive Testing",
+        "description": "Ensure the landing page is accessible and responsive across all devices and browsers.",
+        "details": "Conduct thorough testing for accessibility compliance and responsive design. Make necessary adjustments to HTML/CSS to ensure the site is mobile-first and accessible.",
+        "testStrategy": "Use accessibility tools and responsive design testing across multiple devices and browsers to verify compliance and usability.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Conduct Accessibility Audit",
+            "description": "Perform a comprehensive audit of the landing page to identify accessibility issues.",
+            "dependencies": [],
+            "details": "Utilize tools like WAVE and manual testing to assess compliance with WCAG 2.2 standards. Focus on areas such as color contrast, keyboard navigation, and screen reader compatibility.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement HTML/CSS Adjustments",
+            "description": "Make necessary HTML and CSS changes to address issues identified in the accessibility audit.",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify code to improve semantic structure, ensure proper ARIA roles, and enhance keyboard navigability. Adjust color schemes to meet contrast requirements.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Test Responsiveness Across Devices",
+            "description": "Verify that the landing page displays correctly on various devices and screen sizes.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use tools like BrowserStack to test the page on multiple devices, including smartphones, tablets, and desktops. Ensure that the layout adapts appropriately to different screen resolutions.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Verify Compliance with Accessibility Standards",
+            "description": "Confirm that the landing page meets all relevant accessibility standards after adjustments.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Re-run accessibility tools and conduct manual testing to ensure compliance with WCAG 2.2 guidelines. Address any remaining issues to achieve full compliance.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-20T03:06:31.729Z",
+      "updated": "2025-07-20T03:15:26.266Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

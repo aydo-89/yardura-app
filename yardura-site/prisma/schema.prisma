@@ -1,0 +1,417 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User accounts with authentication
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  address       String?
+  city          String?
+  zipCode       String?
+  role          UserRole  @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  stripeCustomerId String?
+
+  // Sales rep specific fields
+  salesRepId    String?   // ID of the sales rep who signed them up
+  commissionRate Float?   // Commission rate for this sales rep
+
+  accounts      Account[]
+  sessions      Session[]
+  dogs          Dog[]
+  serviceVisits ServiceVisit[]
+  dataReadings  DataReading[]
+  referrals     User[]           @relation("SalesRepReferrals")
+  salesRep      User?            @relation("SalesRepReferrals", fields: [salesRepId], references: [id])
+  earnedCommissions Commission[]  @relation("CommissionSalesRep")
+  receivedCommissions Commission[] @relation("CommissionCustomer")
+  orgId         String?
+  org           Org?      @relation(fields: [orgId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Dog profiles
+model Dog {
+  id           String   @id @default(cuid())
+  name         String
+  breed        String?
+  age          Int?
+  weight       Float?
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataReadings DataReading[]
+  orgId        String?
+  org          Org?     @relation(fields: [orgId], references: [id])
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  samples      Sample[]
+}
+
+// Service visits
+model ServiceVisit {
+  id              String   @id @default(cuid())
+  userId          String?
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  status          ServiceStatus @default(SCHEDULED)
+  serviceType     ServiceType
+  yardSize        YardSize
+  dogsServiced    Int
+  accountNumber   String?  // For linking Raspberry Pi data
+  notes           String?
+  deodorize       Boolean  @default(false)
+  litterService   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User?         @relation(fields: [userId], references: [id])
+  dataReadings    DataReading[]
+  commissions     Commission[]
+}
+
+// Data readings from Raspberry Pi
+model DataReading {
+  id             String   @id @default(cuid())
+  userId         String?
+  dogId          String?
+  serviceVisitId String?
+  timestamp      DateTime @default(now())
+  weight         Float?   // Waste weight in grams
+  volume         Float?   // Waste volume in ml
+  color          String?  // Color analysis (RGB values)
+  consistency    String?  // Texture/consistency analysis
+  temperature    Float?   // Temperature reading
+  methaneLevel   Float?   // Methane sensor reading
+  location       String?  // GPS coordinates if mobile
+  deviceId       String   // Raspberry Pi device identifier
+  accountNumber  String?  // For anonymous data collection
+
+  user         User?         @relation(fields: [userId], references: [id])
+  dog          Dog?          @relation(fields: [dogId], references: [id])
+  serviceVisit ServiceVisit? @relation(fields: [serviceVisitId], references: [id])
+}
+
+// Global eco statistics
+model GlobalStats {
+  id                   String   @id @default("global")
+  totalWasteDiverted  Float    @default(0) // in lbs
+  totalMethaneAvoided Float    @default(0) // in ft³
+  totalUsers          Int      @default(0)
+  totalDogs           Int      @default(0)
+  totalServiceVisits  Int      @default(0)
+  updatedAt           DateTime @updatedAt
+}
+
+// Commission tracking for sales reps
+model Commission {
+  id            String   @id @default(cuid())
+  salesRepId    String   // Sales rep who earned the commission
+  customerId    String   // Customer who generated the commission
+  serviceVisitId String  // Service visit that generated commission
+  amount        Float    // Commission amount
+  status        CommissionStatus @default(PENDING)
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salesRep      User         @relation("CommissionSalesRep", fields: [salesRepId], references: [id])
+  customer      User         @relation("CommissionCustomer", fields: [customerId], references: [id])
+  serviceVisit  ServiceVisit @relation(fields: [serviceVisitId], references: [id])
+
+  @@unique([salesRepId, serviceVisitId])
+}
+
+// Enums
+enum UserRole {
+  CUSTOMER
+  SALES_REP
+  ADMIN
+  TECH
+  OWNER
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum ServiceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  REGULAR
+  ONE_TIME
+  SPRING_CLEANUP
+  DEODORIZATION
+}
+
+enum YardSize {
+  SMALL    // < 1/4 acre
+  MEDIUM   // 1/4 - 1/2 acre
+  LARGE    // 1/2 - 1 acre
+  XLARGE   // > 1 acre
+}
+
+// ====================
+// Multi-tenant & Edge → Cloud pipeline models
+// ====================
+
+model Org {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  customers Customer[]
+  devices   Device[]
+  jobs      Job[]
+  dogs      Dog[]
+  samples   Sample[]
+  alerts    Alert[]
+
+  // unique on slug already declared at field level
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Org      @relation(fields: [orgId], references: [id])
+  name         String
+  email        String?
+  phone        String?
+  addressLine1 String
+  city         String
+  state        String
+  zip          String
+  latitude     Float?
+  longitude    Float?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  dogs Dog[]
+  jobs Job[]
+  samples Sample[]
+}
+
+model Job {
+  id            String        @id @default(cuid())
+  orgId         String
+  org           Org           @relation(fields: [orgId], references: [id])
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  frequency     Frequency     @default(WEEKLY)
+  nextVisitAt   DateTime?
+  dayOfWeek     Int?
+  extraAreas    Int           @default(0)
+  deodorizeMode DeodorizeMode @default(NONE)
+  status        JobStatus     @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  samples       Sample[]
+}
+
+enum Frequency {
+  ONE_TIME
+  WEEKLY
+  BI_WEEKLY
+  TWICE_WEEKLY
+}
+
+enum JobStatus {
+  ACTIVE
+  PAUSED
+  CANCELED
+}
+
+enum DeodorizeMode {
+  NONE
+  FIRST_VISIT
+  EACH_VISIT
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id])
+  name        String
+  type        String
+  apiKeyHash  String
+  uniqueId    String   @unique
+  lastSeenAt  DateTime?
+  createdAt   DateTime @default(now())
+  samples     Sample[]
+
+  @@index([orgId])
+}
+
+model Sample {
+  id             String    @id @default(cuid())
+  orgId          String
+  org            Org       @relation(fields: [orgId], references: [id])
+  deviceId       String
+  device         Device    @relation(fields: [deviceId], references: [id])
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  dogId          String?
+  dog            Dog?      @relation(fields: [dogId], references: [id])
+  jobId          String?
+  job            Job?      @relation(fields: [jobId], references: [id])
+  capturedAt     DateTime  @default(now())
+  imageUrl       String?
+  weightG        Float?
+  moistureRaw    Int?
+  temperatureC   Float?
+  gpsLat         Float?
+  gpsLng         Float?
+  notes          String?
+  freshnessScore Float?
+  createdAt      DateTime  @default(now())
+
+  scores SampleScore[]
+  alerts Alert[]
+  groundTruth GroundTruth[]
+
+  @@index([orgId, capturedAt])
+  @@index([customerId, capturedAt])
+  @@index([dogId, capturedAt])
+}
+
+model SampleScore {
+  id               String   @id @default(cuid())
+  sampleId         String
+  sample           Sample   @relation(fields: [sampleId], references: [id])
+  colorLabel       String?
+  consistencyLabel String?
+  contentFlags     String?
+  hydrationHint    String?
+  giCluster        String?
+  confidence       Float?
+  baselineDelta    Json?
+  scoredAt         DateTime @default(now())
+}
+
+model Alert {
+  id           String     @id @default(cuid())
+  orgId        String
+  sampleId     String
+  sample       Sample     @relation(fields: [sampleId], references: [id])
+  level        AlertLevel @default(INFO)
+  kind         String
+  message      String
+  acknowledged Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  org          Org        @relation(fields: [orgId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([sampleId])
+}
+
+enum AlertLevel {
+  INFO
+  WATCH
+  ATTENTION
+}
+
+model EcoStat {
+  id                 String   @id @default(cuid())
+  orgId              String
+  customerId         String?
+  dogId              String?
+  periodMonth        String
+  lbsDiverted        Float
+  methaneAvoidedCuFt Float
+  createdAt          DateTime @default(now())
+
+  @@index([orgId, periodMonth])
+}
+
+model BillingSnapshot {
+  id                   String   @id @default(cuid())
+  orgId                String
+  customerId           String
+  plan                 String
+  pricePerVisitCents   Int
+  visitsPerMonth       Int
+  oneTimeFeeCents      Int
+  discountOneTimeCents Int
+  createdAt            DateTime @default(now())
+
+  @@index([orgId, customerId])
+}
+
+model GroundTruth {
+  id           String   @id @default(cuid())
+  sampleId     String   @unique
+  sample       Sample   @relation(fields: [sampleId], references: [id])
+  dataset      String   // e.g., v0.1
+  split        String   // train|val|test
+  colorLabel   String?
+  consistency  String?
+  contentFlags String?
+  freshness    String?
+  notStool     Boolean  @default(false)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([dataset, split])
+}

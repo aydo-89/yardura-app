@@ -1,0 +1,241 @@
+import { safeGetServerSession } from '@/lib/auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { redirect } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  BarChart3,
+  TrendingUp,
+  Calendar,
+  Heart,
+  Leaf,
+  Settings,
+  Plus
+} from 'lucide-react'
+
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions as any) as { user?: { id?: string; email?: string } } | null
+
+  if (!session?.user) {
+    redirect('/signin')
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    include: {
+      dogs: true,
+      serviceVisits: {
+        orderBy: { scheduledDate: 'desc' },
+        take: 5
+      },
+      dataReadings: {
+        orderBy: { timestamp: 'desc' },
+        take: 20
+      }
+    }
+  })
+
+  if (!user) {
+    redirect('/signin')
+  }
+
+  // Calculate insights
+  const totalWaste = user.dataReadings
+    .filter(d => d.weight)
+    .reduce((sum, reading) => sum + (reading.weight || 0), 0)
+
+  const avgHealthScore = user.dataReadings
+    .filter(d => d.consistency)
+    .length > 0 ? 85 : 0 // Mock health score
+
+  const recentVisits = user.serviceVisits.slice(0, 3)
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
+      <div className="container py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-extrabold text-ink mb-2">
+              Welcome back, {user.name}!
+            </h1>
+            <p className="text-slate-600">
+              Your personal dashboard for dog health insights and eco impact
+            </p>
+          </div>
+          <Button>
+            <Settings className="size-4 mr-2" />
+            Settings
+          </Button>
+        </div>
+
+        {/* Key Metrics */}
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Waste Collected</CardTitle>
+              <BarChart3 className="h-4 w-4 text-brand-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{(totalWaste * 0.00220462).toFixed(1)} lbs</div>
+              <p className="text-xs text-muted-foreground">
+                Kept out of landfills
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Health Score</CardTitle>
+              <Heart className="h-4 w-4 text-brand-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{avgHealthScore}%</div>
+              <p className="text-xs text-muted-foreground">
+                Based on recent data
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Service Visits</CardTitle>
+              <Calendar className="h-4 w-4 text-brand-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{user.serviceVisits.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Total completed
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Dogs Tracked</CardTitle>
+              <TrendingUp className="h-4 w-4 text-brand-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{user.dogs.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Active profiles
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Recent Service Visits */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Service Visits</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentVisits.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentVisits.map((visit) => (
+                      <div key={visit.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <div className="font-semibold">
+                            {visit.serviceType.replace('_', ' ')} - {visit.yardSize}
+                          </div>
+                          <div className="text-sm text-slate-600">
+                            {new Date(visit.scheduledDate).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <Badge variant={visit.status === 'COMPLETED' ? 'default' : 'secondary'}>
+                          {visit.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-600">No service visits yet. Schedule your first one!</p>
+                )}
+                <Button className="w-full mt-4">
+                  <Plus className="size-4 mr-2" />
+                  Schedule Service
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Dogs Overview */}
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Dogs</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {user.dogs.map((dog) => (
+                    <div key={dog.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-semibold">{dog.name}</div>
+                        <div className="text-sm text-slate-600">
+                          {dog.breed || 'Mixed Breed'}
+                          {dog.age && `, ${dog.age} years old`}
+                        </div>
+                      </div>
+                      <Badge variant="outline">{dog.weight} lbs</Badge>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="outline" className="w-full mt-4">
+                  <Plus className="size-4 mr-2" />
+                  Add Dog Profile
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Health Insights */}
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Leaf className="size-5 text-brand-600" />
+                Health Insights & Trends
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {user.dataReadings.length > 0 ? (
+                <div className="space-y-4">
+                  <p className="text-slate-600">
+                    Based on your recent service data, here are key insights:
+                  </p>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-brand-50 rounded-lg">
+                      <div className="font-semibold text-brand-800">Color Analysis</div>
+                      <div className="text-sm text-slate-600">Most recent: Healthy range</div>
+                    </div>
+                    <div className="p-4 bg-brand-50 rounded-lg">
+                      <div className="font-semibold text-brand-800">Consistency</div>
+                      <div className="text-sm text-slate-600">Normal patterns detected</div>
+                    </div>
+                    <div className="p-4 bg-brand-50 rounded-lg">
+                      <div className="font-semibold text-brand-800">Volume Trends</div>
+                      <div className="text-sm text-slate-600">Consistent with breed average</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-slate-600 mb-4">
+                    Health insights will appear here after your first service visit with data collection.
+                  </p>
+                  <Button>
+                    Schedule First Service
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}

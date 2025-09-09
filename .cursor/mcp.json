@@ -1,0 +1,19 @@
+{
+	"mcpServers": {
+		"task-master-ai": {
+			"command": "npx",
+			"args": ["-y", "--package=task-master-ai", "task-master-ai"],
+			"env": {
+                "ANTHROPIC_API_KEY": "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",
+                "PERPLEXITY_API_KEY": "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",
+                "OPENAI_API_KEY": "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",
+                "GOOGLE_API_KEY": "AIzaSyC23_1GrHytzGVZTllzwrpbNdE-pFkuwP0",
+				"XAI_API_KEY": "XAI_API_KEY_HERE",
+				"OPENROUTER_API_KEY": "OPENROUTER_API_KEY_HERE",
+				"MISTRAL_API_KEY": "MISTRAL_API_KEY_HERE",
+				"AZURE_OPENAI_API_KEY": "AZURE_OPENAI_API_KEY_HERE",
+				"OLLAMA_API_KEY": "OLLAMA_API_KEY_HERE"
+			}
+		}
+	}
+}

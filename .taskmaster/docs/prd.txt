@@ -1,0 +1,69 @@
+<context>
+# Overview  
+Improve the Yardura landing page by addressing visual issues with backgrounds, fixing AR viewer errors, removing placeholder testimonials, and adding a kick-start quiz similar to Sunday.me to guide users and recommend products.
+
+The problem: Current landing page has unappealing full-background waves, AR viewer errors with connection refused and JSON parse issues, fake testimonials, and lacks interactive user engagement.
+
+Target users: Potential customers interested in premium pet waste solutions.
+
+Value: Better user experience, increased engagement, error-free AR preview, personalized recommendations leading to higher conversion.
+
+# Core Features  
+1. Background Improvement:
+- Make colored waves (beige and green) appear in small creative parts like bubbles instead of full background.
+- Enhance overall visual appeal of landing page.
+
+2. AR Viewer Fix:
+- Resolve connection refused errors to localhost:8001/api/v1/entities.
+- Fix model loading error where USDZ is parsed as JSON.
+- Ensure proper loading from Sanity.io CDN URLs.
+
+3. Remove Fake Testimonials:
+- Comment out or remove placeholder testimonial blocks until real ones available.
+
+4. Kick-Start Quiz:
+- Multi-step quiz (4 questions): pet type, yard size, frustration, email capture.
+- Compute recommended bundle based on answers.
+- Show result card with recommendation.
+- Buttons: Join Waitlist (auto-fill email, scroll to CTA), View in Your Yard (open AR with appropriate toggles).
+
+# User Experience  
+- Users: Homeowners with pets looking for premium waste solutions.
+- Flow: Land on page, see improved hero, read story, take quiz for personalized rec, view in AR, join waitlist.
+- UI: Mobile-first, accessible, clean premium design.
+</context>
+<PRD>
+# Technical Architecture  
+- Static site with Vite, HTML/CSS/JS.
+- Model-viewer for AR, Sanity for asset hosting.
+- Vanilla JS for quiz logic.
+- No backend, stub API calls.
+
+# Development Roadmap  
+Phase 1: Fixes
+- Fix AR viewer (update paths to Sanity CDN, handle iOS/web differently, add fallback).
+- Improve backgrounds creatively.
+- Remove testimonials.
+
+Phase 2: Quiz Implementation
+- Add quiz section and styles.
+- Implement logic, bundle computation, integration with AR and waitlist.
+
+Phase 3: Polish
+- Accessibility, responsive testing.
+- Commit and verify.
+
+# Logical Dependency Chain
+- Fix AR first as it's core for quiz integration.
+- Then backgrounds and testimonials.
+- Finally quiz, building on fixed AR.
+
+# Risks and Mitigations  
+- AR cross-platform: Test on iOS/Android/desktop, use fallbacks.
+- No glTF: Use placeholder or convert USDZ.
+- Scope creep: Stick to specified features.
+
+# Appendix  
+- Sanity ID: xvi8q8j2, dataset: production.
+- Use vanilla JS for quiz.
+</PRD> 
