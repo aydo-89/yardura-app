@@ -7,6 +7,10 @@ export type User = {
   address?: string | null;
   city?: string | null;
   zipCode?: string | null;
+  preferredDay?: string | null;
+  preferredTime?: string | null;
+  serviceAreas?: string[] | null;
+  specialInstructions?: string | null;
   stripeCustomerId?: string | null;
   orgId?: string | null;
 };
