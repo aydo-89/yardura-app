@@ -13,6 +13,11 @@ const nextConfig = {
   // Produce standalone output to deploy without installing dev deps on server
   output: 'standalone',
 
+  // Disable static generation for all pages to avoid database connection issues
+  trailingSlash: false,
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
+
   // Disable static generation for pages that require database access
   generateBuildId: async () => {
     return 'build-' + Date.now()

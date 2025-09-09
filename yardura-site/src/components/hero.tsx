@@ -126,11 +126,11 @@ export default function Hero() {
             </motion.div>
             <p className="mt-4 text-lg text-slate-600">
               Yardura is a high-care dog-waste service for the Twin Cities.
-              We keep your yard spotless with dependable weekly scooping—and quietly track stool trends across the 3 C’s:
+              We keep your yard spotless and durable with dependable weekly scooping—and quietly track stool trends across the 3 C’s
               <span className="text-brand-700 font-medium">
                 {' '}
-                Color, Consistency, Content (3 C's) and more.
-              </span>{' '}
+                (Color, Consistency, Content)
+              </span>{' so you get simple, non-diagnostic alerts designed to spark better vet conversations.'}
               <span className="inline-flex items-center whitespace-nowrap align-middle px-2 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-800 border border-brand-300">
                 Coming soon
               </span>

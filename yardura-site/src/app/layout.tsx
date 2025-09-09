@@ -28,13 +28,13 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://www.yardura.com',
     locale: 'en_US',
-    siteName: 'Yardura',
+    siteName: 'yardura',
     images: [
       {
         url: '/api/og?type=homepage',
         width: 1200,
         height: 630,
-        alt: 'Yardura - Clean yard, smarter insights. Tech-enabled dog waste removal with health monitoring.',
+        alt: 'yardura - Clean yard, smarter insights. Tech-enabled dog waste removal with health monitoring.',
       },
     ],
   },

@@ -122,7 +122,7 @@ export default function AnimatedHeader() {
                 animate={{ fontSize: isScrolled ? '1.125rem' : '1.25rem' }}
                 transition={{ duration: dur.fast }}
               >
-                Yardura
+                yardura
               </motion.div>
               <motion.div
                 className="text-xs text-slate-500"

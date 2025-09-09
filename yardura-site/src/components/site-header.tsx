@@ -87,7 +87,7 @@ export default function SiteHeader() {
             className="h-9 w-9 rounded-xl shadow-soft object-contain bg-white"
           />
           <div>
-            <div className="font-extrabold text-xl text-ink">Yardura</div>
+            <div className="font-extrabold text-xl text-ink">yardura</div>
             <div className="text-xs text-slate-500">Clean yards. Happy pets. Peace of mind</div>
           </div>
         </div>
