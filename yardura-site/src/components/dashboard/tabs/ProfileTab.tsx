@@ -106,7 +106,7 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
       name: dog.name,
       breed: dog.breed || '',
       age: dog.age?.toString() || '',
-      weight: dog.weight || '',
+      weight: dog.weight?.toString() || '',
     });
     setIsEditingDog(dog.id);
   };
