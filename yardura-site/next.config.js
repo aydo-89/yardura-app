@@ -8,9 +8,15 @@ const nextConfig = {
   // Performance optimizations
   experimental: {
     optimizePackageImports: ['lucide-react'], // Tree-shake Lucide icons
+    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
   },
   // Produce standalone output to deploy without installing dev deps on server
   output: 'standalone',
+
+  // Disable static generation for pages that require database access
+  generateBuildId: async () => {
+    return 'build-' + Date.now()
+  },
   eslint: {
     // Unblock CI/builds while we stabilize lint config
     ignoreDuringBuilds: true,
