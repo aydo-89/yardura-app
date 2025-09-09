@@ -9,7 +9,7 @@ export default async function SchedulePage() {
   } | null;
 
   // Prevent database queries during build time
-  let jobs = [];
+  let jobs: any[] = [];
   try {
     jobs = await prisma.job.findMany({ orderBy: { nextVisitAt: 'asc' }, take: 10 });
   } catch (error) {
