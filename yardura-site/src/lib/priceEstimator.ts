@@ -177,6 +177,19 @@ export function estimatePerVisitCents(
 }
 
 /**
+ * Calculate base per-visit price in cents WITHOUT any frequency multiplier
+ * Use this for initial clean so it does not change when frequency changes
+ */
+export function estimateBasePerVisitCents(
+  dogs: number,
+  yardSize: YardSize
+): number {
+  const basePrice = BASE_PRICES[dogs as DogCount] || BASE_PRICES[4] + (dogs - 4) * 200;
+  const yardAdder = YARD_ADDERS[yardSize];
+  return Math.round(basePrice + yardAdder);
+}
+
+/**
  * Calculate visits per month based on frequency
  * Uses calendar-based calculation for accurate monthly pricing
  */
@@ -399,6 +412,8 @@ export function calculatePrice(input: {
     };
   }
 
+  // Compute both: raw base (no frequency) and frequency-adjusted per-visit
+  const basePerVisitCentsRaw = estimateBasePerVisitCents(input.dogs, input.yardSize);
   const basePerVisitCents = estimatePerVisitCents(input.dogs, input.yardSize, input.frequency);
 
   // Calculate additional area costs ($3 per additional area for recurring, $5 for one-time, first area free)
@@ -487,7 +502,7 @@ export function calculatePrice(input: {
   // Use new initial clean estimator
   // Pass basePerVisitCents (dogs + yard) only; add-ons/areas handled separately by estimator/one-time flow
   const initialCleanEstimate = calculateInitialClean(
-    basePerVisitCents,
+    basePerVisitCentsRaw,
     initialCleanBucket as any,
     input.dogs as DogCount,
     input.yardSize,

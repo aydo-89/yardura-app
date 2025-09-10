@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   estimatePerVisitCents,
+  estimateBasePerVisitCents,
   projectedMonthlyCents,
   visitsPerMonth,
   getPricingBreakdown,
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate initial clean using new estimator
     const initialCleanEstimate = calculateInitialClean(
-      perVisitCents,
+      estimateBasePerVisitCents(dogs, yardSize),
       cleanupBucket,
       dogs,
       yardSize
