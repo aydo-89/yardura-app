@@ -1,14 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { PhoneCall, Menu, X, LucideIcon, MapPin } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useActiveSection } from '@/hooks/useActiveSection';
-import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
-import { track } from '@/lib/analytics';
-import { spring, dur } from '@/lib/motion/presets';
-import Link from 'next/link';
+import { useState, useEffect, useRef } from "react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  AnimatePresence,
+  LayoutGroup,
+} from "framer-motion";
+import { PhoneCall, Menu, X, LucideIcon, MapPin } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useActiveSection } from "@/hooks/useActiveSection";
+import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import { track } from "@/lib/analytics";
+import { spring, dur } from "@/lib/motion/presets";
+import Link from "next/link";
 
 type NavItem = {
   href: string;
@@ -27,7 +33,15 @@ export default function AnimatedHeader() {
   const { scrollY } = useScroll();
   const { prefersReducedMotion } = useReducedMotionSafe();
 
-  const sectionIds = ['hero', 'services', 'pricing', 'eco', 'insights', 'faq', 'cities'];
+  const sectionIds = [
+    "hero",
+    "services",
+    "pricing",
+    "eco",
+    "insights",
+    "faq",
+    "cities",
+  ];
   const activeId = useActiveSection(sectionIds);
 
   // Transform values for scroll-based animations
@@ -43,12 +57,12 @@ export default function AnimatedHeader() {
   });
 
   const navItems: NavItem[] = [
-    { href: '/#services', label: 'Services', id: 'services' },
-    { href: '/#pricing', label: 'Pricing', id: 'pricing' },
-    { href: '/city', label: 'Cities', id: 'cities', icon: MapPin },
-    { href: '/#eco', label: 'Eco', id: 'eco' },
-    { href: '/#insights', label: 'Insights', id: 'insights' },
-    { href: '/#faq', label: 'FAQ', id: 'faq' },
+    { href: "/#services", label: "Services", id: "services" },
+    { href: "/#pricing", label: "Pricing", id: "pricing" },
+    { href: "/city", label: "Cities", id: "cities", icon: MapPin },
+    { href: "/#eco", label: "Eco", id: "eco" },
+    { href: "/#insights", label: "Insights", id: "insights" },
+    { href: "/#faq", label: "FAQ", id: "faq" },
   ];
 
   // Handle scroll-based header behavior
@@ -68,8 +82,8 @@ export default function AnimatedHeader() {
       lastScrollY.current = currentScrollY;
     };
 
-    window.addEventListener('scroll', updateScrollState, { passive: true });
-    return () => window.removeEventListener('scroll', updateScrollState);
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+    return () => window.removeEventListener("scroll", updateScrollState);
   }, []);
 
   const handleMenuToggle = () => {
@@ -90,10 +104,14 @@ export default function AnimatedHeader() {
         style={{
           height: prefersReducedMotion ? 80 : headerHeight,
           y: prefersReducedMotion ? 0 : translateY,
-          backdropFilter: prefersReducedMotion ? 'blur(12px)' : `blur(${backdropBlur}px)`,
+          backdropFilter: prefersReducedMotion
+            ? "blur(12px)"
+            : `blur(${backdropBlur}px)`,
           opacity: prefersReducedMotion ? 0.98 : headerOpacity,
         }}
-        animate={prefersReducedMotion ? undefined : isHidden ? 'hidden' : 'visible'}
+        animate={
+          prefersReducedMotion ? undefined : isHidden ? "hidden" : "visible"
+        }
         variants={headerVariants}
         transition={spring.soft}
       >
@@ -118,45 +136,50 @@ export default function AnimatedHeader() {
               className="flex items-center gap-3 cursor-pointer"
               style={{ scale: prefersReducedMotion ? 1 : logoScale }}
               transition={spring.soft}
-              whileHover={{ scale: prefersReducedMotion ? 1.02 : (logoScale as any) * 1.05 }}
+              whileHover={{
+                scale: prefersReducedMotion ? 1.02 : (logoScale as any) * 1.05,
+              }}
             >
-            <div className="relative">
-              <motion.img
-                src="/yeller_icon_centered.png"
-                alt="Yeller logo"
-                className="h-10 w-10 md:h-12 md:w-12 rounded-xl shadow-lg object-cover bg-white border border-slate-200 transform scale-125"
-                whileHover={{ scale: 1.05, rotate: 2 }}
-                transition={spring.snappy}
-              />
-              {/* Active indicator */}
-              <motion.div 
-                className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <motion.div
-                className="font-black text-xl md:text-2xl bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight"
-                animate={{ fontSize: isScrolled ? '1.25rem' : '1.5rem' }}
-                transition={{ duration: dur.fast }}
-              >
-                Yeller
-              </motion.div>
-              <motion.div
-                className="text-xs text-slate-500 leading-tight font-medium flex items-center gap-1"
-                animate={{ opacity: isScrolled ? 0 : 1, height: isScrolled ? 0 : 'auto' }}
-                transition={{ duration: dur.fast }}
-              >
-                <span>by Yardura</span>
-                <img
-                  src="/yardura-logo.png"
-                  alt="Yardura"
-                  className="h-4 w-4 rounded-sm object-contain"
+              <div className="relative">
+                <motion.img
+                  src="/yeller_icon_centered.png"
+                  alt="Yeller logo"
+                  className="h-10 w-10 md:h-12 md:w-12 rounded-xl shadow-lg object-cover bg-white border border-slate-200 transform scale-125"
+                  whileHover={{ scale: 1.05, rotate: 2 }}
+                  transition={spring.snappy}
                 />
-              </motion.div>
-            </div>
-          </motion.div>
+                {/* Active indicator */}
+                <motion.div
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <motion.div
+                  className="font-black text-xl md:text-2xl bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight"
+                  animate={{ fontSize: isScrolled ? "1.25rem" : "1.5rem" }}
+                  transition={{ duration: dur.fast }}
+                >
+                  Yeller
+                </motion.div>
+                <motion.div
+                  className="text-xs text-slate-500 leading-tight font-medium flex items-center gap-1"
+                  animate={{
+                    opacity: isScrolled ? 0 : 1,
+                    height: isScrolled ? 0 : "auto",
+                  }}
+                  transition={{ duration: dur.fast }}
+                >
+                  <span>by Yardura</span>
+                  <img
+                    src="/yardura-logo.png"
+                    alt="Yardura"
+                    className="h-4 w-4 rounded-sm object-contain"
+                  />
+                </motion.div>
+              </div>
+            </motion.div>
           </Link>
 
           {/* Enhanced Desktop Navigation */}
@@ -169,15 +192,15 @@ export default function AnimatedHeader() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'relative px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center gap-2',
-                      activeId === item.id 
-                        ? 'bg-green-100 text-green-700 shadow-sm' 
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      "relative px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center gap-2",
+                      activeId === item.id
+                        ? "bg-green-100 text-green-700 shadow-sm"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50",
                     )}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     transition={spring.snappy}
-                    onClick={() => track('nav_click', { section: item.id })}
+                    onClick={() => track("nav_click", { section: item.id })}
                   >
                     {item.icon && <item.icon className="size-4" />}
                     {item.label}
@@ -201,18 +224,18 @@ export default function AnimatedHeader() {
                 className="group relative px-6 py-2.5 rounded-2xl font-bold text-white overflow-hidden bg-gradient-to-r from-green-700 to-green-600 shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
                 whileHover={{
                   scale: 1.05,
-                  boxShadow: '0 20px 40px rgba(20, 184, 166, 0.3)',
+                  boxShadow: "0 20px 40px rgba(20, 184, 166, 0.3)",
                 }}
                 whileTap={{ scale: 0.95 }}
                 transition={spring.snappy}
-                onClick={() => track('cta_header_get_quote')}
+                onClick={() => track("cta_header_get_quote")}
               >
                 {/* Enhanced shimmer effect */}
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-green-500/20 to-transparent"
-                  initial={{ x: '-100%' }}
-                  whileHover={{ x: '100%' }}
-                  transition={{ duration: 1.2, ease: 'easeInOut' }}
+                  initial={{ x: "-100%" }}
+                  whileHover={{ x: "100%" }}
+                  transition={{ duration: 1.2, ease: "easeInOut" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-green-800 to-green-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span className="relative z-10">Get Quote</span>
@@ -248,13 +271,13 @@ export default function AnimatedHeader() {
               href="tel:1-888-915-YARD"
               data-analytics="header_phone_call"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-green-700 to-green-600 text-white font-semibold shadow-lg text-sm"
-              whileHover={{ 
+              whileHover={{
                 scale: 1.05,
-                boxShadow: '0 10px 25px rgba(123, 179, 105, 0.3)'
+                boxShadow: "0 10px 25px rgba(123, 179, 105, 0.3)",
               }}
               whileTap={{ scale: 0.95 }}
               transition={spring.snappy}
-              onClick={() => track('header_phone_call')}
+              onClick={() => track("header_phone_call")}
             >
               <PhoneCall className="size-4" />
               <span className="hidden sm:inline">Call</span>
@@ -264,13 +287,13 @@ export default function AnimatedHeader() {
               href="/quote?businessId=yardura"
               data-analytics="cta_quote"
               className="px-4 py-2 rounded-2xl bg-slate-900 text-white font-bold shadow-lg text-sm"
-              whileHover={{ 
+              whileHover={{
                 scale: 1.05,
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
+                boxShadow: "0 10px 25px rgba(0, 0, 0, 0.3)",
               }}
               whileTap={{ scale: 0.95 }}
               transition={spring.snappy}
-              onClick={() => track('cta_header_get_quote')}
+              onClick={() => track("cta_header_get_quote")}
             >
               Quote
             </motion.a>
@@ -278,7 +301,7 @@ export default function AnimatedHeader() {
             <motion.button
               onClick={handleMenuToggle}
               className="p-3 rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200 hover:bg-white hover:border-green-300 transition-all duration-200 shadow-lg"
-              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMenuOpen}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -286,13 +309,17 @@ export default function AnimatedHeader() {
             >
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={isMenuOpen ? 'close' : 'open'}
+                  key={isMenuOpen ? "close" : "open"}
                   initial={{ rotate: -90, opacity: 0 }}
                   animate={{ rotate: 0, opacity: 1 }}
                   exit={{ rotate: 90, opacity: 0 }}
                   transition={{ duration: dur.fast }}
                 >
-                  {isMenuOpen ? <X className="size-5 text-slate-700" /> : <Menu className="size-5 text-slate-700" />}
+                  {isMenuOpen ? (
+                    <X className="size-5 text-slate-700" />
+                  ) : (
+                    <Menu className="size-5 text-slate-700" />
+                  )}
                 </motion.div>
               </AnimatePresence>
             </motion.button>
@@ -307,7 +334,7 @@ export default function AnimatedHeader() {
               role="dialog"
               aria-modal="true"
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={spring.soft}
             >
@@ -317,10 +344,10 @@ export default function AnimatedHeader() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'block px-4 py-3 rounded-2xl font-medium transition-all duration-200 flex items-center gap-3',
-                      activeId === item.id 
-                        ? 'bg-green-100 text-green-700 shadow-sm border border-green-200' 
-                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                      "block px-4 py-3 rounded-2xl font-medium transition-all duration-200 flex items-center gap-3",
+                      activeId === item.id
+                        ? "bg-green-100 text-green-700 shadow-sm border border-green-200"
+                        : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
                     )}
                     onClick={() => setIsMenuOpen(false)}
                     initial={{ x: -20, opacity: 0 }}
@@ -329,10 +356,14 @@ export default function AnimatedHeader() {
                     whileHover={{ scale: 1.02, x: 4 }}
                   >
                     {item.icon && (
-                      <div className={cn(
-                        'flex items-center justify-center w-8 h-8 rounded-xl',
-                        activeId === item.id ? 'bg-green-200' : 'bg-slate-100'
-                      )}>
+                      <div
+                        className={cn(
+                          "flex items-center justify-center w-8 h-8 rounded-xl",
+                          activeId === item.id
+                            ? "bg-green-200"
+                            : "bg-slate-100",
+                        )}
+                      >
                         <item.icon className="size-4" />
                       </div>
                     )}
@@ -353,7 +384,7 @@ export default function AnimatedHeader() {
                     onClick={() => setIsMenuOpen(false)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClickCapture={() => track('cta_header_get_quote')}
+                    onClickCapture={() => track("cta_header_get_quote")}
                   >
                     Get My Quote
                   </motion.a>
@@ -364,7 +395,7 @@ export default function AnimatedHeader() {
                       onClick={() => setIsMenuOpen(false)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClickCapture={() => track('cta_header_signup')}
+                      onClickCapture={() => track("cta_header_signup")}
                     >
                       Sign Up
                     </motion.a>
@@ -374,7 +405,7 @@ export default function AnimatedHeader() {
                       onClick={() => setIsMenuOpen(false)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClickCapture={() => track('cta_header_login')}
+                      onClickCapture={() => track("cta_header_login")}
                     >
                       Log In
                     </motion.a>

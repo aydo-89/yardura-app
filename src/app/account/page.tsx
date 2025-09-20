@@ -1,14 +1,14 @@
-import { redirect } from 'next/navigation';
-import { safeGetServerSession } from '@/lib/auth';
-import AccountPageClient from '@/components/account/AccountPageClient';
-import UserLayout from '@/components/layout/UserLayout';
+import { redirect } from "next/navigation";
+import { safeGetServerSession } from "@/lib/auth";
+import AccountPageClient from "@/components/account/AccountPageClient";
+import UserLayout from "@/components/layout/UserLayout";
 
 export default async function AccountPage() {
   // Check authentication on server side
   const session = await safeGetServerSession({
     callbacks: {
       session: async ({ session, token }: any) => {
-        if (token?.uid && typeof token.uid === 'string') {
+        if (token?.uid && typeof token.uid === "string") {
           (session.user as any).id = token.uid;
         }
         return session;
@@ -23,7 +23,7 @@ export default async function AccountPage() {
   });
 
   if (!session?.user?.email) {
-    redirect('/signin?callbackUrl=/account');
+    redirect("/signin?callbackUrl=/account");
   }
 
   // Return client component wrapped in user layout

@@ -1,5 +1,5 @@
 // Refactor: extracted from legacy DashboardClientNew; removed mock wellness code and duplicates.
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   User,
   Heart,
@@ -12,17 +12,17 @@ import {
   Clock,
   MapPin,
   Settings,
-} from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import type { User as UserType, Dog } from '../types';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import type { User as UserType, Dog } from "../types";
 
 interface ProfileTabProps {
   user: UserType;
@@ -38,32 +38,33 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
 
   // Form states
   const [profileData, setProfileData] = useState({
-    name: user.name || '',
-    phone: user.phone || '',
-    address: user.address || '',
-    city: user.city || '',
-    zipCode: user.zipCode || '',
-    preferredDay: user.preferredDay || '',
-    preferredTime: user.preferredTime || '',
-    serviceAreas: user.serviceAreas || ['Front Yard', 'Back Yard'],
-    specialInstructions: user.specialInstructions || '',
+    name: user.name || "",
+    phone: user.phone || "",
+    address: user.address || "",
+    city: user.city || "",
+    zipCode: user.zipCode || "",
+    preferredDay: user.preferredDay || "",
+    preferredTime: user.preferredTime || "",
+    serviceAreas: user.serviceAreas || ["Front Yard", "Back Yard"],
+    specialInstructions: user.specialInstructions || "",
   });
 
   const [dogFormData, setDogFormData] = useState({
-    name: '',
-    breed: '',
-    age: '',
-    weight: '',
+    name: "",
+    breed: "",
+    age: "",
+    weight: "",
   });
 
   // Success/error states
   const [profileMessage, setProfileMessage] = useState<{
-    type: 'success' | 'error';
+    type: "success" | "error";
     text: string;
   } | null>(null);
-  const [dogMessage, setDogMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(
-    null
-  );
+  const [dogMessage, setDogMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const handleProfileUpdate = async () => {
     setSavingProfile(true);
@@ -74,13 +75,19 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Update would happen here
-      setProfileMessage({ type: 'success', text: 'Profile updated successfully!' });
+      setProfileMessage({
+        type: "success",
+        text: "Profile updated successfully!",
+      });
       setIsEditingProfile(false);
 
       // Clear message after 3 seconds
       setTimeout(() => setProfileMessage(null), 3000);
     } catch (error) {
-      setProfileMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
+      setProfileMessage({
+        type: "error",
+        text: "Failed to update profile. Please try again.",
+      });
     } finally {
       setSavingProfile(false);
     }
@@ -94,42 +101,51 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const message = isNew ? 'Dog added successfully!' : 'Dog updated successfully!';
-      setDogMessage({ type: 'success', text: message });
+      const message = isNew
+        ? "Dog added successfully!"
+        : "Dog updated successfully!";
+      setDogMessage({ type: "success", text: message });
 
       // Reset form
-      setDogFormData({ name: '', breed: '', age: '', weight: '' });
+      setDogFormData({ name: "", breed: "", age: "", weight: "" });
       setIsEditingDog(null);
       setIsAddingDog(false);
 
       // Clear message after 3 seconds
       setTimeout(() => setDogMessage(null), 3000);
     } catch (error) {
-      setDogMessage({ type: 'error', text: 'Failed to save dog information. Please try again.' });
+      setDogMessage({
+        type: "error",
+        text: "Failed to save dog information. Please try again.",
+      });
     } finally {
       setSavingDog(false);
     }
   };
 
   const handleDeleteDog = async (dogId: string) => {
-    if (!confirm('Are you sure you want to remove this dog from your profile?')) return;
+    if (!confirm("Are you sure you want to remove this dog from your profile?"))
+      return;
 
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 500));
-      setDogMessage({ type: 'success', text: 'Dog removed successfully!' });
+      setDogMessage({ type: "success", text: "Dog removed successfully!" });
       setTimeout(() => setDogMessage(null), 3000);
     } catch (error) {
-      setDogMessage({ type: 'error', text: 'Failed to remove dog. Please try again.' });
+      setDogMessage({
+        type: "error",
+        text: "Failed to remove dog. Please try again.",
+      });
     }
   };
 
   const startEditDog = (dog: Dog) => {
     setDogFormData({
       name: dog.name,
-      breed: dog.breed || '',
-      age: dog.age?.toString() || '',
-      weight: dog.weight?.toString() || '',
+      breed: dog.breed || "",
+      age: dog.age?.toString() || "",
+      weight: dog.weight?.toString() || "",
     });
     setIsEditingDog(dog.id);
   };
@@ -141,7 +157,9 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
         <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-2xl mb-4">
           <User className="size-8 text-purple-600" />
         </div>
-        <h2 className="text-3xl font-bold text-slate-900 mb-2">Account Profile</h2>
+        <h2 className="text-3xl font-bold text-slate-900 mb-2">
+          Account Profile
+        </h2>
         <p className="text-slate-600 max-w-2xl mx-auto">
           Manage your personal information, contact details, and dog profiles
         </p>
@@ -151,13 +169,13 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
       {profileMessage && (
         <div
           className={`p-4 rounded-lg border ${
-            profileMessage.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+            profileMessage.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-red-50 border-red-200 text-red-800"
           }`}
         >
           <div className="flex items-center gap-2">
-            {profileMessage.type === 'success' ? (
+            {profileMessage.type === "success" ? (
               <CheckCircle className="size-4" />
             ) : (
               <AlertCircle className="size-4" />
@@ -170,13 +188,13 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
       {dogMessage && (
         <div
           className={`p-4 rounded-lg border ${
-            dogMessage.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+            dogMessage.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-red-50 border-red-200 text-red-800"
           }`}
         >
           <div className="flex items-center gap-2">
-            {dogMessage.type === 'success' ? (
+            {dogMessage.type === "success" ? (
               <CheckCircle className="size-4" />
             ) : (
               <AlertCircle className="size-4" />
@@ -191,15 +209,19 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
         <div className="p-6 border-b border-slate-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">Personal Information</h3>
-              <p className="text-slate-600 text-sm">Update your contact details and address</p>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Personal Information
+              </h3>
+              <p className="text-slate-600 text-sm">
+                Update your contact details and address
+              </p>
             </div>
             <button
               onClick={() => setIsEditingProfile(!isEditingProfile)}
               className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium flex items-center gap-2"
             >
               <Edit className="size-4" />
-              {isEditingProfile ? 'Cancel' : 'Edit Profile'}
+              {isEditingProfile ? "Cancel" : "Edit Profile"}
             </button>
           </div>
         </div>
@@ -209,11 +231,15 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
             <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-900 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-slate-900 mb-1">
+                    Full Name
+                  </label>
                   <input
                     type="text"
                     value={profileData.name}
-                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, name: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Enter your full name"
                   />
@@ -225,7 +251,9 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
                   <input
                     type="tel"
                     value={profileData.phone}
-                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, phone: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="(555) 123-4567"
                   />
@@ -237,27 +265,43 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
                   <input
                     type="text"
                     value={profileData.address}
-                    onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                    onChange={(e) =>
+                      setProfileData({
+                        ...profileData,
+                        address: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="123 Main Street"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-900 mb-1">City</label>
+                  <label className="block text-sm font-medium text-slate-900 mb-1">
+                    City
+                  </label>
                   <input
                     type="text"
                     value={profileData.city}
-                    onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, city: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="City"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-900 mb-1">ZIP Code</label>
+                  <label className="block text-sm font-medium text-slate-900 mb-1">
+                    ZIP Code
+                  </label>
                   <input
                     type="text"
                     value={profileData.zipCode}
-                    onChange={(e) => setProfileData({ ...profileData, zipCode: e.target.value })}
+                    onChange={(e) =>
+                      setProfileData({
+                        ...profileData,
+                        zipCode: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="12345"
                   />
@@ -295,33 +339,41 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
               <div className="space-y-4">
                 <div>
                   <div className="text-sm text-slate-600">Full Name</div>
-                  <div className="font-medium text-slate-900">{profileData.name || 'Not set'}</div>
+                  <div className="font-medium text-slate-900">
+                    {profileData.name || "Not set"}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">Email Address</div>
                   <div className="font-medium text-slate-900">{user.email}</div>
-                  <div className="text-xs text-slate-500 mt-1">Email cannot be changed</div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    Email cannot be changed
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">Phone Number</div>
-                  <div className="font-medium text-slate-900">{profileData.phone || 'Not set'}</div>
+                  <div className="font-medium text-slate-900">
+                    {profileData.phone || "Not set"}
+                  </div>
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
                   <div className="text-sm text-slate-600">Street Address</div>
                   <div className="font-medium text-slate-900">
-                    {profileData.address || 'Not set'}
+                    {profileData.address || "Not set"}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">City</div>
-                  <div className="font-medium text-slate-900">{profileData.city || 'Not set'}</div>
+                  <div className="font-medium text-slate-900">
+                    {profileData.city || "Not set"}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-slate-600">ZIP Code</div>
                   <div className="font-medium text-slate-900">
-                    {profileData.zipCode || 'Not set'}
+                    {profileData.zipCode || "Not set"}
                   </div>
                 </div>
               </div>
@@ -335,14 +387,16 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
         <div className="p-6 border-b border-slate-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">Dog Profiles</h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Dog Profiles
+              </h3>
               <p className="text-slate-600 text-sm">
                 Manage information for your furry family members
               </p>
             </div>
             <button
               onClick={() => {
-                setDogFormData({ name: '', breed: '', age: '', weight: '' });
+                setDogFormData({ name: "", breed: "", age: "", weight: "" });
                 setIsAddingDog(true);
               }}
               className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium flex items-center gap-2"
@@ -358,7 +412,7 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
           {(isAddingDog || isEditingDog) && (
             <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
               <h4 className="text-sm font-semibold text-purple-900 mb-4">
-                {isAddingDog ? 'Add New Dog' : 'Edit Dog Information'}
+                {isAddingDog ? "Add New Dog" : "Edit Dog Information"}
               </h4>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -368,17 +422,23 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
                   <input
                     type="text"
                     value={dogFormData.name}
-                    onChange={(e) => setDogFormData({ ...dogFormData, name: e.target.value })}
+                    onChange={(e) =>
+                      setDogFormData({ ...dogFormData, name: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Enter dog's name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-purple-900 mb-1">Breed</label>
+                  <label className="block text-sm font-medium text-purple-900 mb-1">
+                    Breed
+                  </label>
                   <input
                     type="text"
                     value={dogFormData.breed}
-                    onChange={(e) => setDogFormData({ ...dogFormData, breed: e.target.value })}
+                    onChange={(e) =>
+                      setDogFormData({ ...dogFormData, breed: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="e.g., Golden Retriever"
                   />
@@ -390,7 +450,9 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
                   <input
                     type="number"
                     value={dogFormData.age}
-                    onChange={(e) => setDogFormData({ ...dogFormData, age: e.target.value })}
+                    onChange={(e) =>
+                      setDogFormData({ ...dogFormData, age: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="2"
                     min="0"
@@ -404,7 +466,9 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
                   <input
                     type="text"
                     value={dogFormData.weight}
-                    onChange={(e) => setDogFormData({ ...dogFormData, weight: e.target.value })}
+                    onChange={(e) =>
+                      setDogFormData({ ...dogFormData, weight: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="45"
                   />
@@ -415,7 +479,12 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
                   onClick={() => {
                     setIsAddingDog(false);
                     setIsEditingDog(null);
-                    setDogFormData({ name: '', breed: '', age: '', weight: '' });
+                    setDogFormData({
+                      name: "",
+                      breed: "",
+                      age: "",
+                      weight: "",
+                    });
                   }}
                   className="px-4 py-2 text-purple-600 hover:text-purple-800"
                   disabled={savingDog}
@@ -435,7 +504,7 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
                   ) : (
                     <>
                       <Save className="size-4" />
-                      {isAddingDog ? 'Add Dog' : 'Update Dog'}
+                      {isAddingDog ? "Add Dog" : "Update Dog"}
                     </>
                   )}
                 </button>
@@ -456,9 +525,11 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
                       <Heart className="size-5 text-amber-600" />
                     </div>
                     <div>
-                      <div className="font-medium text-slate-900">{dog.name}</div>
+                      <div className="font-medium text-slate-900">
+                        {dog.name}
+                      </div>
                       <div className="text-sm text-slate-600">
-                        {dog.breed || 'Breed not specified'}
+                        {dog.breed || "Breed not specified"}
                       </div>
                     </div>
                   </div>
@@ -484,13 +555,15 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
                   <div>
                     <div className="text-slate-600">Age</div>
                     <div className="font-medium text-slate-900">
-                      {dog.age ? `${dog.age} year${dog.age !== 1 ? 's' : ''}` : 'Not set'}
+                      {dog.age
+                        ? `${dog.age} year${dog.age !== 1 ? "s" : ""}`
+                        : "Not set"}
                     </div>
                   </div>
                   <div>
                     <div className="text-slate-600">Weight</div>
                     <div className="font-medium text-slate-900">
-                      {dog.weight ? `${dog.weight} lbs` : 'Not set'}
+                      {dog.weight ? `${dog.weight} lbs` : "Not set"}
                     </div>
                   </div>
                 </div>
@@ -511,28 +584,35 @@ export default function ProfileTab({ user, dogs }: ProfileTabProps) {
       {/* Account Summary */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-6 border-b border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900">Account Summary</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Account Summary
+          </h3>
         </div>
 
         <div className="p-6">
           <div className="grid md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-slate-900 mb-1">{dogs.length}</div>
+              <div className="text-2xl font-bold text-slate-900 mb-1">
+                {dogs.length}
+              </div>
               <div className="text-sm text-slate-600">Registered Dogs</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-slate-900 mb-1">
-                {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                {new Date().toLocaleDateString("en-US", {
+                  month: "short",
+                  year: "numeric",
+                })}
               </div>
               <div className="text-sm text-slate-600">Member Since</div>
             </div>
             <div className="text-center">
               <div
                 className={`text-2xl font-bold mb-1 ${
-                  user.stripeCustomerId ? 'text-green-600' : 'text-yellow-600'
+                  user.stripeCustomerId ? "text-green-600" : "text-yellow-600"
                 }`}
               >
-                {user.stripeCustomerId ? 'Active' : 'Inactive'}
+                {user.stripeCustomerId ? "Active" : "Inactive"}
               </div>
               <div className="text-sm text-slate-600">Account Status</div>
             </div>

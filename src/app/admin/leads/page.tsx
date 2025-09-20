@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import React, { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Mail,
   Phone,
@@ -23,7 +23,7 @@ import {
   Search,
   User,
   Building,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface Lead {
   id: string;
@@ -56,21 +56,25 @@ export default function AdminLeadsPage() {
   // All useState hooks MUST be called before any conditional logic
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    if (status === 'loading') return; // Still loading
+    if (status === "loading") return; // Still loading
 
     const userRole = (session as any)?.userRole;
-    const isAdmin = userRole === 'ADMIN' || userRole === 'OWNER' || userRole === 'TECH' || userRole === 'SALES_REP';
+    const isAdmin =
+      userRole === "ADMIN" ||
+      userRole === "OWNER" ||
+      userRole === "TECH" ||
+      userRole === "SALES_REP";
 
     if (!session || !isAdmin) {
-      router.push('/dashboard');
+      router.push("/dashboard");
       return;
     }
   }, [session, status, router]);
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
@@ -84,19 +88,19 @@ export default function AdminLeadsPage() {
 
   const fetchLeads = async () => {
     try {
-      const response = await fetch('/api/admin/leads');
+      const response = await fetch("/api/admin/leads");
       if (response.ok) {
         const data = await response.json();
         setLeads(data.leads);
       }
     } catch (error) {
-      console.error('Error fetching leads:', error);
+      console.error("Error fetching leads:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filteredLeads = leads.filter(lead => {
+  const filteredLeads = leads.filter((lead) => {
     const matchesSearch =
       lead.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,19 +111,21 @@ export default function AdminLeadsPage() {
   });
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getServiceTypeIcon = (serviceType: string) => {
-    return serviceType === 'commercial' ? Building : User;
+    return serviceType === "commercial" ? Building : User;
   };
 
   const getServiceTypeColor = (serviceType: string) => {
-    return serviceType === 'commercial' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+    return serviceType === "commercial"
+      ? "bg-purple-100 text-purple-800"
+      : "bg-blue-100 text-blue-800";
   };
 
   if (isLoading) {
@@ -157,7 +163,9 @@ export default function AdminLeadsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Leads</p>
-                <p className="text-2xl font-bold text-gray-900">{leads.length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {leads.length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -172,7 +180,7 @@ export default function AdminLeadsPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Residential</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {leads.filter(l => l.serviceType === 'residential').length}
+                  {leads.filter((l) => l.serviceType === "residential").length}
                 </p>
               </div>
             </div>
@@ -188,7 +196,7 @@ export default function AdminLeadsPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Commercial</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {leads.filter(l => l.serviceType === 'commercial').length}
+                  {leads.filter((l) => l.serviceType === "commercial").length}
                 </p>
               </div>
             </div>
@@ -204,11 +212,15 @@ export default function AdminLeadsPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">This Week</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {leads.filter(l => {
-                    const leadDate = new Date(l.submittedAt);
-                    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-                    return leadDate > weekAgo;
-                  }).length}
+                  {
+                    leads.filter((l) => {
+                      const leadDate = new Date(l.submittedAt);
+                      const weekAgo = new Date(
+                        Date.now() - 7 * 24 * 60 * 60 * 1000,
+                      );
+                      return leadDate > weekAgo;
+                    }).length
+                  }
                 </p>
               </div>
             </div>
@@ -265,20 +277,25 @@ export default function AdminLeadsPage() {
                           <Phone className="w-3 h-3" />
                           {lead.phone}
                         </div>
-                        {(lead.preferredContactMethod || (lead.preferredContactMethods && lead.preferredContactMethods.length > 0)) && (
+                        {(lead.preferredContactMethod ||
+                          (lead.preferredContactMethods &&
+                            lead.preferredContactMethods.length > 0)) && (
                           <div className="text-xs text-gray-500">
-                            Preferred contact:{' '}
-                            {lead.preferredContactMethod || lead.preferredContactMethods?.join(', ')}
+                            Preferred contact:{" "}
+                            {lead.preferredContactMethod ||
+                              lead.preferredContactMethods?.join(", ")}
                           </div>
                         )}
-                        {(lead.preferredStartDate) && (
+                        {lead.preferredStartDate && (
                           <div className="text-xs text-gray-500">
-                            Preferred start: {formatDate(lead.preferredStartDate)}
+                            Preferred start:{" "}
+                            {formatDate(lead.preferredStartDate)}
                           </div>
                         )}
                         {(lead.howDidYouHear || lead.referralSource) && (
                           <div className="text-xs text-gray-500">
-                            Heard via: {lead.howDidYouHear || lead.referralSource}
+                            Heard via:{" "}
+                            {lead.howDidYouHear || lead.referralSource}
                           </div>
                         )}
                         {lead.specialInstructions && (
@@ -292,12 +309,15 @@ export default function AdminLeadsPage() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <ServiceIcon className="w-4 h-4" />
-                          <Badge className={getServiceTypeColor(lead.serviceType)}>
+                          <Badge
+                            className={getServiceTypeColor(lead.serviceType)}
+                          >
                             {lead.serviceType}
                           </Badge>
                         </div>
                         <div className="text-sm text-gray-600">
-                          {lead.dogs} dog{lead.dogs !== 1 ? 's' : ''}, {lead.yardSize}, {lead.frequency?.replace('-', ' ')}
+                          {lead.dogs} dog{lead.dogs !== 1 ? "s" : ""},{" "}
+                          {lead.yardSize}, {lead.frequency?.replace("-", " ")}
                         </div>
                       </div>
                     </TableCell>
@@ -333,7 +353,9 @@ export default function AdminLeadsPage() {
 
           {filteredLeads.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500">No leads found matching your criteria.</p>
+              <p className="text-gray-500">
+                No leads found matching your criteria.
+              </p>
             </div>
           )}
         </CardContent>

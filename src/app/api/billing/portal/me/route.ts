@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
-import { safeGetServerSession } from '@/lib/auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { stripe } from "@/lib/stripe";
+import { safeGetServerSession } from "@/lib/auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(_req: NextRequest) {
   const session = (await safeGetServerSession(authOptions as any)) as {
@@ -12,12 +12,13 @@ export async function POST(_req: NextRequest) {
     ? await prisma.user.findUnique({ where: { id: session.user.id } })
     : null;
   const customerId = user?.stripeCustomerId;
-  if (!customerId) return NextResponse.json({ error: 'no_customer' }, { status: 400 });
+  if (!customerId)
+    return NextResponse.json({ error: "no_customer" }, { status: 400 });
   const sessionPortal = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    return_url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   });
   return NextResponse.json({ url: sessionPortal.url });
 }
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";

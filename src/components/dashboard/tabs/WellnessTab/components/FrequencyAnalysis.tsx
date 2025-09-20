@@ -1,8 +1,8 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp } from 'lucide-react';
-import { Disclosure } from './Disclosure';
-import { wellnessTheme } from '@/shared/wellness';
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp } from "lucide-react";
+import { Disclosure } from "./Disclosure";
+import { wellnessTheme } from "@/shared/wellness";
 
 interface FrequencyAnalysisProps {
   weeklyData: Array<{
@@ -20,7 +20,8 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
   const depositsPerWeek = weeklyData.map((week) => week.deposits);
   const avgDeposits =
     depositsPerWeek.length > 0
-      ? depositsPerWeek.reduce((sum, count) => sum + count, 0) / depositsPerWeek.length
+      ? depositsPerWeek.reduce((sum, count) => sum + count, 0) /
+        depositsPerWeek.length
       : 0;
   const minDeposits = Math.min(...depositsPerWeek.filter((d) => d > 0), 0); // Exclude zeros for min calculation
   const maxDeposits = Math.max(...depositsPerWeek, 0);
@@ -39,14 +40,21 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
   // Calculate weekly variation (per dog)
   const variation = maxDepositsPerDogPerWeek - minDepositsPerDogPerWeek;
   const consistency =
-    variation <= 0.5 ? 'Very Consistent' : variation <= 1 ? 'Moderately Consistent' : 'Variable';
+    variation <= 0.5
+      ? "Very Consistent"
+      : variation <= 1
+        ? "Moderately Consistent"
+        : "Variable";
 
   // Get frequency range description (per dog per week)
   const getFrequencyDescription = (avgPerDog: number) => {
-    if (avgPerDog < 10) return 'Below normal - may indicate constipation or illness';
-    if (avgPerDog >= 10 && avgPerDog <= 18) return 'Normal range for healthy dogs (1.4-2.6/day)';
-    if (avgPerDog > 18 && avgPerDog <= 25) return 'Above normal - monitor for diarrhea';
-    return 'Very high - consult veterinarian';
+    if (avgPerDog < 10)
+      return "Below normal - may indicate constipation or illness";
+    if (avgPerDog >= 10 && avgPerDog <= 18)
+      return "Normal range for healthy dogs (1.4-2.6/day)";
+    if (avgPerDog > 18 && avgPerDog <= 25)
+      return "Above normal - monitor for diarrhea";
+    return "Very high - consult veterinarian";
   };
 
   return (
@@ -65,7 +73,7 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
           </CardTitle>
           {dogCount > 1 && (
             <div className="text-sm text-slate-600 mt-1">
-              Based on {dogCount} dog{dogCount !== 1 ? 's' : ''} in household
+              Based on {dogCount} dog{dogCount !== 1 ? "s" : ""} in household
             </div>
           )}
         </CardHeader>
@@ -94,10 +102,12 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
                 </div>
                 <div className="text-right">
                   <span className="text-sm font-bold text-sky-600">
-                    {minDepositsPerDogPerDay.toFixed(1)}-{maxDepositsPerDogPerDay.toFixed(1)}/day
+                    {minDepositsPerDogPerDay.toFixed(1)}-
+                    {maxDepositsPerDogPerDay.toFixed(1)}/day
                   </span>
                   <span className="text-xs text-slate-500 block">
-                    ({minDepositsPerDogPerWeek.toFixed(1)}-{maxDepositsPerDogPerWeek.toFixed(1)}
+                    ({minDepositsPerDogPerWeek.toFixed(1)}-
+                    {maxDepositsPerDogPerWeek.toFixed(1)}
                     /week)
                   </span>
                 </div>
@@ -106,14 +116,19 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
 
             {/* Beautiful frequency visualization like insights.tsx */}
             <div className="space-y-3">
-              <div className="text-xs text-slate-600 text-center font-medium">Weekly Pattern</div>
+              <div className="text-xs text-slate-600 text-center font-medium">
+                Weekly Pattern
+              </div>
               <div className="bg-white rounded-lg border p-4">
                 <div className="flex items-end justify-center gap-2 h-12 mb-2">
                   {weeklyData.slice(-7).map((week, i) => {
                     const depositsPerDog = week.deposits / dogCount;
-                    const maxDepositsPerDog = Math.max(...depositsPerWeek) / dogCount;
+                    const maxDepositsPerDog =
+                      Math.max(...depositsPerWeek) / dogCount;
                     const heightPercent =
-                      depositsPerDog > 0 ? (depositsPerDog / maxDepositsPerDog) * 100 : 0;
+                      depositsPerDog > 0
+                        ? (depositsPerDog / maxDepositsPerDog) * 100
+                        : 0;
                     return (
                       <div
                         key={i}
@@ -134,24 +149,26 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
             <div
               className={`p-4 rounded-lg border ${
                 avgDepositsPerDogPerWeek >= 10 && avgDepositsPerDogPerWeek <= 18
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-yellow-50 border-yellow-200'
+                  ? "bg-green-50 border-green-200"
+                  : "bg-yellow-50 border-yellow-200"
               }`}
             >
               <div
                 className={`text-sm font-medium mb-2 ${
-                  avgDepositsPerDogPerWeek >= 10 && avgDepositsPerDogPerWeek <= 18
-                    ? 'text-green-800'
-                    : 'text-yellow-800'
+                  avgDepositsPerDogPerWeek >= 10 &&
+                  avgDepositsPerDogPerWeek <= 18
+                    ? "text-green-800"
+                    : "text-yellow-800"
                 }`}
               >
                 Frequency Assessment
               </div>
               <div
                 className={`text-sm ${
-                  avgDepositsPerDogPerWeek >= 10 && avgDepositsPerDogPerWeek <= 18
-                    ? 'text-green-700'
-                    : 'text-yellow-700'
+                  avgDepositsPerDogPerWeek >= 10 &&
+                  avgDepositsPerDogPerWeek <= 18
+                    ? "text-green-700"
+                    : "text-yellow-700"
                 }`}
               >
                 {getFrequencyDescription(avgDepositsPerDogPerWeek)}

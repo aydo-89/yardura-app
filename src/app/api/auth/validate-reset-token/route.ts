@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database-access';
+import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/database-access";
 
 const prisma = getDb();
 
@@ -8,10 +8,7 @@ export async function POST(request: NextRequest) {
     const { token } = await request.json();
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'Token is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Token is required" }, { status: 400 });
     }
 
     // Find account with this reset token
@@ -35,8 +32,8 @@ export async function POST(request: NextRequest) {
 
     if (!account) {
       return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 400 }
+        { error: "Invalid or expired token" },
+        { status: 400 },
       );
     }
 
@@ -47,10 +44,10 @@ export async function POST(request: NextRequest) {
       name: account.user.name,
     });
   } catch (error) {
-    console.error('Token validation error:', error);
+    console.error("Token validation error:", error);
     return NextResponse.json(
-      { error: 'An error occurred while validating the token' },
-      { status: 500 }
+      { error: "An error occurred while validating the token" },
+      { status: 500 },
     );
   }
 }

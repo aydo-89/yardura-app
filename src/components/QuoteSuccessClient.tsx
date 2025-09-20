@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
   Mail,
@@ -15,10 +15,10 @@ import {
   Heart,
   Shield,
   Building,
-} from 'lucide-react';
-import Reveal from '@/components/Reveal';
-import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
-import Link from 'next/link';
+} from "lucide-react";
+import Reveal from "@/components/Reveal";
+import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import Link from "next/link";
 
 export default function QuoteSuccessClient() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function QuoteSuccessClient() {
   useEffect(() => {
     // Handle search params on client side
     const searchParams = new URLSearchParams(window.location.search);
-    setIsCommercial(searchParams.get('commercial') === 'true');
+    setIsCommercial(searchParams.get("commercial") === "true");
   }, []);
 
   return (
@@ -40,19 +40,21 @@ export default function QuoteSuccessClient() {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
               className="inline-flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mb-6"
             >
               <CheckCircle className="size-12 text-green-600" />
             </motion.div>
 
             <h1 className="text-4xl md:text-5xl font-extrabold text-ink mb-4">
-              {isCommercial ? 'Commercial Quote Submitted!' : 'Welcome to Yardura!'}
+              {isCommercial
+                ? "Commercial Quote Submitted!"
+                : "Welcome to Yardura!"}
             </h1>
 
             <p className="text-xl text-muted max-w-2xl mx-auto mb-8">
               {isCommercial
-                ? 'Thank you for your commercial property inquiry. Our team will review your details and contact you within 24 hours with a personalized quote.'
+                ? "Thank you for your commercial property inquiry. Our team will review your details and contact you within 24 hours with a personalized quote."
                 : "Your quote has been confirmed and your account is ready. Let's get your Minneapolis yard sparkling clean!"}
             </p>
 
@@ -102,7 +104,9 @@ export default function QuoteSuccessClient() {
                         1
                       </div>
                       <div>
-                        <h4 className="font-semibold text-ink">Review in Progress</h4>
+                        <h4 className="font-semibold text-ink">
+                          Review in Progress
+                        </h4>
                         <p className="text-sm text-muted">
                           Our commercial team reviews your property details
                         </p>
@@ -114,7 +118,9 @@ export default function QuoteSuccessClient() {
                         2
                       </div>
                       <div>
-                        <h4 className="font-semibold text-ink">Custom Quote Sent</h4>
+                        <h4 className="font-semibold text-ink">
+                          Custom Quote Sent
+                        </h4>
                         <p className="text-sm text-muted">
                           Receive personalized pricing within 24 hours
                         </p>
@@ -126,7 +132,9 @@ export default function QuoteSuccessClient() {
                         3
                       </div>
                       <div>
-                        <h4 className="font-semibold text-ink">Professional Service</h4>
+                        <h4 className="font-semibold text-ink">
+                          Professional Service
+                        </h4>
                         <p className="text-sm text-muted">
                           Dedicated commercial account management
                         </p>
@@ -140,7 +148,9 @@ export default function QuoteSuccessClient() {
                         1
                       </div>
                       <div>
-                        <h4 className="font-semibold text-ink">Check Your Email</h4>
+                        <h4 className="font-semibold text-ink">
+                          Check Your Email
+                        </h4>
                         <p className="text-sm text-muted">
                           Secure login details sent to your email
                         </p>
@@ -152,8 +162,12 @@ export default function QuoteSuccessClient() {
                         2
                       </div>
                       <div>
-                        <h4 className="font-semibold text-ink">Schedule Your Service</h4>
-                        <p className="text-sm text-muted">Choose your preferred day and time</p>
+                        <h4 className="font-semibold text-ink">
+                          Schedule Your Service
+                        </h4>
+                        <p className="text-sm text-muted">
+                          Choose your preferred day and time
+                        </p>
                       </div>
                     </div>
 
@@ -162,8 +176,12 @@ export default function QuoteSuccessClient() {
                         3
                       </div>
                       <div>
-                        <h4 className="font-semibold text-ink">Enjoy Clean Yards!</h4>
-                        <p className="text-sm text-muted">Weekly eco-friendly service starts</p>
+                        <h4 className="font-semibold text-ink">
+                          Enjoy Clean Yards!
+                        </h4>
+                        <p className="text-sm text-muted">
+                          Weekly eco-friendly service starts
+                        </p>
                       </div>
                     </div>
                   </>
@@ -186,7 +204,9 @@ export default function QuoteSuccessClient() {
                   <>
                     <div className="flex items-center gap-3">
                       <CheckCircle className="size-5 text-green-600" />
-                      <span className="text-sm">Dedicated commercial account manager</span>
+                      <span className="text-sm">
+                        Dedicated commercial account manager
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -206,7 +226,9 @@ export default function QuoteSuccessClient() {
 
                     <div className="flex items-center gap-3">
                       <CheckCircle className="size-5 text-green-600" />
-                      <span className="text-sm">Property-specific solutions</span>
+                      <span className="text-sm">
+                        Property-specific solutions
+                      </span>
                     </div>
                   </>
                 ) : (
@@ -318,18 +340,22 @@ export default function QuoteSuccessClient() {
             <Card className="bg-gradient-to-r from-accent-soft/30 via-white to-accent-soft/30 border-accent/20 max-w-2xl mx-auto">
               <CardContent className="p-8">
                 <h3 className="text-xl font-bold text-ink mb-3">
-                  {isCommercial ? 'Questions About Your Quote?' : 'Ready to Get Started?'}
+                  {isCommercial
+                    ? "Questions About Your Quote?"
+                    : "Ready to Get Started?"}
                 </h3>
                 <p className="text-muted mb-6">
                   {isCommercial
-                    ? 'Our commercial team is standing by to discuss your specific needs and provide a customized solution for your property.'
-                    : 'Your first eco-friendly dog waste removal service is just a few clicks away. Minneapolis homeowners love our reliable, professional service.'}
+                    ? "Our commercial team is standing by to discuss your specific needs and provide a customized solution for your property."
+                    : "Your first eco-friendly dog waste removal service is just a few clicks away. Minneapolis homeowners love our reliable, professional service."}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   {isCommercial ? (
                     <>
                       <Link href="/contact">
-                        <Button className="btn-gradient">Contact Commercial Team</Button>
+                        <Button className="btn-gradient">
+                          Contact Commercial Team
+                        </Button>
                       </Link>
                       <Link href="tel:+18889159273">
                         <Button variant="outline">Call (888) 915-YARD</Button>
@@ -338,7 +364,9 @@ export default function QuoteSuccessClient() {
                   ) : (
                     <>
                       <Link href="/dashboard">
-                        <Button className="btn-gradient">Go to Dashboard</Button>
+                        <Button className="btn-gradient">
+                          Go to Dashboard
+                        </Button>
                       </Link>
                       <Link href="/schedule">
                         <Button variant="outline">Schedule Now</Button>

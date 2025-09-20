@@ -1,18 +1,23 @@
-import React from 'react';
-import Link from 'next/link';
-import { ArrowRight, Calendar, Clock } from 'lucide-react';
-import { Article } from '@/lib/articles';
+import React from "react";
+import Link from "next/link";
+import { ArrowRight, Calendar, Clock } from "lucide-react";
+import { Article } from "@/lib/articles";
 
 interface RelatedArticlesProps {
   articles: Article[];
   className?: string;
 }
 
-export default function RelatedArticles({ articles, className = '' }: RelatedArticlesProps) {
+export default function RelatedArticles({
+  articles,
+  className = "",
+}: RelatedArticlesProps) {
   if (articles.length === 0) return null;
 
   return (
-    <div className={`bg-white border border-accent/10 rounded-xl p-6 ${className}`}>
+    <div
+      className={`bg-white border border-accent/10 rounded-xl p-6 ${className}`}
+    >
       <h3 className="font-semibold text-ink mb-4 flex items-center gap-2">
         <span className="inline-block w-1 h-4 bg-accent rounded-full"></span>
         Related Articles
@@ -31,10 +36,13 @@ export default function RelatedArticles({ articles, className = '' }: RelatedArt
                   <div className="flex items-center gap-3 text-xs text-muted">
                     <div className="flex items-center gap-1">
                       <Calendar className="size-3" />
-                      {new Date(article.publishedAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                      {new Date(article.publishedAt).toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "numeric",
+                        },
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="size-3" />

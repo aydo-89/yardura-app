@@ -1,5 +1,5 @@
-import { getPublicCities } from '@/lib/cityData';
-import { ArrowRight } from 'lucide-react';
+import { getPublicCities } from "@/lib/cityData";
+import { ArrowRight } from "lucide-react";
 
 export default function Footer() {
   const cities = getPublicCities();
@@ -33,25 +33,41 @@ export default function Footer() {
             <div className="mb-6 max-w-md">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-800/60 border border-slate-700/40 shadow-sm backdrop-blur-sm">
                 <span className="text-slate-300">Achieve</span>
-                <span className="text-green-400 font-bold">Lawn<span className="text-slate-200 font-semibold">gevity</span></span>
+                <span className="text-green-400 font-bold">
+                  Lawn
+                  <span className="text-slate-200 font-semibold">gevity</span>
+                </span>
                 <span className="text-slate-600">•</span>
-                <span className="text-slate-200 font-semibold">Clean Yards</span>
+                <span className="text-slate-200 font-semibold">
+                  Clean Yards
+                </span>
                 <span className="text-slate-600">•</span>
-                <span className="text-slate-200 font-semibold">Healthy Pets</span>
+                <span className="text-slate-200 font-semibold">
+                  Healthy Pets
+                </span>
               </div>
               <p className="mt-3 text-slate-400 leading-relaxed">
-                <span className="font-semibold text-slate-200">Yeller's mission:</span>{' '}
-                Deliver spotless yards and actionable pet wellness insights through premium, eco‑friendly service—making outdoor life cleaner, healthier, and effortless. The world's first pet waste monitoring service.
+                <span className="font-semibold text-slate-200">
+                  Yeller's mission:
+                </span>{" "}
+                Deliver spotless yards and actionable pet wellness insights
+                through premium, eco‑friendly service—making outdoor life
+                cleaner, healthier, and effortless. The world's first pet waste
+                monitoring service.
               </p>
             </div>
             <div className="flex items-center gap-3 p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
               <div className="w-3 h-3 bg-green-700 rounded-full animate-pulse shadow-sm"></div>
-              <span className="font-medium text-slate-300">Mon–Fri 8am–6pm • Sat 10am–4pm</span>
+              <span className="font-medium text-slate-300">
+                Mon–Fri 8am–6pm • Sat 10am–4pm
+              </span>
             </div>
           </div>
 
           <div>
-            <div className="font-bold text-white mb-6 text-lg">Twin Cities Coverage</div>
+            <div className="font-bold text-white mb-6 text-lg">
+              Twin Cities Coverage
+            </div>
             <div className="space-y-3">
               {cities.slice(0, 5).map((city) => (
                 <p key={city.name}>
@@ -79,22 +95,34 @@ export default function Footer() {
             <div className="font-bold text-white mb-6 text-lg">Services</div>
             <div className="space-y-3">
               <p>
-                <a href="#services" className="text-slate-400 hover:text-teal-700 transition-all duration-300 hover:translate-x-1 inline-block font-medium">
+                <a
+                  href="#services"
+                  className="text-slate-400 hover:text-teal-700 transition-all duration-300 hover:translate-x-1 inline-block font-medium"
+                >
                   Dog Waste Removal
                 </a>
               </p>
               <p>
-                <a href="#pricing" className="text-slate-400 hover:text-teal-700 transition-all duration-300 hover:translate-x-1 inline-block font-medium">
+                <a
+                  href="#pricing"
+                  className="text-slate-400 hover:text-teal-700 transition-all duration-300 hover:translate-x-1 inline-block font-medium"
+                >
                   Pricing Plans
                 </a>
               </p>
               <p>
-                <a href="#insights" className="text-slate-400 hover:text-teal-700 transition-all duration-300 hover:translate-x-1 inline-block font-medium">
+                <a
+                  href="#insights"
+                  className="text-slate-400 hover:text-teal-700 transition-all duration-300 hover:translate-x-1 inline-block font-medium"
+                >
                   Health Insights
                 </a>
               </p>
               <p>
-                <a href="#eco" className="text-slate-400 hover:text-teal-700 transition-all duration-300 hover:translate-x-1 inline-block font-medium">
+                <a
+                  href="#eco"
+                  className="text-slate-400 hover:text-teal-700 transition-all duration-300 hover:translate-x-1 inline-block font-medium"
+                >
                   Eco Impact
                 </a>
               </p>
@@ -106,10 +134,22 @@ export default function Footer() {
         <div className="border-t border-slate-700/50 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-6 text-sm text-slate-400">
-              <span className="font-medium">© {new Date().getFullYear()} Yardura. All rights reserved.</span>
+              <span className="font-medium">
+                © {new Date().getFullYear()} Yardura. All rights reserved.
+              </span>
               <div className="flex items-center gap-4">
-                <a href="/privacy" className="hover:text-teal-700 transition-colors font-medium">Privacy Policy</a>
-                <a href="/terms" className="hover:text-teal-700 transition-colors font-medium">Terms of Service</a>
+                <a
+                  href="/privacy"
+                  className="hover:text-teal-700 transition-colors font-medium"
+                >
+                  Privacy Policy
+                </a>
+                <a
+                  href="/terms"
+                  className="hover:text-teal-700 transition-colors font-medium"
+                >
+                  Terms of Service
+                </a>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -131,8 +171,10 @@ export default function Footer() {
           {/* Disclaimer */}
           <div className="mt-6 pt-6 border-t border-slate-700/30">
             <p className="text-xs text-slate-500 text-center max-w-2xl mx-auto leading-relaxed">
-              Insights are informational only and not veterinary advice. Yardura does not diagnose or treat disease.
-              Always consult with your veterinarian for professional medical advice regarding your pet's health.
+              Insights are informational only and not veterinary advice. Yardura
+              does not diagnose or treat disease. Always consult with your
+              veterinarian for professional medical advice regarding your pet's
+              health.
             </p>
           </div>
         </div>

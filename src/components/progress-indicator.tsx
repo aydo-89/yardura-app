@@ -1,16 +1,16 @@
-'use client';
-import { useState, useEffect } from 'react';
+"use client";
+import { useState, useEffect } from "react";
 
 const sections = [
-  { id: 'services', label: 'Services', icon: '🛠️' },
-  { id: 'insights', label: 'Insights', icon: '🔬' },
-  { id: 'eco', label: 'Eco Impact', icon: '🌱' },
-  { id: 'faq', label: 'FAQ', icon: '❓' },
-  { id: 'quote', label: 'Get Quote', icon: '📝' },
+  { id: "services", label: "Services", icon: "🛠️" },
+  { id: "insights", label: "Insights", icon: "🔬" },
+  { id: "eco", label: "Eco Impact", icon: "🌱" },
+  { id: "faq", label: "FAQ", icon: "❓" },
+  { id: "quote", label: "Get Quote", icon: "📝" },
 ];
 
 export default function ProgressIndicator() {
-  const [, setActiveSection] = useState('');
+  const [, setActiveSection] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,10 +25,10 @@ export default function ProgressIndicator() {
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
     handleScroll(); // Set initial state
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return null;

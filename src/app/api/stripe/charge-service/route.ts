@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
-import { db } from '@/lib/database';
-import { safeGetServerSession } from '@/lib/auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { stripe } from "@/lib/stripe";
+import { db } from "@/lib/database";
+import { safeGetServerSession } from "@/lib/auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
     const session = (await safeGetServerSession(authOptions as any)) as {
       user?: { email?: string };
     } | null;
-    const adminEmails = (process.env.ADMIN_EMAILS || '')
-      .split(',')
+    const adminEmails = (process.env.ADMIN_EMAILS || "")
+      .split(",")
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
     if (
@@ -20,53 +20,62 @@ export async function POST(request: NextRequest) {
       !session.user.email ||
       !adminEmails.includes(session.user.email.toLowerCase())
     ) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const { visitId, notes } = await request.json();
 
     if (!visitId) {
-      return NextResponse.json({ error: 'Visit ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Visit ID is required" },
+        { status: 400 },
+      );
     }
 
     // Get the service visit
     const visit = await db.getServiceVisit(visitId);
     if (!visit) {
-      return NextResponse.json({ error: 'Service visit not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: "Service visit not found" },
+        { status: 404 },
+      );
     }
 
-    if (visit.status === 'completed') {
+    if (visit.status === "completed") {
       return NextResponse.json(
-        { error: 'Service visit already completed and charged' },
-        { status: 400 }
+        { error: "Service visit already completed and charged" },
+        { status: 400 },
       );
     }
 
     // Get customer details
     const customer = await db.getCustomer(visit.customerId);
     if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 },
+      );
     }
 
     // Create payment intent for the service charge
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(visit.amount * 100), // Convert to cents
-      currency: 'usd',
+      currency: "usd",
       customer: customer.stripeCustomerId,
-      payment_method_types: ['card'],
+      payment_method_types: ["card"],
       off_session: true, // Charge without customer present
       confirm: true, // Automatically confirm the payment
       metadata: {
         visit_id: visit.id,
         customer_id: customer.id,
         service_date: visit.scheduledDate.toISOString(),
-        service_type: 'yardura_dog_waste_removal',
+        service_type: "yardura_dog_waste_removal",
       },
-      description: `Yardura service - ${customer.frequency} visit for ${customer.dogs} dog${customer.dogs > 1 ? 's' : ''}`,
+      description: `Yardura service - ${customer.frequency} visit for ${customer.dogs} dog${customer.dogs > 1 ? "s" : ""}`,
     });
 
     // Update the service visit as completed
     await db.updateServiceVisit(visit.id, {
-      status: 'completed',
+      status: "completed",
       completedDate: new Date(),
       stripePaymentIntentId: paymentIntent.id,
       notes,
@@ -88,25 +97,28 @@ export async function POST(request: NextRequest) {
             customerId: customer.id,
             serviceVisitId: visit.id,
             amount: commissionAmount,
-            status: 'PENDING',
+            status: "PENDING",
           },
         });
       }
     }
 
     // If this is the first completed service, activate the customer
-    if (customer.status === 'pending') {
-      await db.updateCustomer(customer.id, { status: 'active' });
+    if (customer.status === "pending") {
+      await db.updateCustomer(customer.id, { status: "active" });
     }
 
     // Schedule next service visit if recurring
-    if (customer.frequency !== 'one-time') {
-      const nextVisitDate = calculateNextServiceDate(customer.serviceDay, visit.scheduledDate);
+    if (customer.frequency !== "one-time") {
+      const nextVisitDate = calculateNextServiceDate(
+        customer.serviceDay,
+        visit.scheduledDate,
+      );
 
       await db.createServiceVisit({
         customerId: customer.id,
         scheduledDate: nextVisitDate,
-        status: 'scheduled',
+        status: "scheduled",
         amount: visit.amount, // Same amount for recurring services
       });
     }
@@ -116,32 +128,46 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
       amount: visit.amount,
       nextVisitDate:
-        customer.frequency !== 'one-time'
+        customer.frequency !== "one-time"
           ? calculateNextServiceDate(customer.serviceDay, visit.scheduledDate)
           : null,
     });
   } catch (error: any) {
-    console.error('Service charge error:', error);
+    console.error("Service charge error:", error);
 
     // Handle specific Stripe errors
-    if (error.type === 'StripeCardError') {
+    if (error.type === "StripeCardError") {
       return NextResponse.json(
         {
-          error: 'Payment failed',
+          error: "Payment failed",
           details: error.message,
           code: error.code,
         },
-        { status: 402 }
+        { status: 402 },
       );
     }
 
-    return NextResponse.json({ error: 'Failed to process service charge' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to process service charge" },
+      { status: 500 },
+    );
   }
 }
 
 // Helper function to calculate next service date
-function calculateNextServiceDate(serviceDay: string, lastServiceDate: Date): Date {
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+function calculateNextServiceDate(
+  serviceDay: string,
+  lastServiceDate: Date,
+): Date {
+  const days = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
   const targetDayIndex = days.indexOf(serviceDay.toLowerCase());
 
   const nextDate = new Date(lastServiceDate);

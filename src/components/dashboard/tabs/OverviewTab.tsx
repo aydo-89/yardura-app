@@ -1,11 +1,11 @@
 // Refactor: extracted from legacy DashboardClientNew; removed mock wellness code and duplicates.
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import AddressAutocomplete from '@/components/AddressAutocomplete';
-import { track } from '@/lib/analytics';
-import { ComingSoonOverlay } from './WellnessTab/components/ComingSoonOverlay';
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
+import { track } from "@/lib/analytics";
+import { ComingSoonOverlay } from "./WellnessTab/components/ComingSoonOverlay";
 import {
   Heart,
   Calendar,
@@ -21,8 +21,13 @@ import {
   Leaf,
   User as UserIcon,
   Droplets,
-} from 'lucide-react';
-import type { User, Dog, DashboardServiceVisit, DashboardDataReading } from '../types';
+} from "lucide-react";
+import type {
+  User,
+  Dog,
+  DashboardServiceVisit,
+  DashboardDataReading,
+} from "../types";
 
 interface OverviewTabProps {
   user: User;
@@ -41,7 +46,7 @@ interface OverviewTabProps {
   gramsThisMonth: number;
   totalGrams: number;
   methaneThisMonthLbsEq: number;
-  recentInsightsLevel: 'WATCH' | 'NORMAL';
+  recentInsightsLevel: "WATCH" | "NORMAL";
   referralUrl: string;
   onOpenProfileForm(): void;
   onOpenDogForm(): void;
@@ -80,7 +85,7 @@ function ReportsList({ orgId }: { orgId: string }) {
   const months: string[] = [];
   for (let i = 0; i < 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const label = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     months.push(label);
   }
   return (
@@ -92,7 +97,7 @@ function ReportsList({ orgId }: { orgId: string }) {
           href={`/api/reports/monthly?orgId=${encodeURIComponent(orgId)}&month=${m}`}
           target="_blank"
           rel="noreferrer"
-          onClick={() => track('report_download', { month: m, orgId })}
+          onClick={() => track("report_download", { month: m, orgId })}
         >
           <span className="text-sm">{m}</span>
           <span className="text-accent text-xs underline">Download</span>
@@ -146,49 +151,54 @@ export default function OverviewTab(props: OverviewTabProps) {
   const handleJoinWellnessWaitlist = async (email: string) => {
     try {
       // Send to your backend API
-      const response = await fetch('/api/waitlist/wellness-insights', {
-        method: 'POST',
+      const response = await fetch("/api/waitlist/wellness-insights", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
-          feature: 'wellness-insights',
+          feature: "wellness-insights",
           timestamp: new Date().toISOString(),
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to join waitlist');
+        throw new Error("Failed to join waitlist");
       }
 
       const result = await response.json();
 
       // You could also send analytics events here
-      console.log('Successfully joined wellness waitlist:', result);
+      console.log("Successfully joined wellness waitlist:", result);
     } catch (error) {
-      console.error('Error joining wellness waitlist:', error);
+      console.error("Error joining wellness waitlist:", error);
 
       // Fallback: Store locally if API fails
       const waitlistData = {
         email,
-        feature: 'wellness-insights',
+        feature: "wellness-insights",
         timestamp: new Date().toISOString(),
         offline: true, // Mark as offline submission
       };
 
       // Store in localStorage as fallback
-      const existingWaitlist = JSON.parse(localStorage.getItem('yardura_waitlist') || '[]');
+      const existingWaitlist = JSON.parse(
+        localStorage.getItem("yardura_waitlist") || "[]",
+      );
       existingWaitlist.push(waitlistData);
-      localStorage.setItem('yardura_waitlist', JSON.stringify(existingWaitlist));
+      localStorage.setItem(
+        "yardura_waitlist",
+        JSON.stringify(existingWaitlist),
+      );
 
-      console.log('Stored wellness waitlist signup locally:', waitlistData);
+      console.log("Stored wellness waitlist signup locally:", waitlistData);
     }
 
     // Show success message to user
     setTimeout(() => {
       alert(
-        `Thank you for joining the wellness waitlist! We'll notify you at ${email} when advanced wellness insights are available.`
+        `Thank you for joining the wellness waitlist! We'll notify you at ${email} when advanced wellness insights are available.`,
       );
     }, 500);
   };
@@ -208,13 +218,13 @@ export default function OverviewTab(props: OverviewTabProps) {
               <div>
                 <h3 className="text-xl font-semibold text-ink mb-2">
                   {user.stripeCustomerId
-                    ? 'Ready to Schedule Your First Service? 🐾'
-                    : 'Welcome to Yardura! 🐾'}
+                    ? "Ready to Schedule Your First Service? 🐾"
+                    : "Welcome to Yardura! 🐾"}
                 </h3>
                 <p className="text-slate-600 mb-4">
                   {user.stripeCustomerId
-                    ? 'Your account is all set up! Schedule your first sustainable yard service and unlock free pet wellness insights.'
-                    : 'Get your yard cleaned sustainably while gaining valuable wellness insights for your pets. Every service includes free health monitoring technology.'}
+                    ? "Your account is all set up! Schedule your first sustainable yard service and unlock free pet wellness insights."
+                    : "Get your yard cleaned sustainably while gaining valuable wellness insights for your pets. Every service includes free health monitoring technology."}
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -243,7 +253,8 @@ export default function OverviewTab(props: OverviewTabProps) {
                 )}
               </div>
               <p className="text-xs text-slate-500">
-                💚 Environmentally friendly • 🐕 Pet wellness included • ✨ Professional service
+                💚 Environmentally friendly • 🐕 Pet wellness included • ✨
+                Professional service
               </p>
             </div>
           </CardContent>
@@ -260,17 +271,21 @@ export default function OverviewTab(props: OverviewTabProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {nextServiceAt ? nextServiceAt.toLocaleDateString() : 'Not scheduled'}
+              {nextServiceAt
+                ? nextServiceAt.toLocaleDateString()
+                : "Not scheduled"}
             </div>
             <p className="text-xs text-muted mt-1">
-              {daysUntilNext ? `${daysUntilNext} days away` : 'Schedule your next pickup'}
+              {daysUntilNext
+                ? `${daysUntilNext} days away`
+                : "Schedule your next pickup"}
             </p>
             {nextServiceAt && (
               <div className="mt-2 text-xs text-blue-600">
                 {nextServiceAt.toLocaleDateString(undefined, {
-                  weekday: 'long',
-                  month: 'short',
-                  day: 'numeric',
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
                 })}
               </div>
             )}
@@ -287,16 +302,22 @@ export default function OverviewTab(props: OverviewTabProps) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-600">This week:</span>
-                <span className="font-bold text-slate-900">{last7DaysCount}</span>
+                <span className="font-bold text-slate-900">
+                  {last7DaysCount}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-600">This month:</span>
-                <span className="font-bold text-slate-900">{last30DaysCount}</span>
+                <span className="font-bold text-slate-900">
+                  {last30DaysCount}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-600">Avg weight:</span>
                 <span className="font-bold text-slate-900">
-                  {avgWeight30G != null ? `${(avgWeight30G as number).toFixed(1)}g` : '—'}
+                  {avgWeight30G != null
+                    ? `${(avgWeight30G as number).toFixed(1)}g`
+                    : "—"}
                 </span>
               </div>
             </div>
@@ -347,7 +368,9 @@ export default function OverviewTab(props: OverviewTabProps) {
               {/* Coming Soon Badge */}
               <div className="flex items-center gap-2">
                 <div className="px-2 py-1 bg-gradient-to-r from-teal-50 to-blue-50 rounded-full border border-teal-200">
-                  <span className="text-xs font-medium text-teal-700">Coming Soon</span>
+                  <span className="text-xs font-medium text-teal-700">
+                    Coming Soon
+                  </span>
                 </div>
                 <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></div>
               </div>
@@ -389,13 +412,17 @@ export default function OverviewTab(props: OverviewTabProps) {
         {/* Service Streak */}
         <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Service Streak</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Service Streak
+            </CardTitle>
             <Trophy className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{serviceStreak}</div>
+            <div className="text-2xl font-bold text-slate-900">
+              {serviceStreak}
+            </div>
             <p className="text-xs text-muted mt-1">
-              {serviceStreak === 1 ? 'service' : 'services'} in a row
+              {serviceStreak === 1 ? "service" : "services"} in a row
             </p>
           </CardContent>
         </Card>
@@ -411,7 +438,9 @@ export default function OverviewTab(props: OverviewTabProps) {
             <Button
               className="h-20 flex flex-col gap-2"
               variant="outline"
-              onClick={() => track('dashboard_quick_action', { action: 'schedule_service' })}
+              onClick={() =>
+                track("dashboard_quick_action", { action: "schedule_service" })
+              }
             >
               <Calendar className="size-6" />
               <span>Schedule Service</span>
@@ -419,7 +448,9 @@ export default function OverviewTab(props: OverviewTabProps) {
             <Button
               className="h-20 flex flex-col gap-2"
               variant="outline"
-              onClick={() => track('dashboard_quick_action', { action: 'add_dog' })}
+              onClick={() =>
+                track("dashboard_quick_action", { action: "add_dog" })
+              }
             >
               <DogIcon className="size-6" />
               <span>Add Dog</span>
@@ -427,7 +458,11 @@ export default function OverviewTab(props: OverviewTabProps) {
             <Button
               className="h-20 flex flex-col gap-2"
               variant="outline"
-              onClick={() => track('dashboard_quick_action', { action: 'view_health_insights' })}
+              onClick={() =>
+                track("dashboard_quick_action", {
+                  action: "view_health_insights",
+                })
+              }
             >
               <Heart className="size-6" />
               <span>View Health Insights</span>
@@ -450,7 +485,9 @@ export default function OverviewTab(props: OverviewTabProps) {
               <div className="lg:col-span-2 space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium text-ink">Profile completeness</div>
+                    <div className="text-sm font-medium text-ink">
+                      Profile completeness
+                    </div>
                     <div className="text-sm text-muted">{profilePercent}%</div>
                   </div>
                   <div className="relative w-full bg-slate-100 rounded-full h-4 overflow-hidden border-2 border-slate-200">
@@ -459,7 +496,9 @@ export default function OverviewTab(props: OverviewTabProps) {
                       style={{ width: `${profilePercent}%` }}
                     >
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-white text-xs animate-pulse">🐾</div>
+                        <div className="text-white text-xs animate-pulse">
+                          🐾
+                        </div>
                       </div>
                     </div>
                     <div
@@ -482,7 +521,11 @@ export default function OverviewTab(props: OverviewTabProps) {
                       ) : (
                         <span className="text-lg opacity-50">⭕</span>
                       )}
-                      <span className={ok ? 'text-slate-600 line-through' : 'text-slate-700'}>
+                      <span
+                        className={
+                          ok ? "text-slate-600 line-through" : "text-slate-700"
+                        }
+                      >
                         {label}
                       </span>
                     </li>
@@ -491,10 +534,12 @@ export default function OverviewTab(props: OverviewTabProps) {
 
                 <div className="flex flex-wrap gap-3">
                   <Button onClick={onOpenProfileForm}>
-                    {forms.showProfileForm ? 'Close Profile Form' : 'Update Profile'}
+                    {forms.showProfileForm
+                      ? "Close Profile Form"
+                      : "Update Profile"}
                   </Button>
                   <Button variant="outline" onClick={onOpenDogForm}>
-                    {forms.showDogForm ? 'Close Dog Form' : 'Add Dog Profile'}
+                    {forms.showDogForm ? "Close Dog Form" : "Add Dog Profile"}
                   </Button>
                 </div>
 
@@ -502,14 +547,18 @@ export default function OverviewTab(props: OverviewTabProps) {
                   <div className="mt-4 space-y-3 p-4 border rounded-xl">
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-medium mb-1">Phone</label>
+                        <label className="block text-xs font-medium mb-1">
+                          Phone
+                        </label>
                         <Input
                           value={forms.formPhone}
                           onChange={(e) => forms.setFormPhone(e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium mb-1">ZIP</label>
+                        <label className="block text-xs font-medium mb-1">
+                          ZIP
+                        </label>
                         <Input
                           value={forms.formZip}
                           onChange={(e) => forms.setFormZip(e.target.value)}
@@ -517,28 +566,37 @@ export default function OverviewTab(props: OverviewTabProps) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium mb-1">Address</label>
+                      <label className="block text-xs font-medium mb-1">
+                        Address
+                      </label>
                       <AddressAutocomplete
                         value={forms.formAddress}
                         onChange={forms.setFormAddress}
                         onSelect={(addr) => {
-                          if (addr.formattedAddress) forms.setFormAddress(addr.formattedAddress);
-                          if (addr.city) forms.setFormCity(addr.city || '');
-                          if (addr.postalCode) forms.setFormZip(addr.postalCode || '');
+                          if (addr.formattedAddress)
+                            forms.setFormAddress(addr.formattedAddress);
+                          if (addr.city) forms.setFormCity(addr.city || "");
+                          if (addr.postalCode)
+                            forms.setFormZip(addr.postalCode || "");
                         }}
                       />
                     </div>
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-medium mb-1">City</label>
+                        <label className="block text-xs font-medium mb-1">
+                          City
+                        </label>
                         <Input
                           value={forms.formCity}
                           onChange={(e) => forms.setFormCity(e.target.value)}
                         />
                       </div>
                       <div className="flex items-end">
-                        <Button onClick={forms.submitProfile} disabled={forms.savingProfile}>
-                          {forms.savingProfile ? 'Saving…' : 'Save Profile'}
+                        <Button
+                          onClick={forms.submitProfile}
+                          disabled={forms.savingProfile}
+                        >
+                          {forms.savingProfile ? "Saving…" : "Save Profile"}
                         </Button>
                       </div>
                     </div>
@@ -548,7 +606,9 @@ export default function OverviewTab(props: OverviewTabProps) {
                 {forms.showDogForm && (
                   <div className="mt-4 space-y-3 p-4 border rounded-xl">
                     <div>
-                      <label className="block text-xs font-medium mb-1">Dog Name *</label>
+                      <label className="block text-xs font-medium mb-1">
+                        Dog Name *
+                      </label>
                       <Input
                         value={forms.dogName}
                         onChange={(e) => forms.setDogName(e.target.value)}
@@ -556,7 +616,9 @@ export default function OverviewTab(props: OverviewTabProps) {
                     </div>
                     <div className="grid sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-2">
-                        <label className="block text-xs font-medium mb-1">Breed</label>
+                        <label className="block text-xs font-medium mb-1">
+                          Breed
+                        </label>
                         <select
                           className="w-full border rounded-md p-2"
                           value={forms.dogBreed}
@@ -564,18 +626,28 @@ export default function OverviewTab(props: OverviewTabProps) {
                         >
                           <option value="">Select breed</option>
                           <option value="Mixed Breed">Mixed Breed</option>
-                          <option value="Labrador Retriever">Labrador Retriever</option>
-                          <option value="Golden Retriever">Golden Retriever</option>
-                          <option value="German Shepherd">German Shepherd</option>
+                          <option value="Labrador Retriever">
+                            Labrador Retriever
+                          </option>
+                          <option value="Golden Retriever">
+                            Golden Retriever
+                          </option>
+                          <option value="German Shepherd">
+                            German Shepherd
+                          </option>
                           <option value="French Bulldog">French Bulldog</option>
                           <option value="Bulldog">Bulldog</option>
                           <option value="Poodle">Poodle</option>
                           <option value="Beagle">Beagle</option>
                           <option value="Rottweiler">Rottweiler</option>
-                          <option value="Yorkshire Terrier">Yorkshire Terrier</option>
+                          <option value="Yorkshire Terrier">
+                            Yorkshire Terrier
+                          </option>
                           <option value="Dachshund">Dachshund</option>
                           <option value="Boxer">Boxer</option>
-                          <option value="Australian Shepherd">Australian Shepherd</option>
+                          <option value="Australian Shepherd">
+                            Australian Shepherd
+                          </option>
                           <option value="Cavalier King Charles Spaniel">
                             Cavalier King Charles Spaniel
                           </option>
@@ -583,7 +655,9 @@ export default function OverviewTab(props: OverviewTabProps) {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium mb-1">Age</label>
+                        <label className="block text-xs font-medium mb-1">
+                          Age
+                        </label>
                         <Input
                           value={forms.dogAge}
                           onChange={(e) => forms.setDogAge(e.target.value)}
@@ -594,7 +668,9 @@ export default function OverviewTab(props: OverviewTabProps) {
                     </div>
                     <div className="grid sm:grid-cols-3 gap-3 items-end">
                       <div>
-                        <label className="block text-xs font-medium mb-1">Weight (lbs)</label>
+                        <label className="block text-xs font-medium mb-1">
+                          Weight (lbs)
+                        </label>
                         <Input
                           value={forms.dogWeight}
                           onChange={(e) => forms.setDogWeight(e.target.value)}
@@ -607,7 +683,7 @@ export default function OverviewTab(props: OverviewTabProps) {
                           onClick={forms.submitDog}
                           disabled={forms.savingDog || !forms.dogName.trim()}
                         >
-                          {forms.savingDog ? 'Saving…' : 'Save Dog'}
+                          {forms.savingDog ? "Saving…" : "Save Dog"}
                         </Button>
                       </div>
                     </div>
@@ -619,7 +695,9 @@ export default function OverviewTab(props: OverviewTabProps) {
               <div className="p-4 rounded-xl bg-accent-soft border border-accent/20 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="size-4 text-accent" />
-                  <div className="text-sm font-medium text-ink">Referral rewards</div>
+                  <div className="text-sm font-medium text-ink">
+                    Referral rewards
+                  </div>
                 </div>
                 <div className="text-sm text-slate-700 mb-3">
                   Get a free visit for every referral.
@@ -632,10 +710,18 @@ export default function OverviewTab(props: OverviewTabProps) {
                     aria-label="Your referral link"
                   />
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleCopy} aria-label="Copy referral link">
-                      <Copy className="size-4 mr-2" /> {copied ? 'Copied' : 'Copy'}
+                    <Button
+                      variant="outline"
+                      onClick={handleCopy}
+                      aria-label="Copy referral link"
+                    >
+                      <Copy className="size-4 mr-2" />{" "}
+                      {copied ? "Copied" : "Copy"}
                     </Button>
-                    <Button onClick={onShareReferral} aria-label="Share referral link">
+                    <Button
+                      onClick={onShareReferral}
+                      aria-label="Share referral link"
+                    >
                       <Share2 className="size-4 mr-2" /> Share
                     </Button>
                   </div>

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import UserHeader from '@/components/site/UserHeader';
+import { ReactNode } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import UserHeader from "@/components/site/UserHeader";
 
 interface UserLayoutProps {
   children: ReactNode;
@@ -15,20 +15,22 @@ interface UserLayoutProps {
 export default function UserLayout({
   children,
   requireAuth = true,
-  redirectTo = '/signin'
+  redirectTo = "/signin",
 }: UserLayoutProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'loading') return;
+    if (status === "loading") return;
 
     if (requireAuth && !session?.user) {
-      router.push(`${redirectTo}?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+      router.push(
+        `${redirectTo}?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
+      );
     }
   }, [session, status, requireAuth, redirectTo, router]);
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white flex items-center justify-center">
         <div className="text-center">
@@ -52,9 +54,7 @@ export default function UserLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
     </div>
   );
 }

@@ -1,24 +1,31 @@
-import React from 'react';
-import { Disclosure } from './Disclosure';
-import { wellnessTheme, type WellnessComputed } from '../../../../../shared/wellness';
-import { Bug, Camera, AlertTriangle } from 'lucide-react';
+import React from "react";
+import { Disclosure } from "./Disclosure";
+import {
+  wellnessTheme,
+  type WellnessComputed,
+} from "../../../../../shared/wellness";
+import { Bug, Camera, AlertTriangle } from "lucide-react";
 
 interface ContentSignalsProps {
-  signals: WellnessComputed['trends']['signalSparklines'];
-  weekly?: WellnessComputed['weekly'];
+  signals: WellnessComputed["trends"]["signalSparklines"];
+  weekly?: WellnessComputed["weekly"];
 }
 
-export const ContentSignals: React.FC<ContentSignalsProps> = ({ signals, weekly }) => {
+export const ContentSignals: React.FC<ContentSignalsProps> = ({
+  signals,
+  weekly,
+}) => {
   // Check if any signals have data
   const hasData = signals.some(
-    (signal) => signal.series.some((point) => point.y > 0) || signal.series.length > 0
+    (signal) =>
+      signal.series.some((point) => point.y > 0) || signal.series.length > 0,
   );
 
   // Handle image request for critical detections
   const handleImageRequest = (signalType: string, count: number) => {
     console.log(`Requesting images for ${count} ${signalType} detection(s)`);
     alert(
-      `📸 Image request submitted for ${count} ${signalType} detection(s). A veterinarian will review the images and contact you within 24 hours.`
+      `📸 Image request submitted for ${count} ${signalType} detection(s). A veterinarian will review the images and contact you within 24 hours.`,
     );
   };
 
@@ -34,7 +41,9 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({ signals, weekly 
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-slate-900">Content Analysis</h3>
-          <div className="text-sm text-slate-600">Advanced AI-powered stool analysis</div>
+          <div className="text-sm text-slate-600">
+            Advanced AI-powered stool analysis
+          </div>
         </div>
 
         {hasData ? (
@@ -44,50 +53,59 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({ signals, weekly 
               {signals.map((signal, index) => {
                 const signalConfig = {
                   mucous: {
-                    label: 'Mucous Content',
-                    fullLabel: 'Mucous Content',
-                    description: 'Abnormal mucus indicates irritation or inflammation',
-                    color: 'bg-teal-500',
+                    label: "Mucous Content",
+                    fullLabel: "Mucous Content",
+                    description:
+                      "Abnormal mucus indicates irritation or inflammation",
+                    color: "bg-teal-500",
                     icon: null,
-                    emoji: '💧',
+                    emoji: "💧",
                   },
                   greasy: {
-                    label: 'Greasy Content',
-                    fullLabel: 'Greasy Content',
-                    description: 'Oily stool may indicate pancreatic or liver issues',
-                    color: 'bg-orange-500',
+                    label: "Greasy Content",
+                    fullLabel: "Greasy Content",
+                    description:
+                      "Oily stool may indicate pancreatic or liver issues",
+                    color: "bg-orange-500",
                     icon: null,
-                    emoji: '🫒',
+                    emoji: "🫒",
                   },
                   parasites: {
-                    label: 'Visible Parasites',
-                    fullLabel: 'Visible Parasites',
-                    description: 'Visible parasites or worms detected',
-                    color: 'bg-red-500',
+                    label: "Visible Parasites",
+                    fullLabel: "Visible Parasites",
+                    description: "Visible parasites or worms detected",
+                    color: "bg-red-500",
                     icon: Bug,
-                    emoji: '🐛',
+                    emoji: "🐛",
                   },
                   foreign: {
-                    label: 'Foreign Objects',
-                    fullLabel: 'Foreign Objects',
-                    description: 'Non-food items like grass, string, or plastic detected',
-                    color: 'bg-purple-500',
+                    label: "Foreign Objects",
+                    fullLabel: "Foreign Objects",
+                    description:
+                      "Non-food items like grass, string, or plastic detected",
+                    color: "bg-purple-500",
                     icon: null,
-                    emoji: '❓',
+                    emoji: "❓",
                   },
                 };
 
-                const config = signalConfig[signal.key as keyof typeof signalConfig];
+                const config =
+                  signalConfig[signal.key as keyof typeof signalConfig];
                 if (!config) return null; // Skip unknown signal types
 
-                const latestValue = signal.series[signal.series.length - 1]?.y || 0;
+                const latestValue =
+                  signal.series[signal.series.length - 1]?.y || 0;
                 const last7Days = signal.series.slice(-7);
-                const totalLast7Days = last7Days.reduce((sum, day) => sum + day.y, 0);
+                const totalLast7Days = last7Days.reduce(
+                  (sum, day) => sum + day.y,
+                  0,
+                );
 
                 // Show review button for current week's concerning signal detection
                 const isConcerning = latestValue > 0;
                 const isCritical =
-                  (signal.key === 'parasites' || signal.key === 'foreign') && latestValue > 0;
+                  (signal.key === "parasites" || signal.key === "foreign") &&
+                  latestValue > 0;
 
                 return (
                   <div
@@ -98,7 +116,7 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({ signals, weekly 
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         {config.icon ? (
                           <config.icon
-                            className={`w-4 h-4 flex-shrink-0 ${signal.key === 'parasites' ? 'text-red-500' : 'text-slate-500'}`}
+                            className={`w-4 h-4 flex-shrink-0 ${signal.key === "parasites" ? "text-red-500" : "text-slate-500"}`}
                           />
                         ) : (
                           <div
@@ -130,20 +148,22 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({ signals, weekly 
                     {isConcerning && (
                       <div
                         className={`mt-2 pt-2 border-t ${
-                          isCritical ? 'border-red-200' : 'border-amber-200'
+                          isCritical ? "border-red-200" : "border-amber-200"
                         }`}
                       >
                         <button
-                          onClick={() => handleImageRequest(config.fullLabel, latestValue)}
+                          onClick={() =>
+                            handleImageRequest(config.fullLabel, latestValue)
+                          }
                           className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors ${
                             isCritical
-                              ? 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                              : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                              ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                              : "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                           }`}
                           title={`Request veterinary review of ${config.label.toLowerCase()} detection`}
                         >
                           <Camera className="size-3" />
-                          {isCritical ? 'Urgent Review' : 'Request Review'}
+                          {isCritical ? "Urgent Review" : "Request Review"}
                         </button>
                       </div>
                     )}
@@ -153,12 +173,12 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({ signals, weekly 
                       <div
                         className={`mt-2 p-2 rounded text-xs ${
                           latestValue > 0
-                            ? 'bg-amber-50 text-amber-700' // Current detections - monitoring needed
-                            : 'bg-green-50 text-green-700' // Historical only - no current concern
+                            ? "bg-amber-50 text-amber-700" // Current detections - monitoring needed
+                            : "bg-green-50 text-green-700" // Historical only - no current concern
                         }`}
                       >
                         {latestValue > 0
-                          ? `Monitoring - ${latestValue} detection${latestValue !== 1 ? 's' : ''} this week`
+                          ? `Monitoring - ${latestValue} detection${latestValue !== 1 ? "s" : ""} this week`
                           : `All good - 0 detections this week`}
                       </div>
                     )}
@@ -176,16 +196,17 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({ signals, weekly 
                         <div className="text-xs text-center text-slate-600">
                           {(() => {
                             // Get total samples from the most recent week for proportion context
-                            const latestWeekSamples = weekly?.[0]?.deposits || 0;
+                            const latestWeekSamples =
+                              weekly?.[0]?.deposits || 0;
 
                             if (latestWeekSamples > 0 && latestValue > 0) {
                               const proportion = Math.round(
-                                (latestValue / latestWeekSamples) * 100
+                                (latestValue / latestWeekSamples) * 100,
                               );
                               return `${latestValue} of ${latestWeekSamples} samples (${proportion}%) this week`;
                             }
 
-                            return `${latestValue} detection${latestValue !== 1 ? 's' : ''} this week`;
+                            return `${latestValue} detection${latestValue !== 1 ? "s" : ""} this week`;
                           })()}
                         </div>
                       </div>
@@ -201,8 +222,8 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({ signals, weekly 
             <div className="text-4xl mb-3">🔍</div>
             <p className="font-medium">Advanced content analysis coming soon</p>
             <p className="text-sm">
-              We'll detect mucous, greasy, parasites, and foreign objects that may indicate health
-              issues.
+              We'll detect mucous, greasy, parasites, and foreign objects that
+              may indicate health issues.
             </p>
           </div>
         )}

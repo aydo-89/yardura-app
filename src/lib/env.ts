@@ -1,9 +1,8 @@
-
 /**
  * Environment variable validation using Zod
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // Environment schema
 const envSchema = z.object({
@@ -28,7 +27,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
   // Email Configuration
-  EMAIL_FROM: z.string().default('noreply@yardura.com'),
+  EMAIL_FROM: z.string().default("noreply@yardura.com"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_SECURE: z.coerce.boolean().default(false),
@@ -45,17 +44,25 @@ const envSchema = z.object({
   STORAGE_BUCKET: z.string().optional(),
 
   // Nominatim configuration
-  NOMINATIM_BASE: z.string().url().default('https://nominatim.openstreetmap.org'),
-  NOMINATIM_EMAIL: z.string().email().default('contact@yardura.com'),
+  NOMINATIM_BASE: z
+    .string()
+    .url()
+    .default("https://nominatim.openstreetmap.org"),
+  NOMINATIM_EMAIL: z.string().email().default("contact@yardura.com"),
 
   // ZIP processing
-  ZIP_AREA_THRESHOLD: z.string().regex(/^(0\.\d+|1\.0)$/).default('0.25'),
+  ZIP_AREA_THRESHOLD: z
+    .string()
+    .regex(/^(0\.\d+|1\.0)$/)
+    .default("0.25"),
   ZIPCODESTACK_API_KEY: z.string().optional(),
   ZIPCODESTACK_BASE_URL: z.string().url().optional(),
 
   // Debug flags
   NEXT_PUBLIC_DEBUG: z.string().optional(),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
 
   // Redis (optional; jobs use defaults locally)
   REDIS_HOST: z.string().optional(),
@@ -75,9 +82,9 @@ try {
   validatedEnv = envSchema.parse(process.env);
 } catch (error) {
   if (error instanceof z.ZodError) {
-    console.error('Environment validation failed:');
+    console.error("Environment validation failed:");
     error.issues.forEach((err: z.ZodIssue) => {
-      console.error(`- ${err.path.join('.')}: ${err.message}`);
+      console.error(`- ${err.path.join(".")}: ${err.message}`);
     });
   }
 
@@ -87,21 +94,26 @@ try {
     validatedEnv = envSchema.parse({
       ...partialEnv,
       // Provide defaults for required fields
-      DATABASE_URL: partialEnv.DATABASE_URL || 'postgresql://localhost:5432/yardura',
-      NEXTAUTH_SECRET: partialEnv.NEXTAUTH_SECRET || 'development-secret-key',
-      STRIPE_SECRET_KEY: partialEnv.STRIPE_SECRET_KEY || 'sk_test_default',
-      STRIPE_PUBLISHABLE_KEY: partialEnv.STRIPE_PUBLISHABLE_KEY || 'pk_test_default',
-      STRIPE_WEBHOOK_SECRET: partialEnv.STRIPE_WEBHOOK_SECRET || 'whsec_default',
-      EMAIL_FROM: partialEnv.EMAIL_FROM || 'noreply@yardura.com',
+      DATABASE_URL:
+        partialEnv.DATABASE_URL || "postgresql://localhost:5432/yardura",
+      NEXTAUTH_SECRET: partialEnv.NEXTAUTH_SECRET || "development-secret-key",
+      STRIPE_SECRET_KEY: partialEnv.STRIPE_SECRET_KEY || "sk_test_default",
+      STRIPE_PUBLISHABLE_KEY:
+        partialEnv.STRIPE_PUBLISHABLE_KEY || "pk_test_default",
+      STRIPE_WEBHOOK_SECRET:
+        partialEnv.STRIPE_WEBHOOK_SECRET || "whsec_default",
+      EMAIL_FROM: partialEnv.EMAIL_FROM || "noreply@yardura.com",
     });
   } catch (fallbackError) {
-    console.error('Failed to parse environment with fallbacks:', fallbackError);
-    throw new Error('Environment validation failed completely');
+    console.error("Failed to parse environment with fallbacks:", fallbackError);
+    throw new Error("Environment validation failed completely");
   }
 
   // Log warnings for missing required values in development
-  if (process.env.NODE_ENV === 'development') {
-    console.warn('Some environment variables are missing or invalid, using defaults where possible');
+  if (process.env.NODE_ENV === "development") {
+    console.warn(
+      "Some environment variables are missing or invalid, using defaults where possible",
+    );
   }
 }
 
@@ -126,7 +138,7 @@ export const config = {
 
   // Debug
   get isDebug(): boolean {
-    return validatedEnv.NEXT_PUBLIC_DEBUG === 'true';
+    return validatedEnv.NEXT_PUBLIC_DEBUG === "true";
   },
 
   // Google Maps
@@ -140,8 +152,10 @@ export const config = {
   },
 
   get zipCodeStackBaseUrl(): string {
-    return validatedEnv.ZIPCODESTACK_BASE_URL || 'https://api.zipcodestack.com/v1';
-  }
+    return (
+      validatedEnv.ZIPCODESTACK_BASE_URL || "https://api.zipcodestack.com/v1"
+    );
+  },
 };
 
 // Email configuration helper
@@ -152,14 +166,14 @@ export function getEmailConfig() {
   const resendApiKey = validatedEnv.RESEND_API_KEY;
 
   // Determine email provider based on available configuration
-  let provider: 'smtp' | 'resend' | 'console' = 'console';
+  let provider: "smtp" | "resend" | "console" = "console";
   let smtpConfig = null;
 
   // Prefer Resend when an API key is provided; otherwise fall back to SMTP when fully configured
   if (resendApiKey) {
-    provider = 'resend';
+    provider = "resend";
   } else if (smtpHost && smtpUser && smtpPass) {
-    provider = 'smtp';
+    provider = "smtp";
     smtpConfig = {
       host: smtpHost,
       port: validatedEnv.SMTP_PORT,
@@ -181,5 +195,5 @@ export function getEmailConfig() {
 
 export function isAdminEmail(email: string): boolean {
   // Simple check - could be enhanced
-  return email.endsWith('@yardura.com') || email.endsWith('@admin.yardura.com');
+  return email.endsWith("@yardura.com") || email.endsWith("@admin.yardura.com");
 }

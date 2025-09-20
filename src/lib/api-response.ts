@@ -32,7 +32,7 @@ export interface ApiError {
 
 // Utility functions for creating standardized responses
 export class ApiResponseUtil {
-  static success<T>(data: T, meta?: ApiResponse['meta']): ApiResponse<T> {
+  static success<T>(data: T, meta?: ApiResponse["meta"]): ApiResponse<T> {
     return {
       success: true,
       data,
@@ -47,7 +47,7 @@ export class ApiResponseUtil {
     code: string,
     message: string,
     details?: any,
-    statusCode?: number
+    statusCode?: number,
   ): ApiResponse<null> {
     return {
       success: false,
@@ -64,31 +64,31 @@ export class ApiResponseUtil {
 
   // Common error responses
   static badRequest(message: string, details?: any): ApiResponse<null> {
-    return this.error('BAD_REQUEST', message, details, 400);
+    return this.error("BAD_REQUEST", message, details, 400);
   }
 
-  static unauthorized(message = 'Unauthorized access'): ApiResponse<null> {
-    return this.error('UNAUTHORIZED', message, undefined, 401);
+  static unauthorized(message = "Unauthorized access"): ApiResponse<null> {
+    return this.error("UNAUTHORIZED", message, undefined, 401);
   }
 
-  static forbidden(message = 'Access forbidden'): ApiResponse<null> {
-    return this.error('FORBIDDEN', message, undefined, 403);
+  static forbidden(message = "Access forbidden"): ApiResponse<null> {
+    return this.error("FORBIDDEN", message, undefined, 403);
   }
 
-  static notFound(message = 'Resource not found'): ApiResponse<null> {
-    return this.error('NOT_FOUND', message, undefined, 404);
+  static notFound(message = "Resource not found"): ApiResponse<null> {
+    return this.error("NOT_FOUND", message, undefined, 404);
   }
 
   static conflict(message: string, details?: any): ApiResponse<null> {
-    return this.error('CONFLICT', message, details, 409);
+    return this.error("CONFLICT", message, details, 409);
   }
 
   static validationError(details: any): ApiResponse<null> {
-    return this.error('VALIDATION_ERROR', 'Validation failed', details, 422);
+    return this.error("VALIDATION_ERROR", "Validation failed", details, 422);
   }
 
-  static internalError(message = 'Internal server error'): ApiResponse<null> {
-    return this.error('INTERNAL_ERROR', message, undefined, 500);
+  static internalError(message = "Internal server error"): ApiResponse<null> {
+    return this.error("INTERNAL_ERROR", message, undefined, 500);
   }
 
   // Pagination helper
@@ -96,7 +96,7 @@ export class ApiResponseUtil {
     data: T[],
     page: number,
     limit: number,
-    total: number
+    total: number,
   ): ApiResponse<T[]> {
     const totalPages = Math.ceil(total / limit);
 
@@ -115,12 +115,16 @@ export class ApiResponseUtil {
 }
 
 // Type guard for checking if response is successful
-export function isSuccessResponse<T>(response: ApiResponse<T>): response is ApiResponse<T> & { data: T } {
+export function isSuccessResponse<T>(
+  response: ApiResponse<T>,
+): response is ApiResponse<T> & { data: T } {
   return response.success === true && response.data !== undefined;
 }
 
 // Type guard for checking if response has an error
-export function isErrorResponse<T>(response: ApiResponse<T>): response is ApiResponse<T> & { error: ApiError } {
+export function isErrorResponse<T>(
+  response: ApiResponse<T>,
+): response is ApiResponse<T> & { error: ApiError } {
   return response.success === false && response.error !== undefined;
 }
 
@@ -136,8 +140,10 @@ export function useApiResponse<T>() {
         return { data: null, error: response.error };
       }
 
-      return { data: null, error: { code: 'UNKNOWN', message: 'Unknown response format' } };
+      return {
+        data: null,
+        error: { code: "UNKNOWN", message: "Unknown response format" },
+      };
     },
   };
 }
-

@@ -22,7 +22,7 @@ export interface YarduraCustomer {
   dataOptIn: boolean;
   stripeSubscriptionId?: string;
   stripePriceId: string;
-  status: 'pending' | 'active' | 'paused' | 'cancelled';
+  status: "pending" | "active" | "paused" | "cancelled";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,7 +32,7 @@ export interface ServiceVisit {
   customerId: string;
   scheduledDate: Date;
   completedDate?: Date;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
+  status: "scheduled" | "completed" | "cancelled" | "rescheduled";
   amount: number;
   stripePaymentIntentId?: string;
   notes?: string;
@@ -41,7 +41,7 @@ export interface ServiceVisit {
 }
 
 // Import Supabase client
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
 
 // Convert Supabase timestamp to Date
 function parseTimestamp(timestamp: string): Date {
@@ -61,7 +61,9 @@ function mapVisitRecord(record: any): ServiceVisit {
   return {
     ...record,
     scheduledDate: parseTimestamp(record.scheduledDate),
-    completedDate: record.completedDate ? parseTimestamp(record.completedDate) : undefined,
+    completedDate: record.completedDate
+      ? parseTimestamp(record.completedDate)
+      : undefined,
     createdAt: parseTimestamp(record.createdAt),
     updatedAt: parseTimestamp(record.updatedAt),
   };
@@ -69,10 +71,10 @@ function mapVisitRecord(record: any): ServiceVisit {
 
 export const db = {
   async createCustomer(
-    customer: Omit<YarduraCustomer, 'id' | 'createdAt' | 'updatedAt'>
+    customer: Omit<YarduraCustomer, "id" | "createdAt" | "updatedAt">,
   ): Promise<YarduraCustomer> {
     const { data, error } = await supabase
-      .from('yardura_customers')
+      .from("yardura_customers")
       .insert(customer)
       .select()
       .single();
@@ -83,34 +85,36 @@ export const db = {
 
   async getCustomer(id: string): Promise<YarduraCustomer | null> {
     const { data, error } = await supabase
-      .from('yardura_customers')
-      .select('*')
-      .eq('id', id)
+      .from("yardura_customers")
+      .select("*")
+      .eq("id", id)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data ? mapCustomerRecord(data) : null;
   },
 
-  async getCustomerByStripeId(stripeCustomerId: string): Promise<YarduraCustomer | null> {
+  async getCustomerByStripeId(
+    stripeCustomerId: string,
+  ): Promise<YarduraCustomer | null> {
     const { data, error } = await supabase
-      .from('yardura_customers')
-      .select('*')
-      .eq('stripeCustomerId', stripeCustomerId)
+      .from("yardura_customers")
+      .select("*")
+      .eq("stripeCustomerId", stripeCustomerId)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data ? mapCustomerRecord(data) : null;
   },
 
   async updateCustomer(
     id: string,
-    updates: Partial<YarduraCustomer>
+    updates: Partial<YarduraCustomer>,
   ): Promise<YarduraCustomer | null> {
     const { data, error } = await supabase
-      .from('yardura_customers')
+      .from("yardura_customers")
       .update(updates)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -119,27 +123,35 @@ export const db = {
   },
 
   async createServiceVisit(
-    visit: Omit<ServiceVisit, 'id' | 'createdAt' | 'updatedAt'>
+    visit: Omit<ServiceVisit, "id" | "createdAt" | "updatedAt">,
   ): Promise<ServiceVisit> {
-    const { data, error } = await supabase.from('service_visits').insert(visit).select().single();
+    const { data, error } = await supabase
+      .from("service_visits")
+      .insert(visit)
+      .select()
+      .single();
 
     if (error) throw error;
     return mapVisitRecord(data);
   },
 
   async getServiceVisit(id: string): Promise<ServiceVisit | null> {
-    const { data, error } = await supabase.from('service_visits').select('*').eq('id', id).single();
+    const { data, error } = await supabase
+      .from("service_visits")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data ? mapVisitRecord(data) : null;
   },
 
   async getServiceVisits(customerId: string): Promise<ServiceVisit[]> {
     const { data, error } = await supabase
-      .from('service_visits')
-      .select('*')
-      .eq('customerId', customerId)
-      .order('scheduledDate', { ascending: true });
+      .from("service_visits")
+      .select("*")
+      .eq("customerId", customerId)
+      .order("scheduledDate", { ascending: true });
 
     if (error) throw error;
     return data.map(mapVisitRecord);
@@ -147,12 +159,12 @@ export const db = {
 
   async updateServiceVisit(
     id: string,
-    updates: Partial<ServiceVisit>
+    updates: Partial<ServiceVisit>,
   ): Promise<ServiceVisit | null> {
     const { data, error } = await supabase
-      .from('service_visits')
+      .from("service_visits")
       .update(updates)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -163,23 +175,26 @@ export const db = {
   async getUpcomingVisits(customerId: string): Promise<ServiceVisit[]> {
     const now = new Date().toISOString();
     const { data, error } = await supabase
-      .from('service_visits')
-      .select('*')
-      .eq('customerId', customerId)
-      .eq('status', 'scheduled')
-      .gte('scheduledDate', now)
-      .order('scheduledDate', { ascending: true });
+      .from("service_visits")
+      .select("*")
+      .eq("customerId", customerId)
+      .eq("status", "scheduled")
+      .gte("scheduledDate", now)
+      .order("scheduledDate", { ascending: true });
 
     if (error) throw error;
     return data.map(mapVisitRecord);
   },
 
-  async getVisitsByDateRange(startDate: Date, endDate: Date): Promise<ServiceVisit[]> {
+  async getVisitsByDateRange(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<ServiceVisit[]> {
     const { data, error } = await supabase
-      .from('service_visits')
-      .select('*')
-      .gte('scheduledDate', startDate.toISOString())
-      .lte('scheduledDate', endDate.toISOString());
+      .from("service_visits")
+      .select("*")
+      .gte("scheduledDate", startDate.toISOString())
+      .lte("scheduledDate", endDate.toISOString());
 
     if (error) throw error;
     return data.map(mapVisitRecord);

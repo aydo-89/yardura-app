@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { Suspense } from 'react';
-import SignInForm from '@/components/auth/SignInForm';
-import { getProviders } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { Suspense } from "react";
+import SignInForm from "@/components/auth/SignInForm";
+import { getProviders } from "next-auth/react";
+import { useEffect, useState } from "react";
 
 function SignInFormWrapper() {
   return <SignInForm />;
@@ -32,7 +32,7 @@ export default function SignInPage() {
         <div className="grid gap-3 mb-6">
           {providers &&
             Object.values(providers)
-              .filter((p: any) => p.id !== 'credentials') // Exclude credentials from OAuth list
+              .filter((p: any) => p.id !== "credentials") // Exclude credentials from OAuth list
               .map((p: any) => (
                 <a
                   key={p.id}
@@ -50,7 +50,9 @@ export default function SignInPage() {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or continue with email</span>
+            <span className="px-2 bg-white text-gray-500">
+              Or continue with email
+            </span>
           </div>
         </div>
 

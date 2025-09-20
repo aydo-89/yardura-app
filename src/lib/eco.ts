@@ -22,7 +22,9 @@ export function computeEcoStats({
 }): EcoStats {
   const deposits = Math.max(0, totalDeposits || 0);
   const weight_g =
-    totalWeightGrams && totalWeightGrams > 0 ? totalWeightGrams : deposits * GRAMS_PER_DEPOSIT;
+    totalWeightGrams && totalWeightGrams > 0
+      ? totalWeightGrams
+      : deposits * GRAMS_PER_DEPOSIT;
   const weight_kg = weight_g / 1000;
 
   const wasteDiverted_kg = weight_kg;

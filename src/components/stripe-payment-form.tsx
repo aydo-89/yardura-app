@@ -1,13 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, CreditCard, Shield, Lock } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, CreditCard, Shield, Lock } from "lucide-react";
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+);
 
 interface StripePaymentFormProps {
   onPaymentMethodReady: (paymentMethodId: string, customerId: string) => void;
@@ -41,14 +48,14 @@ function PaymentForm({
 
     try {
       // First, create a setup intent to save the payment method
-      const setupResponse = await fetch('/api/stripe/setup-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const setupResponse = await fetch("/api/stripe/setup-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ customerEmail, customerName }),
       });
 
       if (!setupResponse.ok) {
-        throw new Error('Failed to create setup intent');
+        throw new Error("Failed to create setup intent");
       }
 
       const { clientSecret, customerId } = await setupResponse.json();
@@ -57,21 +64,21 @@ function PaymentForm({
       const { error: setupError, setupIntent } = await stripe.confirmSetup({
         elements,
         clientSecret,
-        redirect: 'if_required',
+        redirect: "if_required",
       });
 
       if (setupError) {
-        setError(setupError.message || 'Payment method setup failed');
+        setError(setupError.message || "Payment method setup failed");
         return;
       }
 
-      if (setupIntent.status === 'succeeded') {
+      if (setupIntent.status === "succeeded") {
         // Payment method is now saved, pass it back to parent
         const paymentMethodId = setupIntent.payment_method as string;
         onPaymentMethodReady(paymentMethodId, customerId);
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || "An error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -96,15 +103,17 @@ function PaymentForm({
             <strong>Amount to be charged:</strong> ${amount.toFixed(2)}
             <br />
             <span className="text-xs">
-              Your card will be saved for future service charges. You'll only be charged after
-              service completion.
+              Your card will be saved for future service charges. You'll only be
+              charged after service completion.
             </span>
           </div>
 
           <PaymentElement />
 
           {error && (
-            <div className="text-red-600 text-sm bg-red-50 p-3 rounded border">{error}</div>
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded border">
+              {error}
+            </div>
           )}
 
           <Button
@@ -118,7 +127,7 @@ function PaymentForm({
                 Setting up payment...
               </>
             ) : (
-              'Save Payment Method'
+              "Save Payment Method"
             )}
           </Button>
         </form>
@@ -128,7 +137,7 @@ function PaymentForm({
 }
 
 interface StripePaymentFormWrapperProps
-  extends Omit<StripePaymentFormProps, 'onPaymentMethodReady'> {
+  extends Omit<StripePaymentFormProps, "onPaymentMethodReady"> {
   onPaymentMethodReady: (paymentMethodId: string, customerId: string) => void;
 }
 
@@ -146,9 +155,9 @@ export default function StripePaymentFormWrapper({
     // Create setup intent when component mounts
     const createSetupIntent = async () => {
       try {
-        const response = await fetch('/api/stripe/setup-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/stripe/setup-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ customerEmail, customerName }),
         });
 
@@ -157,7 +166,7 @@ export default function StripePaymentFormWrapper({
           setClientSecret(clientSecret);
         }
       } catch (error) {
-        console.error('Failed to create setup intent:', error);
+        console.error("Failed to create setup intent:", error);
       } finally {
         setIsLoading(false);
       }
@@ -197,9 +206,9 @@ export default function StripePaymentFormWrapper({
       options={{
         clientSecret,
         appearance: {
-          theme: 'stripe',
+          theme: "stripe",
           variables: {
-            colorPrimary: '#22c55e', // Green to match brand
+            colorPrimary: "#22c55e", // Green to match brand
           },
         },
       }}

@@ -1,19 +1,19 @@
 // Shared wellness types and constants
-export const TONE_GREEN = '#10B981';
-export const TONE_AMBER = '#F59E0B';
-export const TONE_RED = '#EF4444';
+export const TONE_GREEN = "#10B981";
+export const TONE_AMBER = "#F59E0B";
+export const TONE_RED = "#EF4444";
 
 export const COLOR_HEX = {
-  normal: '#8B5A3C',
-  yellow: '#FCD34D',
-  red: '#EF4444',
-  black: '#1F2937',
+  normal: "#8B5A3C",
+  yellow: "#FCD34D",
+  red: "#EF4444",
+  black: "#1F2937",
 } as const;
 
 export const CONS_HEX = {
-  normal: '#10B981',
-  soft: '#F59E0B',
-  dry: '#EF4444',
+  normal: "#10B981",
+  soft: "#F59E0B",
+  dry: "#EF4444",
 } as const;
 
 export const wellnessTheme = {
@@ -21,25 +21,26 @@ export const wellnessTheme = {
     green: TONE_GREEN,
     amber: TONE_AMBER,
     red: TONE_RED,
-    teal: '#0EA5E9',
-    yellow: '#FCD34D',
-    orange: '#F97316',
-    blue: '#3B82F6',
+    teal: "#0EA5E9",
+    yellow: "#FCD34D",
+    orange: "#F97316",
+    blue: "#3B82F6",
   },
-  slate800: '#1E293B',
+  slate800: "#1E293B",
   gradients: {
-    good: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-    monitor: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-    attention: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+    good: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+    monitor: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
+    attention: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
   },
-  slate50: '#F8FAFC',
-  slate200: '#E2E8F0',
-  radiusLg: '12px',
-  cardShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+  slate50: "#F8FAFC",
+  slate200: "#E2E8F0",
+  radiusLg: "12px",
+  cardShadow:
+    "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
 } as const;
 
-export type WellnessStatus = 'good' | 'monitor' | 'attention';
-export type WellnessSimpleStatus = 'good' | 'monitor' | 'attention';
+export type WellnessStatus = "good" | "monitor" | "attention";
+export type WellnessSimpleStatus = "good" | "monitor" | "attention";
 
 export interface ColorStatsWindow {
   yellow: number;
@@ -100,7 +101,7 @@ export interface DataReading {
 export interface ServiceVisit {
   id: string;
   date: string;
-  type: 'residential' | 'commercial';
+  type: "residential" | "commercial";
   areas: string[];
   notes?: string;
 }
@@ -117,9 +118,9 @@ export interface WellnessComputed {
   };
   weekly: WeekRollup[];
   trends: {
-    colorTrend: 'improving' | 'stable' | 'declining';
-    consistencyTrend: 'improving' | 'stable' | 'declining';
-    overallTrend: 'improving' | 'stable' | 'declining';
+    colorTrend: "improving" | "stable" | "declining";
+    consistencyTrend: "improving" | "stable" | "declining";
+    overallTrend: "improving" | "stable" | "declining";
     colorDonut: {
       normal: number;
       yellow: number;
@@ -143,11 +144,11 @@ export interface WellnessComputed {
 
 export function toneForStatus(status: WellnessStatus): string {
   switch (status) {
-    case 'good':
+    case "good":
       return TONE_GREEN;
-    case 'monitor':
+    case "monitor":
       return TONE_AMBER;
-    case 'attention':
+    case "attention":
       return TONE_RED;
     default:
       return TONE_GREEN;
@@ -164,34 +165,34 @@ export function mondayStart(date: Date): Date {
 
 export function colorKeyFor(color: string): string {
   const colorMap: Record<string, string> = {
-    'normal': 'normal',
-    'yellow': 'yellow',
-    'red': 'red',
-    'black': 'black',
-    'brown': 'normal',
-    'white': 'normal',
-    'orange': 'yellow',
-    'dark': 'black',
+    normal: "normal",
+    yellow: "yellow",
+    red: "red",
+    black: "black",
+    brown: "normal",
+    white: "normal",
+    orange: "yellow",
+    dark: "black",
   };
-  return colorMap[color.toLowerCase()] || 'normal';
+  return colorMap[color.toLowerCase()] || "normal";
 }
 
 export function consistencyKeyFor(consistency: string): string {
   const consistencyMap: Record<string, string> = {
-    'normal': 'normal',
-    'soft': 'soft',
-    'firm': 'dry',
-    'hard': 'dry',
-    'runny': 'soft',
-    'watery': 'soft',
-    'mushy': 'soft',
-    'formed': 'normal',
-    'loose': 'soft',
-    'dry': 'dry',
-    'mucous': 'mucous',
-    'greasy': 'greasy',
+    normal: "normal",
+    soft: "soft",
+    firm: "dry",
+    hard: "dry",
+    runny: "soft",
+    watery: "soft",
+    mushy: "soft",
+    formed: "normal",
+    loose: "soft",
+    dry: "dry",
+    mucous: "mucous",
+    greasy: "greasy",
   };
-  return consistencyMap[consistency.toLowerCase()] || 'normal';
+  return consistencyMap[consistency.toLowerCase()] || "normal";
 }
 
 // Wellness thresholds for analysis
@@ -207,33 +208,37 @@ export const WELLNESS_THRESHOLDS = {
 
 // Missing utility functions that are imported in useWellnessData
 export function formatWeekLabel(weekStart: Date): string {
-  return weekStart.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
+  return weekStart.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
   });
 }
 
 export function determineWellnessStatus(
   colorScore: number,
   consistencyScore: number,
-  totalDeposits: number
-): 'good' | 'monitor' | 'attention' {
-  if (colorScore <= WELLNESS_THRESHOLDS.RED_COLOR_THRESHOLD &&
-      consistencyScore <= WELLNESS_THRESHOLDS.SOFT_CONSISTENCY_THRESHOLD) {
-    return 'good';
+  totalDeposits: number,
+): "good" | "monitor" | "attention" {
+  if (
+    colorScore <= WELLNESS_THRESHOLDS.RED_COLOR_THRESHOLD &&
+    consistencyScore <= WELLNESS_THRESHOLDS.SOFT_CONSISTENCY_THRESHOLD
+  ) {
+    return "good";
   }
 
-  if (colorScore > WELLNESS_THRESHOLDS.RED_COLOR_THRESHOLD ||
-      consistencyScore > WELLNESS_THRESHOLDS.CRITICAL_SOFT_RATIO) {
-    return 'attention';
+  if (
+    colorScore > WELLNESS_THRESHOLDS.RED_COLOR_THRESHOLD ||
+    consistencyScore > WELLNESS_THRESHOLDS.CRITICAL_SOFT_RATIO
+  ) {
+    return "attention";
   }
 
-  return 'monitor';
+  return "monitor";
 }
 
 export function calculateWellnessScore(
   readings: any[],
-  weeks: number = 4
+  weeks: number = 4,
 ): { colorScore: number; consistencyScore: number; overallScore: number } {
   // Simple implementation - would need more sophisticated logic in production
   const colorScore = Math.random() * 3; // Mock score
@@ -245,9 +250,8 @@ export function calculateWellnessScore(
 
 export function shouldShowParasiteWarning(
   readings: any[],
-  weeks: number = 4
+  weeks: number = 4,
 ): boolean {
   // Mock implementation - would check for patterns indicating parasites
   return Math.random() > 0.8; // 20% chance of showing warning
 }
-

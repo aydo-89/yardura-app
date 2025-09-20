@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
   Bar,
@@ -9,10 +9,14 @@ import {
   ResponsiveContainer,
   Cell,
   Tooltip,
-} from 'recharts';
-import { Camera, AlertTriangle } from 'lucide-react';
-import { Disclosure } from './Disclosure';
-import { wellnessTheme, type ConsistencyStatsWindow, type WeekRollup } from '@/shared/wellness';
+} from "recharts";
+import { Camera, AlertTriangle } from "lucide-react";
+import { Disclosure } from "./Disclosure";
+import {
+  wellnessTheme,
+  type ConsistencyStatsWindow,
+  type WeekRollup,
+} from "@/shared/wellness";
 
 interface ConsistencyAnalysisProps {
   consistencyStats: {
@@ -29,9 +33,11 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
 }) => {
   // Handle image request for concerning consistency issues
   const handleImageRequest = (consistencyType: string, count: number) => {
-    console.log(`Requesting images for ${count} ${consistencyType.toLowerCase()} consistency`);
+    console.log(
+      `Requesting images for ${count} ${consistencyType.toLowerCase()} consistency`,
+    );
     alert(
-      `📸 Image request submitted for ${count} ${consistencyType.toLowerCase()} consistency samples. A veterinarian will review the images and contact you within 24 hours.`
+      `📸 Image request submitted for ${count} ${consistencyType.toLowerCase()} consistency samples. A veterinarian will review the images and contact you within 24 hours.`,
     );
   };
   // Prepare data for stacked bar chart (last 8 weeks, most recent first)
@@ -40,11 +46,11 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 6);
 
-    const dateLabel = `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    const dateLabel = `${startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 
     return {
       week: dateLabel,
-      fullLabel: `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}-${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      fullLabel: `${startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}-${endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
       normal: week.consistency.normal,
       soft: week.consistency.soft,
       dry: week.consistency.dry,
@@ -54,7 +60,7 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
   // Calculate percentages based on the actual weekly data being displayed
   const totalDeposits = chartData.reduce(
     (sum, week) => sum + week.normal + week.soft + week.dry,
-    0
+    0,
   );
   const normalTotal = chartData.reduce((sum, week) => sum + week.normal, 0);
   const softTotal = chartData.reduce((sum, week) => sum + week.soft, 0);
@@ -62,17 +68,19 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
 
   const statsWithPercentages = [
     {
-      label: 'Normal',
+      label: "Normal",
       count: normalTotal,
-      pct: totalDeposits > 0 ? Math.round((normalTotal / totalDeposits) * 100) : 0,
+      pct:
+        totalDeposits > 0 ? Math.round((normalTotal / totalDeposits) * 100) : 0,
     },
     {
-      label: 'Soft',
+      label: "Soft",
       count: softTotal,
-      pct: totalDeposits > 0 ? Math.round((softTotal / totalDeposits) * 100) : 0,
+      pct:
+        totalDeposits > 0 ? Math.round((softTotal / totalDeposits) * 100) : 0,
     },
     {
-      label: 'Hard',
+      label: "Hard",
       count: dryTotal,
       pct: totalDeposits > 0 ? Math.round((dryTotal / totalDeposits) * 100) : 0,
     },
@@ -86,21 +94,37 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
           {statsWithPercentages.map((stat) => {
             // Determine if this consistency type is concerning
             const isConcerning =
-              (stat.label === 'Soft' && stat.pct > 20) || (stat.label === 'Hard' && stat.pct > 15);
+              (stat.label === "Soft" && stat.pct > 20) ||
+              (stat.label === "Hard" && stat.pct > 15);
             const isCritical =
-              (stat.label === 'Soft' && stat.pct > 40) || (stat.label === 'Hard' && stat.pct > 30);
+              (stat.label === "Soft" && stat.pct > 40) ||
+              (stat.label === "Hard" && stat.pct > 30);
 
             // Define distinct colors for each consistency type
             const consistencyColors = {
-              Normal: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
-              Soft: { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700' },
-              Hard: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
+              Normal: {
+                bg: "bg-green-50",
+                border: "border-green-200",
+                text: "text-green-700",
+              },
+              Soft: {
+                bg: "bg-sky-50",
+                border: "border-sky-200",
+                text: "text-sky-700",
+              },
+              Hard: {
+                bg: "bg-amber-50",
+                border: "border-amber-200",
+                text: "text-amber-700",
+              },
             };
 
-            const colors = consistencyColors[stat.label as keyof typeof consistencyColors] || {
-              bg: 'bg-slate-50',
-              border: 'border-slate-200',
-              text: 'text-slate-600',
+            const colors = consistencyColors[
+              stat.label as keyof typeof consistencyColors
+            ] || {
+              bg: "bg-slate-50",
+              border: "border-slate-200",
+              text: "text-slate-600",
             };
 
             return (
@@ -109,36 +133,44 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
                 className={`text-center ${colors.bg} ${colors.border} border-2`}
               >
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-slate-900 mb-1">{stat.pct}%</div>
-                  <div className={`text-sm font-medium ${colors.text}`}>{stat.label}</div>
-                  <div className="text-xs text-slate-500">{stat.count} deposits</div>
+                  <div className="text-2xl font-bold text-slate-900 mb-1">
+                    {stat.pct}%
+                  </div>
+                  <div className={`text-sm font-medium ${colors.text}`}>
+                    {stat.label}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {stat.count} deposits
+                  </div>
 
                   {/* Review Button for Concerning Consistency */}
                   {isConcerning && stat.count > 0 && (
                     <div
                       className={`mt-2 pt-2 border-t ${
-                        isCritical ? 'border-red-200' : 'border-amber-200'
+                        isCritical ? "border-red-200" : "border-amber-200"
                       }`}
                     >
                       <div
                         className={`text-xs font-medium flex items-center justify-center gap-1 mb-1 ${
-                          isCritical ? 'text-red-600' : 'text-amber-600'
+                          isCritical ? "text-red-600" : "text-amber-600"
                         }`}
                       >
                         <AlertTriangle className="size-3" />
-                        {isCritical ? 'Critical' : 'Concerning'}
+                        {isCritical ? "Critical" : "Concerning"}
                       </div>
                       <button
-                        onClick={() => handleImageRequest(stat.label, stat.count)}
+                        onClick={() =>
+                          handleImageRequest(stat.label, stat.count)
+                        }
                         className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors ${
                           isCritical
-                            ? 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                            : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                            ? "text-red-600 hover:text-red-700 hover:bg-red-50"
+                            : "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                         }`}
                         title={`Request veterinary review of ${stat.label.toLowerCase()} consistency`}
                       >
                         <Camera className="size-3" />
-                        {isCritical ? 'Urgent Review' : 'Request Review'}
+                        {isCritical ? "Urgent Review" : "Request Review"}
                       </button>
                     </div>
                   )}
@@ -190,7 +222,9 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
                       const softWeight = 83.5; // Center of soft range (67-100%)
 
                       const position =
-                        (hardPct * hardWeight + normalPct * normalWeight + softPct * softWeight) /
+                        (hardPct * hardWeight +
+                          normalPct * normalWeight +
+                          softPct * softWeight) /
                         100;
 
                       // Convert to percentage and ensure it's within bounds
@@ -203,16 +237,16 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
               </div>
 
               <div className="text-center text-sm text-slate-600">
-                Current trend:{' '}
+                Current trend:{" "}
                 {(() => {
                   const normalPct = statsWithPercentages[0].pct;
                   const softPct = statsWithPercentages[1].pct;
                   const dryPct = statsWithPercentages[2].pct;
 
-                  if (normalPct >= 60) return 'Mostly Normal';
-                  if (softPct > dryPct) return 'Softer';
-                  if (dryPct > softPct) return 'Harder';
-                  return 'Mixed';
+                  if (normalPct >= 60) return "Mostly Normal";
+                  if (softPct > dryPct) return "Softer";
+                  if (dryPct > softPct) return "Harder";
+                  return "Mixed";
                 })()}
               </div>
             </div>
@@ -231,15 +265,15 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis
                     dataKey="week"
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                    axisLine={{ stroke: '#e2e8f0' }}
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    axisLine={{ stroke: "#e2e8f0" }}
                     angle={-45}
                     textAnchor="end"
                     height={60}
                   />
                   <YAxis
-                    tick={{ fontSize: 12, fill: '#64748b' }}
-                    axisLine={{ stroke: '#e2e8f0' }}
+                    tick={{ fontSize: 12, fill: "#64748b" }}
+                    axisLine={{ stroke: "#e2e8f0" }}
                   />
                   <Tooltip
                     labelFormatter={(label, payload) => {
@@ -249,15 +283,17 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
                       return label;
                     }}
                     contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '12px',
+                      backgroundColor: "white",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      fontSize: "12px",
                     }}
                   />
-                  <Bar dataKey="normal" stackId="a" fill="#10B981" /> {/* Green - matches card */}
-                  <Bar dataKey="soft" stackId="a" fill="#0EA5E9" /> {/* Sky blue - matches card */}
-                  <Bar dataKey="dry" stackId="a" fill="#F59E0B" />{' '}
+                  <Bar dataKey="normal" stackId="a" fill="#10B981" />{" "}
+                  {/* Green - matches card */}
+                  <Bar dataKey="soft" stackId="a" fill="#0EA5E9" />{" "}
+                  {/* Sky blue - matches card */}
+                  <Bar dataKey="dry" stackId="a" fill="#F59E0B" />{" "}
                   {/* Amber - matches card theme */}
                 </BarChart>
               </ResponsiveContainer>
@@ -267,15 +303,24 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
             <div className="mt-6 pt-4 border-t border-slate-200">
               <div className="flex flex-wrap justify-center gap-6 text-xs">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10B981' }} />
+                  <div
+                    className="w-3 h-3 rounded"
+                    style={{ backgroundColor: "#10B981" }}
+                  />
                   <span className="text-slate-600">Normal</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#0EA5E9' }} />
+                  <div
+                    className="w-3 h-3 rounded"
+                    style={{ backgroundColor: "#0EA5E9" }}
+                  />
                   <span className="text-slate-600">Soft</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#F59E0B' }} />
+                  <div
+                    className="w-3 h-3 rounded"
+                    style={{ backgroundColor: "#F59E0B" }}
+                  />
                   <span className="text-slate-600">Dry/Hard</span>
                 </div>
               </div>
@@ -291,7 +336,9 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-yellow-400 mt-2"></div>
                   <div>
-                    <div className="text-sm font-medium text-slate-900">Soft Stools Detected</div>
+                    <div className="text-sm font-medium text-slate-900">
+                      Soft Stools Detected
+                    </div>
                     <div className="text-xs text-slate-600">
                       Consider reviewing diet or hydration levels
                     </div>
@@ -303,7 +350,9 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-orange-400 mt-2"></div>
                   <div>
-                    <div className="text-sm font-medium text-slate-900">Hard Stools Detected</div>
+                    <div className="text-sm font-medium text-slate-900">
+                      Hard Stools Detected
+                    </div>
                     <div className="text-xs text-slate-600">
                       May indicate dehydration or low fiber intake
                     </div>
@@ -313,9 +362,12 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
 
               {(() => {
                 const totalDeposits = normalTotal + softTotal + dryTotal;
-                const normalPct = totalDeposits > 0 ? (normalTotal / totalDeposits) * 100 : 0;
-                const softPct = totalDeposits > 0 ? (softTotal / totalDeposits) * 100 : 0;
-                const hardPct = totalDeposits > 0 ? (dryTotal / totalDeposits) * 100 : 0;
+                const normalPct =
+                  totalDeposits > 0 ? (normalTotal / totalDeposits) * 100 : 0;
+                const softPct =
+                  totalDeposits > 0 ? (softTotal / totalDeposits) * 100 : 0;
+                const hardPct =
+                  totalDeposits > 0 ? (dryTotal / totalDeposits) * 100 : 0;
 
                 // Determine appropriate message based on actual percentages
                 if (normalPct >= 85) {
@@ -337,9 +389,12 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 rounded-full bg-blue-400 mt-2"></div>
                       <div>
-                        <div className="text-sm font-medium text-slate-900">Good Consistency</div>
+                        <div className="text-sm font-medium text-slate-900">
+                          Good Consistency
+                        </div>
                         <div className="text-xs text-slate-600">
-                          Generally normal with some variation - monitor for changes
+                          Generally normal with some variation - monitor for
+                          changes
                         </div>
                       </div>
                     </div>
@@ -349,9 +404,12 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 rounded-full bg-amber-400 mt-2"></div>
                       <div>
-                        <div className="text-sm font-medium text-slate-900">Mixed Consistency</div>
+                        <div className="text-sm font-medium text-slate-900">
+                          Mixed Consistency
+                        </div>
                         <div className="text-xs text-slate-600">
-                          Consider reviewing diet or consulting your vet about consistency
+                          Consider reviewing diet or consulting your vet about
+                          consistency
                         </div>
                       </div>
                     </div>
@@ -361,9 +419,12 @@ export const ConsistencyAnalysis: React.FC<ConsistencyAnalysisProps> = ({
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 rounded-full bg-orange-400 mt-2"></div>
                       <div>
-                        <div className="text-sm font-medium text-slate-900">Needs Attention</div>
+                        <div className="text-sm font-medium text-slate-900">
+                          Needs Attention
+                        </div>
                         <div className="text-xs text-slate-600">
-                          Significant consistency issues - consult your veterinarian
+                          Significant consistency issues - consult your
+                          veterinarian
                         </div>
                       </div>
                     </div>

@@ -1,11 +1,18 @@
 // Refactor: extracted from legacy DashboardClientNew; removed mock wellness code and duplicates.
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { track } from '@/lib/analytics';
-import type { DashboardClientProps } from './types';
-import { OverviewTab, WellnessTab, ServicesTab, EcoTab, BillingTab, ProfileTab } from './tabs';
+import { useMemo, useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { track } from "@/lib/analytics";
+import type { DashboardClientProps } from "./types";
+import {
+  OverviewTab,
+  WellnessTab,
+  ServicesTab,
+  EcoTab,
+  BillingTab,
+  ProfileTab,
+} from "./tabs";
 
 export default function Dashboard(props: DashboardClientProps) {
   const { user, dogs, serviceVisits, dataReadings } = props;
@@ -13,12 +20,12 @@ export default function Dashboard(props: DashboardClientProps) {
   // Shared computed metrics
   const profilePercent = useMemo(() => {
     const fields: Array<[string, boolean]> = [
-      ['Name', Boolean(user.name && user.name.trim().length > 0)],
-      ['Phone', Boolean(user.phone && user.phone.trim().length > 0)],
-      ['Address', Boolean(user.address && user.address.trim().length > 0)],
-      ['City', Boolean(user.city && user.city.trim().length > 0)],
-      ['ZIP code', Boolean(user.zipCode && user.zipCode.trim().length > 0)],
-      ['At least 1 dog profile', dogs.length > 0],
+      ["Name", Boolean(user.name && user.name.trim().length > 0)],
+      ["Phone", Boolean(user.phone && user.phone.trim().length > 0)],
+      ["Address", Boolean(user.address && user.address.trim().length > 0)],
+      ["City", Boolean(user.city && user.city.trim().length > 0)],
+      ["ZIP code", Boolean(user.zipCode && user.zipCode.trim().length > 0)],
+      ["At least 1 dog profile", dogs.length > 0],
     ];
     const completed = fields.filter(([, ok]) => ok).length;
     return Math.round((completed / fields.length) * 100);
@@ -26,34 +33,38 @@ export default function Dashboard(props: DashboardClientProps) {
 
   const profileFields = useMemo(() => {
     return [
-      ['Name', Boolean(user.name && user.name.trim().length > 0)],
-      ['Phone', Boolean(user.phone && user.phone.trim().length > 0)],
-      ['Address', Boolean(user.address && user.address.trim().length > 0)],
-      ['City', Boolean(user.city && user.city.trim().length > 0)],
-      ['ZIP code', Boolean(user.zipCode && user.zipCode.trim().length > 0)],
-      ['At least 1 dog profile', dogs.length > 0],
+      ["Name", Boolean(user.name && user.name.trim().length > 0)],
+      ["Phone", Boolean(user.phone && user.phone.trim().length > 0)],
+      ["Address", Boolean(user.address && user.address.trim().length > 0)],
+      ["City", Boolean(user.city && user.city.trim().length > 0)],
+      ["ZIP code", Boolean(user.zipCode && user.zipCode.trim().length > 0)],
+      ["At least 1 dog profile", dogs.length > 0],
     ] as Array<[string, boolean]>;
   }, [user, dogs.length]);
 
   const totalGrams = useMemo(
     () => dataReadings.reduce((sum, r) => sum + (r.weight || 0), 0),
-    [dataReadings]
+    [dataReadings],
   );
 
   const last30DaysCount = useMemo(() => {
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    return dataReadings.filter((r) => new Date(r.timestamp).getTime() >= cutoff).length;
+    return dataReadings.filter((r) => new Date(r.timestamp).getTime() >= cutoff)
+      .length;
   }, [dataReadings]);
 
   const last7DaysCount = useMemo(() => {
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    return dataReadings.filter((r) => new Date(r.timestamp).getTime() >= cutoff).length;
+    return dataReadings.filter((r) => new Date(r.timestamp).getTime() >= cutoff)
+      .length;
   }, [dataReadings]);
 
   const avgWeight30G = useMemo(() => {
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const weights = dataReadings
-      .filter((r) => r.weight != null && new Date(r.timestamp).getTime() >= cutoff)
+      .filter(
+        (r) => r.weight != null && new Date(r.timestamp).getTime() >= cutoff,
+      )
       .map((r) => r.weight as number);
     if (weights.length === 0) return null;
     const sum = weights.reduce((a, b) => a + b, 0);
@@ -62,24 +73,28 @@ export default function Dashboard(props: DashboardClientProps) {
 
   const lastReadingAt = useMemo(() => {
     if (dataReadings.length === 0) return null;
-    const ts = Math.max(...dataReadings.map((r) => new Date(r.timestamp).getTime()));
+    const ts = Math.max(
+      ...dataReadings.map((r) => new Date(r.timestamp).getTime()),
+    );
     return new Date(ts);
   }, [dataReadings]);
 
   const nextServiceAt = useMemo(() => {
     const nowTs = Date.now();
     const futureScheduled = serviceVisits
-      .filter((v) => v.status === 'SCHEDULED')
+      .filter((v) => v.status === "SCHEDULED")
       .map((v) => new Date(v.scheduledDate))
       .filter((d) => d.getTime() >= nowTs)
       .sort((a, b) => a.getTime() - b.getTime());
 
-    const isWeekly = serviceVisits.some((v) => (v.serviceType || '').includes('WEEKLY'));
+    const isWeekly = serviceVisits.some((v) =>
+      (v.serviceType || "").includes("WEEKLY"),
+    );
     let cadenceNext: Date | null = null;
     if (isWeekly) {
       const mostRecentCompleted =
         serviceVisits
-          .filter((v) => v.status === 'COMPLETED')
+          .filter((v) => v.status === "COMPLETED")
           .map((v) => new Date(v.scheduledDate))
           .sort((a, b) => b.getTime() - a.getTime())[0] || null;
       if (mostRecentCompleted) {
@@ -91,7 +106,9 @@ export default function Dashboard(props: DashboardClientProps) {
       }
     }
 
-    const candidates = [futureScheduled[0], cadenceNext].filter(Boolean) as Date[];
+    const candidates = [futureScheduled[0], cadenceNext].filter(
+      Boolean,
+    ) as Date[];
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => a.getTime() - b.getTime());
     return candidates[0];
@@ -99,7 +116,7 @@ export default function Dashboard(props: DashboardClientProps) {
 
   const lastCompletedAt = useMemo(() => {
     const completed = serviceVisits
-      .filter((v) => v.status === 'COMPLETED')
+      .filter((v) => v.status === "COMPLETED")
       .map((v) => new Date(v.scheduledDate))
       .sort((a, b) => b.getTime() - a.getTime());
     return completed[0] || null;
@@ -113,11 +130,13 @@ export default function Dashboard(props: DashboardClientProps) {
 
   const serviceStreak = useMemo(() => {
     const sorted = [...serviceVisits].sort(
-      (a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
+      (a, b) =>
+        new Date(b.scheduledDate).getTime() -
+        new Date(a.scheduledDate).getTime(),
     );
     let count = 0;
     for (const v of sorted) {
-      if (v.status === 'COMPLETED') count += 1;
+      if (v.status === "COMPLETED") count += 1;
       else break;
     }
     return count;
@@ -139,31 +158,34 @@ export default function Dashboard(props: DashboardClientProps) {
 
   const recentInsightsLevel = useMemo(() => {
     const concerning = dataReadings.some((r) => {
-      const c = (r.color || '').toLowerCase();
+      const c = (r.color || "").toLowerCase();
       return (
-        c.includes('black') || c.includes('tarry') || c.includes('melena') || c.includes('red')
+        c.includes("black") ||
+        c.includes("tarry") ||
+        c.includes("melena") ||
+        c.includes("red")
       );
     });
-    return concerning ? 'WATCH' : 'NORMAL';
+    return concerning ? "WATCH" : "NORMAL";
   }, [dataReadings]);
 
   // Form state
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [showDogForm, setShowDogForm] = useState(false);
-  const [formPhone, setFormPhone] = useState(user.phone || '');
-  const [formAddress, setFormAddress] = useState(user.address || '');
-  const [formCity, setFormCity] = useState(user.city || '');
-  const [formZip, setFormZip] = useState(user.zipCode || '');
+  const [formPhone, setFormPhone] = useState(user.phone || "");
+  const [formAddress, setFormAddress] = useState(user.address || "");
+  const [formCity, setFormCity] = useState(user.city || "");
+  const [formZip, setFormZip] = useState(user.zipCode || "");
   const [savingProfile, setSavingProfile] = useState(false);
 
-  const [dogName, setDogName] = useState('');
-  const [dogBreed, setDogBreed] = useState('');
-  const [dogAge, setDogAge] = useState('');
-  const [dogWeight, setDogWeight] = useState('');
+  const [dogName, setDogName] = useState("");
+  const [dogBreed, setDogBreed] = useState("");
+  const [dogAge, setDogAge] = useState("");
+  const [dogWeight, setDogWeight] = useState("");
   const [savingDog, setSavingDog] = useState(false);
 
   const referralUrl =
-    typeof window !== 'undefined'
+    typeof window !== "undefined"
       ? `${window.location.origin}/?ref=${user.id}`
       : `https://www.yardura.com/?ref=${user.id}`;
 
@@ -171,9 +193,9 @@ export default function Dashboard(props: DashboardClientProps) {
   const submitProfile = async () => {
     setSavingProfile(true);
     try {
-      await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           address: formAddress,
           city: formCity,
@@ -192,9 +214,9 @@ export default function Dashboard(props: DashboardClientProps) {
     if (!dogName.trim()) return;
     setSavingDog(true);
     try {
-      await fetch('/api/dogs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/dogs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: dogName,
           breed: dogBreed || null,
@@ -203,10 +225,10 @@ export default function Dashboard(props: DashboardClientProps) {
         }),
       });
       // Update local state would go here
-      setDogName('');
-      setDogBreed('');
-      setDogAge('');
-      setDogWeight('');
+      setDogName("");
+      setDogBreed("");
+      setDogAge("");
+      setDogWeight("");
       setShowDogForm(false);
     } finally {
       setSavingDog(false);
@@ -216,7 +238,7 @@ export default function Dashboard(props: DashboardClientProps) {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(referralUrl);
-      track('referral_copy');
+      track("referral_copy");
     } catch {
       // ignore
     }
@@ -226,11 +248,11 @@ export default function Dashboard(props: DashboardClientProps) {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'Yardura Referral',
-          text: 'Get a clean yard + optional wellness signals. Use my link to join!',
+          title: "Yardura Referral",
+          text: "Get a clean yard + optional wellness signals. Use my link to join!",
           url: referralUrl,
         });
-        track('referral_native_share');
+        track("referral_native_share");
       } else {
         await handleCopy();
       }
@@ -270,14 +292,14 @@ export default function Dashboard(props: DashboardClientProps) {
           {/* Welcome Message and Stats */}
           <div className="md:text-right">
             <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              Welcome back{user.name ? `, ${user.name}` : ''}! 🐾
+              Welcome back{user.name ? `, ${user.name}` : ""}! 🐾
             </h1>
             <p className="text-sm text-slate-400 mb-4">
               Your Yeller Service Dashboard
             </p>
             <div className="flex flex-col md:flex-row md:items-center gap-2 text-slate-300">
               <div className="text-sm">
-                Household: {dogs.length} {dogs.length === 1 ? 'dog' : 'dogs'}
+                Household: {dogs.length} {dogs.length === 1 ? "dog" : "dogs"}
               </div>
             </div>
           </div>
@@ -296,7 +318,7 @@ export default function Dashboard(props: DashboardClientProps) {
 
       <Tabs
         defaultValue="overview"
-        onValueChange={(val) => track('dashboard_tab_change', { tab: val })}
+        onValueChange={(val) => track("dashboard_tab_change", { tab: val })}
         className="space-y-6"
       >
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 bg-white/80 backdrop-blur-sm border border-slate-200/60 p-1 rounded-2xl shadow-xl">
@@ -414,7 +436,7 @@ export default function Dashboard(props: DashboardClientProps) {
 
         <TabsContent value="wellness" className="space-y-6">
           <WellnessTab
-            dataReadings={dataReadings.map(reading => ({
+            dataReadings={dataReadings.map((reading) => ({
               id: reading.id,
               timestamp: reading.timestamp,
               colors: { normal: 0, yellow: 0, red: 0, black: 0, total: 0 },
@@ -423,10 +445,13 @@ export default function Dashboard(props: DashboardClientProps) {
               color: reading.color || undefined,
               weight: reading.weight || undefined,
             }))}
-            serviceVisits={serviceVisits.map(visit => ({
+            serviceVisits={serviceVisits.map((visit) => ({
               id: visit.id,
               date: visit.scheduledDate,
-              type: visit.serviceType === 'commercial' ? 'commercial' : 'residential',
+              type:
+                visit.serviceType === "commercial"
+                  ? "commercial"
+                  : "residential",
               areas: [visit.yardSize],
               notes: undefined,
             }))}

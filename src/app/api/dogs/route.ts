@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { safeGetServerSession } from '@/lib/auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { safeGetServerSession } from "@/lib/auth";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     } | null;
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { name, breed, age, weight } = await request.json();
@@ -27,8 +27,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ dog });
   } catch (error) {
-    console.error('Error creating dog:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error creating dog:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -39,14 +42,14 @@ export async function GET(_request: NextRequest) {
     } | null;
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const dogs = await prisma.dog.findMany({
       where: { userId: session.user.id },
       include: {
         dataReadings: {
-          orderBy: { timestamp: 'desc' },
+          orderBy: { timestamp: "desc" },
           take: 5,
         },
       },
@@ -54,7 +57,10 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json({ dogs });
   } catch (error) {
-    console.error('Error fetching dogs:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error fetching dogs:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

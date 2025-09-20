@@ -1,23 +1,23 @@
-import { prisma } from './prisma';
-import bcrypt from 'bcryptjs';
-import { env, getEmailConfig, isAdminEmail } from './env';
+import { prisma } from "./prisma";
+import bcrypt from "bcryptjs";
+import { env, getEmailConfig, isAdminEmail } from "./env";
 
 // Get email configuration
 const emailConfig = getEmailConfig();
 
 // Import NextAuth components
-import NextAuth, { NextAuthOptions } from 'next-auth';
+import NextAuth, { NextAuthOptions } from "next-auth";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import GoogleProvider from 'next-auth/providers/google';
-import EmailProvider from 'next-auth/providers/email';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import GoogleProvider from "next-auth/providers/google";
+import EmailProvider from "next-auth/providers/email";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 
 const providers = [
   // Email provider for magic links (always available)
   EmailProvider({
     server:
-      emailConfig.provider === 'smtp' && emailConfig.smtp
+      emailConfig.provider === "smtp" && emailConfig.smtp
         ? {
             host: emailConfig.smtp.host,
             port: emailConfig.smtp.port,
@@ -30,19 +30,18 @@ const providers = [
         : undefined,
     from: env.EMAIL_FROM,
     async sendVerificationRequest({ identifier, url, provider }: any) {
-      const host = new URL(env.NEXTAUTH_URL || 'http://localhost:3000').host;
+      const host = new URL(env.NEXTAUTH_URL || "http://localhost:3000").host;
 
       try {
-
-      // Use nodemailer for SMTP
-      const nodemailer = await import('nodemailer');
-      const transport = nodemailer.createTransport(provider.server as any);
-      await transport.sendMail({
-        to: identifier,
-        from: provider.from,
-        subject: `Sign in to ${host}`,
-        text: `Sign in link for ${host}:\n${url}\n\nIf you did not request this, you can safely ignore this email.`,
-        html: `
+        // Use nodemailer for SMTP
+        const nodemailer = await import("nodemailer");
+        const transport = nodemailer.createTransport(provider.server as any);
+        await transport.sendMail({
+          to: identifier,
+          from: provider.from,
+          subject: `Sign in to ${host}`,
+          text: `Sign in link for ${host}:\n${url}\n\nIf you did not request this, you can safely ignore this email.`,
+          html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">Sign in to ${host}</h2>
             <p>Hello,</p>
@@ -59,15 +58,15 @@ const providers = [
             </p>
           </div>
         `,
-      });
+        });
       } catch (error) {
-        console.error('Email sending failed:', error);
+        console.error("Email sending failed:", error);
         // In development, still log the link even if sending fails
-        if (emailConfig.provider === 'console') {
-          console.log('\n[NextAuth] Magic sign-in link (DEV MODE):');
-          console.log('To:', identifier);
-          console.log('URL:', url);
-          console.log('Email sending failed, but link is available above\n');
+        if (emailConfig.provider === "console") {
+          console.log("\n[NextAuth] Magic sign-in link (DEV MODE):");
+          console.log("To:", identifier);
+          console.log("URL:", url);
+          console.log("Email sending failed, but link is available above\n");
         }
       }
     },
@@ -85,55 +84,71 @@ const providers = [
 
   // Credentials provider for password-based auth
   CredentialsProvider({
-    name: 'credentials',
+    name: "credentials",
     credentials: {
-      email: { label: 'Email', type: 'email' },
-      password: { label: 'Password', type: 'password' },
+      email: { label: "Email", type: "email" },
+      password: { label: "Password", type: "password" },
     },
     async authorize(credentials: any) {
-      console.log('🔐 AUTH ATTEMPT:', credentials?.email, 'pwd length:', credentials?.password?.length);
-      
+      console.log(
+        "🔐 AUTH ATTEMPT:",
+        credentials?.email,
+        "pwd length:",
+        credentials?.password?.length,
+      );
+
       try {
         if (!credentials?.email || !credentials?.password) {
-          console.log('❌ Missing email or password');
+          console.log("❌ Missing email or password");
           return null;
         }
 
-        console.log('🔍 Looking up user:', credentials.email.toLowerCase());
+        console.log("🔍 Looking up user:", credentials.email.toLowerCase());
         const user = await prisma.user.findUnique({
           where: { email: credentials.email.toLowerCase() },
           include: { accounts: true },
         });
 
         if (!user) {
-          console.log('❌ User not found in database');
+          console.log("❌ User not found in database");
           return null;
         }
 
-        console.log('✅ User found:', user.email, 'accounts:', user.accounts.length);
+        console.log(
+          "✅ User found:",
+          user.email,
+          "accounts:",
+          user.accounts.length,
+        );
 
         // Find credentials account
         const credentialsAccount = user.accounts.find(
-          (account) => account.provider === 'credentials'
+          (account) => account.provider === "credentials",
         );
 
         if (!credentialsAccount) {
-          console.log('❌ No credentials account found');
+          console.log("❌ No credentials account found");
           return null;
         }
 
         if (!credentialsAccount.access_token) {
-          console.log('❌ No password hash in credentials account');
+          console.log("❌ No password hash in credentials account");
           return null;
         }
 
-        console.log('✅ Credentials account found with password hash');
+        console.log("✅ Credentials account found with password hash");
 
         // Verify password
-        console.log('🔐 Verifying password...');
-        const isValid = await bcrypt.compare(credentials.password, credentialsAccount.access_token);
+        console.log("🔐 Verifying password...");
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          credentialsAccount.access_token,
+        );
 
-        console.log('Password verification result:', isValid ? '✅ SUCCESS' : '❌ FAILED');
+        console.log(
+          "Password verification result:",
+          isValid ? "✅ SUCCESS" : "❌ FAILED",
+        );
 
         if (!isValid) {
           return null;
@@ -146,10 +161,13 @@ const providers = [
           image: user.image,
         };
 
-        console.log('🎉 Returning successful auth result:', result.email);
+        console.log("🎉 Returning successful auth result:", result.email);
         return result;
       } catch (error) {
-        console.error('❌ Credentials auth error:', error instanceof Error ? error.message : 'Unknown error');
+        console.error(
+          "❌ Credentials auth error:",
+          error instanceof Error ? error.message : "Unknown error",
+        );
         return null;
       }
     },
@@ -161,7 +179,7 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: providers,
   pages: {
-    signIn: '/signin',
+    signIn: "/signin",
   },
   callbacks: {
     signIn: async ({ user, account: _account, profile: _profile }) => {
@@ -170,22 +188,22 @@ export const authOptions: NextAuthOptions = {
         try {
           await prisma.user.upsert({
             where: { email: user.email },
-            update: { role: 'ADMIN', orgId: 'yardura' },
+            update: { role: "ADMIN", orgId: "yardura" },
             create: {
               email: user.email,
-              name: user.name || user.email.split('@')[0],
-              role: 'ADMIN',
-              orgId: 'yardura',
+              name: user.name || user.email.split("@")[0],
+              role: "ADMIN",
+              orgId: "yardura",
             },
           });
         } catch (error) {
-          console.error('Error setting admin role:', error);
+          console.error("Error setting admin role:", error);
         }
       }
       return true;
     },
     session: async ({ session, token }) => {
-      if (token?.uid && typeof token.uid === 'string') {
+      if (token?.uid && typeof token.uid === "string") {
         (session.user as any).id = token.uid;
       }
 
@@ -198,15 +216,18 @@ export const authOptions: NextAuthOptions = {
           });
 
           // If user doesn't exist or isn't admin, and email is admin email, create/update admin user
-          if ((!user || user.role !== 'ADMIN') && isAdminEmail(session.user.email)) {
+          if (
+            (!user || user.role !== "ADMIN") &&
+            isAdminEmail(session.user.email)
+          ) {
             user = await prisma.user.upsert({
               where: { email: session.user.email },
-              update: { role: 'ADMIN', orgId: 'yardura' },
+              update: { role: "ADMIN", orgId: "yardura" },
               create: {
                 email: session.user.email,
-                name: session.user.name || session.user.email.split('@')[0],
-                role: 'ADMIN',
-                orgId: 'yardura',
+                name: session.user.name || session.user.email.split("@")[0],
+                role: "ADMIN",
+                orgId: "yardura",
               },
               select: { role: true, orgId: true },
             });
@@ -218,11 +239,11 @@ export const authOptions: NextAuthOptions = {
             (session.user as any).orgId = user.orgId;
           }
         } catch (error) {
-          console.error('Error fetching/creating user role:', error);
+          console.error("Error fetching/creating user role:", error);
           // Fallback: if email is admin email, set admin role
           if (isAdminEmail(session.user.email)) {
-            (session as any).userRole = 'ADMIN';
-            (session.user as any).orgId = 'yardura';
+            (session as any).userRole = "ADMIN";
+            (session.user as any).orgId = "yardura";
           }
         }
       }
@@ -242,14 +263,14 @@ export const authOptions: NextAuthOptions = {
     },
     redirect: async ({ url, baseUrl }) => {
       // Allows relative callback URLs
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
       // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url;
       return baseUrl;
     },
   },
   session: {
-    strategy: 'jwt' as const,
+    strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: env.NEXTAUTH_SECRET,
@@ -258,15 +279,18 @@ export const authOptions: NextAuthOptions = {
 // Safe wrapper for getServerSession that prevents build-time errors
 export async function safeGetServerSession(options: any): Promise<any> {
   // During build time or when NextAuth is disabled, return null
-  if (typeof window === 'undefined' && process.env.DISABLE_NEXTAUTH_BUILD === 'true') {
+  if (
+    typeof window === "undefined" &&
+    process.env.DISABLE_NEXTAUTH_BUILD === "true"
+  ) {
     return null;
   }
 
   try {
-    const { getServerSession } = await import('next-auth/next');
+    const { getServerSession } = await import("next-auth/next");
     return await getServerSession(options);
   } catch (error) {
-    console.warn('getServerSession failed, returning null:', error);
+    console.warn("getServerSession failed, returning null:", error);
     return null;
   }
 }

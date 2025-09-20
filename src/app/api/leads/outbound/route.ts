@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { z } from 'zod';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { z } from "zod";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -34,13 +34,17 @@ const createLeadSchema = z.object({
       notes: z.string().optional(),
       followUpAt: z.string().datetime().optional(),
       location: z
-        .object({ lat: z.number(), lng: z.number(), accuracy: z.number().optional() })
+        .object({
+          lat: z.number(),
+          lng: z.number(),
+          accuracy: z.number().optional(),
+        })
         .optional(),
     })
     .optional(),
 });
 
-function forbidden(message = 'Unauthorized') {
+function forbidden(message = "Unauthorized") {
   return NextResponse.json({ ok: false, error: message }, { status: 403 });
 }
 
@@ -49,23 +53,23 @@ function getRole(session: any): string | undefined {
 }
 
 function toStageColor(stage?: string | null) {
-  if (!stage) return 'default';
-  switch ((stage || '').toLowerCase()) {
-    case 'cold':
-      return 'cyan';
-    case 'contacted':
-      return 'blue';
-    case 'scheduled':
-      return 'green';
-    case 'follow_up':
-    case 'follow-up':
-      return 'amber';
-    case 'won':
-      return 'emerald';
-    case 'lost':
-      return 'rose';
+  if (!stage) return "default";
+  switch ((stage || "").toLowerCase()) {
+    case "cold":
+      return "cyan";
+    case "contacted":
+      return "blue";
+    case "scheduled":
+      return "green";
+    case "follow_up":
+    case "follow-up":
+      return "amber";
+    case "won":
+      return "emerald";
+    case "lost":
+      return "rose";
     default:
-      return 'slate';
+      return "slate";
   }
 }
 
@@ -78,7 +82,10 @@ function extractLeadMetadata(pricingBreakdown: unknown) {
     };
   }
   try {
-    const raw = typeof pricingBreakdown === 'string' ? JSON.parse(pricingBreakdown) : pricingBreakdown;
+    const raw =
+      typeof pricingBreakdown === "string"
+        ? JSON.parse(pricingBreakdown)
+        : pricingBreakdown;
     const metadata = raw?.metadata ?? raw ?? {};
     return {
       preferredStartDate: metadata?.preferredStartDate ?? null,
@@ -106,19 +113,25 @@ export async function GET(req: NextRequest) {
     const orgId = (session.user as any)?.orgId;
 
     if (!orgId) {
-      return NextResponse.json({ ok: false, error: 'Organization not set' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Organization not set" },
+        { status: 400 },
+      );
     }
 
     const { searchParams } = new URL(req.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || `${DEFAULT_PAGE_SIZE}`, 10), 100);
-    const cursor = searchParams.get('cursor') || undefined;
-    const pipelineStage = searchParams.get('pipelineStage') || undefined;
-    const ownerIdParam = searchParams.get('ownerId') || undefined;
-    const territoryId = searchParams.get('territoryId') || undefined;
-    const leadType = searchParams.get('leadType') || 'outbound';
-    const search = searchParams.get('search') || undefined;
-    const nextActionBefore = searchParams.get('nextActionBefore') || undefined;
-    const includeCadence = searchParams.get('includeCadence') === 'true';
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") || `${DEFAULT_PAGE_SIZE}`, 10),
+      100,
+    );
+    const cursor = searchParams.get("cursor") || undefined;
+    const pipelineStage = searchParams.get("pipelineStage") || undefined;
+    const ownerIdParam = searchParams.get("ownerId") || undefined;
+    const territoryId = searchParams.get("territoryId") || undefined;
+    const leadType = searchParams.get("leadType") || "outbound";
+    const search = searchParams.get("search") || undefined;
+    const nextActionBefore = searchParams.get("nextActionBefore") || undefined;
+    const includeCadence = searchParams.get("includeCadence") === "true";
 
     const where: any = {
       orgId,
@@ -130,7 +143,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (territoryId) {
-      where.territoryId = territoryId === 'NULL' ? null : territoryId;
+      where.territoryId = territoryId === "NULL" ? null : territoryId;
     }
 
     if (nextActionBefore) {
@@ -139,37 +152,31 @@ export async function GET(req: NextRequest) {
 
     if (search) {
       where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
-        { address: { contains: search, mode: 'insensitive' } },
-        { city: { contains: search, mode: 'insensitive' } },
-        { zipCode: { contains: search, mode: 'insensitive' } },
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
+        { address: { contains: search, mode: "insensitive" } },
+        { city: { contains: search, mode: "insensitive" } },
+        { zipCode: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    if (role === 'SALES_REP' && userId) {
+    if (role === "SALES_REP" && userId) {
       where.AND = [
         {
-          OR: [
-            { ownerId: userId },
-            { salesRepId: userId },
-          ],
+          OR: [{ ownerId: userId }, { salesRepId: userId }],
         },
       ];
     } else if (ownerIdParam) {
-      where.ownerId = ownerIdParam === 'NULL' ? null : ownerIdParam;
+      where.ownerId = ownerIdParam === "NULL" ? null : ownerIdParam;
     }
 
     const leads = await prisma.lead.findMany({
       where,
       take: limit + 1,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-      orderBy: [
-        { nextActionAt: 'asc' },
-        { updatedAt: 'desc' },
-      ],
+      orderBy: [{ nextActionAt: "asc" }, { updatedAt: "desc" }],
       include: {
         territory: { select: { id: true, name: true, color: true } },
         owner: { select: { id: true, name: true, email: true } },
@@ -177,8 +184,13 @@ export async function GET(req: NextRequest) {
         lastActivity: true,
         cadenceEnrollments: includeCadence
           ? {
-              where: { status: 'active' },
-              select: { id: true, cadenceId: true, nextRunAt: true, status: true },
+              where: { status: "active" },
+              select: {
+                id: true,
+                cadenceId: true,
+                nextRunAt: true,
+                status: true,
+              },
             }
           : false,
       },
@@ -195,7 +207,9 @@ export async function GET(req: NextRequest) {
     const mapped = leads.map((lead) => {
       const metadata = extractLeadMetadata(lead.pricingBreakdown);
       const owner = lead.owner ?? lead.salesRep ?? null;
-      const slaMinutes = lead.nextActionAt ? Math.round((lead.nextActionAt.getTime() - now) / 60000) : null;
+      const slaMinutes = lead.nextActionAt
+        ? Math.round((lead.nextActionAt.getTime() - now) / 60000)
+        : null;
 
       return {
         id: lead.id,
@@ -229,7 +243,9 @@ export async function GET(req: NextRequest) {
         preferredStartDate: metadata.preferredStartDate,
         preferredContactMethods: metadata.preferredContactMethods,
         howDidYouHear: metadata.howDidYouHear ?? lead.referralSource,
-        cadenceEnrollments: includeCadence ? lead.cadenceEnrollments : undefined,
+        cadenceEnrollments: includeCadence
+          ? lead.cadenceEnrollments
+          : undefined,
       };
     });
 
@@ -241,8 +257,11 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('GET /api/leads/outbound error', error);
-    return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
+    console.error("GET /api/leads/outbound error", error);
+    return NextResponse.json(
+      { ok: false, error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -258,28 +277,47 @@ export async function POST(req: NextRequest) {
     const sessionUserId = (session.user as any)?.id;
 
     if (!orgId) {
-      return NextResponse.json({ ok: false, error: 'Organization not set' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Organization not set" },
+        { status: 400 },
+      );
     }
 
     const json = await req.json();
     const parsed = createLeadSchema.parse(json);
 
-    const isManager = ['ADMIN', 'OWNER', 'SALES_MANAGER', 'FRANCHISE_OWNER'].includes(role || '');
+    const isManager = [
+      "ADMIN",
+      "OWNER",
+      "SALES_MANAGER",
+      "FRANCHISE_OWNER",
+    ].includes(role || "");
 
-    const ownerId = isManager ? parsed.ownerId ?? sessionUserId : sessionUserId;
+    const ownerId = isManager
+      ? (parsed.ownerId ?? sessionUserId)
+      : sessionUserId;
 
     if (!ownerId) {
-      return NextResponse.json({ ok: false, error: 'Owner could not be determined' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Owner could not be determined" },
+        { status: 400 },
+      );
     }
 
     if (parsed.territoryId) {
-      const territory = await prisma.territory.findFirst({ where: { id: parsed.territoryId, orgId } });
+      const territory = await prisma.territory.findFirst({
+        where: { id: parsed.territoryId, orgId },
+      });
       if (!territory) {
-        return NextResponse.json({ ok: false, error: 'Territory not found' }, { status: 404 });
+        return NextResponse.json(
+          { ok: false, error: "Territory not found" },
+          { status: 404 },
+        );
       }
     }
 
-    const email = parsed.email ?? `outbound-${crypto.randomUUID()}@leads.yardura`;
+    const email =
+      parsed.email ?? `outbound-${crypto.randomUUID()}@leads.yardura`;
 
     const leadData = {
       orgId,
@@ -287,10 +325,10 @@ export async function POST(req: NextRequest) {
       lastName: parsed.lastName,
       email,
       phone: parsed.phone,
-      serviceType: 'residential' as const,
-      source: 'outbound',
-      leadType: 'outbound',
-      pipelineStage: parsed.pipelineStage ?? 'cold',
+      serviceType: "residential" as const,
+      source: "outbound",
+      leadType: "outbound",
+      pipelineStage: parsed.pipelineStage ?? "cold",
       territoryId: parsed.territoryId,
       campaignId: parsed.campaignId,
       ownerId,
@@ -306,7 +344,7 @@ export async function POST(req: NextRequest) {
         : undefined,
       nextActionAt: parsed.initialActivity?.followUpAt
         ? new Date(parsed.initialActivity.followUpAt)
-        : parsed.pipelineStage === 'cold'
+        : parsed.pipelineStage === "cold"
           ? new Date(Date.now() + 24 * 60 * 60 * 1000)
           : undefined,
     } as const;
@@ -339,7 +377,7 @@ export async function POST(req: NextRequest) {
               : undefined,
             location: parsed.initialActivity.location
               ? {
-                  type: 'Point',
+                  type: "Point",
                   coordinates: [
                     parsed.initialActivity.location.lng,
                     parsed.initialActivity.location.lat,
@@ -367,18 +405,24 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, data: result }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/leads/outbound error', error);
+    console.error("POST /api/leads/outbound error", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { ok: false, error: 'Validation error', details: error.flatten() },
-        { status: 400 }
+        { ok: false, error: "Validation error", details: error.flatten() },
+        { status: 400 },
       );
     }
 
-    if ((error as any)?.code === 'P2002') {
-      return NextResponse.json({ ok: false, error: 'Lead already exists with that email' }, { status: 409 });
+    if ((error as any)?.code === "P2002") {
+      return NextResponse.json(
+        { ok: false, error: "Lead already exists with that email" },
+        { status: 409 },
+      );
     }
 
-    return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

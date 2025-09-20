@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { Shield, Award, Truck, Heart, LucideIcon } from 'lucide-react';
+import { Shield, Award, Truck, Heart, LucideIcon } from "lucide-react";
 
 interface TrustSignal {
   icon: LucideIcon;
@@ -11,23 +11,23 @@ interface TrustSignal {
 const TRUST_SIGNALS: TrustSignal[] = [
   {
     icon: Shield,
-    text: 'Licensed & Insured',
-    description: 'Fully licensed and insured for your peace of mind',
+    text: "Licensed & Insured",
+    description: "Fully licensed and insured for your peace of mind",
   },
   {
     icon: Award,
-    text: '5-Star Service',
-    description: 'Trusted by hundreds of happy customers',
+    text: "5-Star Service",
+    description: "Trusted by hundreds of happy customers",
   },
   {
     icon: Truck,
-    text: 'Reliable Service',
-    description: '98% on-time service rate with flexible scheduling',
+    text: "Reliable Service",
+    description: "98% on-time service rate with flexible scheduling",
   },
   {
     icon: Heart,
-    text: 'Eco-Friendly',
-    description: 'Carbon-neutral service with sustainable practices',
+    text: "Eco-Friendly",
+    description: "Carbon-neutral service with sustainable practices",
   },
 ];
 
@@ -35,7 +35,7 @@ interface TrustSignalsProps {
   className?: string;
 }
 
-export const TrustSignals = ({ className = '' }: TrustSignalsProps) => {
+export const TrustSignals = ({ className = "" }: TrustSignalsProps) => {
   return (
     <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${className}`}>
       {TRUST_SIGNALS.map((signal, index) => {
@@ -58,4 +58,3 @@ export const TrustSignals = ({ className = '' }: TrustSignalsProps) => {
     </div>
   );
 };
-

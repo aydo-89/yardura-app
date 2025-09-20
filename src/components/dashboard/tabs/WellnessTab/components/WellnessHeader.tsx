@@ -1,9 +1,9 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { StatusPill } from './StatusPill';
-import { wellnessTheme, type WellnessComputed } from '@/shared/wellness';
+import React from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { StatusPill } from "./StatusPill";
+import { wellnessTheme, type WellnessComputed } from "@/shared/wellness";
 
 interface WellnessHeaderProps {
   wellnessData: WellnessComputed;
@@ -31,35 +31,43 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
   if (totalColorSamples > 0) {
     // Calculate percentages consistent with ColorAnalysis
     const yellowPercent = Math.round(
-      (wellnessData.trends.colorDonut.yellow / totalColorSamples) * 100
+      (wellnessData.trends.colorDonut.yellow / totalColorSamples) * 100,
     );
-    const redPercent = Math.round((wellnessData.trends.colorDonut.red / totalColorSamples) * 100);
+    const redPercent = Math.round(
+      (wellnessData.trends.colorDonut.red / totalColorSamples) * 100,
+    );
     const blackPercent = Math.round(
-      (wellnessData.trends.colorDonut.black / totalColorSamples) * 100
+      (wellnessData.trends.colorDonut.black / totalColorSamples) * 100,
     );
 
     if (yellowPercent > 0) {
       concerningIssues.push({
-        label: 'Yellow Color',
-        sectionId: 'color-analysis',
-        icon: '🟡',
+        label: "Yellow Color",
+        sectionId: "color-analysis",
+        icon: "🟡",
       });
     }
     if (redPercent > 0 || blackPercent > 0) {
       concerningIssues.push({
-        label: 'Red/Black Color',
-        sectionId: 'color-analysis',
-        icon: '🔴',
+        label: "Red/Black Color",
+        sectionId: "color-analysis",
+        icon: "🔴",
       });
     }
   }
 
   // Check for consistency issues - only show if there are actual concerning patterns
-  const softTotal = wellnessData.trends.consistencyStack.reduce((sum, w) => sum + w.soft, 0);
-  const dryTotal = wellnessData.trends.consistencyStack.reduce((sum, w) => sum + w.dry, 0);
+  const softTotal = wellnessData.trends.consistencyStack.reduce(
+    (sum, w) => sum + w.soft,
+    0,
+  );
+  const dryTotal = wellnessData.trends.consistencyStack.reduce(
+    (sum, w) => sum + w.dry,
+    0,
+  );
   const totalConsistencySamples = wellnessData.trends.consistencyStack.reduce(
     (sum, w) => sum + w.normal + w.soft + w.dry,
-    0
+    0,
   );
 
   if (totalConsistencySamples > 0) {
@@ -68,29 +76,29 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
 
     if (softPercent > 0) {
       concerningIssues.push({
-        label: 'Soft Consistency',
-        sectionId: 'consistency-analysis',
-        icon: '💧',
+        label: "Soft Consistency",
+        sectionId: "consistency-analysis",
+        icon: "💧",
       });
     }
     if (dryPercent > 0) {
       concerningIssues.push({
-        label: 'Hard Consistency',
-        sectionId: 'consistency-analysis',
-        icon: '🏜️',
+        label: "Hard Consistency",
+        sectionId: "consistency-analysis",
+        icon: "🏜️",
       });
     }
   }
 
   // Check for content signal issues - only show if there are actual detections
   const signalIssues = wellnessData.trends.signalSparklines.filter((signal) =>
-    signal.series.some((point) => point.y > 0)
+    signal.series.some((point) => point.y > 0),
   );
   if (signalIssues.length > 0) {
     concerningIssues.push({
-      label: 'Content Signals',
-      sectionId: 'content-signals',
-      icon: '🔍',
+      label: "Content Signals",
+      sectionId: "content-signals",
+      icon: "🔍",
     });
   }
 
@@ -101,7 +109,7 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
       // Fallback: scroll to element
       const element = document.getElementById(sectionId);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
   };
@@ -115,7 +123,7 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
       <Card
         className="border-0 shadow-sm"
         style={{
-          backgroundColor: 'white',
+          backgroundColor: "white",
           borderRadius: wellnessTheme.radiusLg,
         }}
       >
@@ -125,7 +133,9 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <StatusPill status={latestStatus} size="md" />
-                <p className="text-slate-600 text-sm leading-relaxed mb-2">{latestCopy.subtitle}</p>
+                <p className="text-slate-600 text-sm leading-relaxed mb-2">
+                  {latestCopy.subtitle}
+                </p>
               </div>
 
               {/* Compact Advice List */}
@@ -142,7 +152,9 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
               {/* Navigation Links for Concerning Issues */}
               {concerningIssues.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-slate-200">
-                  <div className="text-xs text-slate-600 mb-2 font-medium">Review concerns:</div>
+                  <div className="text-xs text-slate-600 mb-2 font-medium">
+                    Review concerns:
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {concerningIssues.map((issue, index) => (
                       <button
@@ -187,7 +199,9 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
                     className="text-xs font-medium"
                     style={{
                       backgroundColor:
-                        latestStatus === 'attention' ? wellnessTheme.colors.red : wellnessTheme.colors.teal,
+                        latestStatus === "attention"
+                          ? wellnessTheme.colors.red
+                          : wellnessTheme.colors.teal,
                       borderRadius: wellnessTheme.radiusLg,
                     }}
                   >

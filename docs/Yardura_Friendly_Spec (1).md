@@ -1,4 +1,3 @@
-
 # Yardura Service OS — Friendly Build Spec (with Existing-App Awareness)
 
 This guide keeps the official spec actionable **and** ensures we respect the current app’s code and data.
@@ -6,11 +5,13 @@ This guide keeps the official spec actionable **and** ensures we respect the cur
 ---
 
 ## A) What Exists Today (Keep Stable)
+
 **Code:** landing page, quote/onboarding flow, basic client portal/dashboard with wellness insights.  
 **Data:** Prisma schema using **SQLite** (see Appendix A).  
 **Auth/Payments/UI:** NextAuth accounts/sessions; Stripe subscriptions/webhooks; Tailwind/shadcn‑style components; Framer Motion animations; Resend/SMTP emails.
 
 **Guardrails**
+
 - Quote wizard must remain functionally identical (steps, fields, validation, pricing).
 - Client portal semantics must not change without an adapter + migration note.
 - No breaking changes to existing API contracts or env vars without shims.
@@ -18,6 +19,7 @@ This guide keeps the official spec actionable **and** ensures we respect the cur
 ---
 
 ## B) First Step: Analysis (No Feature Changes)
+
 1. Project survey: structure, workspaces, scripts, routing map, shared components.
 2. Dependency audit: Next.js/React/Prisma/Auth/Stripe/UI/email versions + configs.
 3. Data audit: read current Prisma schema; produce ERD; row counts; DB size; indexes.
@@ -29,6 +31,7 @@ Deliver `/docs/00_codebase_survey.md` with findings + screenshots.
 ---
 
 ## C) Migration: SQLite → Postgres (Safe & Phased)
+
 - Add Postgres alongside SQLite; keep names stable; migrate with `migrate diff` and COPY.
 - Introduce a small data‑access layer to flip reads/writes per model behind flags.
 - Start with non‑critical writes; defer quote/onboarding writes to last.
@@ -37,6 +40,7 @@ Deliver `/docs/00_codebase_survey.md` with findings + screenshots.
 ---
 
 ## D) v1 Feature Set (integrated)
+
 - **F-001 Quote & Leads** — Quote wizard keeps parity while passing tenant context (`org`/`businessId`/`tenantId`). `POST /api/quote` stores the lead under that org, snapshots pricing, and returns `leadId` for follow-up.
 - **F‑002 Onboarding & Subscriptions** — ZIP/zone pricing; cross‑sell; Stripe SetupIntent; ToS; first visit scheduling; portal creds.
 - **F‑003 Dispatch & Routing** — Jobs (recurring/one‑time); weather skip + notify; optimize ≤10s/100; live ETAs; drag‑drop board; reassign/reschedule/reclean/recreate.
@@ -53,12 +57,14 @@ Integrations (F‑011–F‑016): Stripe, QBO, Maps/Distance Matrix, Twilio, Res
 ---
 
 ## E) Data Model Notes (Mapping from Today → v1)
+
 Your current schema includes `User/Account/Session/VerificationToken`, domain objects (`Dog`, `ServiceVisit`, `DataReading`), ops (`Org`, `Customer`, `Job`, `Device`, `Sample`, `SampleScore`, `Alert`), finance (`Commission`, `BillingSnapshot`), impact metrics (`EcoStat`, `GlobalStats`), and ML labeling (`GroundTruth`).  
 **Strategy:** Keep names and relations stable; add new v1 models incrementally. Where models differ (e.g., `Job` vs `Route/Job` pairing), provide an adapter layer and backfill scripts.
 
 ---
 
 ## F) API & Webhooks
+
 - REST handlers; OpenAPI JSON + `/docs`
 - HMAC + idempotency for outbound webhooks; retry/backoff
 - Consumers for Stripe/QBO/Twilio/Email with tests
@@ -66,6 +72,7 @@ Your current schema includes `User/Account/Session/VerificationToken`, domain ob
 ---
 
 ## G) Security & SLAs
+
 - Stripe Elements, no PAN in DB; Zod input validation; rate limits
 - Column-level encryption for PII; audit trails on billing, payroll, scheduling
 - SLAs: route optimization ≤10s/100; portal P95 < 500ms (cached); job list <200ms; photo upload ≤3s; wellness <5s
@@ -73,6 +80,7 @@ Your current schema includes `User/Account/Session/VerificationToken`, domain ob
 ---
 
 ## I) Lead Management & Quote Email Flow
+
 - Quote wizard reads `org`, `businessId`, or `tenantId` from the URL (or falls back to `yardura`) so every submission stays scoped to the correct tenant.
 - `/api/quote` accepts the same tenant identifier in the payload, persists leads with pricing snapshots (`estimatedPrice`, `pricingBreakdown`), and returns the stable `leadId` used by downstream flows.
 - `/quote/success` and `/quote/sent` propagate the tenant query param; the latter now calls `POST /api/leads/:id/send-quote` to deliver customer-facing emails via Resend and flips the lead status to `PROPOSAL_SENT`.
@@ -81,6 +89,7 @@ Your current schema includes `User/Account/Session/VerificationToken`, domain ob
 ---
 
 ## J) Outbound Field Sales & Territory Ops (Spotio Parity)
+
 - Mobile-first canvassing workspace lets reps add cold leads from the map, drop door-knock pins with GPS/timestamp evidence, capture photos/notes, and stage them through a configurable outbound pipeline (cold → contacted → scheduled → closed/lost).
 - Territory management supports multi-level polygons, ZIP slices, heatmaps, and assignment rules; territory overlays show inbound lead density, rep coverage, and priority routes while preventing accidental overlap.
 - Route planner mirrors Spotio’s Trips: reps (or managers) lasso addresses, auto-optimize multi-stop walking/driving loops, reorder on the fly, save recurring canvass routes, and log mileage for reimbursement.
@@ -91,26 +100,28 @@ Your current schema includes `User/Account/Session/VerificationToken`, domain ob
 ---
 
 ## H) Delivery Checklist (Milestones)
-1) **Analysis (no code changes)** — survey, routing map, ERD, invariants, risk register  
-2) Repo + Infra + Auth + RBAC  
-3) DB schema & seeds; **dual DB (SQLite+Postgres) setup**  
-4) Quote parity + `/api/quote`  
-5) Onboarding + Stripe + schedule first visit  
-6) Dispatch board + job generator + weather skip  
-7) Route optimizer + device push + ETAs  
-8) Tech PWA (offline + photos + GPS + SMS)  
-9) Client Portal (proofs, billing, PM methods, schedule)  
-10) Billing engine + dunning + QBO sync  
-11) Wellness pipeline + trends + alerts  
-12) Payroll + slips + approvals  
-13) Franchise + royalties + reporting  
-14) Public API + webhooks + docs  
-15) QA (unit/E2E/load), Sentry, analytics  
-16) Production deploy + runbook
+
+1. **Analysis (no code changes)** — survey, routing map, ERD, invariants, risk register
+2. Repo + Infra + Auth + RBAC
+3. DB schema & seeds; **dual DB (SQLite+Postgres) setup**
+4. Quote parity + `/api/quote`
+5. Onboarding + Stripe + schedule first visit
+6. Dispatch board + job generator + weather skip
+7. Route optimizer + device push + ETAs
+8. Tech PWA (offline + photos + GPS + SMS)
+9. Client Portal (proofs, billing, PM methods, schedule)
+10. Billing engine + dunning + QBO sync
+11. Wellness pipeline + trends + alerts
+12. Payroll + slips + approvals
+13. Franchise + royalties + reporting
+14. Public API + webhooks + docs
+15. QA (unit/E2E/load), Sentry, analytics
+16. Production deploy + runbook
 
 ---
 
 ## Appendix A — Current Prisma Schema (verbatim)
+
 ```prisma
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema

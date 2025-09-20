@@ -15,7 +15,7 @@ export const ease = {
   // Accelerate for exiting elements
   accelerate: [0.4, 0, 1, 1],
   // Linear for predictable, mechanical motion
-  linear: 'linear',
+  linear: "linear",
   // Custom bounce for playful interactions
   bounce: [0.68, -0.55, 0.265, 1.55],
 } as const;
@@ -27,28 +27,28 @@ export const ease = {
 export const spring = {
   // Soft, gentle spring for hover states and subtle interactions
   soft: {
-    type: 'spring' as const,
+    type: "spring" as const,
     stiffness: 220,
     damping: 28,
     mass: 1,
   },
   // Snappy spring for quick, responsive interactions
   snappy: {
-    type: 'spring' as const,
+    type: "spring" as const,
     stiffness: 320,
     damping: 26,
     mass: 0.8,
   },
   // Bouncy spring for playful, attention-grabbing effects
   bouncy: {
-    type: 'spring' as const,
+    type: "spring" as const,
     stiffness: 180,
     damping: 20,
     mass: 1.2,
   },
   // Slow, deliberate spring for important transitions
   deliberate: {
-    type: 'spring' as const,
+    type: "spring" as const,
     stiffness: 120,
     damping: 25,
     mass: 1.5,
@@ -262,12 +262,12 @@ export const splitHeadline = {
     initial: {
       y: 20,
       opacity: 0,
-      clipPath: 'inset(0 100% 0 0)',
+      clipPath: "inset(0 100% 0 0)",
     },
     animate: {
       y: 0,
       opacity: 1,
-      clipPath: 'inset(0 0% 0 0)',
+      clipPath: "inset(0 0% 0 0)",
       transition: {
         duration: dur.slow,
         ease: ease.emphasized,
@@ -279,15 +279,15 @@ export const splitHeadline = {
 // Shimmer effect for premium buttons
 export const shimmer = {
   initial: {
-    backgroundPosition: '-200% 0',
+    backgroundPosition: "-200% 0",
   },
   animate: {
-    backgroundPosition: '200% 0',
+    backgroundPosition: "200% 0",
     transition: {
       duration: 1.2,
       ease: ease.linear,
       repeat: Infinity,
-      repeatType: 'loop' as const,
+      repeatType: "loop" as const,
     },
   },
 };
@@ -317,19 +317,18 @@ export const cardTilt = {
 
 // Will-change hints for common animations
 export const willChange = {
-  transform: 'will-change: transform;',
-  opacity: 'will-change: opacity;',
-  transformOpacity: 'will-change: transform, opacity;',
+  transform: "will-change: transform;",
+  opacity: "will-change: opacity;",
+  transformOpacity: "will-change: transform, opacity;",
 } as const;
 
 // CSS classes for performance optimization
 export const performanceClasses = {
   // Use transform and opacity for 60fps animations
-  animateTransform: 'will-change-transform',
-  animateOpacity: 'will-change-opacity',
+  animateTransform: "will-change-transform",
+  animateOpacity: "will-change-opacity",
   // Hardware acceleration for complex animations
-  hardwareAccelerate: 'transform: translateZ(0);',
+  hardwareAccelerate: "transform: translateZ(0);",
   // Backface visibility for 3D transforms
-  backfaceVisible: 'backface-visibility: hidden;',
+  backfaceVisible: "backface-visibility: hidden;",
 } as const;
-

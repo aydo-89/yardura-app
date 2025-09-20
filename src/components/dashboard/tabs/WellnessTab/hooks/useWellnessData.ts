@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import {
   mondayStart,
   formatWeekLabel,
@@ -12,25 +12,25 @@ import {
   type ServiceVisit,
   type WellnessComputed,
   type WellnessSimpleStatus,
-} from '@/shared/wellness';
+} from "@/shared/wellness";
 
 // Helper function to determine simple status for overall trends
 const determineSimpleStatus = (
   softWeeks: number,
   maxConsec: number,
   alertWeeks: number,
-  hasCriticalIssues: boolean
+  hasCriticalIssues: boolean,
 ): WellnessSimpleStatus => {
   // Red conditions: critical issues (red/black color, consecutive soft ≥ 2)
   if (alertWeeks > 0 || maxConsec >= 2 || hasCriticalIssues) {
-    return 'attention';
+    return "attention";
   }
   // Yellow conditions: soft issues but not critical
   if (softWeeks > 0) {
-    return 'monitor';
+    return "monitor";
   }
   // Green: everything normal
-  return 'good';
+  return "good";
 };
 
 // Helper function to determine status for individual week
@@ -38,18 +38,22 @@ const determineWeekStatus = (
   softRatio: number,
   hasCriticalIssues: boolean,
   hasYellowColor: boolean,
-  hasIssues: boolean
+  hasIssues: boolean,
 ): WellnessSimpleStatus => {
   // Red conditions: critical issues (red/black color)
   if (hasCriticalIssues) {
-    return 'attention';
+    return "attention";
   }
   // Yellow conditions: soft consistency, yellow color, or other issues
-  if (softRatio >= WELLNESS_THRESHOLDS.SOFT_CONSISTENCY_THRESHOLD || hasYellowColor || hasIssues) {
-    return 'monitor';
+  if (
+    softRatio >= WELLNESS_THRESHOLDS.SOFT_CONSISTENCY_THRESHOLD ||
+    hasYellowColor ||
+    hasIssues
+  ) {
+    return "monitor";
   }
   // Green: everything normal
-  return 'good';
+  return "good";
 };
 
 // Generate plain language copy based on status
@@ -57,46 +61,46 @@ const generateStatusCopy = (
   status: WellnessSimpleStatus,
   softWeeks: number,
   alertWeeks: number,
-  hasParasites: boolean
+  hasParasites: boolean,
 ) => {
   switch (status) {
-    case 'good':
+    case "good":
       return {
-        title: 'All good',
+        title: "All good",
         subtitle: "Your dog's waste patterns look healthy and normal.",
         advice: [
-          'Keep up the great work with their diet and exercise!',
-          'Continue regular monitoring to stay on top of any changes.',
+          "Keep up the great work with their diet and exercise!",
+          "Continue regular monitoring to stay on top of any changes.",
         ],
       };
 
-    case 'monitor':
+    case "monitor":
       return {
-        title: 'Keep an eye on this',
-        subtitle: `We've noticed some changes in ${softWeeks} week${softWeeks > 1 ? 's' : ''}.`,
+        title: "Keep an eye on this",
+        subtitle: `We've noticed some changes in ${softWeeks} week${softWeeks > 1 ? "s" : ""}.`,
         advice: [
-          'Consider adding more fiber to their diet (like pumpkin or sweet potato)',
+          "Consider adding more fiber to their diet (like pumpkin or sweet potato)",
           "Make sure they're getting plenty of fresh water",
-          'Track these patterns for the next few days',
+          "Track these patterns for the next few days",
         ],
       };
 
-    case 'attention':
+    case "attention":
       return {
-        title: 'Needs attention',
+        title: "Needs attention",
         subtitle: hasParasites
           ? "We're seeing some concerning patterns that may need veterinary attention."
-          : 'There are some patterns here that deserve closer attention.',
+          : "There are some patterns here that deserve closer attention.",
         advice: [
-          'Consider scheduling a vet visit to rule out any underlying issues',
-          'Keep detailed notes about their diet, behavior, and any symptoms',
-          'Monitor closely and contact your vet if patterns persist',
+          "Consider scheduling a vet visit to rule out any underlying issues",
+          "Keep detailed notes about their diet, behavior, and any symptoms",
+          "Monitor closely and contact your vet if patterns persist",
         ],
         cta: {
-          text: 'Consult a Vet',
-          action: 'consult-vet',
-          href: '/consult',
-          label: 'Consult a Vet',
+          text: "Consult a Vet",
+          action: "consult-vet",
+          href: "/consult",
+          label: "Consult a Vet",
         },
       };
   }
@@ -104,7 +108,7 @@ const generateStatusCopy = (
 
 export const useWellnessData = (
   dataReadings: DataReading[],
-  serviceVisits: ServiceVisit[]
+  serviceVisits: ServiceVisit[],
 ): WellnessComputed => {
   return useMemo(() => {
     const now = new Date();
@@ -125,7 +129,7 @@ export const useWellnessData = (
     }
 
     // Build weekly data for the last 8 weeks (most recent first)
-    const weekly: WellnessComputed['weekly'] = [];
+    const weekly: WellnessComputed["weekly"] = [];
     const currentWeekStart = mondayStart(now);
 
     let totalSoftWeeks = 0;
@@ -139,7 +143,13 @@ export const useWellnessData = (
     // Consistency totals for stack chart
     const consistencyTotals = { normal: 0, soft: 0, dry: 0 };
     // Signal tracking for sparklines
-    const signalCounts = { mucous: 0, greasy: 0, dry: 0, parasites: 0, foreign: 0 };
+    const signalCounts = {
+      mucous: 0,
+      greasy: 0,
+      dry: 0,
+      parasites: 0,
+      foreign: 0,
+    };
 
     for (let i = 0; i < 8; i++) {
       const weekStart = new Date(currentWeekStart);
@@ -148,8 +158,19 @@ export const useWellnessData = (
       const weekReadings = byWeek.get(key) || [];
 
       // Generate mock data if no real data exists OR if this specific week has no readings
-      const mockColors: { normal: number; yellow: number; red: number; black: number; total: number } = { normal: 0, yellow: 0, red: 0, black: 0, total: 0 };
-      const mockConsistency: { normal: number; soft: number; dry: number; total: number } = { normal: 0, soft: 0, dry: 0, total: 0 };
+      const mockColors: {
+        normal: number;
+        yellow: number;
+        red: number;
+        black: number;
+        total: number;
+      } = { normal: 0, yellow: 0, red: 0, black: 0, total: 0 };
+      const mockConsistency: {
+        normal: number;
+        soft: number;
+        dry: number;
+        total: number;
+      } = { normal: 0, soft: 0, dry: 0, total: 0 };
       let mockDeposits = 0;
       const useMockForThisWeek = !hasRealData || weekReadings.length === 0;
 
@@ -167,7 +188,8 @@ export const useWellnessData = (
         const currentDate = new Date();
         const sept7Date = new Date(currentDate.getFullYear(), 8, 7); // September 7
         const weekDiff = Math.abs(
-          (weekStart.getTime() - sept7Date.getTime()) / (1000 * 60 * 60 * 24 * 7)
+          (weekStart.getTime() - sept7Date.getTime()) /
+            (1000 * 60 * 60 * 24 * 7),
         );
 
         // More specific check: if this week contains Sept 7 or is adjacent to it
@@ -175,7 +197,8 @@ export const useWellnessData = (
         weekEnd.setDate(weekStart.getDate() + 6);
         const isSept7Week =
           (sept7Date >= weekStart && sept7Date <= weekEnd) ||
-          (sept7Date.getTime() >= weekStart.getTime() - 7 * 24 * 60 * 60 * 1000 &&
+          (sept7Date.getTime() >=
+            weekStart.getTime() - 7 * 24 * 60 * 60 * 1000 &&
             sept7Date.getTime() <= weekEnd.getTime() + 7 * 24 * 60 * 60 * 1000);
 
         // Debug: Check if this is the Sept 7 week (September is month 8 in JS)
@@ -199,39 +222,61 @@ export const useWellnessData = (
         }
 
         // Generate readings based on deposits (typically 1-2 readings per deposit)
-        const totalReadings = Math.floor(mockDeposits * (1 + Math.random() * 0.5)); // 1-1.5 readings per deposit
+        const totalReadings = Math.floor(
+          mockDeposits * (1 + Math.random() * 0.5),
+        ); // 1-1.5 readings per deposit
 
         // Generate color distribution (ensure some weeks have concerning colors)
-        mockColors.normal = Math.floor(totalReadings * (0.65 + Math.random() * 0.15)); // 65-80% normal (leave room for concerning colors)
-        mockColors.yellow = Math.floor(totalReadings * (0.12 + Math.random() * 0.18)); // 12-30% yellow (guaranteed to trigger issues)
+        mockColors.normal = Math.floor(
+          totalReadings * (0.65 + Math.random() * 0.15),
+        ); // 65-80% normal (leave room for concerning colors)
+        mockColors.yellow = Math.floor(
+          totalReadings * (0.12 + Math.random() * 0.18),
+        ); // 12-30% yellow (guaranteed to trigger issues)
         mockColors.red = Math.floor(Math.random() * 3); // 0-2 red (more common for demo)
         mockColors.black = Math.floor(Math.random() * 2); // 0-1 black
 
         // Generate consistency distribution (ensure soft consistency triggers issues)
-        mockConsistency.normal = Math.floor(totalReadings * (0.6 + Math.random() * 0.1)); // 60-70% normal
-        mockConsistency.soft = Math.floor(totalReadings * (0.25 + Math.random() * 0.15)); // 25-40% soft (guaranteed to exceed 30% threshold often)
-        mockConsistency.dry = totalReadings - mockConsistency.normal - mockConsistency.soft;
+        mockConsistency.normal = Math.floor(
+          totalReadings * (0.6 + Math.random() * 0.1),
+        ); // 60-70% normal
+        mockConsistency.soft = Math.floor(
+          totalReadings * (0.25 + Math.random() * 0.15),
+        ); // 25-40% soft (guaranteed to exceed 30% threshold often)
+        mockConsistency.dry =
+          totalReadings - mockConsistency.normal - mockConsistency.soft;
 
         // Ensure non-negative values
         mockConsistency.dry = Math.max(0, mockConsistency.dry);
 
         // Add total properties for mock data
-        mockColors.total = mockColors.normal + mockColors.yellow + mockColors.red + mockColors.black;
-        mockConsistency.total = mockConsistency.normal + mockConsistency.soft + mockConsistency.dry;
+        mockColors.total =
+          mockColors.normal +
+          mockColors.yellow +
+          mockColors.red +
+          mockColors.black;
+        mockConsistency.total =
+          mockConsistency.normal + mockConsistency.soft + mockConsistency.dry;
       }
 
       // Color counts for this week
-      const colors: { normal: number; yellow: number; red: number; black: number; total: number } = {
+      const colors: {
+        normal: number;
+        yellow: number;
+        red: number;
+        black: number;
+        total: number;
+      } = {
         normal: 0,
         yellow: 0,
         red: 0,
         black: 0,
-        total: 0
+        total: 0,
       };
       if (!useMockForThisWeek) {
         weekReadings.forEach((r) => {
           const colorKey = r.color ? colorKeyFor(r.color) : undefined;
-          if (colorKey && typeof colorKey === 'string' && colorKey in colors) {
+          if (colorKey && typeof colorKey === "string" && colorKey in colors) {
             colors[colorKey as keyof typeof colors]++;
             colorTotals[colorKey as keyof typeof colorTotals]++;
           }
@@ -245,7 +290,12 @@ export const useWellnessData = (
       }
 
       // Consistency counts for this week
-      let consistency: { normal: number; soft: number; dry: number; total: number };
+      let consistency: {
+        normal: number;
+        soft: number;
+        dry: number;
+        total: number;
+      };
       let weekSoftCount = 0;
       let hasMucous = false;
       let hasGreasy = false;
@@ -262,18 +312,19 @@ export const useWellnessData = (
       } else {
         consistency = { normal: 0, soft: 0, dry: 0, total: 0 };
         weekReadings.forEach((r) => {
-          const consistencyKey = typeof r.consistency === 'string' ? r.consistency : 'normal';
+          const consistencyKey =
+            typeof r.consistency === "string" ? r.consistency : "normal";
 
-          if (consistencyKey === 'normal') {
+          if (consistencyKey === "normal") {
             consistency.normal++;
             consistencyTotals.normal++;
-          } else if (['soft', 'mucous', 'greasy'].includes(consistencyKey)) {
+          } else if (["soft", "mucous", "greasy"].includes(consistencyKey)) {
             consistency.soft++;
             consistencyTotals.soft++;
             weekSoftCount++;
-            if (consistencyKey === 'mucous') hasMucous = true;
-            if (consistencyKey === 'greasy') hasGreasy = true;
-          } else if (consistencyKey === 'dry') {
+            if (consistencyKey === "mucous") hasMucous = true;
+            if (consistencyKey === "greasy") hasGreasy = true;
+          } else if (consistencyKey === "dry") {
             consistency.dry++;
             consistencyTotals.dry++;
             hasDry = true;
@@ -299,7 +350,7 @@ export const useWellnessData = (
       const softRatio = weekSoftCount / totalWeekReadings;
 
       if (softRatio >= WELLNESS_THRESHOLDS.SOFT_CONSISTENCY_THRESHOLD) {
-        issues.push('Soft consistency');
+        issues.push("Soft consistency");
         totalSoftWeeks++;
         consecutiveHighSoft++;
         maxConsecutiveSoft = Math.max(maxConsecutiveSoft, consecutiveHighSoft);
@@ -308,21 +359,27 @@ export const useWellnessData = (
       }
 
       if (colors.red > 0 || colors.black > 0) {
-        issues.push(colors.red > 0 ? 'Red traces' : 'Black color');
+        issues.push(colors.red > 0 ? "Red traces" : "Black color");
         totalAlertWeeks++;
       }
 
       if (colors.yellow > 0) {
-        issues.push('Yellow color');
+        issues.push("Yellow color");
       }
 
       if (hasMucous || hasGreasy) {
-        issues.push(hasMucous && hasGreasy ? 'Mucous & greasy' : hasMucous ? 'Mucous' : 'Greasy');
+        issues.push(
+          hasMucous && hasGreasy
+            ? "Mucous & greasy"
+            : hasMucous
+              ? "Mucous"
+              : "Greasy",
+        );
         weekHasParasites = true;
       }
 
       if (hasDry) {
-        issues.push('Dry consistency');
+        issues.push("Dry consistency");
       }
 
       // Determine status for this individual week
@@ -333,7 +390,7 @@ export const useWellnessData = (
         softRatio,
         weekHasCritical,
         weekHasYellow,
-        weekHasIssues
+        weekHasIssues,
       );
 
       // Simulate having images (in real implementation, this would check actual data)
@@ -341,12 +398,16 @@ export const useWellnessData = (
         ? weekReadings.length > 0 && Math.random() > 0.7 // 30% chance for real data
         : Math.random() > 0.6; // 40% chance for mock data
 
-      const finalDeposits = useMockForThisWeek ? mockDeposits : weekReadings.length;
+      const finalDeposits = useMockForThisWeek
+        ? mockDeposits
+        : weekReadings.length;
 
       // Calculate totals for colors and consistency
       if (!useMockForThisWeek) {
-        colors.total = colors.normal + colors.yellow + colors.red + colors.black;
-        consistency.total = consistency.normal + consistency.soft + consistency.dry;
+        colors.total =
+          colors.normal + colors.yellow + colors.red + colors.black;
+        consistency.total =
+          consistency.normal + consistency.soft + consistency.dry;
       }
 
       weekly.push({
@@ -374,7 +435,7 @@ export const useWellnessData = (
       totalSoftWeeks,
       maxConsecutiveSoft,
       totalAlertWeeks,
-      overallHasParasites
+      overallHasParasites,
     );
 
     // Generate plain language copy
@@ -382,15 +443,15 @@ export const useWellnessData = (
       latestStatus,
       totalSoftWeeks,
       totalAlertWeeks,
-      overallHasParasites
+      overallHasParasites,
     );
 
     // Build trends data
     const trends = {
       // Overall trends
-      colorTrend: 'stable' as const,
-      consistencyTrend: 'stable' as const,
-      overallTrend: 'stable' as const,
+      colorTrend: "stable" as const,
+      consistencyTrend: "stable" as const,
+      overallTrend: "stable" as const,
 
       // Consistency stack data (last 8 weeks, most recent first)
       consistencyStack: weekly.map((w, i) => ({
@@ -405,21 +466,24 @@ export const useWellnessData = (
 
       // Color breakdown for lollipop chart
       colorBreakdown: [
-        { label: 'Normal', count: colorTotals.normal },
-        { label: 'Yellow', count: colorTotals.yellow },
-        { label: 'Red', count: colorTotals.red },
-        { label: 'Black', count: colorTotals.black },
+        { label: "Normal", count: colorTotals.normal },
+        { label: "Yellow", count: colorTotals.yellow },
+        { label: "Red", count: colorTotals.red },
+        { label: "Black", count: colorTotals.black },
       ],
 
       // Signal sparklines (weekly counts for last 8 weeks)
       signalSparklines: [
-          {
-            key: 'mucous' as const,
-            issues: [],
-            series: weekly.map((w, i) => {
+        {
+          key: "mucous" as const,
+          issues: [],
+          series: weekly.map((w, i) => {
             // Use the actual issues data if available, otherwise generate mock data
             const weekData = weekly.find((wk) => wk.startISO === w.startISO);
-            if (weekData && weekData.issues.some((issue) => issue.includes('Mucous'))) {
+            if (
+              weekData &&
+              weekData.issues.some((issue) => issue.includes("Mucous"))
+            ) {
               return {
                 x: 8 - i,
                 y: Math.floor(Math.random() * 3) + 1, // 1-3 if mucous detected
@@ -427,17 +491,22 @@ export const useWellnessData = (
             }
             return {
               x: 8 - i,
-              y: hasRealData ? w.consistency.soft : Math.floor(Math.random() * 3) + 1, // 1-3 occurrences per week (no zeros)
+              y: hasRealData
+                ? w.consistency.soft
+                : Math.floor(Math.random() * 3) + 1, // 1-3 occurrences per week (no zeros)
             };
           }),
         },
-          {
-            key: 'greasy' as const,
-            issues: [],
-            series: weekly.map((w, i) => {
+        {
+          key: "greasy" as const,
+          issues: [],
+          series: weekly.map((w, i) => {
             // Use the actual issues data if available, otherwise generate mock data
             const weekData = weekly.find((wk) => wk.startISO === w.startISO);
-            if (weekData && weekData.issues.some((issue) => issue.includes('Greasy'))) {
+            if (
+              weekData &&
+              weekData.issues.some((issue) => issue.includes("Greasy"))
+            ) {
               return {
                 x: 8 - i,
                 y: Math.floor(Math.random() * 2) + 1, // 1-2 if greasy detected
@@ -451,15 +520,17 @@ export const useWellnessData = (
             };
           }),
         },
-          {
-            key: 'parasites' as const,
-            issues: [],
-            series: weekly.map((w, i) => {
+        {
+          key: "parasites" as const,
+          issues: [],
+          series: weekly.map((w, i) => {
             // Use the actual issues data if available, otherwise generate mock data
             const weekData = weekly.find((wk) => wk.startISO === w.startISO);
             if (
               weekData &&
-              weekData.issues.some((issue) => issue.includes('Mucous') || issue.includes('Greasy'))
+              weekData.issues.some(
+                (issue) => issue.includes("Mucous") || issue.includes("Greasy"),
+              )
             ) {
               return {
                 x: 8 - i,
@@ -478,13 +549,16 @@ export const useWellnessData = (
             };
           }),
         },
-          {
-            key: 'foreign' as const,
-            issues: [],
-            series: weekly.map((w, i) => {
+        {
+          key: "foreign" as const,
+          issues: [],
+          series: weekly.map((w, i) => {
             // Use the actual issues data if available, otherwise generate mock data
             const weekData = weekly.find((wk) => wk.startISO === w.startISO);
-            if (weekData && weekData.issues.some((issue) => issue.includes('Yellow'))) {
+            if (
+              weekData &&
+              weekData.issues.some((issue) => issue.includes("Yellow"))
+            ) {
               return {
                 x: 8 - i,
                 y: Math.floor(Math.random() * 2) + 1, // 1-2 if yellow color detected

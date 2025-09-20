@@ -1,6 +1,6 @@
-import AnimatedHeader from '@/components/site/AnimatedHeader';
-import Footer from '@/components/footer';
-import Services from '@/components/services';
+import AnimatedHeader from "@/components/site/AnimatedHeader";
+import Footer from "@/components/footer";
+import Services from "@/components/services";
 
 export default function ServicesPage() {
   return (
@@ -13,4 +13,3 @@ export default function ServicesPage() {
     </div>
   );
 }
-

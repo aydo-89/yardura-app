@@ -7,50 +7,51 @@
  * Usage: node scripts/smoke-tests.js [app-url]
  */
 
-const https = require('https');
-const http = require('http');
+const https = require("https");
+const http = require("http");
 
-const APP_URL = process.argv[2] || process.env.APP_URL || 'http://localhost:3000';
+const APP_URL =
+  process.argv[2] || process.env.APP_URL || "http://localhost:3000";
 
 console.log(`🧪 Running smoke tests against ${APP_URL}\n`);
 
 // Test configurations
 const TESTS = [
   {
-    name: 'Homepage loads',
-    url: '/',
+    name: "Homepage loads",
+    url: "/",
     expectedStatus: 200,
-    checkContent: (body) => body.includes('Yardura'),
+    checkContent: (body) => body.includes("Yardura"),
   },
   {
-    name: 'API health check',
-    url: '/api/health',
-    expectedStatus: 200,
-  },
-  {
-    name: 'Quote page loads',
-    url: '/quote',
-    expectedStatus: 200,
-    checkContent: (body) => body.includes('quote') || body.includes('Quote'),
-  },
-  {
-    name: 'Services page loads',
-    url: '/services',
+    name: "API health check",
+    url: "/api/health",
     expectedStatus: 200,
   },
   {
-    name: 'Contact page loads',
-    url: '/contact',
+    name: "Quote page loads",
+    url: "/quote",
+    expectedStatus: 200,
+    checkContent: (body) => body.includes("quote") || body.includes("Quote"),
+  },
+  {
+    name: "Services page loads",
+    url: "/services",
     expectedStatus: 200,
   },
   {
-    name: 'Signin page loads',
-    url: '/signin',
+    name: "Contact page loads",
+    url: "/contact",
     expectedStatus: 200,
   },
   {
-    name: 'Signup page loads',
-    url: '/signup',
+    name: "Signin page loads",
+    url: "/signin",
+    expectedStatus: 200,
+  },
+  {
+    name: "Signup page loads",
+    url: "/signup",
     expectedStatus: 200,
   },
 ];
@@ -58,36 +59,39 @@ const TESTS = [
 // HTTP request helper
 function makeRequest(url, options = {}) {
   return new Promise((resolve, reject) => {
-    const protocol = url.startsWith('https:') ? https : http;
+    const protocol = url.startsWith("https:") ? https : http;
     const requestUrl = new URL(url);
 
-    const req = protocol.request({
-      hostname: requestUrl.hostname,
-      port: requestUrl.port,
-      path: requestUrl.pathname + requestUrl.search,
-      method: 'GET',
-      timeout: 10000,
-      ...options,
-    }, (res) => {
-      let body = '';
+    const req = protocol.request(
+      {
+        hostname: requestUrl.hostname,
+        port: requestUrl.port,
+        path: requestUrl.pathname + requestUrl.search,
+        method: "GET",
+        timeout: 10000,
+        ...options,
+      },
+      (res) => {
+        let body = "";
 
-      res.on('data', (chunk) => {
-        body += chunk;
-      });
-
-      res.on('end', () => {
-        resolve({
-          status: res.statusCode,
-          headers: res.headers,
-          body,
+        res.on("data", (chunk) => {
+          body += chunk;
         });
-      });
-    });
 
-    req.on('error', reject);
-    req.on('timeout', () => {
+        res.on("end", () => {
+          resolve({
+            status: res.statusCode,
+            headers: res.headers,
+            body,
+          });
+        });
+      },
+    );
+
+    req.on("error", reject);
+    req.on("timeout", () => {
       req.destroy();
-      reject(new Error('Request timeout'));
+      reject(new Error("Request timeout"));
     });
 
     req.end();
@@ -105,17 +109,18 @@ async function runTest(test) {
 
     // Check status code
     if (response.status !== test.expectedStatus) {
-      throw new Error(`Expected status ${test.expectedStatus}, got ${response.status}`);
+      throw new Error(
+        `Expected status ${test.expectedStatus}, got ${response.status}`,
+      );
     }
 
     // Check content if specified
     if (test.checkContent && !test.checkContent(response.body)) {
-      throw new Error('Content validation failed');
+      throw new Error("Content validation failed");
     }
 
     console.log(`    ✅ PASS`);
     return { success: true, test: test.name };
-
   } catch (error) {
     console.log(`    ❌ FAIL: ${error.message}`);
     return { success: false, test: test.name, error: error.message };
@@ -135,15 +140,18 @@ async function runPerformanceTest() {
 
     if (loadTime > 3000) {
       console.log(`    ⚠️  SLOW: Load time exceeds 3 seconds`);
-      return { success: false, test: 'Performance', error: `Load time: ${loadTime}ms` };
+      return {
+        success: false,
+        test: "Performance",
+        error: `Load time: ${loadTime}ms`,
+      };
     } else {
       console.log(`    ✅ PASS: Load time within acceptable range`);
-      return { success: true, test: 'Performance', loadTime };
+      return { success: true, test: "Performance", loadTime };
     }
-
   } catch (error) {
     console.log(`    ❌ FAIL: ${error.message}`);
-    return { success: false, test: 'Performance', error: error.message };
+    return { success: false, test: "Performance", error: error.message };
   }
 }
 
@@ -155,7 +163,7 @@ async function runSmokeTests() {
     total: TESTS.length + 1, // +1 for performance test
   };
 
-  console.log('Running smoke tests...\n');
+  console.log("Running smoke tests...\n");
 
   // Run functional tests
   for (const test of TESTS) {
@@ -176,42 +184,42 @@ async function runSmokeTests() {
   }
 
   // Summary
-  console.log('\n' + '='.repeat(50));
-  console.log('SMOKE TEST RESULTS');
-  console.log('='.repeat(50));
+  console.log("\n" + "=".repeat(50));
+  console.log("SMOKE TEST RESULTS");
+  console.log("=".repeat(50));
   console.log(`Total Tests: ${results.total}`);
   console.log(`Passed: ${results.passed}`);
   console.log(`Failed: ${results.failed}`);
-  console.log(`Success Rate: ${Math.round((results.passed / results.total) * 100)}%`);
+  console.log(
+    `Success Rate: ${Math.round((results.passed / results.total) * 100)}%`,
+  );
 
   if (results.failed === 0) {
-    console.log('\n🎉 All smoke tests passed!');
+    console.log("\n🎉 All smoke tests passed!");
     process.exit(0);
   } else {
-    console.log('\n❌ Some smoke tests failed!');
+    console.log("\n❌ Some smoke tests failed!");
     process.exit(1);
   }
 }
 
 // Error handling
-process.on('unhandledRejection', (error) => {
-  console.error('❌ Unhandled rejection:', error);
+process.on("unhandledRejection", (error) => {
+  console.error("❌ Unhandled rejection:", error);
   process.exit(1);
 });
 
-process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught exception:', error);
+process.on("uncaughtException", (error) => {
+  console.error("❌ Uncaught exception:", error);
   process.exit(1);
 });
 
 // Run tests
 if (require.main === module) {
   runSmokeTests().catch((error) => {
-    console.error('❌ Smoke tests failed:', error);
+    console.error("❌ Smoke tests failed:", error);
     process.exit(1);
   });
 }
 
 module.exports = { runSmokeTests, runTest };
-
-

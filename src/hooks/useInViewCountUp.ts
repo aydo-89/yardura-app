@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useInView } from 'react-intersection-observer';
+import { useEffect, useState } from "react";
+import { useInView } from "react-intersection-observer";
 
 interface UseInViewCountUpOptions {
   end: number;
@@ -29,7 +29,11 @@ export function useInViewCountUp({
       const progress = Math.min((timestamp - startTime) / duration, 1);
 
       const currentCount = start + (end - start) * progress;
-      setCount(decimals === 0 ? Math.floor(currentCount) : Number(currentCount.toFixed(decimals)));
+      setCount(
+        decimals === 0
+          ? Math.floor(currentCount)
+          : Number(currentCount.toFixed(decimals)),
+      );
 
       if (progress < 1) {
         requestAnimationFrame(step);
@@ -41,4 +45,3 @@ export function useInViewCountUp({
 
   return { ref, count };
 }
-

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, LogIn } from 'lucide-react';
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, LogIn } from "lucide-react";
 
 interface AuthRedirectProps {
   title?: string;
@@ -19,13 +19,13 @@ export default function AuthRedirect({
 }: AuthRedirectProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   useEffect(() => {
     // Auto-redirect after a short delay
     const timer = setTimeout(() => {
       if (!showLoginButton) {
-        router.push('/signin?callbackUrl=' + encodeURIComponent(callbackUrl));
+        router.push("/signin?callbackUrl=" + encodeURIComponent(callbackUrl));
       }
     }, 3000);
 
@@ -33,7 +33,7 @@ export default function AuthRedirect({
   }, [router, callbackUrl, showLoginButton]);
 
   const handleSignIn = () => {
-    router.push('/signin?callbackUrl=' + encodeURIComponent(callbackUrl));
+    router.push("/signin?callbackUrl=" + encodeURIComponent(callbackUrl));
   };
 
   return (
@@ -46,9 +46,7 @@ export default function AuthRedirect({
           <CardTitle className="text-xl">{title}</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <p className="text-muted-foreground">
-            {message}
-          </p>
+          <p className="text-muted-foreground">{message}</p>
 
           {showLoginButton && (
             <div className="space-y-3">
@@ -64,9 +62,9 @@ export default function AuthRedirect({
 
           <div className="pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
+              Don't have an account?{" "}
               <button
-                onClick={() => router.push('/signup')}
+                onClick={() => router.push("/signup")}
                 className="text-brand-600 hover:text-brand-700 font-medium"
               >
                 Sign up here
@@ -78,5 +76,3 @@ export default function AuthRedirect({
     </div>
   );
 }
-
-

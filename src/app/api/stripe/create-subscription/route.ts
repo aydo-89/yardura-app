@@ -1,16 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { stripe, getStripePriceId, BILLING_ANCHOR_DAYS } from '@/lib/stripe';
-import { db } from '@/lib/database';
+import { NextRequest, NextResponse } from "next/server";
+import { stripe, getStripePriceId, BILLING_ANCHOR_DAYS } from "@/lib/stripe";
+import { db } from "@/lib/database";
 import {
   calcPerVisitEstimate,
   calcOneTimeEstimate,
   type Frequency,
   type YardSize,
-} from '@/lib/pricing';
+} from "@/lib/pricing";
 
 export async function POST(request: NextRequest) {
   try {
-    const { customerId, paymentMethodId, serviceDetails, serviceDay } = await request.json();
+    const { customerId, paymentMethodId, serviceDetails, serviceDay } =
+      await request.json();
 
     const {
       name,
@@ -29,7 +30,10 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!customerId || !paymentMethodId || !serviceDay) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 },
+      );
     }
 
     // Attach payment method to customer
@@ -46,23 +50,28 @@ export async function POST(request: NextRequest) {
 
     // Calculate the per-visit price
     const perVisitPrice =
-      frequency === 'one-time'
+      frequency === "one-time"
         ? calcOneTimeEstimate(dogs, yardSize as YardSize, { deodorize })
-        : calcPerVisitEstimate(dogs, frequency as Frequency, yardSize as YardSize, {
-            deodorize,
-            litter,
-          });
+        : calcPerVisitEstimate(
+            dogs,
+            frequency as Frequency,
+            yardSize as YardSize,
+            {
+              deodorize,
+              litter,
+            },
+          );
 
     // Get the appropriate Stripe price ID
     const stripePriceId = await getStripePriceId(
       frequency as Frequency,
       yardSize as YardSize,
-      dogs
+      dogs,
     );
 
     let subscriptionId: string | null = null;
 
-    if (frequency === 'one-time') {
+    if (frequency === "one-time") {
       // For one-time service, charge immediately after completion using charge-service route.
       // Here we simply store the customer and visit; no subscription is created now.
     } else {
@@ -71,11 +80,12 @@ export async function POST(request: NextRequest) {
         customer: customerId,
         items: [{ price: stripePriceId }],
         default_payment_method: paymentMethodId,
-        billing_cycle_anchor: BILLING_ANCHOR_DAYS[serviceDay as keyof typeof BILLING_ANCHOR_DAYS],
-        collection_method: 'send_invoice',
+        billing_cycle_anchor:
+          BILLING_ANCHOR_DAYS[serviceDay as keyof typeof BILLING_ANCHOR_DAYS],
+        collection_method: "send_invoice",
         days_until_due: 1,
         metadata: {
-          service_type: 'yardura_dog_waste_removal',
+          service_type: "yardura_dog_waste_removal",
           frequency,
           yard_size: yardSize,
           dogs: dogs.toString(),
@@ -103,7 +113,7 @@ export async function POST(request: NextRequest) {
       addOns: { deodorize, litter },
       dataOptIn,
       stripePriceId,
-      status: 'pending', // Will be activated after first service completion
+      status: "pending", // Will be activated after first service completion
     });
 
     // Schedule first service visit
@@ -111,25 +121,36 @@ export async function POST(request: NextRequest) {
     await db.createServiceVisit({
       customerId: customer.id,
       scheduledDate: firstVisitDate,
-      status: 'scheduled',
+      status: "scheduled",
       amount: perVisitPrice,
     });
 
     return NextResponse.json({
       subscriptionId,
-      oneTime: frequency === 'one-time',
+      oneTime: frequency === "one-time",
       customerId: customer.id,
       nextServiceDate: firstVisitDate,
     });
   } catch (error) {
-    console.error('Subscription creation error:', error);
-    return NextResponse.json({ error: 'Failed to create subscription' }, { status: 500 });
+    console.error("Subscription creation error:", error);
+    return NextResponse.json(
+      { error: "Failed to create subscription" },
+      { status: 500 },
+    );
   }
 }
 
 // Helper function to calculate next service date
 function calculateNextServiceDate(serviceDay: string): Date {
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const days = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
   const targetDayIndex = days.indexOf(serviceDay.toLowerCase());
 
   const today = new Date();

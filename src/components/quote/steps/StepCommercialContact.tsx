@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Building } from 'lucide-react';
-import { StepProps } from '@/types/quote';
+import React from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Building } from "lucide-react";
+import { StepProps } from "@/types/quote";
 
 export const StepCommercialContact: React.FC<StepProps> = ({
   quoteData,
@@ -38,7 +38,11 @@ export const StepCommercialContact: React.FC<StepProps> = ({
           >
             <div className="flex items-start gap-4">
               <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
                   <path
                     fillRule="evenodd"
                     d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
@@ -47,11 +51,13 @@ export const StepCommercialContact: React.FC<StepProps> = ({
                 </svg>
               </div>
               <div>
-                <p className="text-lg font-semibold text-blue-800 mb-2">Custom Commercial Quote</p>
+                <p className="text-lg font-semibold text-blue-800 mb-2">
+                  Custom Commercial Quote
+                </p>
                 <p className="text-blue-700 leading-relaxed">
-                  Commercial properties require personalized pricing based on property size, usage
-                  patterns, and specific needs. We'll contact you within 24 hours with a detailed
-                  quote.
+                  Commercial properties require personalized pricing based on
+                  property size, usage patterns, and specific needs. We'll
+                  contact you within 24 hours with a detailed quote.
                 </p>
               </div>
             </div>
@@ -70,9 +76,11 @@ export const StepCommercialContact: React.FC<StepProps> = ({
               <Input
                 id="contactName"
                 type="text"
-                value={quoteData.contact?.name || ''}
+                value={quoteData.contact?.name || ""}
                 onChange={(e) =>
-                  updateQuoteData({ contact: { ...quoteData.contact, name: e.target.value } })
+                  updateQuoteData({
+                    contact: { ...quoteData.contact, name: e.target.value },
+                  })
                 }
                 placeholder="Your full name"
                 className="h-12 text-base border-2 focus:border-blue-400"
@@ -95,9 +103,11 @@ export const StepCommercialContact: React.FC<StepProps> = ({
               <Input
                 id="contactTitle"
                 type="text"
-                value={quoteData.contact?.title || ''}
+                value={quoteData.contact?.title || ""}
                 onChange={(e) =>
-                  updateQuoteData({ contact: { ...quoteData.contact, title: e.target.value } })
+                  updateQuoteData({
+                    contact: { ...quoteData.contact, title: e.target.value },
+                  })
                 }
                 placeholder="Property manager, owner, etc."
                 className="h-12 text-base border-2 focus:border-blue-400"
@@ -118,9 +128,11 @@ export const StepCommercialContact: React.FC<StepProps> = ({
               <Input
                 id="contactEmail"
                 type="email"
-                value={quoteData.contact?.email || ''}
+                value={quoteData.contact?.email || ""}
                 onChange={(e) =>
-                  updateQuoteData({ contact: { ...quoteData.contact, email: e.target.value } })
+                  updateQuoteData({
+                    contact: { ...quoteData.contact, email: e.target.value },
+                  })
                 }
                 placeholder="your@email.com"
                 className="h-12 text-base border-2 focus:border-blue-400"
@@ -134,9 +146,11 @@ export const StepCommercialContact: React.FC<StepProps> = ({
               <Input
                 id="contactPhone"
                 type="tel"
-                value={quoteData.contact?.phone || ''}
+                value={quoteData.contact?.phone || ""}
                 onChange={(e) =>
-                  updateQuoteData({ contact: { ...quoteData.contact, phone: e.target.value } })
+                  updateQuoteData({
+                    contact: { ...quoteData.contact, phone: e.target.value },
+                  })
                 }
                 placeholder="(555) 123-4567"
                 className="h-12 text-base border-2 focus:border-blue-400"
@@ -150,13 +164,18 @@ export const StepCommercialContact: React.FC<StepProps> = ({
             transition={{ delay: 0.3 }}
             className="space-y-2"
           >
-            <Label htmlFor="commercialNotes" className="text-base font-semibold">
+            <Label
+              htmlFor="commercialNotes"
+              className="text-base font-semibold"
+            >
               Additional Details
             </Label>
             <Textarea
               id="commercialNotes"
-              value={quoteData.commercialNotes || ''}
-              onChange={(e) => updateQuoteData({ commercialNotes: e.target.value })}
+              value={quoteData.commercialNotes || ""}
+              onChange={(e) =>
+                updateQuoteData({ commercialNotes: e.target.value })
+              }
               placeholder="Tell us about your property - number of units, daily usage, special requirements, etc."
               className="min-h-[120px] text-base border-2 focus:border-blue-400 resize-none"
             />

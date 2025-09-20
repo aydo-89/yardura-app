@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(_req: NextRequest) {
   const since7 = new Date(Date.now() - 7 * 24 * 3600 * 1000);
@@ -14,15 +14,19 @@ export async function GET(_req: NextRequest) {
     prisma.alert.count({ where: { acknowledged: false } }),
     (async () => {
       const now = new Date();
-      const key = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-      const eco = await prisma.ecoStat.findMany({ where: { periodMonth: key } });
+      const key = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+      const eco = await prisma.ecoStat.findMany({
+        where: { periodMonth: key },
+      });
       const lbs = eco.reduce((s, e) => s + e.lbsDiverted, 0);
       const methane = eco.reduce((s, e) => s + e.methaneAvoidedCuFt, 0);
       return { lbs, methane };
     })(),
   ]);
 
-  const freq7 = await prisma.sample.count({ where: { capturedAt: { gte: since7 } } });
+  const freq7 = await prisma.sample.count({
+    where: { capturedAt: { gte: since7 } },
+  });
 
   return NextResponse.json({
     deposits30: count30,
@@ -33,4 +37,4 @@ export async function GET(_req: NextRequest) {
   });
 }
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";

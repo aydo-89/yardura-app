@@ -1,12 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
-const allowedRoles = ['ADMIN', 'OWNER', 'SALES_MANAGER', 'FRANCHISE_OWNER', 'SALES_REP'];
+const allowedRoles = [
+  "ADMIN",
+  "OWNER",
+  "SALES_MANAGER",
+  "FRANCHISE_OWNER",
+  "SALES_REP",
+];
 
-function forbidden(message = 'Unauthorized') {
+function forbidden(message = "Unauthorized") {
   return NextResponse.json({ ok: false, error: message }, { status: 403 });
 }
 
@@ -17,25 +23,30 @@ interface ParsedLocation {
 }
 
 function parseLocation(value: unknown): ParsedLocation | null {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== "object") return null;
 
   const loc = value as Record<string, unknown>;
 
-  if (typeof loc.latitude === 'number' && typeof loc.longitude === 'number') {
+  if (typeof loc.latitude === "number" && typeof loc.longitude === "number") {
     return {
       latitude: loc.latitude,
       longitude: loc.longitude,
-      accuracy: typeof loc.accuracy === 'number' ? loc.accuracy : null,
+      accuracy: typeof loc.accuracy === "number" ? loc.accuracy : null,
     };
   }
 
-  if (loc.type === 'Point' && Array.isArray(loc.coordinates) && loc.coordinates.length >= 2) {
+  if (
+    loc.type === "Point" &&
+    Array.isArray(loc.coordinates) &&
+    loc.coordinates.length >= 2
+  ) {
     const [lng, lat] = loc.coordinates as number[];
-    if (typeof lat === 'number' && typeof lng === 'number') {
+    if (typeof lat === "number" && typeof lng === "number") {
       return {
         latitude: lat,
         longitude: lng,
-        accuracy: typeof loc.accuracy === 'number' ? (loc.accuracy as number) : null,
+        accuracy:
+          typeof loc.accuracy === "number" ? (loc.accuracy as number) : null,
       };
     }
   }
@@ -57,7 +68,10 @@ export async function GET(req: NextRequest) {
 
     const orgId = (session.user as any)?.orgId;
     if (!orgId) {
-      return NextResponse.json({ ok: false, error: 'Organization not set' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Organization not set" },
+        { status: 400 },
+      );
     }
 
     const activities = await prisma.leadActivity.findMany({
@@ -67,7 +81,7 @@ export async function GET(req: NextRequest) {
         location: { not: Prisma.JsonNull },
         userId: { not: null },
       },
-      orderBy: { occurredAt: 'desc' },
+      orderBy: { occurredAt: "desc" },
       take: 200,
       include: {
         user: { select: { id: true, name: true, email: true } },
@@ -104,7 +118,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ ok: true, data: team });
   } catch (error) {
-    console.error('GET /api/leads/outbound/team error', error);
-    return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
+    console.error("GET /api/leads/outbound/team error", error);
+    return NextResponse.json(
+      { ok: false, error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

@@ -1,9 +1,9 @@
-import React from 'react';
-import { TONE_GREEN, TONE_AMBER, TONE_RED } from '@/shared/wellness';
+import React from "react";
+import { TONE_GREEN, TONE_AMBER, TONE_RED } from "@/shared/wellness";
 
 interface LegendItem {
   label: string;
-  tone: 'green' | 'amber' | 'red';
+  tone: "green" | "amber" | "red";
 }
 
 interface LegendProps {
@@ -12,19 +12,22 @@ interface LegendProps {
 }
 
 const defaultItems: LegendItem[] = [
-  { label: 'Normal', tone: 'green' },
-  { label: 'Monitor', tone: 'amber' },
-  { label: 'Action needed', tone: 'red' },
+  { label: "Normal", tone: "green" },
+  { label: "Monitor", tone: "amber" },
+  { label: "Action needed", tone: "red" },
 ];
 
-export const Legend: React.FC<LegendProps> = ({ items = defaultItems, className = '' }) => {
+export const Legend: React.FC<LegendProps> = ({
+  items = defaultItems,
+  className = "",
+}) => {
   const getToneColor = (tone: string) => {
     switch (tone) {
-      case 'green':
+      case "green":
         return TONE_GREEN;
-      case 'amber':
+      case "amber":
         return TONE_AMBER;
-      case 'red':
+      case "red":
         return TONE_RED;
       default:
         return TONE_GREEN;

@@ -1,34 +1,37 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { Button } from './button';
-import { Shield, CheckCircle, AlertCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from "react";
+import { Button } from "./button";
+import { Shield, CheckCircle, AlertCircle } from "lucide-react";
 
 interface RecaptchaProps {
   onVerify: (token: string | null) => void;
   onExpired?: () => void;
   onError?: () => void;
   siteKey: string;
-  size?: 'compact' | 'normal';
-  theme?: 'light' | 'dark';
+  size?: "compact" | "normal";
+  theme?: "light" | "dark";
   className?: string;
 }
 
 interface GreCaptcha {
   ready: (callback: () => void) => void;
   execute: (siteKey: string, options?: { action?: string }) => Promise<string>;
-  render: (container: string | HTMLElement, parameters: RecaptchaParameters) => number;
+  render: (
+    container: string | HTMLElement,
+    parameters: RecaptchaParameters,
+  ) => number;
   reset: (widgetId?: number) => void;
   getResponse: (widgetId?: number) => string;
 }
 
 interface RecaptchaParameters {
   sitekey: string;
-  theme?: 'light' | 'dark';
-  size?: 'compact' | 'normal';
+  theme?: "light" | "dark";
+  size?: "compact" | "normal";
   callback?: (token: string) => void;
-  'expired-callback'?: () => void;
-  'error-callback'?: () => void;
+  "expired-callback"?: () => void;
+  "error-callback"?: () => void;
 }
 
 declare global {
@@ -43,9 +46,9 @@ export function Recaptcha({
   onExpired,
   onError,
   siteKey,
-  size = 'normal',
-  theme = 'light',
-  className = '',
+  size = "normal",
+  theme = "light",
+  className = "",
 }: RecaptchaProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -55,9 +58,9 @@ export function Recaptcha({
 
   useEffect(() => {
     // Load reCAPTCHA script
-    if (!document.querySelector('#recaptcha-script')) {
-      const script = document.createElement('script');
-      script.id = 'recaptcha-script';
+    if (!document.querySelector("#recaptcha-script")) {
+      const script = document.createElement("script");
+      script.id = "recaptcha-script";
       script.src = `https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit`;
       script.async = true;
       script.defer = true;
@@ -89,17 +92,17 @@ export function Recaptcha({
             setError(null);
             onVerify(token);
           },
-          'expired-callback': () => {
+          "expired-callback": () => {
             setIsVerified(false);
             onExpired?.();
           },
-          'error-callback': () => {
-            setError('reCAPTCHA error occurred');
+          "error-callback": () => {
+            setError("reCAPTCHA error occurred");
             onError?.();
           },
         });
       } catch (err) {
-        setError('Failed to load reCAPTCHA');
+        setError("Failed to load reCAPTCHA");
         onError?.();
       }
     }
@@ -172,7 +175,10 @@ interface HoneypotProps {
   className?: string;
 }
 
-export function HoneypotField({ name = 'website', className = '' }: HoneypotProps) {
+export function HoneypotField({
+  name = "website",
+  className = "",
+}: HoneypotProps) {
   return (
     <div className={`hidden ${className}`} aria-hidden="true">
       <label htmlFor={name}>
@@ -183,7 +189,7 @@ export function HoneypotField({ name = 'website', className = '' }: HoneypotProp
           name={name}
           tabIndex={-1}
           autoComplete="off"
-          style={{ display: 'none' }}
+          style={{ display: "none" }}
         />
       </label>
     </div>
@@ -203,8 +209,8 @@ export function FormProtection({
   onVerify,
   recaptchaSiteKey,
   showRecaptcha = true,
-  honeypotName = 'website',
-  className = '',
+  honeypotName = "website",
+  className = "",
 }: FormProtectionProps) {
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
@@ -220,7 +226,10 @@ export function FormProtection({
 
       {/* reCAPTCHA */}
       {showRecaptcha && recaptchaSiteKey && (
-        <Recaptcha siteKey={recaptchaSiteKey} onVerify={handleRecaptchaVerify} />
+        <Recaptcha
+          siteKey={recaptchaSiteKey}
+          onVerify={handleRecaptchaVerify}
+        />
       )}
 
       {/* Security notice */}
@@ -228,8 +237,9 @@ export function FormProtection({
         <div className="flex items-start gap-2">
           <Shield className="size-3 text-accent mt-0.5 flex-shrink-0" />
           <div>
-            Your information is protected with enterprise-grade security. We use multiple layers of
-            validation to prevent spam and ensure data integrity.
+            Your information is protected with enterprise-grade security. We use
+            multiple layers of validation to prevent spam and ensure data
+            integrity.
           </div>
         </div>
       </div>

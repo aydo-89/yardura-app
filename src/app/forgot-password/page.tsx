@@ -1,30 +1,30 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle, Mail, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle, Mail, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
 
@@ -33,10 +33,10 @@ export default function ForgotPasswordPage() {
       if (response.ok) {
         setIsSuccess(true);
       } else {
-        setError(data.error || 'Failed to send reset email');
+        setError(data.error || "Failed to send reset email");
       }
     } catch {
-      setError('An error occurred. Please try again.');
+      setError("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +50,9 @@ export default function ForgotPasswordPage() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-            <h1 className="text-2xl font-extrabold text-ink mb-2">Check your email</h1>
+            <h1 className="text-2xl font-extrabold text-ink mb-2">
+              Check your email
+            </h1>
             <p className="text-slate-600 text-sm">
               We've sent a password reset link to <strong>{email}</strong>
             </p>
@@ -75,7 +77,7 @@ export default function ForgotPasswordPage() {
 
             <div className="space-y-3">
               <Button
-                onClick={() => router.push('/signin')}
+                onClick={() => router.push("/signin")}
                 className="w-full"
                 variant="outline"
               >
@@ -101,9 +103,12 @@ export default function ForgotPasswordPage() {
     <section className="container py-16">
       <div className="max-w-md mx-auto rounded-2xl border border-brand-200 bg-white p-8 shadow-soft">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-extrabold text-ink mb-2">Reset your password</h1>
+          <h1 className="text-2xl font-extrabold text-ink mb-2">
+            Reset your password
+          </h1>
           <p className="text-slate-600 text-sm">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we'll send you a link to reset your
+            password.
           </p>
         </div>
 
@@ -129,7 +134,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Sending...' : 'Send Reset Link'}
+            {isLoading ? "Sending..." : "Send Reset Link"}
           </Button>
         </form>
 
@@ -146,5 +151,3 @@ export default function ForgotPasswordPage() {
     </section>
   );
 }
-
-

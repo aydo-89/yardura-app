@@ -53,75 +53,75 @@ export interface TableOfContentsItem {
 // Article categories
 export const ARTICLE_CATEGORIES: ArticleCategory[] = [
   {
-    id: 'health',
-    name: 'Dog Health',
-    slug: 'health',
-    description: 'Articles about dog health, wellness, and preventive care',
-    color: 'text-emerald-600',
+    id: "health",
+    name: "Dog Health",
+    slug: "health",
+    description: "Articles about dog health, wellness, and preventive care",
+    color: "text-emerald-600",
   },
   {
-    id: 'behavior',
-    name: 'Dog Behavior',
-    slug: 'behavior',
-    description: 'Understanding and improving dog behavior patterns',
-    color: 'text-blue-600',
+    id: "behavior",
+    name: "Dog Behavior",
+    slug: "behavior",
+    description: "Understanding and improving dog behavior patterns",
+    color: "text-blue-600",
   },
   {
-    id: 'nutrition',
-    name: 'Nutrition',
-    slug: 'nutrition',
-    description: 'Dog nutrition, diet, and feeding guidelines',
-    color: 'text-orange-600',
+    id: "nutrition",
+    name: "Nutrition",
+    slug: "nutrition",
+    description: "Dog nutrition, diet, and feeding guidelines",
+    color: "text-orange-600",
   },
   {
-    id: 'training',
-    name: 'Training',
-    slug: 'training',
-    description: 'Dog training tips, techniques, and best practices',
-    color: 'text-purple-600',
+    id: "training",
+    name: "Training",
+    slug: "training",
+    description: "Dog training tips, techniques, and best practices",
+    color: "text-purple-600",
   },
   {
-    id: 'environment',
-    name: 'Environment',
-    slug: 'environment',
-    description: 'Environmental impact and eco-friendly pet care',
-    color: 'text-green-600',
+    id: "environment",
+    name: "Environment",
+    slug: "environment",
+    description: "Environmental impact and eco-friendly pet care",
+    color: "text-green-600",
   },
   {
-    id: 'services',
-    name: 'Pet Services',
-    slug: 'services',
-    description: 'Professional pet care services and industry insights',
-    color: 'text-indigo-600',
+    id: "services",
+    name: "Pet Services",
+    slug: "services",
+    description: "Professional pet care services and industry insights",
+    color: "text-indigo-600",
   },
 ];
 
 // Authors
 export const ARTICLE_AUTHORS: Record<string, ArticleAuthor> = {
-  'dr-sarah-johnson': {
-    name: 'Dr. Sarah Johnson',
-    bio: 'Veterinarian with 15+ years experience in small animal medicine, specializing in preventive care and nutrition.',
-    credentials: ['DVM', 'MS', 'Diplomate ACVN'],
+  "dr-sarah-johnson": {
+    name: "Dr. Sarah Johnson",
+    bio: "Veterinarian with 15+ years experience in small animal medicine, specializing in preventive care and nutrition.",
+    credentials: ["DVM", "MS", "Diplomate ACVN"],
   },
-  'dr-michael-chen': {
-    name: 'Dr. Michael Chen',
+  "dr-michael-chen": {
+    name: "Dr. Michael Chen",
     bio: 'Board-certified veterinary behaviorist and author of "The Modern Dog\'s Guide to Wellness".',
-    credentials: ['DVM', 'DACVB', 'MS'],
+    credentials: ["DVM", "DACVB", "MS"],
   },
-  'lisa-rodriguez': {
-    name: 'Lisa Rodriguez',
-    bio: 'Certified Professional Dog Trainer and founder of Twin Cities Dog Training Academy.',
-    credentials: ['CPDT-KA', 'CBCC-KA'],
+  "lisa-rodriguez": {
+    name: "Lisa Rodriguez",
+    bio: "Certified Professional Dog Trainer and founder of Twin Cities Dog Training Academy.",
+    credentials: ["CPDT-KA", "CBCC-KA"],
   },
-  'mark-thompson': {
-    name: 'Mark Thompson',
-    bio: 'Environmental scientist specializing in sustainable pet waste management and urban ecology.',
-    credentials: ['PhD Environmental Science', 'MS Biology'],
+  "mark-thompson": {
+    name: "Mark Thompson",
+    bio: "Environmental scientist specializing in sustainable pet waste management and urban ecology.",
+    credentials: ["PhD Environmental Science", "MS Biology"],
   },
-  'emily-davis': {
-    name: 'Emily Davis',
-    bio: 'Pet nutritionist and founder of Minneapolis Holistic Pet Nutrition.',
-    credentials: ['MS Animal Nutrition', 'CPN'],
+  "emily-davis": {
+    name: "Emily Davis",
+    bio: "Pet nutritionist and founder of Minneapolis Holistic Pet Nutrition.",
+    credentials: ["MS Animal Nutrition", "CPN"],
   },
 };
 
@@ -132,20 +132,25 @@ export function calculateReadingTime(content: string): number {
   return Math.ceil(words / wordsPerMinute);
 }
 
-export function generateExcerpt(content: string, maxLength: number = 160): string {
+export function generateExcerpt(
+  content: string,
+  maxLength: number = 160,
+): string {
   // Remove markdown formatting and get plain text
   const plainText = content
-    .replace(/[#*`~\[\]()]/g, '') // Remove markdown symbols
-    .replace(/\n+/g, ' ') // Replace newlines with spaces
+    .replace(/[#*`~\[\]()]/g, "") // Remove markdown symbols
+    .replace(/\n+/g, " ") // Replace newlines with spaces
     .trim();
 
   if (plainText.length <= maxLength) return plainText;
 
-  return plainText.substring(0, maxLength).trim() + '...';
+  return plainText.substring(0, maxLength).trim() + "...";
 }
 
-export function generateTableOfContents(content: string): TableOfContentsItem[] {
-  const lines = content.split('\n');
+export function generateTableOfContents(
+  content: string,
+): TableOfContentsItem[] {
+  const lines = content.split("\n");
   const toc: TableOfContentsItem[] = [];
   const stack: TableOfContentsItem[] = [];
 
@@ -154,7 +159,7 @@ export function generateTableOfContents(content: string): TableOfContentsItem[] 
     if (headingMatch) {
       const level = headingMatch[1].length;
       const text = headingMatch[2].trim();
-      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
       const item: TableOfContentsItem = { id, text, level };
 
@@ -181,14 +186,15 @@ export function generateTableOfContents(content: string): TableOfContentsItem[] 
 export function getRelatedArticles(
   currentSlug: string,
   allArticles: Article[],
-  limit: number = 3
+  limit: number = 3,
 ): Article[] {
   return allArticles
     .filter((article) => article.slug !== currentSlug)
     .sort((a, b) => {
       // Prioritize same category
       if (a.category.id === b.category.id) return 0;
-      return a.category.id === allArticles.find((art) => art.slug === currentSlug)?.category.id
+      return a.category.id ===
+        allArticles.find((art) => art.slug === currentSlug)?.category.id
         ? -1
         : 1;
     })
@@ -205,16 +211,24 @@ export function searchArticles(articles: Article[], query: string): Article[] {
       article.description.toLowerCase().includes(searchTerm) ||
       article.excerpt.toLowerCase().includes(searchTerm) ||
       article.tags.some((tag) => tag.name.toLowerCase().includes(searchTerm)) ||
-      article.category.name.toLowerCase().includes(searchTerm)
+      article.category.name.toLowerCase().includes(searchTerm),
   );
 }
 
-export function filterArticlesByCategory(articles: Article[], categorySlug: string): Article[] {
+export function filterArticlesByCategory(
+  articles: Article[],
+  categorySlug: string,
+): Article[] {
   return articles.filter((article) => article.category.slug === categorySlug);
 }
 
-export function filterArticlesByTag(articles: Article[], tagSlug: string): Article[] {
-  return articles.filter((article) => article.tags.some((tag) => tag.slug === tagSlug));
+export function filterArticlesByTag(
+  articles: Article[],
+  tagSlug: string,
+): Article[] {
+  return articles.filter((article) =>
+    article.tags.some((tag) => tag.slug === tagSlug),
+  );
 }
 
 // Mock article data for development
@@ -224,19 +238,24 @@ export const MOCK_ARTICLES: Article[] = [
     description:
       "Complete guide to dog stool colors and what they mean for your pet's health. Know when to consult your Minneapolis vet.",
     excerpt:
-      'Understanding dog poop colors is crucial for early health detection. Learn what different colors indicate and when to seek veterinary care.',
-    slug: 'dog-poop-color-health',
-    publishedAt: '2024-01-15T10:00:00.000Z',
+      "Understanding dog poop colors is crucial for early health detection. Learn what different colors indicate and when to seek veterinary care.",
+    slug: "dog-poop-color-health",
+    publishedAt: "2024-01-15T10:00:00.000Z",
     readingTime: 8,
     featured: true,
     category: ARTICLE_CATEGORIES[0], // Health
     tags: [
-      { id: '1', name: 'Dog Health', slug: 'dog-health' },
-      { id: '2', name: 'Stool Analysis', slug: 'stool-analysis' },
-      { id: '3', name: 'Veterinary Care', slug: 'veterinary-care' },
+      { id: "1", name: "Dog Health", slug: "dog-health" },
+      { id: "2", name: "Stool Analysis", slug: "stool-analysis" },
+      { id: "3", name: "Veterinary Care", slug: "veterinary-care" },
     ],
-    author: ARTICLE_AUTHORS['dr-sarah-johnson'],
-    keywords: ['dog poop color', 'dog stool health', 'dog digestive health', 'Minneapolis vet'],
+    author: ARTICLE_AUTHORS["dr-sarah-johnson"],
+    keywords: [
+      "dog poop color",
+      "dog stool health",
+      "dog digestive health",
+      "Minneapolis vet",
+    ],
     content: `# Dog Poop Color Chart: What Your Dog's Stool Says About Health
 
 Understanding your dog's stool can provide valuable insights into their overall health and well-being. While we're not veterinarians and cannot provide medical advice, this guide will help you recognize what different stool characteristics might indicate.
@@ -295,15 +314,31 @@ At Yardura, we use our 3 C's analysis (Color, Consistency, Content) to monitor s
 - Merck Veterinary Manual
 - American Animal Hospital Association`,
     tableOfContents: [
-      { id: 'normal-healthy-stool', text: 'Normal Healthy Stool', level: 2 },
-      { id: 'common-color-variations', text: 'Common Color Variations', level: 2 },
-      { id: 'black-or-tarry-stool', text: 'Black or Tarry Stool', level: 3 },
-      { id: 'bright-red-blood-in-stool', text: 'Bright Red Blood in Stool', level: 3 },
-      { id: 'pale-or-gray-stool', text: 'Pale or Gray Stool', level: 3 },
-      { id: 'yellow-or-orange-stool', text: 'Yellow or Orange Stool', level: 3 },
-      { id: 'when-to-contact-your-vet', text: 'When to Contact Your Vet', level: 2 },
-      { id: 'our-ai-analysis', text: 'Our AI Analysis', level: 2 },
-      { id: 'sources', text: 'Sources', level: 2 },
+      { id: "normal-healthy-stool", text: "Normal Healthy Stool", level: 2 },
+      {
+        id: "common-color-variations",
+        text: "Common Color Variations",
+        level: 2,
+      },
+      { id: "black-or-tarry-stool", text: "Black or Tarry Stool", level: 3 },
+      {
+        id: "bright-red-blood-in-stool",
+        text: "Bright Red Blood in Stool",
+        level: 3,
+      },
+      { id: "pale-or-gray-stool", text: "Pale or Gray Stool", level: 3 },
+      {
+        id: "yellow-or-orange-stool",
+        text: "Yellow or Orange Stool",
+        level: 3,
+      },
+      {
+        id: "when-to-contact-your-vet",
+        text: "When to Contact Your Vet",
+        level: 2,
+      },
+      { id: "our-ai-analysis", text: "Our AI Analysis", level: 2 },
+      { id: "sources", text: "Sources", level: 2 },
     ],
   },
   // Add more mock articles as needed
@@ -321,4 +356,3 @@ export default {
   filterArticlesByCategory,
   filterArticlesByTag,
 };
-

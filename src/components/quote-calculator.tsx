@@ -1,20 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Calculator, Info } from 'lucide-react';
-import { calcInstantQuote, Frequency, YardSize } from '@/lib/pricing';
+import { useState, useEffect } from "react";
+import { Calculator, Info } from "lucide-react";
+import { calcInstantQuote, Frequency, YardSize } from "@/lib/pricing";
 
 export default function QuoteCalculator() {
   const [dogs, setDogs] = useState(1);
-  const [frequency, setFrequency] = useState<Frequency>('weekly');
-  const [yardSize, setYardSize] = useState<YardSize>('medium');
+  const [frequency, setFrequency] = useState<Frequency>("weekly");
+  const [yardSize, setYardSize] = useState<YardSize>("medium");
   const [deodorize, setDeodorize] = useState(false);
   const [litter, setLitter] = useState(false);
   const [estimate, setEstimate] = useState<number | null>(null);
 
   // Calculate estimate whenever inputs change
   useEffect(() => {
-    const calculatedEstimate = calcInstantQuote(dogs, frequency, yardSize, { deodorize, litter });
+    const calculatedEstimate = calcInstantQuote(dogs, frequency, yardSize, {
+      deodorize,
+      litter,
+    });
     setEstimate(calculatedEstimate);
   }, [dogs, frequency, yardSize, deodorize, litter]);
 
@@ -33,7 +36,9 @@ export default function QuoteCalculator() {
 
       <div className="grid md:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Number of Dogs</label>
+          <label className="block text-sm font-medium mb-1">
+            Number of Dogs
+          </label>
           <select
             value={dogs}
             onChange={(e) => setDogs(Number(e.target.value))}
@@ -41,14 +46,16 @@ export default function QuoteCalculator() {
           >
             {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
               <option key={num} value={num}>
-                {num} dog{num > 1 ? 's' : ''}
+                {num} dog{num > 1 ? "s" : ""}
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Service Frequency</label>
+          <label className="block text-sm font-medium mb-1">
+            Service Frequency
+          </label>
           <select
             value={frequency}
             onChange={(e) => setFrequency(e.target.value as Frequency)}
@@ -63,7 +70,9 @@ export default function QuoteCalculator() {
       </div>
 
       <div className="mb-4 p-4 bg-brand-50 rounded-lg border border-brand-200">
-        <label className="block text-sm font-medium mb-2 text-brand-800">Yard Size</label>
+        <label className="block text-sm font-medium mb-2 text-brand-800">
+          Yard Size
+        </label>
         <select
           value={yardSize}
           onChange={(e) => setYardSize(e.target.value as YardSize)}
@@ -74,11 +83,15 @@ export default function QuoteCalculator() {
           <option value="large">Large (1/2 - 1 acre)</option>
           <option value="xlarge">Extra Large (&gt; 1 acre)</option>
         </select>
-        <p className="text-xs text-brand-600 mt-1">This affects your base service price</p>
+        <p className="text-xs text-brand-600 mt-1">
+          This affects your base service price
+        </p>
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Add-on Services</label>
+        <label className="block text-sm font-medium mb-1">
+          Add-on Services
+        </label>
         <div className="space-y-2">
           <label className="flex items-center gap-2">
             <input
@@ -87,9 +100,11 @@ export default function QuoteCalculator() {
               onChange={(e) => setDeodorize(e.target.checked)}
               className="rounded border-brand-300 text-brand-600 focus:ring-brand-500"
             />
-            <span className="text-sm">Yard Deodorizing (+$5/week or +$15 one-time)</span>
+            <span className="text-sm">
+              Yard Deodorizing (+$5/week or +$15 one-time)
+            </span>
           </label>
-          {frequency !== 'one-time' && (
+          {frequency !== "one-time" && (
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -107,21 +122,28 @@ export default function QuoteCalculator() {
         <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
           <div className="text-center">
             <div className="text-sm text-slate-600 mb-1">
-              Estimated {frequency === 'one-time' ? 'cost' : 'weekly cost'}
+              Estimated {frequency === "one-time" ? "cost" : "weekly cost"}
             </div>
-            <div className="text-3xl font-extrabold text-brand-600 mb-2">${estimate}</div>
-            {frequency !== 'one-time' && (
+            <div className="text-3xl font-extrabold text-brand-600 mb-2">
+              ${estimate}
+            </div>
+            {frequency !== "one-time" && (
               <div className="text-xs text-slate-500 mb-2">
                 That's only $
                 {(
                   estimate *
-                  (frequency === 'twice-weekly' ? 2 : frequency === 'bi-weekly' ? 0.5 : 1)
-                ).toFixed(2)}{' '}
+                  (frequency === "twice-weekly"
+                    ? 2
+                    : frequency === "bi-weekly"
+                      ? 0.5
+                      : 1)
+                ).toFixed(2)}{" "}
                 per month!
               </div>
             )}
             <div className="text-xs text-slate-600">
-              No contracts • 100% satisfaction guarantee • Free quote consultation
+              No contracts • 100% satisfaction guarantee • Free quote
+              consultation
             </div>
           </div>
         </div>

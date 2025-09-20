@@ -2,10 +2,10 @@
  * R-tree spatial indexing for ZCTA pre-filtering
  */
 
-import RBush from 'geojson-rbush';
-import { bbox as turfBbox } from '@turf/turf';
-import type { GeoJSON, GeoJsonProperties } from 'geojson';
-import type { BBox } from 'geojson';
+import RBush from "geojson-rbush";
+import { bbox as turfBbox } from "@turf/turf";
+import type { GeoJSON, GeoJsonProperties } from "geojson";
+import type { BBox } from "geojson";
 
 export type RTreeIndex = ReturnType<typeof RBush>;
 
@@ -16,10 +16,12 @@ export function buildIndex(features: GeoJSON.Feature[]): RTreeIndex {
   const index = RBush();
 
   // Insert all features into the index
-  index.load(features.map((feature, id) => ({
-    ...feature,
-    id: id.toString()
-  })));
+  index.load(
+    features.map((feature, id) => ({
+      ...feature,
+      id: id.toString(),
+    })),
+  );
 
   return index;
 }
@@ -29,24 +31,29 @@ export function buildIndex(features: GeoJSON.Feature[]): RTreeIndex {
  */
 export function queryCandidates(
   index: RTreeIndex,
-  bbox: BBox
+  bbox: BBox,
 ): GeoJSON.Feature<GeoJSON.Geometry, GeoJsonProperties>[] {
   const results = index.search({
-    type: 'Feature',
+    type: "Feature",
     geometry: {
-      type: 'Polygon',
-      coordinates: [[
-        [bbox[0], bbox[1]],
-        [bbox[2], bbox[1]],
-        [bbox[2], bbox[3]],
-        [bbox[0], bbox[3]],
-        [bbox[0], bbox[1]]
-      ]]
+      type: "Polygon",
+      coordinates: [
+        [
+          [bbox[0], bbox[1]],
+          [bbox[2], bbox[1]],
+          [bbox[2], bbox[3]],
+          [bbox[0], bbox[3]],
+          [bbox[0], bbox[1]],
+        ],
+      ],
     },
-    properties: {}
+    properties: {},
   });
 
-  return (results.features || []) as GeoJSON.Feature<GeoJSON.Geometry, GeoJsonProperties>[];
+  return (results.features || []) as GeoJSON.Feature<
+    GeoJSON.Geometry,
+    GeoJsonProperties
+  >[];
 }
 
 /**
@@ -58,7 +65,7 @@ export function featureToBbox(feature: GeoJSON.Feature): BBox {
     return turfBbox(feature as any);
   } catch {
     // Manual bbox calculation as fallback
-    if (feature.geometry.type === 'Point') {
+    if (feature.geometry.type === "Point") {
       const [lng, lat] = feature.geometry.coordinates;
       return [lng, lat, lng, lat];
     }

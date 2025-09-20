@@ -1,7 +1,7 @@
-import AnimatedHeader from '@/components/site/AnimatedHeader';
-import Footer from '@/components/footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, Mail, MapPin } from 'lucide-react';
+import AnimatedHeader from "@/components/site/AnimatedHeader";
+import Footer from "@/components/footer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Phone, Mail, MapPin } from "lucide-react";
 
 export default function ContactPage() {
   return (
@@ -14,7 +14,8 @@ export default function ContactPage() {
               Contact Us
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Get in touch with our team for any questions or to schedule service
+              Get in touch with our team for any questions or to schedule
+              service
             </p>
           </div>
 
@@ -76,4 +77,3 @@ export default function ContactPage() {
     </div>
   );
 }
-

@@ -2,11 +2,11 @@
  * Coverage statistics and reporting utilities
  */
 
-import * as turf from '@turf/turf';
-import type { GeoJSON } from 'geojson';
-import { rewindSafe, unkinkSafe, validateAndClean } from './geometry';
-import { ClippedZcta } from './clip';
-import { debug } from '../log';
+import * as turf from "@turf/turf";
+import type { GeoJSON } from "geojson";
+import { rewindSafe, unkinkSafe, validateAndClean } from "./geometry";
+import { ClippedZcta } from "./clip";
+import { debug } from "../log";
 
 export interface CoverageStats {
   placeAreaSqm: number;
@@ -25,9 +25,12 @@ export interface CoverageStats {
  */
 export function calculateCoverageStats(
   place: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>,
-  clips: ClippedZcta[]
+  clips: ClippedZcta[],
 ): CoverageStats {
-  debug('coverage', `Calculating coverage for place with ${clips.length} clips`);
+  debug(
+    "coverage",
+    `Calculating coverage for place with ${clips.length} clips`,
+  );
 
   // Validate and prepare place geometry
   let placeArea = 0;
@@ -39,11 +42,11 @@ export function calculateCoverageStats(
     placeArea = turf.area(placeClean);
 
     if (placeArea <= 0) {
-      debug('coverage', 'Invalid place area, using fallback');
+      debug("coverage", "Invalid place area, using fallback");
       placeArea = 1000000; // 1 sq km fallback
     }
   } catch (error) {
-    debug('coverage', 'Failed to calculate place area:', error);
+    debug("coverage", "Failed to calculate place area:", error);
     placeArea = 1000000; // Fallback
   }
 
@@ -53,7 +56,7 @@ export function calculateCoverageStats(
   const zipsByStatus = {
     highOverlap: [] as string[],
     centroidOnly: [] as string[],
-    lowOverlap: [] as string[]
+    lowOverlap: [] as string[],
   };
 
   for (const clip of clips) {
@@ -71,10 +74,13 @@ export function calculateCoverageStats(
     clipsAreaSqm: Math.round(clipsArea),
     ratio: Number((clipsArea / placeArea).toFixed(4)),
     coveragePercent: Number(((clipsArea / placeArea) * 100).toFixed(2)),
-    zipsByStatus
+    zipsByStatus,
   };
 
-  debug('coverage', `Coverage calculated: ${stats.coveragePercent}% (${stats.clipsAreaSqm}/${stats.placeAreaSqm} sqm)`);
+  debug(
+    "coverage",
+    `Coverage calculated: ${stats.coveragePercent}% (${stats.clipsAreaSqm}/${stats.placeAreaSqm} sqm)`,
+  );
 
   return stats;
 }
@@ -98,11 +104,17 @@ Coverage Report:
 /**
  * Validate coverage meets minimum thresholds
  */
-export function validateCoverage(stats: CoverageStats, minPercent = 10): boolean {
+export function validateCoverage(
+  stats: CoverageStats,
+  minPercent = 10,
+): boolean {
   const isValid = stats.coveragePercent >= minPercent;
 
   if (!isValid) {
-    debug('coverage', `Coverage below minimum threshold: ${stats.coveragePercent}% < ${minPercent}%`);
+    debug(
+      "coverage",
+      `Coverage below minimum threshold: ${stats.coveragePercent}% < ${minPercent}%`,
+    );
   }
 
   return isValid;

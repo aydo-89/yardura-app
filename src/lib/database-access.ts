@@ -6,15 +6,15 @@
  * based on feature flags and environment configuration.
  */
 
-import { PrismaClient } from '@prisma/client';
-import { env } from './env';
+import { PrismaClient } from "@prisma/client";
+import { env } from "./env";
 
 // Feature flags for database migration
 export const DB_FEATURE_FLAGS = {
-  USE_POSTGRES: process.env.USE_POSTGRES === 'true',
-  READ_POSTGRES: process.env.READ_POSTGRES === 'true',
-  WRITE_POSTGRES: process.env.WRITE_POSTGRES === 'true',
-  MIGRATION_MODE: process.env.MIGRATION_MODE === 'true',
+  USE_POSTGRES: process.env.USE_POSTGRES === "true",
+  READ_POSTGRES: process.env.READ_POSTGRES === "true",
+  WRITE_POSTGRES: process.env.WRITE_POSTGRES === "true",
+  MIGRATION_MODE: process.env.MIGRATION_MODE === "true",
 } as const;
 
 // Database clients
@@ -25,7 +25,8 @@ let postgresClient: PrismaClient | null = null;
 function getSqliteClient(): PrismaClient {
   if (!sqliteClient) {
     sqliteClient = new PrismaClient({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
+      log:
+        process.env.NODE_ENV === "development" ? ["query", "error"] : ["error"],
     });
   }
   return sqliteClient;
@@ -40,7 +41,8 @@ function getPostgresClient(): PrismaClient | null {
   if (!postgresClient) {
     postgresClient = new PrismaClient({
       datasourceUrl: env.POSTGRES_DATABASE_URL,
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
+      log:
+        process.env.NODE_ENV === "development" ? ["query", "error"] : ["error"],
     });
   }
   return postgresClient;
@@ -64,12 +66,12 @@ export function getDb(): PrismaClient {
 export function getDbForModel(modelName: string): PrismaClient {
   // Critical models that must remain on SQLite during migration
   const criticalModels = [
-    'User',
-    'Account',
-    'Session',
-    'VerificationToken',
-    'ServiceVisit',
-    'Commission',
+    "User",
+    "Account",
+    "Session",
+    "VerificationToken",
+    "ServiceVisit",
+    "Commission",
   ];
 
   // If model is critical and we're not in full migration mode
@@ -130,7 +132,7 @@ export const dbUtils = {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Failed to get database stats:', error);
+      console.error("Failed to get database stats:", error);
       return null;
     }
   },
@@ -138,7 +140,7 @@ export const dbUtils = {
   // Validate data consistency between databases
   async validateConsistency() {
     if (!dbUtils.hasDualSetup()) {
-      return { valid: false, reason: 'Dual database setup not available' };
+      return { valid: false, reason: "Dual database setup not available" };
     }
 
     const sqlite = getSqliteClient();
@@ -148,7 +150,7 @@ export const dbUtils = {
     const postgresStats = await dbUtils.getStats(postgres);
 
     if (!sqliteStats || !postgresStats) {
-      return { valid: false, reason: 'Failed to retrieve statistics' };
+      return { valid: false, reason: "Failed to retrieve statistics" };
     }
 
     // Check if critical counts match
@@ -174,5 +176,3 @@ export const dbUtils = {
 // Export both clients for direct access when needed
 export const sqliteDb = getSqliteClient();
 export const postgresDb = () => getPostgresClient();
-
-

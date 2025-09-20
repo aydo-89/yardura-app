@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(_request: NextRequest) {
   try {
     const globalStats = await prisma.globalStats.findUnique({
-      where: { id: 'global' },
+      where: { id: "global" },
     });
 
     if (!globalStats) {
       // Initialize global stats if they don't exist
       const newStats = await prisma.globalStats.create({
         data: {
-          id: 'global',
+          id: "global",
           totalWasteDiverted: 0,
           totalMethaneAvoided: 0,
           totalUsers: 0,
@@ -37,7 +37,10 @@ export async function GET(_request: NextRequest) {
       totalServiceVisits: globalStats.totalServiceVisits,
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error fetching stats:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

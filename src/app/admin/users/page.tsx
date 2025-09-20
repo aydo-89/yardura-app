@@ -1,15 +1,21 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { UserPlus, Building } from 'lucide-react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { UserPlus, Building } from "lucide-react";
 
 export default function AdminUsersPage() {
   const { data: session, status } = useSession();
@@ -17,18 +23,18 @@ export default function AdminUsersPage() {
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
-    name: '',
-    orgId: '',
-    role: 'ADMIN',
+    email: "",
+    name: "",
+    orgId: "",
+    role: "ADMIN",
   });
 
   // Redirect if not admin
-  if (status === 'loading') return <div>Loading...</div>;
+  if (status === "loading") return <div>Loading...</div>;
 
   const userRole = (session as any)?.userRole;
-  if (!session || (userRole !== 'ADMIN' && userRole !== 'OWNER')) {
-    router.push('/dashboard');
+  if (!session || (userRole !== "ADMIN" && userRole !== "OWNER")) {
+    router.push("/dashboard");
     return null;
   }
 
@@ -37,35 +43,36 @@ export default function AdminUsersPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create user');
+        throw new Error(error.error || "Failed to create user");
       }
 
       const result = await response.json();
-      toast.success('User created successfully!');
+      toast.success("User created successfully!");
 
       // Reset form
       setFormData({
-        email: '',
-        name: '',
-        orgId: '',
-        role: 'ADMIN',
+        email: "",
+        name: "",
+        orgId: "",
+        role: "ADMIN",
       });
 
       // Show temp password in development
       if (result.tempPassword) {
-        toast.info(`Temp password: ${result.tempPassword}`, { duration: 10000 });
+        toast.info(`Temp password: ${result.tempPassword}`, {
+          duration: 10000,
+        });
       }
-
     } catch (error: any) {
-      toast.error(error.message || 'Error creating user');
+      toast.error(error.message || "Error creating user");
     } finally {
       setLoading(false);
     }
@@ -80,7 +87,9 @@ export default function AdminUsersPage() {
               <UserPlus className="size-8 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">User Management</h1>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+                User Management
+              </h1>
               <p className="text-lg text-slate-600 font-medium">
                 Create accounts for new business partners
               </p>
@@ -105,7 +114,12 @@ export default function AdminUsersPage() {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
                       placeholder="admin@business.com"
                       required
                     />
@@ -116,7 +130,12 @@ export default function AdminUsersPage() {
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
                       placeholder="Business Admin"
                     />
                   </div>
@@ -128,7 +147,12 @@ export default function AdminUsersPage() {
                     <Input
                       id="orgId"
                       value={formData.orgId}
-                      onChange={(e) => setFormData(prev => ({ ...prev, orgId: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          orgId: e.target.value,
+                        }))
+                      }
                       placeholder="business-name"
                       required
                     />
@@ -139,7 +163,12 @@ export default function AdminUsersPage() {
 
                   <div>
                     <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+                    <Select
+                      value={formData.role}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({ ...prev, role: value }))
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -153,7 +182,9 @@ export default function AdminUsersPage() {
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-900 mb-2">What happens next?</h4>
+                  <h4 className="font-semibold text-blue-900 mb-2">
+                    What happens next?
+                  </h4>
                   <ul className="text-sm text-blue-800 space-y-1">
                     <li>• Account will be created with a temporary password</li>
                     <li>• User will receive login credentials via email</li>
@@ -163,7 +194,7 @@ export default function AdminUsersPage() {
                 </div>
 
                 <Button type="submit" disabled={loading} className="w-full">
-                  {loading ? 'Creating Account...' : 'Create Business Account'}
+                  {loading ? "Creating Account..." : "Create Business Account"}
                 </Button>
               </form>
             </CardContent>
@@ -173,4 +204,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-

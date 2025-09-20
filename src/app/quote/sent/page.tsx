@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Mail, CheckCircle, ArrowRight, AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState, Suspense, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { Mail, CheckCircle, ArrowRight, AlertCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 function QuoteSentContent() {
   const searchParams = useSearchParams();
@@ -14,13 +14,13 @@ function QuoteSentContent() {
   const [emailSent, setEmailSent] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const leadId = searchParams.get('leadId');
+  const leadId = searchParams.get("leadId");
   const businessId =
-    searchParams.get('businessId') ||
-    searchParams.get('org') ||
-    searchParams.get('tenant') ||
-    searchParams.get('tenantId') ||
-    'yardura';
+    searchParams.get("businessId") ||
+    searchParams.get("org") ||
+    searchParams.get("tenant") ||
+    searchParams.get("tenantId") ||
+    "yardura";
 
   useEffect(() => {
     if (!leadId) {
@@ -37,21 +37,25 @@ function QuoteSentContent() {
     setErrorMessage(null);
     try {
       const response = await fetch(`/api/leads/${leadId}/send-quote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ businessId }),
       });
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        const message = data?.error || 'We could not deliver the quote email.';
+        const message = data?.error || "We could not deliver the quote email.";
         throw new Error(message);
       }
 
       setEmailSent(true);
     } catch (error) {
-      console.error('Error sending quote email:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Unexpected error sending quote email.');
+      console.error("Error sending quote email:", error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unexpected error sending quote email.",
+      );
       setEmailSent(false);
     } finally {
       setIsLoading(false);
@@ -79,10 +83,15 @@ function QuoteSentContent() {
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center px-4">
         <div className="max-w-md bg-white rounded-xl shadow-lg p-8 text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">We hit a snag</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            We hit a snag
+          </h1>
           <p className="text-gray-600 mb-6">{errorMessage}</p>
           <div className="space-y-3">
-            <Button className="bg-accent hover:bg-accent/90 w-full" onClick={sendQuoteEmail}>
+            <Button
+              className="bg-accent hover:bg-accent/90 w-full"
+              onClick={sendQuoteEmail}
+            >
               Try Again
             </Button>
             <Button asChild variant="outline" className="w-full">
@@ -101,8 +110,12 @@ function QuoteSentContent() {
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Quote Not Found</h1>
-          <p className="text-gray-600 mb-6">We couldn't process your quote. Please try again.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Quote Not Found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            We couldn't process your quote. Please try again.
+          </p>
           <Button asChild>
             <Link href="/quote?businessId=yardura">Start New Quote</Link>
           </Button>
@@ -139,7 +152,8 @@ function QuoteSentContent() {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-600">
-                  Your quote has been sent to your email address. The email includes:
+                  Your quote has been sent to your email address. The email
+                  includes:
                 </p>
                 <ul className="space-y-2 text-sm text-gray-600 ml-4">
                   <li className="flex items-center gap-2">
@@ -176,7 +190,10 @@ function QuoteSentContent() {
                   </div>
                   <div>
                     <p className="font-medium">Review Your Quote</p>
-                    <p className="text-sm text-gray-600">Check your email and review the detailed quote we sent you.</p>
+                    <p className="text-sm text-gray-600">
+                      Check your email and review the detailed quote we sent
+                      you.
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -185,7 +202,10 @@ function QuoteSentContent() {
                   </div>
                   <div>
                     <p className="font-medium">Contact Our Team</p>
-                    <p className="text-sm text-gray-600">Call us or reply to the email if you have questions or want to proceed.</p>
+                    <p className="text-sm text-gray-600">
+                      Call us or reply to the email if you have questions or
+                      want to proceed.
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -194,7 +214,10 @@ function QuoteSentContent() {
                   </div>
                   <div>
                     <p className="font-medium">Schedule Service</p>
-                    <p className="text-sm text-gray-600">Once you're ready, we'll help you set up your first service visit.</p>
+                    <p className="text-sm text-gray-600">
+                      Once you're ready, we'll help you set up your first
+                      service visit.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -204,7 +227,11 @@ function QuoteSentContent() {
           {/* Action Buttons */}
           <div className="text-center space-y-4">
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="bg-accent hover:bg-accent/90">
+              <Button
+                asChild
+                size="lg"
+                className="bg-accent hover:bg-accent/90"
+              >
                 <Link href="/services">
                   Learn More About Our Services
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -213,8 +240,10 @@ function QuoteSentContent() {
               <Button asChild variant="outline" size="lg">
                 <Link
                   href={`/onboarding/start?${(() => {
-                    const params = new URLSearchParams({ leadId: leadId || '' });
-                    if (businessId) params.set('businessId', businessId);
+                    const params = new URLSearchParams({
+                      leadId: leadId || "",
+                    });
+                    if (businessId) params.set("businessId", businessId);
                     return params.toString();
                   })()}`}
                 >
@@ -225,8 +254,11 @@ function QuoteSentContent() {
 
             <div className="text-center">
               <p className="text-sm text-gray-500">
-                Questions? Call us at{' '}
-                <a href="tel:1-888-915-YARD" className="text-accent hover:underline font-medium">
+                Questions? Call us at{" "}
+                <a
+                  href="tel:1-888-915-YARD"
+                  className="text-accent hover:underline font-medium"
+                >
                   1-888-915-YARD (9273)
                 </a>
               </p>
@@ -247,14 +279,16 @@ function QuoteSentContent() {
 
 export default function QuoteSentPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <QuoteSentContent />
     </Suspense>
   );

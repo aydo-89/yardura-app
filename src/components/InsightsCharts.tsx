@@ -1,15 +1,19 @@
-'use client';
-import useSWR from 'swr';
-import { useState } from 'react';
-import { TrendingUp, Calendar, BarChart3 } from 'lucide-react';
+"use client";
+import useSWR from "swr";
+import { useState } from "react";
+import { TrendingUp, Calendar, BarChart3 } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function InsightsCharts() {
   const [days, setDays] = useState(30);
-  const { data } = useSWR<{ items: any[] }>(`/api/insights/trends?days=${days}`, fetcher, {
-    refreshInterval: 30000,
-  });
+  const { data } = useSWR<{ items: any[] }>(
+    `/api/insights/trends?days=${days}`,
+    fetcher,
+    {
+      refreshInterval: 30000,
+    },
+  );
   const items = data?.items || [];
 
   return (
@@ -20,7 +24,9 @@ export default function InsightsCharts() {
             <BarChart3 className="size-5 text-accent" />
             Wellness Trends
           </h3>
-          <p className="text-muted text-sm">Your dog's wellness patterns over time</p>
+          <p className="text-muted text-sm">
+            Your dog's wellness patterns over time
+          </p>
         </div>
         <div className="flex gap-2">
           {[7, 30, 90].map((d) => (
@@ -29,8 +35,8 @@ export default function InsightsCharts() {
               onClick={() => setDays(d)}
               className={`px-4 py-2 rounded-lg border transition-all duration-200 ${
                 days === d
-                  ? 'bg-accent text-white border-accent shadow-soft'
-                  : 'bg-white border-slate-200 text-ink hover:bg-accent-soft'
+                  ? "bg-accent text-white border-accent shadow-soft"
+                  : "bg-white border-slate-200 text-ink hover:bg-accent-soft"
               }`}
             >
               {d}d
@@ -50,9 +56,23 @@ export default function InsightsCharts() {
         <div className="relative h-24 mb-4">
           <svg viewBox="0 0 300 60" className="w-full h-full">
             <defs>
-              <linearGradient id="trendGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0.1" />
+              <linearGradient
+                id="trendGradient"
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%"
+              >
+                <stop
+                  offset="0%"
+                  stopColor="hsl(var(--accent))"
+                  stopOpacity="0.3"
+                />
+                <stop
+                  offset="100%"
+                  stopColor="hsl(var(--accent))"
+                  stopOpacity="0.1"
+                />
               </linearGradient>
             </defs>
 
@@ -80,13 +100,31 @@ export default function InsightsCharts() {
             />
 
             {/* Data points */}
-            <circle cx="100" cy="28" r="4" fill="hsl(var(--accent))" className="drop-shadow-sm">
+            <circle
+              cx="100"
+              cy="28"
+              r="4"
+              fill="hsl(var(--accent))"
+              className="drop-shadow-sm"
+            >
               <title>Normal consistency</title>
             </circle>
-            <circle cx="180" cy="25" r="4" fill="hsl(var(--accent))" className="drop-shadow-sm">
+            <circle
+              cx="180"
+              cy="25"
+              r="4"
+              fill="hsl(var(--accent))"
+              className="drop-shadow-sm"
+            >
               <title>Slightly softer</title>
             </circle>
-            <circle cx="260" cy="22" r="4" fill="hsl(var(--accent))" className="drop-shadow-sm">
+            <circle
+              cx="260"
+              cy="22"
+              r="4"
+              fill="hsl(var(--accent))"
+              className="drop-shadow-sm"
+            >
               <title>Firmer than usual</title>
             </circle>
           </svg>
@@ -108,7 +146,9 @@ export default function InsightsCharts() {
               <TrendingUp className="size-5 text-green-600" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-green-800">Consistency</div>
+              <div className="text-sm font-semibold text-green-800">
+                Consistency
+              </div>
               <div className="text-xs text-green-600">Normal range</div>
             </div>
           </div>
@@ -122,19 +162,23 @@ export default function InsightsCharts() {
               <Calendar className="size-5 text-blue-600" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-blue-800">Weekly Analysis</div>
+              <div className="text-sm font-semibold text-blue-800">
+                Weekly Analysis
+              </div>
               <div className="text-xs text-blue-600">Pattern monitoring</div>
             </div>
           </div>
-          <div className="text-2xl font-bold text-blue-800 mb-2">{items.length || 4}</div>
+          <div className="text-2xl font-bold text-blue-800 mb-2">
+            {items.length || 4}
+          </div>
           <div className="text-xs text-blue-600">Samples this week</div>
         </div>
       </div>
 
       <div className="mt-6 p-4 bg-accent-soft/20 rounded-lg border border-accent/10">
         <div className="text-center text-sm text-muted">
-          📊 Wellness patterns are analyzed from your weekly service data. These insights are
-          informational only and not veterinary advice.
+          📊 Wellness patterns are analyzed from your weekly service data. These
+          insights are informational only and not veterinary advice.
         </div>
       </div>
     </div>

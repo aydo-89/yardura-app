@@ -12,31 +12,38 @@
  *   npm run migrate:validate # Validate only
  */
 
-const { execSync, spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const { execSync, spawn } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 
-const EXPORT_SCRIPT = path.join(__dirname, 'export-sqlite.js');
-const IMPORT_SCRIPT = path.join(__dirname, 'import-postgres.js');
-const INIT_SQL = path.join(__dirname, '..', 'pg', 'init.sql');
+const EXPORT_SCRIPT = path.join(__dirname, "export-sqlite.js");
+const IMPORT_SCRIPT = path.join(__dirname, "import-postgres.js");
+const INIT_SQL = path.join(__dirname, "..", "pg", "init.sql");
 
-function log(message, level = 'info') {
+function log(message, level = "info") {
   const timestamp = new Date().toISOString();
-  const prefix = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : level === 'success' ? '✅' : 'ℹ️';
+  const prefix =
+    level === "error"
+      ? "❌"
+      : level === "warn"
+        ? "⚠️"
+        : level === "success"
+          ? "✅"
+          : "ℹ️";
   console.log(`${prefix} [${timestamp}] ${message}`);
 }
 
 function runCommand(command, args = [], options = {}) {
   return new Promise((resolve, reject) => {
-    log(`Running: ${command} ${args.join(' ')}`);
+    log(`Running: ${command} ${args.join(" ")}`);
 
     const child = spawn(command, args, {
-      stdio: 'inherit',
+      stdio: "inherit",
       shell: true,
       ...options,
     });
 
-    child.on('close', (code) => {
+    child.on("close", (code) => {
       if (code === 0) {
         resolve();
       } else {
@@ -44,19 +51,20 @@ function runCommand(command, args = [], options = {}) {
       }
     });
 
-    child.on('error', reject);
+    child.on("error", reject);
   });
 }
 
 async function checkPrerequisites() {
-  log('Checking prerequisites...');
+  log("Checking prerequisites...");
 
   // Check Node.js version
   const nodeVersion = process.version;
   log(`Node.js version: ${nodeVersion}`);
 
   // Check if SQLite database exists
-  const sqliteDbPath = process.env.DATABASE_URL?.replace('file:', '') || './prisma/dev.db';
+  const sqliteDbPath =
+    process.env.DATABASE_URL?.replace("file:", "") || "./prisma/dev.db";
   if (!fs.existsSync(sqliteDbPath)) {
     throw new Error(`SQLite database not found at ${sqliteDbPath}`);
   }
@@ -64,12 +72,12 @@ async function checkPrerequisites() {
 
   // Check Postgres connection
   if (!process.env.POSTGRES_DATABASE_URL) {
-    throw new Error('POSTGRES_DATABASE_URL environment variable is required');
+    throw new Error("POSTGRES_DATABASE_URL environment variable is required");
   }
-  log('Postgres database URL configured');
+  log("Postgres database URL configured");
 
   // Check if data directory exists
-  const dataDir = path.join(__dirname, '..', 'data');
+  const dataDir = path.join(__dirname, "..", "data");
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
     log(`Created data directory: ${dataDir}`);
@@ -77,44 +85,44 @@ async function checkPrerequisites() {
 }
 
 async function exportData() {
-  log('Starting data export from SQLite...');
-  await runCommand('node', [EXPORT_SCRIPT]);
-  log('Data export completed successfully', 'success');
+  log("Starting data export from SQLite...");
+  await runCommand("node", [EXPORT_SCRIPT]);
+  log("Data export completed successfully", "success");
 }
 
 async function initializePostgres() {
-  log('Initializing Postgres database...');
+  log("Initializing Postgres database...");
 
   if (!fs.existsSync(INIT_SQL)) {
     throw new Error(`Postgres init script not found: ${INIT_SQL}`);
   }
 
   // Initialize schema
-  const { Client } = require('pg');
+  const { Client } = require("pg");
   const client = new Client({
     connectionString: process.env.POSTGRES_DATABASE_URL,
   });
 
   try {
     await client.connect();
-    const sql = fs.readFileSync(INIT_SQL, 'utf8');
+    const sql = fs.readFileSync(INIT_SQL, "utf8");
     await client.query(sql);
-    log('Postgres schema initialized successfully', 'success');
+    log("Postgres schema initialized successfully", "success");
   } finally {
     await client.end();
   }
 }
 
 async function importData() {
-  log('Starting data import to Postgres...');
-  await runCommand('node', [IMPORT_SCRIPT]);
-  log('Data import completed successfully', 'success');
+  log("Starting data import to Postgres...");
+  await runCommand("node", [IMPORT_SCRIPT]);
+  log("Data import completed successfully", "success");
 }
 
 async function validateMigration() {
-  log('Validating migration...');
+  log("Validating migration...");
 
-  const { PrismaClient } = require('@prisma/client');
+  const { PrismaClient } = require("@prisma/client");
 
   // Connect to both databases
   const sqlitePrisma = new PrismaClient({
@@ -128,13 +136,21 @@ async function validateMigration() {
   try {
     // Compare record counts
     const tables = [
-      'User', 'Account', 'Session', 'Dog', 'ServiceVisit',
-      'DataReading', 'Commission', 'Org', 'Customer', 'Job'
+      "User",
+      "Account",
+      "Session",
+      "Dog",
+      "ServiceVisit",
+      "DataReading",
+      "Commission",
+      "Org",
+      "Customer",
+      "Job",
     ];
 
-    log('Comparing record counts between databases:');
-    console.log('Table\t\tSQLite\tPostgres\tMatch');
-    console.log('-----\t\t------\t--------\t-----');
+    log("Comparing record counts between databases:");
+    console.log("Table\t\tSQLite\tPostgres\tMatch");
+    console.log("-----\t\t------\t--------\t-----");
 
     let allMatch = true;
 
@@ -145,16 +161,17 @@ async function validateMigration() {
 
       if (!match) allMatch = false;
 
-      console.log(`${table}\t\t${sqliteCount}\t${postgresCount}\t\t${match ? '✅' : '❌'}`);
+      console.log(
+        `${table}\t\t${sqliteCount}\t${postgresCount}\t\t${match ? "✅" : "❌"}`,
+      );
     }
 
     if (allMatch) {
-      log('Migration validation passed!', 'success');
+      log("Migration validation passed!", "success");
     } else {
-      log('Migration validation failed - record counts do not match', 'error');
-      throw new Error('Migration validation failed');
+      log("Migration validation failed - record counts do not match", "error");
+      throw new Error("Migration validation failed");
     }
-
   } finally {
     await sqlitePrisma.$disconnect();
     await postgresPrisma.$disconnect();
@@ -162,20 +179,21 @@ async function validateMigration() {
 }
 
 async function createBackup() {
-  log('Creating backup of current SQLite database...');
+  log("Creating backup of current SQLite database...");
 
-  const sqliteDbPath = process.env.DATABASE_URL?.replace('file:', '') || './prisma/dev.db';
+  const sqliteDbPath =
+    process.env.DATABASE_URL?.replace("file:", "") || "./prisma/dev.db";
   const backupPath = `${sqliteDbPath}.backup-${Date.now()}`;
 
   fs.copyFileSync(sqliteDbPath, backupPath);
-  log(`Backup created: ${backupPath}`, 'success');
+  log(`Backup created: ${backupPath}`, "success");
 
   return backupPath;
 }
 
 async function runFullMigration() {
   try {
-    log('🚀 Starting full database migration (SQLite → Postgres)');
+    log("🚀 Starting full database migration (SQLite → Postgres)");
 
     // Step 1: Prerequisites check
     await checkPrerequisites();
@@ -195,12 +213,11 @@ async function runFullMigration() {
     // Step 6: Validate migration
     await validateMigration();
 
-    log('🎉 Migration completed successfully!', 'success');
+    log("🎉 Migration completed successfully!", "success");
     log(`Backup location: ${backupPath}`);
-    log('You can now set USE_POSTGRES=true to switch to Postgres');
-
+    log("You can now set USE_POSTGRES=true to switch to Postgres");
   } catch (error) {
-    log(`Migration failed: ${error.message}`, 'error');
+    log(`Migration failed: ${error.message}`, "error");
     console.error(error);
     process.exit(1);
   }
@@ -211,7 +228,7 @@ async function runExportOnly() {
     await checkPrerequisites();
     await exportData();
   } catch (error) {
-    log(`Export failed: ${error.message}`, 'error');
+    log(`Export failed: ${error.message}`, "error");
     process.exit(1);
   }
 }
@@ -222,7 +239,7 @@ async function runImportOnly() {
     await initializePostgres();
     await importData();
   } catch (error) {
-    log(`Import failed: ${error.message}`, 'error');
+    log(`Import failed: ${error.message}`, "error");
     process.exit(1);
   }
 }
@@ -231,34 +248,32 @@ async function runValidateOnly() {
   try {
     await validateMigration();
   } catch (error) {
-    log(`Validation failed: ${error.message}`, 'error');
+    log(`Validation failed: ${error.message}`, "error");
     process.exit(1);
   }
 }
 
 // Main execution logic
-const command = process.argv[2] || 'full';
+const command = process.argv[2] || "full";
 
 switch (command) {
-  case 'full':
+  case "full":
     runFullMigration();
     break;
-  case 'export':
+  case "export":
     runExportOnly();
     break;
-  case 'import':
+  case "import":
     runImportOnly();
     break;
-  case 'validate':
+  case "validate":
     runValidateOnly();
     break;
   default:
-    console.log('Usage:');
-    console.log('  npm run migrate        # Full migration');
-    console.log('  npm run migrate:export # Export only');
-    console.log('  npm run migrate:import # Import only');
-    console.log('  npm run migrate:validate # Validate only');
+    console.log("Usage:");
+    console.log("  npm run migrate        # Full migration");
+    console.log("  npm run migrate:export # Export only");
+    console.log("  npm run migrate:import # Import only");
+    console.log("  npm run migrate:validate # Validate only");
     process.exit(1);
 }
-
-

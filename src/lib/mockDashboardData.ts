@@ -1,8 +1,14 @@
 export function generateMockDashboardData() {
   const now = new Date();
   const dogs = [
-    { id: 'dog_1', name: 'Bella', breed: 'Golden Retriever', age: 4, weight: 65 },
-    { id: 'dog_2', name: 'Max', breed: 'Labrador', age: 6, weight: 70 },
+    {
+      id: "dog_1",
+      name: "Bella",
+      breed: "Golden Retriever",
+      age: 4,
+      weight: 65,
+    },
+    { id: "dog_2", name: "Max", breed: "Labrador", age: 6, weight: 70 },
   ];
 
   const serviceVisits = Array.from({ length: 6 }).map((_, i) => {
@@ -11,9 +17,9 @@ export function generateMockDashboardData() {
     return {
       id: `visit_${i}`,
       scheduledDate: d.toISOString(),
-      status: i === 0 ? 'SCHEDULED' : 'COMPLETED',
-      serviceType: 'WEEKLY_CLEAN',
-      yardSize: i % 2 === 0 ? 'medium' : 'large',
+      status: i === 0 ? "SCHEDULED" : "COMPLETED",
+      serviceType: "WEEKLY_CLEAN",
+      yardSize: i % 2 === 0 ? "medium" : "large",
     };
   });
 
@@ -28,18 +34,18 @@ export function generateMockDashboardData() {
 
   // Generate realistic volume: ~14 deposits per dog each week over 8 weeks
   const weeks = 8;
-  const normalColors = ['brown', 'tan'];
+  const normalColors = ["brown", "tan"];
 
   // Create mostly normal scenarios with just a few minor abnormalities
   const weekScenarios = [
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 0: Normal - all good
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 1: Normal - all good
-    { color: 'normal', consistency: 'soft', alertType: 'soft' }, // Week 2: Minor soft consistency (just monitor)
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 3: Normal - all good
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 4: Normal - all good
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 5: Normal - all good
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 6: Normal - all good
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 7: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 0: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 1: Normal - all good
+    { color: "normal", consistency: "soft", alertType: "soft" }, // Week 2: Minor soft consistency (just monitor)
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 3: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 4: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 5: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 6: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 7: Normal - all good
   ];
 
   for (let week = 0; week < weeks; week++) {
@@ -57,7 +63,10 @@ export function generateMockDashboardData() {
         const scenario = weekScenarios[week];
         let weight = dog.weight * 0.02 + Math.random() * 0.01; // ~2% of body weight
         let volume = weight * 1000; // Convert to grams/ml
-        const color = scenario.color === 'normal' ? normalColors[Math.floor(Math.random() * normalColors.length)] : scenario.color;
+        const color =
+          scenario.color === "normal"
+            ? normalColors[Math.floor(Math.random() * normalColors.length)]
+            : scenario.color;
         const consistency = scenario.consistency;
 
         // Add some natural variation
@@ -77,15 +86,15 @@ export function generateMockDashboardData() {
   }
 
   const user = {
-    id: 'mock_user_1',
-    name: 'Alex Johnson',
-    email: 'alex@example.com',
-    phone: '+1 (555) 010-1234',
-    address: '1234 15th Ave S',
-    city: 'Minneapolis',
-    zipCode: '55417',
-    stripeCustomerId: 'cus_mock_123',
-    orgId: 'org_demo',
+    id: "mock_user_1",
+    name: "Alex Johnson",
+    email: "alex@example.com",
+    phone: "+1 (555) 010-1234",
+    address: "1234 15th Ave S",
+    city: "Minneapolis",
+    zipCode: "55417",
+    stripeCustomerId: "cus_mock_123",
+    orgId: "org_demo",
   } as const;
 
   // Generate realistic volume: ~14 deposits per dog each week over 8 weeks
@@ -100,14 +109,14 @@ export function generateMockDashboardData() {
 
   // Create mostly normal scenarios with just a few minor abnormalities
   const weekScenarios1 = [
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 0: Normal - all good
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 1: Normal - all good
-    { color: 'normal', consistency: 'soft', alertType: 'soft' }, // Week 2: Minor soft consistency (just monitor)
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 3: Normal - all good
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 4: Normal - all good
-    { color: 'yellow', consistency: 'normal', alertType: 'color' }, // Week 5: Slight yellow tint (monitor)
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 6: Normal - all good
-    { color: 'normal', consistency: 'normal', alertType: 'none' }, // Week 7: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 0: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 1: Normal - all good
+    { color: "normal", consistency: "soft", alertType: "soft" }, // Week 2: Minor soft consistency (just monitor)
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 3: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 4: Normal - all good
+    { color: "yellow", consistency: "normal", alertType: "color" }, // Week 5: Slight yellow tint (monitor)
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 6: Normal - all good
+    { color: "normal", consistency: "normal", alertType: "none" }, // Week 7: Normal - all good
   ];
 
   for (let w = 0; w < weeks; w++) {
@@ -119,7 +128,12 @@ export function generateMockDashboardData() {
         const d = new Date(now);
         // spread readings within the week at reasonable daytime hours
         d.setDate(d.getDate() - w * 7 - Math.floor(Math.random() * 7));
-        d.setHours(7 + Math.floor(Math.random() * 12), Math.floor(Math.random() * 60), 0, 0);
+        d.setHours(
+          7 + Math.floor(Math.random() * 12),
+          Math.floor(Math.random() * 60),
+          0,
+          0,
+        );
 
         // Use scenario-based distribution with some randomization
         let color = scenario.color;
@@ -130,13 +144,13 @@ export function generateMockDashboardData() {
         if (variationRoll < 0.3) {
           // 30% chance of normal variation
           color = normalColors[Math.floor(Math.random() * normalColors.length)];
-          consistency = 'firm';
+          consistency = "firm";
         } else if (variationRoll < 0.5) {
           // 20% chance of partial alert
-          if (scenario.alertType === 'soft') consistency = 'soft';
-          if (scenario.alertType === 'color') color = scenario.color;
-          if (scenario.alertType === 'parasite') {
-            consistency = r % 2 === 0 ? 'mucous' : 'greasy';
+          if (scenario.alertType === "soft") consistency = "soft";
+          if (scenario.alertType === "color") color = scenario.color;
+          if (scenario.alertType === "parasite") {
+            consistency = r % 2 === 0 ? "mucous" : "greasy";
           }
         }
 
@@ -159,18 +173,26 @@ export function generateMockDashboardData() {
 export function generateMockDashboardDataNormal() {
   const now = new Date();
   const user = {
-    id: 'mock_user_normal_1',
-    name: 'Jordan Smith',
-    email: 'jordan@example.com',
-    phone: '+1 (555) 010-4567',
-    address: '742 Evergreen Terrace',
-    city: 'Springfield',
-    zipCode: '62704',
-    stripeCustomerId: 'cus_mock_456',
-    orgId: 'org_demo',
+    id: "mock_user_normal_1",
+    name: "Jordan Smith",
+    email: "jordan@example.com",
+    phone: "+1 (555) 010-4567",
+    address: "742 Evergreen Terrace",
+    city: "Springfield",
+    zipCode: "62704",
+    stripeCustomerId: "cus_mock_456",
+    orgId: "org_demo",
   } as const;
 
-  const dogs = [{ id: 'dog_norm_1', name: 'Luna', breed: 'Border Collie', age: 5, weight: 42 }];
+  const dogs = [
+    {
+      id: "dog_norm_1",
+      name: "Luna",
+      breed: "Border Collie",
+      age: 5,
+      weight: 42,
+    },
+  ];
 
   // 8 weekly visits, last is scheduled
   const serviceVisits = Array.from({ length: 8 }).map((_, i) => {
@@ -179,15 +201,15 @@ export function generateMockDashboardDataNormal() {
     return {
       id: `visit_norm_${i}`,
       scheduledDate: d.toISOString(),
-      status: i === 0 ? 'SCHEDULED' : 'COMPLETED',
-      serviceType: 'WEEKLY_CLEAN',
-      yardSize: 'medium',
+      status: i === 0 ? "SCHEDULED" : "COMPLETED",
+      serviceType: "WEEKLY_CLEAN",
+      yardSize: "medium",
     };
   });
 
   // Build readings: ~14 per week, almost all normal; a single soft week as a warning only
   const weeks = 8;
-  const normalColors = ['brown', 'tan'];
+  const normalColors = ["brown", "tan"];
   const dataReadings: Array<{
     id: string;
     timestamp: string;
@@ -203,7 +225,12 @@ export function generateMockDashboardDataNormal() {
     for (let r = 0; r < perWeek; r++) {
       const d = new Date(now);
       d.setDate(d.getDate() - w * 7 - Math.floor(Math.random() * 7));
-      d.setHours(7 + Math.floor(Math.random() * 12), Math.floor(Math.random() * 60), 0, 0);
+      d.setHours(
+        7 + Math.floor(Math.random() * 12),
+        Math.floor(Math.random() * 60),
+        0,
+        0,
+      );
       const isSoft = w === softWeek && r < 3; // a few soft that week
       dataReadings.push({
         id: `reading_norm_${w}_${r}`,
@@ -211,7 +238,7 @@ export function generateMockDashboardDataNormal() {
         weight: Math.round(120 + (r % 5) * 20),
         volume: 1,
         color: normalColors[(w + r) % normalColors.length],
-        consistency: isSoft ? 'soft' : 'firm',
+        consistency: isSoft ? "soft" : "firm",
       });
     }
   }

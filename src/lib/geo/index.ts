@@ -10,8 +10,8 @@ export {
   toStateSlug,
   properCapitalize,
   normalizeCityName,
-  ZCTA_PROP_KEYS
-} from './normalize';
+  ZCTA_PROP_KEYS,
+} from "./normalize";
 
 // Geometry utilities
 export {
@@ -20,26 +20,28 @@ export {
   simplifyMeters,
   fastDisjoint,
   validateAndClean,
-  safeIntersects
-} from './geometry';
+  safeIntersects,
+} from "./geometry";
 
 // R-tree indexing
-export {
-  buildIndex,
-  queryCandidates,
-  featureToBbox
-} from './rtree';
-export type { RTreeIndex } from './rtree';
+export { buildIndex, queryCandidates, featureToBbox } from "./rtree";
+export type { RTreeIndex } from "./rtree";
 
 // Clipping utilities
-export { clipZctasToPlace } from './clip';
-export type { ClippedZcta } from './clip';
+export { clipZctasToPlace } from "./clip";
+export type { ClippedZcta } from "./clip";
 
 // Scoring utilities
-export { scoreZctas, getAreaThreshold, calculateCoverageFromClips } from './score';
+export {
+  scoreZctas,
+  getAreaThreshold,
+  calculateCoverageFromClips,
+} from "./score";
 
 // Coverage utilities
-export { calculateCoverageStats, generateCoverageReport, validateCoverage } from './coverage';
-export type { CoverageStats } from './coverage';
-
-
+export {
+  calculateCoverageStats,
+  generateCoverageReport,
+  validateCoverage,
+} from "./coverage";
+export type { CoverageStats } from "./coverage";

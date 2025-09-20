@@ -5,9 +5,9 @@
  * Usage: node infra/migration/import-postgres.js
  */
 
-const { PrismaClient } = require('@prisma/client');
-const fs = require('fs');
-const path = require('path');
+const { PrismaClient } = require("@prisma/client");
+const fs = require("fs");
+const path = require("path");
 
 // Use the Postgres datasource
 const prisma = new PrismaClient({
@@ -15,61 +15,66 @@ const prisma = new PrismaClient({
 });
 
 const TABLES_TO_IMPORT = [
-  'User',
-  'Account',
-  'Session',
-  'VerificationToken',
-  'Org',
-  'Customer',
-  'Dog',
-  'ServiceVisit',
-  'DataReading',
-  'GlobalStats',
-  'Commission',
-  'Job',
-  'Device',
-  'Sample',
-  'SampleScore',
-  'Alert',
-  'EcoStat',
-  'BillingSnapshot',
-  'GroundTruth',
+  "User",
+  "Account",
+  "Session",
+  "VerificationToken",
+  "Org",
+  "Customer",
+  "Dog",
+  "ServiceVisit",
+  "DataReading",
+  "GlobalStats",
+  "Commission",
+  "Job",
+  "Device",
+  "Sample",
+  "SampleScore",
+  "Alert",
+  "EcoStat",
+  "BillingSnapshot",
+  "GroundTruth",
 ];
 
 // Tables that should be imported in specific order due to foreign keys
 const IMPORT_ORDER = [
-  'User',           // No dependencies
-  'Account',        // Depends on User
-  'Session',        // Depends on User
-  'VerificationToken', // No dependencies
-  'Org',            // No dependencies
-  'Customer',       // Depends on Org
-  'Dog',            // Depends on User, Org, Customer
-  'ServiceVisit',   // Depends on User
-  'DataReading',    // Depends on User, Dog, ServiceVisit
-  'GlobalStats',    // No dependencies
-  'Commission',     // Depends on User, ServiceVisit
-  'Job',            // Depends on Org, Customer
-  'Device',         // Depends on Org
-  'Sample',         // Depends on Org, Device, Customer, Dog, Job
-  'SampleScore',    // Depends on Sample
-  'Alert',          // Depends on Org, Sample
-  'EcoStat',        // Depends on Org
-  'BillingSnapshot', // Depends on Org, Customer
-  'GroundTruth',    // Depends on Sample
+  "User", // No dependencies
+  "Account", // Depends on User
+  "Session", // Depends on User
+  "VerificationToken", // No dependencies
+  "Org", // No dependencies
+  "Customer", // Depends on Org
+  "Dog", // Depends on User, Org, Customer
+  "ServiceVisit", // Depends on User
+  "DataReading", // Depends on User, Dog, ServiceVisit
+  "GlobalStats", // No dependencies
+  "Commission", // Depends on User, ServiceVisit
+  "Job", // Depends on Org, Customer
+  "Device", // Depends on Org
+  "Sample", // Depends on Org, Device, Customer, Dog, Job
+  "SampleScore", // Depends on Sample
+  "Alert", // Depends on Org, Sample
+  "EcoStat", // Depends on Org
+  "BillingSnapshot", // Depends on Org, Customer
+  "GroundTruth", // Depends on Sample
 ];
 
 async function importTable(tableName, batchSize = 100) {
   console.log(`\n📥 Importing ${tableName}...`);
 
-  const inputFile = path.join(__dirname, '..', 'data', `${tableName.toLowerCase()}.json`);
+  const inputFile = path.join(
+    __dirname,
+    "..",
+    "data",
+    `${tableName.toLowerCase()}.json`,
+  );
 
   if (!fs.existsSync(inputFile)) {
     console.log(`⚠️  Skipping ${tableName} - file not found: ${inputFile}`);
     return 0;
   }
 
-  const fileContent = fs.readFileSync(inputFile, 'utf8');
+  const fileContent = fs.readFileSync(inputFile, "utf8");
   const records = JSON.parse(fileContent);
 
   if (records.length === 0) {
@@ -88,7 +93,7 @@ async function importTable(tableName, batchSize = 100) {
 
     try {
       // Transform records for Postgres compatibility
-      const transformedBatch = batch.map(record => ({
+      const transformedBatch = batch.map((record) => ({
         ...record,
         // Handle CUID to UUID conversion if needed
         id: record.id,
@@ -96,13 +101,21 @@ async function importTable(tableName, batchSize = 100) {
         createdAt: record.createdAt ? new Date(record.createdAt) : new Date(),
         updatedAt: record.updatedAt ? new Date(record.updatedAt) : new Date(),
         // Handle optional date fields
-        ...(record.emailVerified && { emailVerified: new Date(record.emailVerified) }),
-        ...(record.scheduledDate && { scheduledDate: new Date(record.scheduledDate) }),
-        ...(record.completedDate && { completedDate: new Date(record.completedDate) }),
+        ...(record.emailVerified && {
+          emailVerified: new Date(record.emailVerified),
+        }),
+        ...(record.scheduledDate && {
+          scheduledDate: new Date(record.scheduledDate),
+        }),
+        ...(record.completedDate && {
+          completedDate: new Date(record.completedDate),
+        }),
         ...(record.expires && { expires: new Date(record.expires) }),
         ...(record.timestamp && { timestamp: new Date(record.timestamp) }),
         ...(record.paidAt && { paidAt: new Date(record.paidAt) }),
-        ...(record.nextVisitAt && { nextVisitAt: new Date(record.nextVisitAt) }),
+        ...(record.nextVisitAt && {
+          nextVisitAt: new Date(record.nextVisitAt),
+        }),
         ...(record.lastSeenAt && { lastSeenAt: new Date(record.lastSeenAt) }),
         ...(record.capturedAt && { capturedAt: new Date(record.capturedAt) }),
         ...(record.scoredAt && { scoredAt: new Date(record.scoredAt) }),
@@ -124,17 +137,29 @@ async function importTable(tableName, batchSize = 100) {
               create: record,
             });
           } catch (err) {
-            errors.push({ table: tableName, record: record.id, error: err.message });
+            errors.push({
+              table: tableName,
+              record: record.id,
+              error: err.message,
+            });
           }
         }
       }
 
       imported += transformedBatch.length;
-      console.log(`  ✅ Imported batch ${Math.floor(i / batchSize) + 1}: ${transformedBatch.length} records`);
-
+      console.log(
+        `  ✅ Imported batch ${Math.floor(i / batchSize) + 1}: ${transformedBatch.length} records`,
+      );
     } catch (error) {
-      console.error(`  ❌ Failed to import batch ${Math.floor(i / batchSize) + 1}:`, error.message);
-      errors.push({ table: tableName, batch: Math.floor(i / batchSize) + 1, error: error.message });
+      console.error(
+        `  ❌ Failed to import batch ${Math.floor(i / batchSize) + 1}:`,
+        error.message,
+      );
+      errors.push({
+        table: tableName,
+        batch: Math.floor(i / batchSize) + 1,
+        error: error.message,
+      });
     }
   }
 
@@ -147,7 +172,7 @@ async function importTable(tableName, batchSize = 100) {
 }
 
 async function validateImport() {
-  console.log('\n🔍 Validating import...');
+  console.log("\n🔍 Validating import...");
 
   const validationResults = {};
 
@@ -166,10 +191,10 @@ async function validateImport() {
 }
 
 async function importAllTables() {
-  console.log('🚀 Starting Postgres data import...\n');
+  console.log("🚀 Starting Postgres data import...\n");
 
   if (!process.env.POSTGRES_DATABASE_URL) {
-    console.error('❌ POSTGRES_DATABASE_URL environment variable is required');
+    console.error("❌ POSTGRES_DATABASE_URL environment variable is required");
     process.exit(1);
   }
 
@@ -192,30 +217,36 @@ async function importAllTables() {
   const validationResults = await validateImport();
 
   // Save import summary
-  const summaryFile = path.join(__dirname, '..', 'data', 'import-summary.json');
+  const summaryFile = path.join(__dirname, "..", "data", "import-summary.json");
   const summary = {
     importDate: new Date().toISOString(),
-    postgresUrl: process.env.POSTGRES_DATABASE_URL.replace(/:\/\/.*@/, '://***:***@'), // Mask credentials
+    postgresUrl: process.env.POSTGRES_DATABASE_URL.replace(
+      /:\/\/.*@/,
+      "://***:***@",
+    ), // Mask credentials
     results,
     validationResults,
     totalTables: IMPORT_ORDER.length,
-    successfulImports: Object.values(results).filter(r => r.imported > 0).length,
+    successfulImports: Object.values(results).filter((r) => r.imported > 0)
+      .length,
     totalErrors: Object.values(results).reduce((sum, r) => sum + r.errors, 0),
   };
 
   fs.writeFileSync(summaryFile, JSON.stringify(summary, null, 2));
 
-  console.log('\n📊 Import Summary:');
-  console.log('================');
+  console.log("\n📊 Import Summary:");
+  console.log("================");
   Object.entries(results).forEach(([table, result]) => {
-    console.log(`${table}: ${result.imported} imported, ${result.errors} errors`);
+    console.log(
+      `${table}: ${result.imported} imported, ${result.errors} errors`,
+    );
   });
 
   console.log(`\n✅ Import complete! Summary saved to ${summaryFile}`);
 
   if (errors.length > 0) {
-    console.log('\n❌ Errors encountered:');
-    errors.forEach(err => console.log(`  - ${err.table}: ${err.error}`));
+    console.log("\n❌ Errors encountered:");
+    errors.forEach((err) => console.log(`  - ${err.table}: ${err.error}`));
   }
 }
 
@@ -223,7 +254,7 @@ async function main() {
   try {
     await importAllTables();
   } catch (error) {
-    console.error('❌ Import failed:', error);
+    console.error("❌ Import failed:", error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
@@ -235,5 +266,3 @@ if (require.main === module) {
 }
 
 module.exports = { importAllTables, importTable, validateImport };
-
-

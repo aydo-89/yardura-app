@@ -1,4 +1,4 @@
-import { Frequency, YardSize } from './pricing';
+import { Frequency, YardSize } from "./pricing";
 
 // Comprehensive Stripe pricing configuration
 // This maps exactly to your quote calculator pricing
@@ -23,13 +23,17 @@ const YARD_MULTIPLIERS = {
 // Base rates from pricing.ts
 const BASE_RATES = {
   weekly: { base1: 20, base2: 24, base3: 28, extraDog: 4 },
-  'twice-weekly': { base1: 32, base2: 38, base3: 44, extraDog: 6 },
-  'bi-weekly': { base1: 28, base2: 32, base3: 36, extraDog: 4 },
-  'one-time': { base1: 89, base2: 104, base3: 119, extraDog: 15 },
+  "twice-weekly": { base1: 32, base2: 38, base3: 44, extraDog: 6 },
+  "bi-weekly": { base1: 28, base2: 32, base3: 36, extraDog: 4 },
+  "one-time": { base1: 89, base2: 104, base3: 119, extraDog: 15 },
 };
 
 // Calculate price per visit based on dogs and yard size
-function calculatePricePerVisit(frequency: Frequency, dogs: number, yardSize: YardSize): number {
+function calculatePricePerVisit(
+  frequency: Frequency,
+  dogs: number,
+  yardSize: YardSize,
+): number {
   const rates = BASE_RATES[frequency];
   let basePrice: number;
 
@@ -55,8 +59,13 @@ function calculatePricePerVisit(frequency: Frequency, dogs: number, yardSize: Ya
 // Generate all possible price configurations
 export function generateStripePrices(): StripePriceConfig[] {
   const configs: StripePriceConfig[] = [];
-  const frequencies: Frequency[] = ['weekly', 'twice-weekly', 'bi-weekly', 'one-time'];
-  const yardSizes: YardSize[] = ['small', 'medium', 'large', 'xlarge'];
+  const frequencies: Frequency[] = [
+    "weekly",
+    "twice-weekly",
+    "bi-weekly",
+    "one-time",
+  ];
+  const yardSizes: YardSize[] = ["small", "medium", "large", "xlarge"];
   const dogCounts = [1, 2, 3, 4, 5, 6, 7, 8];
 
   for (const frequency of frequencies) {
@@ -66,7 +75,7 @@ export function generateStripePrices(): StripePriceConfig[] {
         const unitAmount = Math.round(pricePerVisit * 100); // Convert to cents
 
         // Generate consistent price ID
-        const priceId = `price_${frequency.replace('-', '_')}_${yardSize}_${dogs}dog`;
+        const priceId = `price_${frequency.replace("-", "_")}_${yardSize}_${dogs}dog`;
 
         configs.push({
           frequency,
@@ -74,7 +83,7 @@ export function generateStripePrices(): StripePriceConfig[] {
           dogs,
           priceId,
           unitAmount,
-          description: `${dogs} dog${dogs > 1 ? 's' : ''}, ${yardSize} yard, ${frequency} service`,
+          description: `${dogs} dog${dogs > 1 ? "s" : ""}, ${yardSize} yard, ${frequency} service`,
         });
       }
     }
@@ -84,16 +93,26 @@ export function generateStripePrices(): StripePriceConfig[] {
 }
 
 // Get price ID for specific configuration
-export function getPriceId(frequency: Frequency, yardSize: YardSize, dogs: number): string {
-  return `price_${frequency.replace('-', '_')}_${yardSize}_${dogs}dog`;
+export function getPriceId(
+  frequency: Frequency,
+  yardSize: YardSize,
+  dogs: number,
+): string {
+  return `price_${frequency.replace("-", "_")}_${yardSize}_${dogs}dog`;
 }
 
-export function buildLookupKey(frequency: Frequency, yardSize: YardSize, dogs: number): string {
+export function buildLookupKey(
+  frequency: Frequency,
+  yardSize: YardSize,
+  dogs: number,
+): string {
   return `${frequency}_${yardSize}_${dogs}dog`;
 }
 
 // Get all prices for a specific frequency
-export function getPricesByFrequency(frequency: Frequency): StripePriceConfig[] {
+export function getPricesByFrequency(
+  frequency: Frequency,
+): StripePriceConfig[] {
   const allPrices = generateStripePrices();
   return allPrices.filter((config) => config.frequency === frequency);
 }

@@ -12,6 +12,7 @@ Use the automated deployment script for the fastest deployment:
 ```
 
 This will:
+
 - Build the application locally
 - Create a deployment package
 - Upload to production server
@@ -27,6 +28,7 @@ This will:
    - Add `SERVER_SSH_KEY` with your private SSH key
 
 2. **Push to main branch:**
+
    ```bash
    git add .
    git commit -m "Deploy to production"
@@ -41,6 +43,7 @@ This will:
 ### Option 2: Docker Deployment
 
 1. **Build and deploy:**
+
    ```bash
    # Build the production image
    docker build -f Dockerfile.prod -t yardura:latest .
@@ -96,6 +99,7 @@ EOF
 ### Common Issues:
 
 1. **Build fails:**
+
    ```bash
    rm -rf node_modules .next
    npm install
@@ -103,6 +107,7 @@ EOF
    ```
 
 2. **Services won't start:**
+
    ```bash
    ssh root@159.223.197.13
    pm2 logs yardura --lines 50
@@ -110,6 +115,7 @@ EOF
    ```
 
 3. **Permission issues:**
+
    ```bash
    ssh root@159.223.197.13
    sudo chown -R www-data:www-data /var/www/yardura.com
@@ -130,6 +136,7 @@ EOF
 ## 📊 Monitoring
 
 After deployment:
+
 - Check PM2 status: `pm2 list`
 - View logs: `pm2 logs yardura`
 - Monitor nginx: `sudo systemctl status nginx`
@@ -142,4 +149,3 @@ After deployment:
 3. **Automated testing** before deployment
 4. **Rollback scripts** for quick recovery
 5. **Infrastructure as Code** with Terraform
-

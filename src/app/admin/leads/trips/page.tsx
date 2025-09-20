@@ -1,19 +1,54 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
-import { Calendar, Map as MapIcon, MapPin, Route, ListChecks, Loader2, ArrowUpDown, Users } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import {
+  Calendar,
+  Map as MapIcon,
+  MapPin,
+  Route,
+  ListChecks,
+  Loader2,
+  ArrowUpDown,
+  Users,
+} from "lucide-react";
 
 interface TripStopLead {
   id: string;
@@ -43,7 +78,11 @@ interface Trip {
   plannedStart?: string | null;
   createdAt: string;
   owner?: { id: string; name?: string | null; email?: string | null } | null;
-  createdBy?: { id: string; name?: string | null; email?: string | null } | null;
+  createdBy?: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+  } | null;
   territory?: { id: string; name: string; color?: string | null } | null;
   stops?: TripStop[];
 }
@@ -72,30 +111,30 @@ interface TerritoryOption {
 
 function stageBadgeColor(stageColor?: string | null) {
   switch (stageColor) {
-    case 'cyan':
-      return 'bg-cyan-100 text-cyan-700 border-cyan-200';
-    case 'blue':
-      return 'bg-blue-100 text-blue-700 border-blue-200';
-    case 'green':
-    case 'emerald':
-      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    case 'amber':
-      return 'bg-amber-100 text-amber-700 border-amber-200';
-    case 'rose':
-      return 'bg-rose-100 text-rose-700 border-rose-200';
+    case "cyan":
+      return "bg-cyan-100 text-cyan-700 border-cyan-200";
+    case "blue":
+      return "bg-blue-100 text-blue-700 border-blue-200";
+    case "green":
+    case "emerald":
+      return "bg-emerald-100 text-emerald-700 border-emerald-200";
+    case "amber":
+      return "bg-amber-100 text-amber-700 border-amber-200";
+    case "rose":
+      return "bg-rose-100 text-rose-700 border-rose-200";
     default:
-      return 'bg-slate-100 text-slate-700 border-slate-200';
+      return "bg-slate-100 text-slate-700 border-slate-200";
   }
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return '—';
+  if (!value) return "—";
   try {
-    return new Date(value).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(value).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   } catch {
     return value;
@@ -103,10 +142,13 @@ function formatDate(value?: string | null) {
 }
 
 function formatName(first?: string | null, last?: string | null) {
-  return [first, last].filter(Boolean).join(' ') || 'Unnamed';
+  return [first, last].filter(Boolean).join(" ") || "Unnamed";
 }
 
-function haversineDistance(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
+function haversineDistance(
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number },
+) {
   const toRad = (value: number) => (value * Math.PI) / 180;
   const R = 6371e3; // metres
   const φ1 = toRad(a.latitude);
@@ -132,19 +174,25 @@ export default function TripPlannerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
-  const [tripName, setTripName] = useState('Morning Canvass');
-  const [tripTerritoryId, setTripTerritoryId] = useState('');
+  const [tripName, setTripName] = useState("Morning Canvass");
+  const [tripTerritoryId, setTripTerritoryId] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === 'loading') return;
+    if (status === "loading") return;
 
     const userRole = (session as any)?.userRole;
-    const allowed = ['ADMIN', 'OWNER', 'SALES_MANAGER', 'FRANCHISE_OWNER', 'SALES_REP'];
+    const allowed = [
+      "ADMIN",
+      "OWNER",
+      "SALES_MANAGER",
+      "FRANCHISE_OWNER",
+      "SALES_REP",
+    ];
 
     if (!session || !allowed.includes(userRole)) {
-      router.push('/dashboard');
+      router.push("/dashboard");
       return;
     }
 
@@ -155,9 +203,9 @@ export default function TripPlannerPage() {
 
   const fetchTrips = useCallback(async () => {
     try {
-      const res = await fetch('/api/trips');
+      const res = await fetch("/api/trips");
       const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Failed to load trips');
+      if (!data.ok) throw new Error(data.error || "Failed to load trips");
       setTrips(data.data ?? []);
     } catch (err) {
       console.error(err);
@@ -168,9 +216,12 @@ export default function TripPlannerPage() {
 
   const fetchLeads = useCallback(async () => {
     try {
-      const res = await fetch('/api/leads/outbound?leadType=outbound&limit=250');
+      const res = await fetch(
+        "/api/leads/outbound?leadType=outbound&limit=250",
+      );
       const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Failed to load outbound leads');
+      if (!json.ok)
+        throw new Error(json.error || "Failed to load outbound leads");
       setLeads(json.data.leads ?? []);
     } catch (err) {
       console.error(err);
@@ -179,13 +230,13 @@ export default function TripPlannerPage() {
 
   const fetchTerritories = useCallback(async () => {
     try {
-      const res = await fetch('/api/territories');
+      const res = await fetch("/api/territories");
       if (res.status === 403) {
         setTerritories([]);
         return;
       }
       const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Failed to load territories');
+      if (!json.ok) throw new Error(json.error || "Failed to load territories");
       setTerritories(Array.isArray(json.data) ? json.data : []);
     } catch (err) {
       console.error(err);
@@ -194,25 +245,33 @@ export default function TripPlannerPage() {
 
   const toggleLead = (leadId: string) => {
     setSelectedLeadIds((prev) =>
-      prev.includes(leadId) ? prev.filter((id) => id !== leadId) : [...prev, leadId]
+      prev.includes(leadId)
+        ? prev.filter((id) => id !== leadId)
+        : [...prev, leadId],
     );
   };
 
-  const moveLead = (leadId: string, direction: 'up' | 'down') => {
+  const moveLead = (leadId: string, direction: "up" | "down") => {
     setSelectedLeadIds((prev) => {
       const index = prev.indexOf(leadId);
       if (index === -1) return prev;
       const newOrder = [...prev];
-      const swapWith = direction === 'up' ? index - 1 : index + 1;
+      const swapWith = direction === "up" ? index - 1 : index + 1;
       if (swapWith < 0 || swapWith >= newOrder.length) return prev;
-      [newOrder[index], newOrder[swapWith]] = [newOrder[swapWith], newOrder[index]];
+      [newOrder[index], newOrder[swapWith]] = [
+        newOrder[swapWith],
+        newOrder[index],
+      ];
       return newOrder;
     });
   };
 
   const selectedLeads = useMemo(
-    () => selectedLeadIds.map((id) => leads.find((lead) => lead.id === id)).filter(Boolean) as OutboundLeadForTrip[],
-    [selectedLeadIds, leads]
+    () =>
+      selectedLeadIds
+        .map((id) => leads.find((lead) => lead.id === id))
+        .filter(Boolean) as OutboundLeadForTrip[],
+    [selectedLeadIds, leads],
   );
 
   const formattedTrips = useMemo(
@@ -221,21 +280,23 @@ export default function TripPlannerPage() {
         ...trip,
         stops: (trip.stops ?? []).sort((a, b) => a.order - b.order),
       })),
-    [trips]
+    [trips],
   );
 
   const optimizeOrder = () => {
     if (selectedLeadIds.length < 3) return; // already trivial order
 
     const lookup = new Map<string, OutboundLeadForTrip>(
-      leads.map((lead) => [lead.id, lead] as const)
+      leads.map((lead) => [lead.id, lead] as const),
     );
     const candidates = selectedLeadIds
       .map((id) => lookup.get(id))
-      .filter((lead): lead is OutboundLeadForTrip => Boolean(lead && lead.latitude != null && lead.longitude != null));
+      .filter((lead): lead is OutboundLeadForTrip =>
+        Boolean(lead && lead.latitude != null && lead.longitude != null),
+      );
 
     if (candidates.length !== selectedLeadIds.length) {
-      setCreateError('One or more selected stops is missing coordinates.');
+      setCreateError("One or more selected stops is missing coordinates.");
       return;
     }
 
@@ -253,7 +314,7 @@ export default function TripPlannerPage() {
         const candidate = lookup.get(id)!;
         const distance = haversineDistance(
           { latitude: current.latitude!, longitude: current.longitude! },
-          { latitude: candidate.latitude!, longitude: candidate.longitude! }
+          { latitude: candidate.latitude!, longitude: candidate.longitude! },
         );
         if (distance < bestDistance) {
           bestDistance = distance;
@@ -276,13 +337,13 @@ export default function TripPlannerPage() {
     setCreateSubmitting(true);
 
     if (!tripName.trim()) {
-      setCreateError('Give your trip a name.');
+      setCreateError("Give your trip a name.");
       setCreateSubmitting(false);
       return;
     }
 
     if (selectedLeadIds.length === 0) {
-      setCreateError('Select at least one lead to build a trip.');
+      setCreateError("Select at least one lead to build a trip.");
       setCreateSubmitting(false);
       return;
     }
@@ -292,34 +353,34 @@ export default function TripPlannerPage() {
         name: tripName.trim(),
         territoryId: tripTerritoryId || undefined,
         leadIds: selectedLeadIds,
-        optimization: 'fastest' as const,
+        optimization: "fastest" as const,
       };
 
-      const res = await fetch('/api/trips', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/trips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       const json = await res.json();
       if (!res.ok || !json.ok) {
-        throw new Error(json.error || 'Failed to create trip');
+        throw new Error(json.error || "Failed to create trip");
       }
 
       setIsCreateSheetOpen(false);
-      setTripName('Morning Canvass');
-      setTripTerritoryId('');
+      setTripName("Morning Canvass");
+      setTripTerritoryId("");
       setSelectedLeadIds([]);
       await fetchTrips();
     } catch (err) {
       console.error(err);
-      setCreateError(err instanceof Error ? err.message : 'Unexpected error');
+      setCreateError(err instanceof Error ? err.message : "Unexpected error");
     } finally {
       setCreateSubmitting(false);
     }
   };
 
-  if (status === 'loading' || isLoading) {
+  if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
@@ -330,17 +391,20 @@ export default function TripPlannerPage() {
   // Derived state used by jump selector; guard when no coordinates
   const leadsWithCoordinates: OutboundLeadForTrip[] = useMemo(
     () => leads.filter((l) => l.latitude != null && l.longitude != null),
-    [leads]
+    [leads],
   );
-  const [mapLeadSelection, setMapLeadSelection] = useState<string>('');
+  const [mapLeadSelection, setMapLeadSelection] = useState<string>("");
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Trips & Route Planner</h1>
+          <h1 className="text-3xl font-bold text-slate-900">
+            Trips & Route Planner
+          </h1>
           <p className="text-slate-600">
-            Build canvassing loops, log mileage, and review stop-by-stop plans across territories.
+            Build canvassing loops, log mileage, and review stop-by-stop plans
+            across territories.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 justify-end">
@@ -361,12 +425,18 @@ export default function TripPlannerPage() {
               <SelectContent>
                 {leadsWithCoordinates.map((lead) => {
                   const name = formatName(lead.firstName, lead.lastName);
-                  const subtitle = [lead.city, lead.state].filter(Boolean).join(', ');
+                  const subtitle = [lead.city, lead.state]
+                    .filter(Boolean)
+                    .join(", ");
                   return (
                     <SelectItem key={lead.id} value={lead.id}>
                       <div className="flex flex-col text-left">
                         <span>{name}</span>
-                        {subtitle ? <span className="text-xs text-slate-500">{subtitle}</span> : null}
+                        {subtitle ? (
+                          <span className="text-xs text-slate-500">
+                            {subtitle}
+                          </span>
+                        ) : null}
                       </div>
                     </SelectItem>
                   );
@@ -374,7 +444,11 @@ export default function TripPlannerPage() {
               </SelectContent>
             </Select>
           )}
-          <Button variant="outline" onClick={() => fetchTrips()} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => fetchTrips()}
+            className="gap-2"
+          >
             <ArrowUpDown className="w-4 h-4" />
             Refresh
           </Button>
@@ -392,7 +466,8 @@ export default function TripPlannerPage() {
               <ListChecks className="w-5 h-5 text-slate-600" /> Active Trips
             </CardTitle>
             <CardDescription>
-              Trips sync automatically with the outbound map; stops stay ordered for the day’s run.
+              Trips sync automatically with the outbound map; stops stay ordered
+              for the day’s run.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -403,12 +478,15 @@ export default function TripPlannerPage() {
             ) : (
               <div className="space-y-6">
                 {formattedTrips.map((trip) => (
-                  <div key={trip.id} className="rounded-2xl border border-slate-200 p-5 shadow-sm">
+                  <div
+                    key={trip.id}
+                    className="rounded-2xl border border-slate-200 p-5 shadow-sm"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-semibold text-slate-900">
-                            {trip.name || 'Untitled Trip'}
+                            {trip.name || "Untitled Trip"}
                           </h3>
                           <Badge variant="outline" className="capitalize">
                             {trip.status}
@@ -416,22 +494,25 @@ export default function TripPlannerPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                           <span className="flex items-center gap-1">
-                            <Route className="w-3 h-3" /> {trip.stops?.length ?? 0} stops
+                            <Route className="w-3 h-3" />{" "}
+                            {trip.stops?.length ?? 0} stops
                           </span>
                           {trip.plannedStart && (
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" /> {formatDate(trip.plannedStart)}
+                              <Calendar className="w-3 h-3" />{" "}
+                              {formatDate(trip.plannedStart)}
                             </span>
                           )}
                           {trip.owner && (
                             <span className="flex items-center gap-1">
-                              <Users className="w-3 h-3" />{' '}
+                              <Users className="w-3 h-3" />{" "}
                               {trip.owner.name || trip.owner.email}
                             </span>
                           )}
                           {trip.territory && (
                             <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" /> {trip.territory.name}
+                              <MapPin className="w-3 h-3" />{" "}
+                              {trip.territory.name}
                             </span>
                           )}
                         </div>
@@ -444,8 +525,12 @@ export default function TripPlannerPage() {
                           if (!trip.stops?.length) return;
                           const firstStop = trip.stops[0];
                           if (firstStop?.lead?.id) {
-                            const params = new URLSearchParams({ focus: firstStop.lead.id });
-                            router.push(`/admin/leads/outbound?${params.toString()}`);
+                            const params = new URLSearchParams({
+                              focus: firstStop.lead.id,
+                            });
+                            router.push(
+                              `/admin/leads/outbound?${params.toString()}`,
+                            );
                           }
                         }}
                       >
@@ -465,31 +550,45 @@ export default function TripPlannerPage() {
                       <TableBody>
                         {(trip.stops ?? []).map((stop) => (
                           <TableRow key={stop.id}>
-                            <TableCell className="font-mono text-xs text-slate-500">{stop.order}</TableCell>
+                            <TableCell className="font-mono text-xs text-slate-500">
+                              {stop.order}
+                            </TableCell>
                             <TableCell>
                               {stop.lead ? (
                                 <div>
                                   <div className="font-medium text-slate-900">
-                                    {formatName(stop.lead.firstName, stop.lead.lastName)}
+                                    {formatName(
+                                      stop.lead.firstName,
+                                      stop.lead.lastName,
+                                    )}
                                   </div>
                                   <div className="text-xs text-slate-500">
-                                    {[stop.lead.city, stop.lead.state].filter(Boolean).join(', ')}
+                                    {[stop.lead.city, stop.lead.state]
+                                      .filter(Boolean)
+                                      .join(", ")}
                                   </div>
                                 </div>
                               ) : (
-                                <span className="text-xs text-slate-500">Lead removed</span>
+                                <span className="text-xs text-slate-500">
+                                  Lead removed
+                                </span>
                               )}
                             </TableCell>
                             <TableCell>
                               {stop.lead?.pipelineStage ? (
                                 <Badge
                                   variant="outline"
-                                  className={cn('text-xs capitalize', stageBadgeColor(stop.lead.stageColor))}
+                                  className={cn(
+                                    "text-xs capitalize",
+                                    stageBadgeColor(stop.lead.stageColor),
+                                  )}
                                 >
                                   {stop.lead.pipelineStage}
                                 </Badge>
                               ) : (
-                                <span className="text-xs text-slate-400">unknown</span>
+                                <span className="text-xs text-slate-400">
+                                  unknown
+                                </span>
                               )}
                             </TableCell>
                             <TableCell className="text-xs text-slate-500">
@@ -511,28 +610,37 @@ export default function TripPlannerPage() {
             <CardTitle className="flex items-center gap-2">
               <MapPin className="w-5 h-5 text-slate-600" /> Trip Builder Tips
             </CardTitle>
-            <CardDescription>Quick reminders while we finish the full route optimizer.</CardDescription>
+            <CardDescription>
+              Quick reminders while we finish the full route optimizer.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-slate-600">
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              Select leads with latitude/longitude. You can grab them from the outbound map by dropping pins.
+              Select leads with latitude/longitude. You can grab them from the
+              outbound map by dropping pins.
             </div>
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              Trips keep the order you pick; drag/drop optimization and distance estimates are coming next.
+              Trips keep the order you pick; drag/drop optimization and distance
+              estimates are coming next.
             </div>
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              Once created, the trip appears on the outbound map. Use the map’s jump selector to bring it into view.
+              Once created, the trip appears on the outbound map. Use the map’s
+              jump selector to bring it into view.
             </div>
           </CardContent>
         </Card>
       </div>
 
       <Sheet open={isCreateSheetOpen} onOpenChange={setIsCreateSheetOpen}>
-        <SheetContent side="right" className="w-[420px] sm:w-[520px] overflow-y-auto">
+        <SheetContent
+          side="right"
+          className="w-[420px] sm:w-[520px] overflow-y-auto"
+        >
           <SheetHeader>
             <SheetTitle>Create a canvassing trip</SheetTitle>
             <SheetDescription>
-              Pick the stops to visit today. We’ll keep them in this order until optimization is available.
+              Pick the stops to visit today. We’ll keep them in this order until
+              optimization is available.
             </SheetDescription>
           </SheetHeader>
 
@@ -544,13 +652,24 @@ export default function TripPlannerPage() {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Trip name</label>
-              <Input value={tripName} onChange={(e) => setTripName(e.target.value)} placeholder="North loop" />
+              <label className="text-sm font-medium text-slate-700">
+                Trip name
+              </label>
+              <Input
+                value={tripName}
+                onChange={(e) => setTripName(e.target.value)}
+                placeholder="North loop"
+              />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Territory</label>
-              <Select value={tripTerritoryId} onValueChange={setTripTerritoryId}>
+              <label className="text-sm font-medium text-slate-700">
+                Territory
+              </label>
+              <Select
+                value={tripTerritoryId}
+                onValueChange={setTripTerritoryId}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Optional" />
                 </SelectTrigger>
@@ -567,20 +686,30 @@ export default function TripPlannerPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-slate-700">Stops ({selectedLeadIds.length})</label>
-                <div className="text-xs text-slate-500">Check to add, reorder below.</div>
+                <label className="text-sm font-medium text-slate-700">
+                  Stops ({selectedLeadIds.length})
+                </label>
+                <div className="text-xs text-slate-500">
+                  Check to add, reorder below.
+                </div>
               </div>
               <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
                 {leads.length === 0 ? (
-                  <div className="p-4 text-sm text-slate-500">No outbound leads available. Add some first.</div>
+                  <div className="p-4 text-sm text-slate-500">
+                    No outbound leads available. Add some first.
+                  </div>
                 ) : (
                   leads.map((lead) => {
-                    const disabled = lead.latitude == null || lead.longitude == null;
+                    const disabled =
+                      lead.latitude == null || lead.longitude == null;
                     const checked = selectedLeadIds.includes(lead.id);
                     return (
                       <label
                         key={lead.id}
-                        className={cn('flex items-start gap-3 p-3 text-sm', disabled && 'opacity-50')}
+                        className={cn(
+                          "flex items-start gap-3 p-3 text-sm",
+                          disabled && "opacity-50",
+                        )}
                       >
                         <Checkbox
                           checked={checked}
@@ -596,18 +725,24 @@ export default function TripPlannerPage() {
                             {lead.pipelineStage && (
                               <Badge
                                 variant="outline"
-                                className={cn('text-xs capitalize', stageBadgeColor(lead.stageColor))}
+                                className={cn(
+                                  "text-xs capitalize",
+                                  stageBadgeColor(lead.stageColor),
+                                )}
                               >
                                 {lead.pipelineStage}
                               </Badge>
                             )}
                           </div>
                           <div className="text-xs text-slate-500">
-                            {[lead.city, lead.state].filter(Boolean).join(', ') || 'No address'}
+                            {[lead.city, lead.state]
+                              .filter(Boolean)
+                              .join(", ") || "No address"}
                           </div>
                           {disabled && (
                             <div className="text-[11px] text-amber-600">
-                              Add coordinates from the outbound map before using this lead in a trip.
+                              Add coordinates from the outbound map before using
+                              this lead in a trip.
                             </div>
                           )}
                         </div>
@@ -621,7 +756,9 @@ export default function TripPlannerPage() {
             {selectedLeads.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-slate-700">Trip order</h4>
+                  <h4 className="text-sm font-medium text-slate-700">
+                    Trip order
+                  </h4>
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
@@ -632,7 +769,9 @@ export default function TripPlannerPage() {
                     >
                       <ArrowUpDown className="w-3 h-3" /> Optimize order
                     </Button>
-                    <div className="text-xs text-slate-500">First stop at the top</div>
+                    <div className="text-xs text-slate-500">
+                      First stop at the top
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -643,10 +782,12 @@ export default function TripPlannerPage() {
                     >
                       <div>
                         <div className="text-sm font-semibold text-slate-900">
-                          {index + 1}. {formatName(lead.firstName, lead.lastName)}
+                          {index + 1}.{" "}
+                          {formatName(lead.firstName, lead.lastName)}
                         </div>
                         <div className="text-xs text-slate-500">
-                          {[lead.city, lead.state].filter(Boolean).join(', ') || 'No address'}
+                          {[lead.city, lead.state].filter(Boolean).join(", ") ||
+                            "No address"}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
@@ -654,7 +795,7 @@ export default function TripPlannerPage() {
                           size="icon"
                           variant="ghost"
                           className="h-8 w-8"
-                          onClick={() => moveLead(lead.id, 'up')}
+                          onClick={() => moveLead(lead.id, "up")}
                           disabled={index === 0}
                         >
                           ↑
@@ -663,7 +804,7 @@ export default function TripPlannerPage() {
                           size="icon"
                           variant="ghost"
                           className="h-8 w-8"
-                          onClick={() => moveLead(lead.id, 'down')}
+                          onClick={() => moveLead(lead.id, "down")}
                           disabled={index === selectedLeads.length - 1}
                         >
                           ↓
@@ -677,8 +818,14 @@ export default function TripPlannerPage() {
           </div>
 
           <SheetFooter>
-            <Button onClick={createTrip} disabled={createSubmitting} className="gap-2">
-              {createSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            <Button
+              onClick={createTrip}
+              disabled={createSubmitting}
+              className="gap-2"
+            >
+              {createSubmitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : null}
               Save trip
             </Button>
           </SheetFooter>
