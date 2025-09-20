@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
@@ -37,7 +37,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
   Calendar,
@@ -145,25 +144,6 @@ function formatName(first?: string | null, last?: string | null) {
   return [first, last].filter(Boolean).join(" ") || "Unnamed";
 }
 
-function haversineDistance(
-  a: { latitude: number; longitude: number },
-  b: { latitude: number; longitude: number },
-) {
-  const toRad = (value: number) => (value * Math.PI) / 180;
-  const R = 6371e3; // metres
-  const φ1 = toRad(a.latitude);
-  const φ2 = toRad(b.latitude);
-  const Δφ = toRad(b.latitude - a.latitude);
-  const Δλ = toRad(b.longitude - a.longitude);
-
-  const sinΔφ = Math.sin(Δφ / 2);
-  const sinΔλ = Math.sin(Δλ / 2);
-  const aa = sinΔφ * sinΔφ + Math.cos(φ1) * Math.cos(φ2) * sinΔλ * sinΔλ;
-  const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
-
-  return R * c;
-}
-
 export default function TripPlannerPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -178,6 +158,11 @@ export default function TripPlannerPage() {
   const [tripTerritoryId, setTripTerritoryId] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [mapLeadSelection, setMapLeadSelection] = useState<string>("");
+  const [optimizationSubmitting, setOptimizationSubmitting] = useState(false);
+  const [optimizationMessage, setOptimizationMessage] = useState<string | null>(null);
+
+  const orderedLeadsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -283,53 +268,55 @@ export default function TripPlannerPage() {
     [trips],
   );
 
-  const optimizeOrder = () => {
-    if (selectedLeadIds.length < 3) return; // already trivial order
+  const optimizeOrder = async () => {
+    if (selectedLeadIds.length < 2) return;
 
-    const lookup = new Map<string, OutboundLeadForTrip>(
-      leads.map((lead) => [lead.id, lead] as const),
-    );
-    const candidates = selectedLeadIds
-      .map((id) => lookup.get(id))
-      .filter((lead): lead is OutboundLeadForTrip =>
-        Boolean(lead && lead.latitude != null && lead.longitude != null),
-      );
+    const hasMissingCoords = selectedLeadIds.some((id) => {
+      const lead = leads.find((item) => item.id === id);
+      return !lead || lead.latitude == null || lead.longitude == null;
+    });
 
-    if (candidates.length !== selectedLeadIds.length) {
-      setCreateError("One or more selected stops is missing coordinates.");
+    if (hasMissingCoords) {
+      setCreateError("All selected stops need coordinates before optimizing.");
       return;
     }
 
-    const remaining = new Set(candidates.map((lead) => lead.id));
-    const ordered: string[] = [];
-    let current = candidates[0];
-    remaining.delete(current.id);
-    ordered.push(current.id);
+    setOptimizationSubmitting(true);
+    setOptimizationMessage(null);
+    setCreateError(null);
 
-    while (remaining.size) {
-      let nextId: string | null = null;
-      let bestDistance = Infinity;
+    try {
+      const response = await fetch("/api/trips/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds: selectedLeadIds }),
+      });
 
-      for (const id of remaining) {
-        const candidate = lookup.get(id)!;
-        const distance = haversineDistance(
-          { latitude: current.latitude!, longitude: current.longitude! },
-          { latitude: candidate.latitude!, longitude: candidate.longitude! },
-        );
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          nextId = id;
-        }
+      const json = await response.json();
+      if (!response.ok || !json.ok) {
+        throw new Error(json.error || "Failed to optimize ordering");
       }
 
-      if (!nextId) break;
+      if (Array.isArray(json.data?.orderedLeadIds)) {
+        setSelectedLeadIds(json.data.orderedLeadIds);
+      }
 
-      remaining.delete(nextId);
-      ordered.push(nextId);
-      current = lookup.get(nextId)!;
+      if (typeof json.data?.totalDistanceMeters === "number") {
+        const km = json.data.totalDistanceMeters / 1000;
+        setOptimizationMessage(
+          `Estimated distance: ${km.toFixed(1)} km (${json.data.totalDistanceMeters} m)`,
+        );
+      } else {
+        setOptimizationMessage(null);
+      }
+
+      orderedLeadsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (err) {
+      console.error(err);
+      setCreateError(err instanceof Error ? err.message : "Unexpected optimization error");
+    } finally {
+      setOptimizationSubmitting(false);
     }
-
-    setSelectedLeadIds(ordered);
   };
 
   const createTrip = async () => {
@@ -371,6 +358,8 @@ export default function TripPlannerPage() {
       setTripName("Morning Canvass");
       setTripTerritoryId("");
       setSelectedLeadIds([]);
+      setOptimizationMessage(null);
+      setOptimizationSubmitting(false);
       await fetchTrips();
     } catch (err) {
       console.error(err);
@@ -380,6 +369,12 @@ export default function TripPlannerPage() {
     }
   };
 
+  // Derived state used by jump selector; guard when no coordinates
+  const leadsWithCoordinates = useMemo(
+    () => leads.filter((lead) => lead.latitude != null && lead.longitude != null),
+    [leads],
+  );
+
   if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -387,13 +382,6 @@ export default function TripPlannerPage() {
       </div>
     );
   }
-
-  // Derived state used by jump selector; guard when no coordinates
-  const leadsWithCoordinates: OutboundLeadForTrip[] = useMemo(
-    () => leads.filter((l) => l.latitude != null && l.longitude != null),
-    [leads],
-  );
-  const [mapLeadSelection, setMapLeadSelection] = useState<string>("");
 
   return (
     <div className="space-y-8">
@@ -537,7 +525,7 @@ export default function TripPlannerPage() {
                         <MapIcon className="w-4 h-4" /> View on map
                       </Button>
                     </div>
-                    <Separator className="my-4" />
+                    <div className="my-4 h-px w-full bg-slate-200" />
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -631,7 +619,22 @@ export default function TripPlannerPage() {
         </Card>
       </div>
 
-      <Sheet open={isCreateSheetOpen} onOpenChange={setIsCreateSheetOpen}>
+      <Sheet
+        open={isCreateSheetOpen}
+        onOpenChange={(open) => {
+          setIsCreateSheetOpen(open);
+          if (!open) {
+            setCreateError(null);
+            setOptimizationMessage(null);
+            setOptimizationSubmitting(false);
+            setSelectedLeadIds([]);
+            setTripName("Morning Canvass");
+            setTripTerritoryId("");
+            setCreateForm(makeNewLeadForm());
+            setPendingCoordinates(null);
+          }
+        }}
+      >
         <SheetContent
           side="right"
           className="w-[420px] sm:w-[520px] overflow-y-auto"
@@ -754,7 +757,7 @@ export default function TripPlannerPage() {
             </div>
 
             {selectedLeads.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-3" ref={orderedLeadsRef}>
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-medium text-slate-700">
                     Trip order
@@ -765,15 +768,25 @@ export default function TripPlannerPage() {
                       variant="outline"
                       className="gap-2"
                       onClick={optimizeOrder}
-                      disabled={selectedLeadIds.length < 3}
+                      disabled={selectedLeadIds.length < 2 || optimizationSubmitting}
                     >
-                      <ArrowUpDown className="w-3 h-3" /> Optimize order
+                      {optimizationSubmitting ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3" />
+                      )}
+                      Optimize order
                     </Button>
                     <div className="text-xs text-slate-500">
                       First stop at the top
                     </div>
                   </div>
                 </div>
+                {optimizationMessage && (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    {optimizationMessage}
+                  </div>
+                )}
                 <div className="space-y-2">
                   {selectedLeads.map((lead, index) => (
                     <div

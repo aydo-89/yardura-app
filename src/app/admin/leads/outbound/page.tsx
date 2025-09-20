@@ -6,6 +6,7 @@ import React, {
   useState,
   useRef,
   useCallback,
+  Suspense,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -233,7 +234,7 @@ function stageBadgeColor(stageColor?: string) {
   }
 }
 
-export default function OutboundLeadsPage() {
+function OutboundLeadsPageInner() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1577,6 +1578,14 @@ export default function OutboundLeadsPage() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+export default function OutboundLeadsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}> 
+      <OutboundLeadsPageInner />
+    </Suspense>
   );
 }
 
