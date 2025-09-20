@@ -1,0 +1,1220 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Trash2, CreditCard, Calendar, Shield, CheckCircle, Info } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface Dog {
+  id: string;
+  name: string;
+  breed: string;
+  age: string;
+  weight: string;
+}
+
+type Frequency = 'weekly' | 'twice-weekly' | 'bi-weekly' | 'one-time';
+type YardSize = 'small' | 'medium' | 'large' | 'xlarge';
+
+export default function SignUpPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [quoteData, setQuoteData] = useState<any>(null);
+  const [quoteEstimate, setQuoteEstimate] = useState<string>('0');
+
+  // User info
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('Minneapolis');
+  const [zipCode, setZipCode] = useState('');
+
+  // Property & scheduling
+  const [yardSize, setYardSize] = useState<YardSize>('medium');
+  const [daysSinceLastClean, setDaysSinceLastClean] = useState('');
+  const [serviceType, setServiceType] = useState<'subscription' | 'one-time'>('subscription');
+  const [frequency, setFrequency] = useState<Frequency>('weekly');
+  const [preferredDay, setPreferredDay] = useState('Tuesday');
+  const [preferredTime, setPreferredTime] = useState('Morning');
+
+  // Add-ons
+  const [deodorize, setDeodorize] = useState(false);
+  const [litter, setLitter] = useState(false);
+
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingField, setEditingField] = useState<string>('');
+
+  // Dogs
+  const [dogs, setDogs] = useState<Dog[]>([
+    { id: '1', name: '', breed: '', age: '', weight: '' }
+  ]);
+
+  // Load quote data from localStorage if coming from quote form
+  useEffect(() => {
+    if (searchParams.get('from') === 'quote') {
+      const storedQuoteData = localStorage.getItem('quoteFormData');
+      const storedEstimate = localStorage.getItem('quoteEstimate');
+
+      if (storedQuoteData) {
+        const parsedQuoteData = JSON.parse(storedQuoteData);
+        setQuoteData(parsedQuoteData);
+        setQuoteEstimate(storedEstimate || '0');
+
+        // Pre-fill form with quote data
+        setEmail(parsedQuoteData.email || '');
+        setName(parsedQuoteData.name || '');
+        setPhone(parsedQuoteData.phone || '');
+        setAddress(parsedQuoteData.address || '');
+        setCity(parsedQuoteData.city || 'Minneapolis');
+        setZipCode(parsedQuoteData.zipCode || '');
+        setYardSize(parsedQuoteData.yardSize || 'medium');
+        setDaysSinceLastClean(parsedQuoteData.daysSinceLastClean || '');
+        setServiceType(parsedQuoteData.frequency === 'one-time' ? 'one-time' : 'subscription');
+        setFrequency(parsedQuoteData.frequency || 'weekly');
+        setPreferredDay(parsedQuoteData.preferredDay || 'Tuesday');
+        setPreferredTime(parsedQuoteData.preferredTime || 'Morning');
+
+        // Pre-fill add-ons if they were selected
+        setDeodorize(parsedQuoteData.deodorize || false);
+        setLitter(parsedQuoteData.litter || false);
+
+        // Set up dogs based on the number of dogs from quote form
+        const numDogs = parsedQuoteData.dogs || 1;
+        const dogForms = [];
+
+        // If dogs array exists with details, use those
+        if (parsedQuoteData.dogs && Array.isArray(parsedQuoteData.dogs) && parsedQuoteData.dogs.length > 0) {
+          dogForms.push(...parsedQuoteData.dogs.map((dog: any, index: number) => ({
+            id: (index + 1).toString(),
+            name: dog.name || '',
+            breed: dog.breed || '',
+            age: dog.age || '',
+            weight: dog.weight || ''
+          })));
+        } else {
+          // Create empty dog forms based on the number of dogs
+          for (let i = 0; i < numDogs; i++) {
+            dogForms.push({
+              id: (i + 1).toString(),
+              name: '',
+              breed: '',
+              age: '',
+              weight: ''
+            });
+          }
+        }
+
+        setDogs(dogForms);
+
+        // Clear localStorage
+        localStorage.removeItem('quoteFormData');
+        localStorage.removeItem('quoteEstimate');
+      }
+    }
+  }, [searchParams]);
+
+  const addDog = () => {
+    const maxDogs = quoteData?.dogs || 8;
+    if (dogs.length < maxDogs) {
+      setDogs([...dogs, {
+        id: Date.now().toString(),
+        name: '',
+        breed: '',
+        age: '',
+        weight: ''
+      }]);
+    }
+  };
+
+  const removeDog = (id: string) => {
+    const minDogs = quoteData?.dogs || 1;
+    if (dogs.length > minDogs) {
+      setDogs(dogs.filter(dog => dog.id !== id));
+    }
+  };
+
+  const updateDog = (id: string, field: keyof Dog, value: string) => {
+    setDogs(dogs.map(dog =>
+      dog.id === id ? { ...dog, [field]: value } : dog
+    ));
+  };
+
+  const handleAccountCreation = async () => {
+    setLoading(true);
+
+    // Validate passwords
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // First, create the user account using our custom API
+      const createAccountResponse = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          phone,
+          address,
+          city,
+          zipCode,
+          yardSize,
+          daysSinceLastClean: parseInt(daysSinceLastClean),
+          dogs: dogs.filter(d => d.name.trim()).map(dog => ({
+            name: dog.name,
+            breed: dog.breed || null,
+            age: dog.age ? parseInt(dog.age) : null,
+            weight: dog.weight ? parseFloat(dog.weight) : null,
+          })),
+          servicePreferences: {
+            serviceType,
+            frequency,
+            preferredDay,
+            preferredTime
+          }
+        })
+      });
+
+      if (!createAccountResponse.ok) {
+        const errorData = await createAccountResponse.json();
+        toast.error(errorData.error || 'Error creating account');
+        return;
+      }
+
+      const accountData = await createAccountResponse.json();
+
+      toast.success('Account created successfully! Now let\'s add your dog information.');
+
+      // Go to dog information step
+      setStep(3);
+    } catch (error) {
+      toast.error('Error creating account');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDogInfoComplete = async () => {
+    // Update user profile with dog information
+    try {
+      setLoading(true);
+
+      const response = await fetch('/api/users/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dogs: dogs.filter(d => d.name.trim()).map(dog => ({
+            name: dog.name,
+            breed: dog.breed || null,
+            age: dog.age ? parseInt(dog.age) : null,
+            weight: dog.weight ? parseFloat(dog.weight) : null,
+          }))
+        })
+      });
+
+      if (!response.ok) {
+        toast.error('Error updating profile');
+        return;
+      }
+
+      toast.success('Dog information saved! Now let\'s explain billing.');
+      setStep(4);
+    } catch (error) {
+      toast.error('Error saving dog information');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white py-12">
+      <div className="container max-w-2xl">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold text-ink mb-4">Create Your Yardura Account</h1>
+          <p className="text-slate-600">Join thousands of dog owners getting better insights and cleaner yards</p>
+        </div>
+
+        {/* Step 1: Enhanced Welcome */}
+        {step === 1 && (
+          <div className="max-w-4xl mx-auto">
+            {/* Hero Section */}
+            <div className="text-center mb-8">
+              <div className="mb-6">
+                <img
+                  src="/yardura-logo.png"
+                  alt="Yardura"
+                  className="h-16 mx-auto mb-4"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+              <h1 className="text-4xl font-bold text-ink mb-4 bg-gradient-to-r from-brand-600 to-brand-800 bg-clip-text text-transparent">
+                Welcome to Yardura! 🐕
+              </h1>
+              <p className="text-xl text-slate-600 mb-6 max-w-2xl mx-auto">
+                Professional dog waste removal service with <span className="font-semibold text-green-600">first week FREE</span> for new customers
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-green-700">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Only charged after service completion</span>
+              </div>
+            </div>
+
+            {/* Quote Summary - Enhanced */}
+            {quoteData && (
+              <Card className="mb-8 border-2 border-brand-200 shadow-lg">
+                <CardContent className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-ink">Your Service Quote</h2>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-brand-600">${(() => {
+                        let total = parseFloat(quoteEstimate) || 0;
+                        if (quoteData?.deodorize) total += 10;
+                        if (quoteData?.litter) total += 5;
+                        return total.toFixed(2);
+                      })()}</div>
+                      <div className="text-sm text-slate-500">per visit</div>
+                      {(quoteData?.deodorize || quoteData?.litter) && (
+                        <div className="text-xs text-slate-400">includes add-ons</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div
+                      className="bg-slate-50 p-4 rounded-xl relative group cursor-pointer hover:bg-slate-100 transition-colors"
+                      onClick={() => {
+                        setEditingField('dogs');
+                        setShowEditModal(true);
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">🐕</span>
+                          <span className="text-sm font-medium text-slate-600">Dogs</span>
+                        </div>
+                        <span className="text-xs text-slate-400 group-hover:text-slate-600">✏️</span>
+                      </div>
+                      <div className="text-xl font-semibold text-ink">{quoteData.dogs} dog{quoteData.dogs > 1 ? 's' : ''}</div>
+                    </div>
+
+                    <div
+                      className="bg-slate-50 p-4 rounded-xl relative group cursor-pointer hover:bg-slate-100 transition-colors"
+                      onClick={() => {
+                        setEditingField('yardSize');
+                        setShowEditModal(true);
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">🏡</span>
+                          <span className="text-sm font-medium text-slate-600">Yard Size</span>
+                        </div>
+                        <span className="text-xs text-slate-400 group-hover:text-slate-600">✏️</span>
+                      </div>
+                      <div className="text-xl font-semibold text-ink capitalize">{quoteData.yardSize}</div>
+                    </div>
+
+                    <div
+                      className="bg-slate-50 p-4 rounded-xl relative group cursor-pointer hover:bg-slate-100 transition-colors"
+                      onClick={() => {
+                        setEditingField('frequency');
+                        setShowEditModal(true);
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">📅</span>
+                          <span className="text-sm font-medium text-slate-600">Frequency</span>
+                        </div>
+                        <span className="text-xs text-slate-400 group-hover:text-slate-600">✏️</span>
+                      </div>
+                      <div className="text-xl font-semibold text-ink">
+                        {(() => {
+                          const freq = quoteData.frequency?.replace('-', ' ');
+                          return freq ? freq.charAt(0).toUpperCase() + freq.slice(1) : 'Weekly';
+                        })()}
+                      </div>
+                      {/* Frequency Visualization */}
+                      <div className="mt-2">
+                        {quoteData.frequency === 'weekly' && (
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+                            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+                            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+                          </div>
+                        )}
+                        {quoteData.frequency === 'twice-weekly' && (
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+                            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+                          </div>
+                        )}
+                        {quoteData.frequency === 'bi-weekly' && (
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
+                            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+                            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+                            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+                            <span className="text-xs text-slate-500 ml-2">every 2 weeks</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div
+                      className="bg-slate-50 p-4 rounded-xl relative group cursor-pointer hover:bg-slate-100 transition-colors"
+                      onClick={() => {
+                        setEditingField('location');
+                        setShowEditModal(true);
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">📍</span>
+                          <span className="text-sm font-medium text-slate-600">Location</span>
+                        </div>
+                        <span className="text-xs text-slate-400 group-hover:text-slate-600">✏️</span>
+                      </div>
+                      <div className="text-xl font-semibold text-ink">{quoteData.city}</div>
+                    </div>
+                  </div>
+
+                  {/* Add-ons Section */}
+                  {(quoteData.deodorize || quoteData.litter) && (
+                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xl">✨</span>
+                        <span className="text-sm font-medium text-amber-800">Add-ons Selected</span>
+                      </div>
+                      <div className="flex gap-4 flex-wrap">
+                        {quoteData.deodorize && (
+                          <div className="flex items-center gap-2 bg-amber-100 px-3 py-1 rounded-full">
+                            <span className="text-sm">🧴</span>
+                            <span className="text-sm font-medium text-amber-800">Deodorize (+$10)</span>
+                          </div>
+                        )}
+                        {quoteData.litter && (
+                          <div className="flex items-center gap-2 bg-amber-100 px-3 py-1 rounded-full">
+                            <span className="text-sm">🗑️</span>
+                            <span className="text-sm font-medium text-amber-800">Litter Box (+$5)</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Edit Quote Button */}
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() => window.history.back()}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                    >
+                      <span>✏️</span>
+                      <span>Edit Quote Details</span>
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Value Proposition */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="text-center p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🎁</span>
+                </div>
+                <h3 className="font-semibold text-ink mb-2">First Week FREE</h3>
+                <p className="text-sm text-slate-600">New customers get their first week of service completely free</p>
+              </div>
+
+              <div className="text-center p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🛡️</span>
+                </div>
+                <h3 className="font-semibold text-ink mb-2">Pay After Service</h3>
+                <p className="text-sm text-slate-600">You're only charged after we complete your service visit</p>
+              </div>
+
+              <div className="text-center p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">⚡</span>
+                </div>
+                <h3 className="font-semibold text-ink mb-2">Flexible Scheduling</h3>
+                <p className="text-sm text-slate-600">Cancel or reschedule anytime without being charged</p>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="text-center space-y-4">
+              <Button
+                onClick={() => setStep(2)}
+                className="px-8 py-4 text-lg bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"
+              >
+                Get Started - Provide Payment Info Later
+              </Button>
+              <p className="text-sm text-slate-500">
+                Takes less than 3 minutes • Free first week • Cancel anytime
+              </p>
+            </div>
+          </div>
+
+          {/* Edit Modal */}
+          {showEditModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+                <h3 className="text-xl font-bold text-ink mb-4">
+                  Edit {editingField.charAt(0).toUpperCase() + editingField.slice(1)}
+                </h3>
+
+                {editingField === 'dogs' && (
+                  <div className="space-y-4">
+                    <Label>Number of dogs</Label>
+                    <select
+                      value={quoteData?.dogs || 1}
+                      onChange={(e) => setQuoteData({ ...quoteData, dogs: parseInt(e.target.value) })}
+                      className="w-full border border-brand-300 rounded-xl p-3"
+                    >
+                      {[1,2,3,4,5,6,7,8].map(n => (
+                        <option key={n} value={n}>{n} dog{n > 1 ? 's' : ''}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {editingField === 'yardSize' && (
+                  <div className="space-y-4">
+                    <Label>Yard Size</Label>
+                    <select
+                      value={quoteData?.yardSize || 'medium'}
+                      onChange={(e) => setQuoteData({ ...quoteData, yardSize: e.target.value })}
+                      className="w-full border border-brand-300 rounded-xl p-3"
+                    >
+                      <option value="small">Small (&lt; 1/4 acre)</option>
+                      <option value="medium">Medium (1/4 - 1/2 acre)</option>
+                      <option value="large">Large (1/2 - 1 acre)</option>
+                      <option value="xlarge">Extra Large (&gt; 1 acre)</option>
+                    </select>
+                  </div>
+                )}
+
+                {editingField === 'frequency' && (
+                  <div className="space-y-4">
+                    <Label>Service Frequency</Label>
+                    <select
+                      value={quoteData?.frequency || 'weekly'}
+                      onChange={(e) => setQuoteData({ ...quoteData, frequency: e.target.value })}
+                      className="w-full border border-brand-300 rounded-xl p-3"
+                    >
+                      <option value="weekly">Weekly</option>
+                      <option value="twice-weekly">Twice Weekly</option>
+                      <option value="bi-weekly">Bi-Weekly</option>
+                      <option value="one-time">One-Time</option>
+                    </select>
+                  </div>
+                )}
+
+                {editingField === 'location' && (
+                  <div className="space-y-4">
+                    <Label>City</Label>
+                    <select
+                      value={quoteData?.city || 'Minneapolis'}
+                      onChange={(e) => setQuoteData({ ...quoteData, city: e.target.value })}
+                      className="w-full border border-brand-300 rounded-xl p-3"
+                    >
+                      <option value="Minneapolis">Minneapolis</option>
+                      <option value="Richfield">Richfield</option>
+                      <option value="Bloomington">Bloomington</option>
+                      <option value="Edina">Edina</option>
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex gap-3 mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowEditModal(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      // Recalculate estimate when changes are made
+                      const calcOneTimeEstimate = (dogs: number, yardSize: any, addOns?: any) => {
+                        // This is a simplified calculation - you might want to import the actual function
+                        const baseRates = { base1: 89, base2: 104, base3: 119, extraDog: 15 };
+                        const multipliers = { small: 0.8, medium: 1.0, large: 1.2, xlarge: 1.4 };
+
+                        let tier = dogs === 1 ? baseRates.base1 : dogs === 2 ? baseRates.base2 : baseRates.base3 + (dogs - 3) * baseRates.extraDog;
+                        tier *= multipliers[yardSize] || 1;
+                        if (addOns?.deodorize) tier += 10;
+
+                        return Math.round(tier * 100) / 100;
+                      };
+
+                      const calcPerVisitEstimate = (dogs: number, frequency: any, yardSize: any, addOns?: any) => {
+                        // This is a simplified calculation - you might want to import the actual function
+                        const baseRates = {
+                          'weekly': { base1: 20, base2: 24, base3: 28, extraDog: 4 },
+                          'twice-weekly': { base1: 32, base2: 38, base3: 44, extraDog: 6 },
+                          'bi-weekly': { base1: 28, base2: 32, base3: 36, extraDog: 4 }
+                        };
+                        const multipliers = { small: 0.8, medium: 1.0, large: 1.2, xlarge: 1.4 };
+
+                        const rates = baseRates[frequency];
+                        let tier = dogs === 1 ? rates.base1 : dogs === 2 ? rates.base2 : rates.base3 + (dogs - 3) * rates.extraDog;
+                        tier *= multipliers[yardSize] || 1;
+                        if (addOns?.deodorize) tier += 10;
+                        if (addOns?.litter) tier += 5;
+
+                        if (frequency === 'twice-weekly') tier = tier / 2;
+                        return Math.round(tier * 100) / 100;
+                      };
+
+                      if (quoteData.frequency === 'one-time') {
+                        const newEstimate = calcOneTimeEstimate(
+                          quoteData.dogs,
+                          quoteData.yardSize,
+                          { deodorize: quoteData.deodorize }
+                        );
+                        setQuoteEstimate(newEstimate.toString());
+                      } else {
+                        const newEstimate = calcPerVisitEstimate(
+                          quoteData.dogs,
+                          quoteData.frequency,
+                          quoteData.yardSize,
+                          { deodorize: quoteData.deodorize, litter: quoteData.litter }
+                        );
+                        setQuoteEstimate(newEstimate.toString());
+                      }
+                    }}
+                    className="flex-1 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        )}
+
+        {step === 2 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Create Your Account</CardTitle>
+              <p className="text-sm text-slate-600">Set up your login credentials and basic information</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="name">Full Name *</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="password">Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={8}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={8}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="address">Address *</Label>
+                  <Input
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="zipCode">ZIP Code *</Label>
+                  <Input
+                    id="zipCode"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="yardSize">Yard Size</Label>
+                <select
+                  id="yardSize"
+                  value={yardSize}
+                  onChange={(e) => setYardSize(e.target.value)}
+                  className="w-full border border-brand-300 rounded-xl p-3"
+                >
+                  <option value="small">Small (&lt; 1/4 acre)</option>
+                  <option value="medium">Medium (1/4 - 1/2 acre)</option>
+                  <option value="large">Large (1/2 - 1 acre)</option>
+                  <option value="xlarge">Extra Large (&gt; 1 acre)</option>
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="daysSinceLastClean">Days since last yard clean</Label>
+                <Input
+                  id="daysSinceLastClean"
+                  type="number"
+                  value={daysSinceLastClean}
+                  onChange={(e) => setDaysSinceLastClean(e.target.value)}
+                  placeholder="e.g., 30"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Service Type</Label>
+                  <select
+                    value={serviceType}
+                    onChange={(e) => setServiceType(e.target.value as any)}
+                    className="w-full border border-brand-300 rounded-xl p-3"
+                  >
+                    <option value="subscription">Subscription (recurring)</option>
+                    <option value="one-time">One-time clean</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Frequency</Label>
+                  <select
+                    value={frequency}
+                    onChange={(e) => setFrequency(e.target.value as any)}
+                    className="w-full border border-brand-300 rounded-xl p-3"
+                    disabled={serviceType === 'one-time'}
+                  >
+                    <option value="weekly">Weekly</option>
+                    <option value="twice-weekly">Twice Weekly</option>
+                    <option value="bi-weekly">Every other week</option>
+                    <option value="one-time">One-time</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Preferred Day</Label>
+                  <select
+                    value={preferredDay}
+                    onChange={(e) => setPreferredDay(e.target.value)}
+                    className="w-full border border-brand-300 rounded-xl p-3"
+                  >
+                    {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label>Preferred Time</Label>
+                  <select
+                    value={preferredTime}
+                    onChange={(e) => setPreferredTime(e.target.value)}
+                    className="w-full border border-brand-300 rounded-xl p-3"
+                  >
+                    {['Morning','Midday','Afternoon'].map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <Button onClick={() => setStep(2)} className="w-full">
+                Continue to Account Setup
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+
+
+
+        {/* Step 6: Billing Explanation */}
+        {step === 6 && (
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="p-8 space-y-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-ink mb-2">Billing Explanation</h2>
+                <p className="text-slate-600">Understanding how and when you'll be charged</p>
+              </div>
+              {/* Quote Summary */}
+              <div className="p-4 bg-brand-50 rounded-lg">
+                <h3 className="font-semibold text-brand-800 mb-2">Your Service Quote</h3>
+                <p className="text-2xl font-bold text-brand-600">${quoteEstimate} {frequency === 'one-time' ? 'one-time' : 'per visit'}</p>
+                <p className="text-sm text-slate-600">
+                  {frequency === 'one-time' ? 'One-time service' : `${frequency} service for ${dogs.filter(d => d.name.trim()).length} dog${dogs.filter(d => d.name.trim()).length > 1 ? 's' : ''}`}
+                </p>
+              </div>
+
+              {/* First Week Free - Prominent */}
+              <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl mb-6">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <span className="text-3xl">🎁</span>
+                    <h3 className="text-2xl font-bold text-green-700">First Week FREE!</h3>
+                    <span className="text-3xl">🎁</span>
+                  </div>
+                  <p className="text-green-700 font-medium mb-2">New customers get their first week of service completely free</p>
+                  <p className="text-sm text-green-600">No charges until your second week of service</p>
+                </div>
+              </div>
+
+              {/* Billing Explanation */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  How Our Billing Works
+                </h3>
+
+                <div className="grid gap-3">
+                  <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <Calendar className="w-5 h-5 text-blue-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm text-blue-800">Payment Method Required</p>
+                      <p className="text-xs text-blue-700">We securely collect your credit card information to set up your subscription</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm text-green-800">Charged After Service Completion</p>
+                      <p className="text-xs text-green-700">You're only charged AFTER we complete each service visit. No upfront payments for future services.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <Shield className="w-5 h-5 text-purple-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm text-purple-800">Flexible & Risk-Free</p>
+                      <p className="text-xs text-purple-700">Cancel anytime, modify schedule, or pause service. You'll only pay for services actually completed.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Terms */}
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <strong>Important:</strong> By providing payment information, you agree to our service terms. You'll be charged ${quoteEstimate} per visit after each completed service. You can cancel or modify your service at any time.
+                </p>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={() => setStep(4)} className="flex-1">
+                  Back to Dog Details
+                </Button>
+                <Button onClick={() => setStep(7)} className="flex-1">
+                  Continue to Payment Setup
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Service Preferences */}
+        {step === 3 && (
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="p-8 space-y-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-ink mb-2">Choose Your Service Plan</h2>
+                <p className="text-slate-600">Select your preferred frequency and schedule</p>
+              </div>
+
+              {/* Service Type Selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-ink">Service Type</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div
+                    className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                      serviceType === 'subscription'
+                        ? 'border-brand-500 bg-brand-50'
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                    onClick={() => setServiceType('subscription')}
+                  >
+                    <div className="text-center">
+                      <h4 className="font-semibold text-ink">Recurring Service</h4>
+                      <p className="text-sm text-slate-600">Regular weekly/bi-weekly visits</p>
+                      <p className="text-sm font-medium text-brand-600 mt-2">Most Popular</p>
+                    </div>
+                  </div>
+                  <div
+                    className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                      serviceType === 'one-time'
+                        ? 'border-brand-500 bg-brand-50'
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                    onClick={() => setServiceType('one-time')}
+                  >
+                    <div className="text-center">
+                      <h4 className="font-semibold text-ink">One-Time Service</h4>
+                      <p className="text-sm text-slate-600">Single visit cleanup</p>
+                      <p className="text-sm font-medium text-slate-500 mt-2">Perfect for seasonal</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Frequency Selection with Visual */}
+              {serviceType === 'subscription' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-ink">How Often?</h3>
+                  <div className="space-y-3">
+                    {[
+                      { value: 'weekly', label: 'Weekly', price: '$20-28', desc: 'Every week', icon: '📅' },
+                      { value: 'twice-weekly', label: 'Twice Weekly', price: '$32-44', desc: 'Two visits per week', icon: '⚡' },
+                      { value: 'bi-weekly', label: 'Bi-Weekly', price: '$28-36', desc: 'Every other week', icon: '🗓️' }
+                    ].map((option) => (
+                      <div
+                        key={option.value}
+                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                          frequency === option.value
+                            ? 'border-brand-500 bg-brand-50'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                        onClick={() => setFrequency(option.value as any)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{option.icon}</span>
+                            <div>
+                              <h4 className="font-semibold text-ink">{option.label}</h4>
+                              <p className="text-sm text-slate-600">{option.desc}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-ink">{option.price}</p>
+                            <p className="text-xs text-slate-500">per visit</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Day & Time Selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-ink">When Should We Come?</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Preferred Day</Label>
+                    <select
+                      value={preferredDay}
+                      onChange={(e) => setPreferredDay(e.target.value)}
+                      className="w-full border border-brand-300 rounded-xl p-3"
+                    >
+                      {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label>Preferred Time</Label>
+                    <select
+                      value={preferredTime}
+                      onChange={(e) => setPreferredTime(e.target.value)}
+                      className="w-full border border-brand-300 rounded-xl p-3"
+                    >
+                      {['Morning','Midday','Afternoon'].map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Visual Schedule Preview */}
+                <div className="p-4 bg-slate-50 rounded-lg">
+                  <h4 className="font-semibold text-ink mb-2">Your Schedule Preview</h4>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <span className="font-medium">Next service:</span>
+                    {preferredDay && preferredTime && (
+                      <span>
+                        Every {frequency === 'bi-weekly' ? 'other ' : ''}{frequency === 'twice-weekly' ? 'week (2x)' : 'week'} on {preferredDay}s at {preferredTime}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                  Back to Account Info
+                </Button>
+                <Button onClick={() => setStep(4)} className="flex-1 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800">
+                  Continue to Dog Details
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 4: Dog Information */}
+        {step === 4 && (
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="p-8 space-y-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-ink mb-2">Tell Us About Your Dogs</h2>
+                <p className="text-slate-600">
+                  {quoteData ? `You mentioned ${dogs.length} dog${dogs.length > 1 ? 's' : ''} in your quote. Add details for personalized service.` : 'Add your dogs to get personalized insights and tracking'}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {dogs.map((dog, index) => (
+                  <div key={dog.id} className="border rounded-lg p-4 relative bg-slate-50">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-semibold text-ink">🐕 Dog {index + 1}</h3>
+                      {(() => {
+                        const minDogs = quoteData?.dogs || 1;
+                        const canRemove = dogs.length > minDogs;
+
+                        return canRemove ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeDog(dog.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        ) : null;
+                      })()}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Dog Name *</Label>
+                        <Input
+                          value={dog.name}
+                          onChange={(e) => updateDog(dog.id, 'name', e.target.value)}
+                          placeholder="Buddy, Max, etc."
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label>Breed</Label>
+                        <Input
+                          value={dog.breed}
+                          onChange={(e) => updateDog(dog.id, 'breed', e.target.value)}
+                          placeholder="Golden Retriever, Mixed, etc."
+                        />
+                      </div>
+                      <div>
+                        <Label>Age (years)</Label>
+                        <Input
+                          type="number"
+                          value={dog.age}
+                          onChange={(e) => updateDog(dog.id, 'age', e.target.value)}
+                          placeholder="3"
+                        />
+                      </div>
+                      <div>
+                        <Label>Weight (lbs)</Label>
+                        <Input
+                          type="number"
+                          value={dog.weight}
+                          onChange={(e) => updateDog(dog.id, 'weight', e.target.value)}
+                          placeholder="65"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {(() => {
+                const maxDogs = quoteData?.dogs || 8;
+                const canAddMore = dogs.length < maxDogs;
+
+                if (quoteData && dogs.length >= quoteData.dogs) {
+                  return (
+                    <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-sm text-green-700">
+                        ✅ You've entered all {quoteData.dogs} dog{quoteData.dogs > 1 ? 's' : ''} from your quote.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return canAddMore ? (
+                  <Button variant="outline" onClick={addDog} className="w-full">
+                    <Plus className="size-4 mr-2" />
+                    Add Another Dog
+                  </Button>
+                ) : null;
+              })()}
+
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
+                  Back to Service Plan
+                </Button>
+                <Button onClick={() => setStep(6)} disabled={loading} className="flex-1 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800">
+                  {loading ? 'Saving...' : 'Continue to Billing Explanation'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 5: Payment Setup */}
+        {step === 5 && (
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="p-8 space-y-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-ink mb-2">Secure Payment Setup</h2>
+                <p className="text-slate-600">We need your payment information to set up your subscription</p>
+              </div>
+
+              {/* Payment Method Collection */}
+              <div className="p-6 bg-blue-50 rounded-lg border-2 border-blue-200">
+                <div className="text-center">
+                  <CreditCard className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2 text-blue-800">Secure Credit Card Setup</h3>
+                  <p className="text-sm text-blue-700 mb-4">
+                    Your payment method will be securely stored and used to create your subscription. You will only be charged after I manually approve each completed service visit.
+                  </p>
+                  <div className="bg-white p-6 rounded-lg border-2 border-dashed border-blue-300">
+                    <p className="text-sm text-blue-600 mb-4">🔒 Secure Stripe Payment Form</p>
+                    <div className="space-y-3">
+                      <div className="h-12 bg-gray-100 rounded border flex items-center justify-center">
+                        <span className="text-sm text-gray-500">Card Number Field</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="h-12 bg-gray-100 rounded border flex items-center justify-center">
+                          <span className="text-sm text-gray-500">MM/YY</span>
+                        </div>
+                        <div className="h-12 bg-gray-100 rounded border flex items-center justify-center">
+                          <span className="text-sm text-gray-500">CVC</span>
+                        </div>
+                      </div>
+                      <div className="h-12 bg-gray-100 rounded border flex items-center justify-center">
+                        <span className="text-sm text-gray-500">ZIP Code</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-3">🔐 Your payment information is encrypted and secure</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* First Week Free Reminder */}
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🎁</span>
+                  <div>
+                    <p className="font-semibold text-green-800">Remember: First Week FREE!</p>
+                    <p className="text-sm text-green-700">No charges until your second week of service</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Billing Summary */}
+              <div className="bg-slate-50 p-4 rounded-lg border">
+                <h4 className="font-semibold text-ink mb-2">Your Service Summary</h4>
+                <div className="space-y-1 text-sm text-slate-700">
+                  <p><strong>Service:</strong> {quoteData?.dogs} dog{quoteData?.dogs > 1 ? 's' : ''}, {quoteData?.yardSize} yard</p>
+                  <p><strong>Frequency:</strong> {quoteData?.frequency?.replace('-', ' ')}</p>
+                  <p><strong>Price:</strong> ${quoteEstimate} per visit</p>
+                  <p><strong>First Service:</strong> {quoteData?.preferredDay || 'Tuesday'} at {quoteData?.preferredTime || 'Morning'}</p>
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={() => setStep(4)} className="flex-1">
+                  Back to Billing Explanation
+                </Button>
+                <Button onClick={() => router.push('/dashboard')} className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 font-semibold">
+                  Complete Setup & Start Service
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,24 @@
+// Refactor: extracted from legacy DashboardClientNew; removed mock wellness code and duplicates.
+import React, { useState } from 'react';
+import { User, Heart, Settings, Edit, Plus, Trash2, Save, X, CheckCircle, AlertCircle } from 'lucide-react';
+import type { User as UserType, Dog } from '../types';
+
+interface ProfileTabProps {
+  user: UserType;
+  dogs: Dog[];
+}
+
+export default function ProfileTab({ user, dogs }: ProfileTabProps) {
+  return (
+    <div className="text-center py-12">
+      <div className="text-6xl mb-4">👤</div>
+      <h3 className="text-xl font-semibold text-slate-900 mb-2">Profile Tab</h3>
+      <p className="text-slate-600 mb-4">Manage your account settings and preferences.</p>
+      <div className="text-sm text-slate-500">
+        <p>Name: {user.name || 'Not set'}</p>
+        <p>Email: {user.email}</p>
+        <p>Dogs: {dogs.length}</p>
+      </div>
+    </div>
+  );
+}

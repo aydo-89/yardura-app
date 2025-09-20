@@ -1,0 +1,59 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run build
+
+    - name: Create deployment package
+      run: |
+        mkdir -p dist
+        cp -r .next dist/
+        cp -r public dist/
+        cp package.json package-lock.json next.config.js replicate-proxy.js .env dist/
+
+    - name: Deploy to server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: 159.223.197.13
+        username: root
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        source: 'dist/,package.json,package-lock.json,replicate-proxy.js,.env'
+        target: '/root'
+
+    - name: Run deployment script
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: 159.223.197.13
+        username: root
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          cd /var/www/yardura.com
+          sudo cp -r . ../yardura.com.backup.$(date +%Y%m%d_%H%M%S) || true
+          sudo rm -rf .next
+          sudo cp -r /root/dist/* .
+          sudo chown -R www-data:www-data .
+          npm install --production
+          pm2 restart yardura yardura-proxy
+          sudo systemctl reload nginx
+          pm2 list
