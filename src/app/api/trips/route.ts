@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      data: trips.map((trip) => hydrateTripStageColors(trip)),
+      data: trips.map((trip) => hydrateTripStageColors(trip as any)),
     });
   } catch (error) {
     console.error('GET /api/trips error', error);
@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
           optimization: parsed.optimization,
           plannedStart: parsed.plannedStart ? new Date(parsed.plannedStart) : undefined,
           startLocation,
-          endLocation: null,
+          endLocation: undefined,
           status: 'planned',
         },
       });

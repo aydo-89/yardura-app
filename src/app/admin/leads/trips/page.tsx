@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { Calendar, Map, MapPin, Route, ListChecks, Loader2, ArrowUpDown, Users } from 'lucide-react';
+import { Calendar, Map as MapIcon, MapPin, Route, ListChecks, Loader2, ArrowUpDown, Users } from 'lucide-react';
 
 interface TripStopLead {
   id: string;
@@ -227,7 +227,9 @@ export default function TripPlannerPage() {
   const optimizeOrder = () => {
     if (selectedLeadIds.length < 3) return; // already trivial order
 
-    const lookup = new Map(leads.map((lead) => [lead.id, lead] as const));
+    const lookup = new Map<string, OutboundLeadForTrip>(
+      leads.map((lead) => [lead.id, lead] as const)
+    );
     const candidates = selectedLeadIds
       .map((id) => lookup.get(id))
       .filter((lead): lead is OutboundLeadForTrip => Boolean(lead && lead.latitude != null && lead.longitude != null));
@@ -324,6 +326,13 @@ export default function TripPlannerPage() {
       </div>
     );
   }
+
+  // Derived state used by jump selector; guard when no coordinates
+  const leadsWithCoordinates: OutboundLeadForTrip[] = useMemo(
+    () => leads.filter((l) => l.latitude != null && l.longitude != null),
+    [leads]
+  );
+  const [mapLeadSelection, setMapLeadSelection] = useState<string>('');
 
   return (
     <div className="space-y-8">
@@ -440,7 +449,7 @@ export default function TripPlannerPage() {
                           }
                         }}
                       >
-                        <Map className="w-4 h-4" /> View on map
+                        <MapIcon className="w-4 h-4" /> View on map
                       </Button>
                     </div>
                     <Separator className="my-4" />

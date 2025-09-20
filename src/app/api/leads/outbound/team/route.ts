@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 const allowedRoles = ['ADMIN', 'OWNER', 'SALES_MANAGER', 'FRANCHISE_OWNER', 'SALES_REP'];
 
@@ -62,7 +63,8 @@ export async function GET(req: NextRequest) {
     const activities = await prisma.leadActivity.findMany({
       where: {
         orgId,
-        location: { not: null },
+        // Accept any non-null JSON for location; Prisma JSON filter uses JsonNullValueFilter
+        location: { not: Prisma.JsonNull },
         userId: { not: null },
       },
       orderBy: { occurredAt: 'desc' },

@@ -92,10 +92,14 @@ export default function TerritoriesPage() {
       map.addControl(new maplibre.NavigationControl(), 'top-right');
 
       map.on('load', () => {
-        const features = territories
+        const features: Array<{
+          type: 'Feature';
+          properties: { id: string; name: string; color: string | null | undefined };
+          geometry: GeoShape | null;
+        }> = territories
           .filter((t) => t.color)
           .map((territory) => ({
-            type: 'Feature',
+            type: 'Feature' as const,
             properties: {
               id: territory.id,
               name: territory.name,
@@ -111,7 +115,7 @@ export default function TerritoriesPage() {
           type: 'geojson',
           data: {
             type: 'FeatureCollection',
-            features,
+            features: features as any,
           },
         });
 
