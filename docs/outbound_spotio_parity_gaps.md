@@ -31,7 +31,7 @@ the Master Build Checklist (Phase 2a). It helps us pick the next implementation 
 ## 4. Route Planning & Trips
 
 - [x] Trip model + admin trip planner (manual ordering, basic mileage placeholder).
-- [~] Client-side nearest-neighbour “Optimize order” button (needs server Distance Matrix + lasso).
+- [~] `/api/trips/optimize` heuristic + UI hook (replace with Distance Matrix + lasso tooling).
 - [ ] Lasso/multi-select add-to-route tooling on the map.
 - [ ] Recurring route templates with cadence reminders.
 - [ ] Mileage tracking + export for reimbursements.
