@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getBusinessConfig } from '@/lib/business-config';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getBusinessConfig } from "@/lib/business-config";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
     const { businessId } = await req.json();
-    
+
     if (!businessId) {
       return NextResponse.json(
-        { error: 'Business ID is required' },
-        { status: 400 }
+        { error: "Business ID is required" },
+        { status: 400 },
       );
     }
 
@@ -17,18 +17,18 @@ export async function POST(req: NextRequest) {
 
     // Get current business config
     const currentConfig = await getBusinessConfig(businessId);
-    
+
     if (!currentConfig) {
       return NextResponse.json(
-        { error: 'Business configuration not found' },
-        { status: 404 }
+        { error: "Business configuration not found" },
+        { status: 404 },
       );
     }
 
     // Reset service zones to empty
     const updatedConfig = {
       ...currentConfig,
-      serviceZones: [] // Clear all service zones
+      serviceZones: [], // Clear all service zones
     };
 
     // Update the database
@@ -36,32 +36,33 @@ export async function POST(req: NextRequest) {
       where: { orgId: businessId },
       update: {
         serviceZones: updatedConfig.serviceZones,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       create: {
         orgId: businessId,
-        businessName: 'Yardura',
+        businessName: "Yardura",
         serviceZones: [],
         basePricing: {},
         settings: {},
         operations: {},
         communication: {},
-      }
+      },
     });
 
-    console.log(`Successfully cleared all ZIP codes for business: ${businessId}`);
+    console.log(
+      `Successfully cleared all ZIP codes for business: ${businessId}`,
+    );
 
     return NextResponse.json({
       success: true,
-      message: 'All ZIP codes have been cleared',
-      clearedZips: currentConfig.serviceZones?.length || 0
+      message: "All ZIP codes have been cleared",
+      clearedZips: currentConfig.serviceZones?.length || 0,
     });
-
   } catch (error) {
-    console.error('Failed to clear ZIP codes:', error);
+    console.error("Failed to clear ZIP codes:", error);
     return NextResponse.json(
-      { error: 'Failed to clear ZIP codes' },
-      { status: 500 }
+      { error: "Failed to clear ZIP codes" },
+      { status: 500 },
     );
   }
 }

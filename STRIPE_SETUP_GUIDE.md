@@ -187,12 +187,12 @@ Update `src/lib/stripe.ts` with your actual Stripe price IDs:
 // Replace the placeholder IDs with your actual Stripe price IDs
 export const STRIPE_PRODUCTS = {
   weekly: {
-    id: 'prod_weekly_service',
+    id: "prod_weekly_service",
     prices: {
       small: {
-        1: 'price_weekly_small_1dog', // Your actual price ID
-        2: 'price_weekly_small_2dog', // Your actual price ID
-        3: 'price_weekly_small_3dog', // Your actual price ID
+        1: "price_weekly_small_1dog", // Your actual price ID
+        2: "price_weekly_small_2dog", // Your actual price ID
+        3: "price_weekly_small_3dog", // Your actual price ID
       },
       // ... continue for all combinations
     },

@@ -1,23 +1,23 @@
-import { getCityData, getCitySlugs } from '@/lib/cityData';
-import AnimatedHeader from '@/components/site/AnimatedHeader';
-import Footer from '@/components/footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  MapPin, 
-  Users, 
-  Star, 
-  ArrowRight, 
-  CheckCircle, 
-  Shield, 
-  Leaf, 
+import { getCityData, getCitySlugs } from "@/lib/cityData";
+import AnimatedHeader from "@/components/site/AnimatedHeader";
+import Footer from "@/components/footer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  MapPin,
+  Users,
+  Star,
+  ArrowRight,
+  CheckCircle,
+  Shield,
+  Leaf,
   Phone,
   Clock,
-  Award
-} from 'lucide-react';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
+  Award,
+} from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 
 interface CityPageProps {
   params: Promise<{
@@ -35,22 +35,22 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: CityPageProps) {
   const { slug } = await params;
   const city = getCityData(slug);
-  
+
   if (!city) {
     return {
-      title: 'City Not Found | Yardura',
-      description: 'The requested city page could not be found.',
+      title: "City Not Found | Yardura",
+      description: "The requested city page could not be found.",
     };
   }
 
   return {
     title: city.seo.title,
     description: city.seo.description,
-    keywords: city.seo.keywords.join(', '),
+    keywords: city.seo.keywords.join(", "),
     openGraph: {
       title: city.seo.title,
       description: city.seo.description,
-      type: 'website',
+      type: "website",
     },
   };
 }
@@ -66,7 +66,7 @@ export default async function CityPage({ params }: CityPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-brand-50/20">
       <AnimatedHeader />
-      
+
       <main className="py-24">
         <div className="container mx-auto px-6">
           {/* Enhanced city header */}
@@ -82,7 +82,7 @@ export default async function CityPage({ params }: CityPageProps) {
             <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed mb-6">
               {city.description}
             </p>
-            
+
             {/* City stats */}
             <div className="flex flex-wrap justify-center gap-4 mb-8">
               <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-slate-200/60 rounded-full">
@@ -99,7 +99,9 @@ export default async function CityPage({ params }: CityPageProps) {
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-slate-200/60 rounded-full">
                 <Star className="size-4 text-yellow-600" />
-                <span className="text-sm font-medium text-slate-700">Premium service area</span>
+                <span className="text-sm font-medium text-slate-700">
+                  Premium service area
+                </span>
               </div>
             </div>
 
@@ -130,12 +132,15 @@ export default async function CityPage({ params }: CityPageProps) {
                   <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl group-hover:scale-110 transition-all duration-300">
                     <Shield className="h-6 w-6 text-green-600" />
                   </div>
-                  <div className="text-lg font-bold text-slate-900">Licensed & Insured</div>
+                  <div className="text-lg font-bold text-slate-900">
+                    Licensed & Insured
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="relative z-10">
                 <p className="text-slate-600 leading-relaxed">
-                  Fully licensed and insured for your peace of mind. Professional service you can trust.
+                  Fully licensed and insured for your peace of mind.
+                  Professional service you can trust.
                 </p>
               </CardContent>
             </Card>
@@ -147,12 +152,15 @@ export default async function CityPage({ params }: CityPageProps) {
                   <div className="p-3 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-2xl group-hover:scale-110 transition-all duration-300">
                     <Leaf className="h-6 w-6 text-emerald-600" />
                   </div>
-                  <div className="text-lg font-bold text-slate-900">Eco-Friendly</div>
+                  <div className="text-lg font-bold text-slate-900">
+                    Eco-Friendly
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="relative z-10">
                 <p className="text-slate-600 leading-relaxed">
-                  Sustainable waste diversion options to keep waste out of landfills. Join our eco mission!
+                  Sustainable waste diversion options to keep waste out of
+                  landfills. Join our eco mission!
                 </p>
               </CardContent>
             </Card>
@@ -164,12 +172,15 @@ export default async function CityPage({ params }: CityPageProps) {
                   <div className="p-3 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl group-hover:scale-110 transition-all duration-300">
                     <Award className="h-6 w-6 text-purple-600" />
                   </div>
-                  <div className="text-lg font-bold text-slate-900">Wellness Insights</div>
+                  <div className="text-lg font-bold text-slate-900">
+                    Wellness Insights
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="relative z-10">
                 <p className="text-slate-600 leading-relaxed">
-                  Smart health tracking and insights to help spark better conversations with your vet.
+                  Smart health tracking and insights to help spark better
+                  conversations with your vet.
                 </p>
               </CardContent>
             </Card>
@@ -185,15 +196,19 @@ export default async function CityPage({ params }: CityPageProps) {
                     <MapPin className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-slate-900">ZIP Codes Served</div>
-                    <div className="text-sm text-slate-600">We serve these areas in {city.displayName}</div>
+                    <div className="text-xl font-bold text-slate-900">
+                      ZIP Codes Served
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      We serve these areas in {city.displayName}
+                    </div>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="flex flex-wrap gap-3">
                   {city.zipCodes.map((zip) => (
-                    <Badge 
+                    <Badge
                       key={zip}
                       className="px-4 py-2 bg-gradient-to-r from-brand-100 to-brand-200 text-brand-800 border border-brand-300 rounded-2xl font-semibold hover:from-brand-200 hover:to-brand-300 transition-all duration-200 hover:scale-105"
                     >
@@ -212,17 +227,26 @@ export default async function CityPage({ params }: CityPageProps) {
                     <Users className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-slate-900">Neighborhoods</div>
-                    <div className="text-sm text-slate-600">Areas we proudly serve</div>
+                    <div className="text-xl font-bold text-slate-900">
+                      Neighborhoods
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      Areas we proudly serve
+                    </div>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-3">
                   {city.neighborhoods.map((neighborhood) => (
-                    <div key={neighborhood} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
+                    <div
+                      key={neighborhood}
+                      className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl"
+                    >
                       <CheckCircle className="size-5 text-green-600" />
-                      <span className="font-medium text-slate-900">{neighborhood}</span>
+                      <span className="font-medium text-slate-900">
+                        {neighborhood}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -238,15 +262,22 @@ export default async function CityPage({ params }: CityPageProps) {
                   <Clock className="h-6 w-6 text-brand-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-slate-900">Service Information</div>
-                  <div className="text-sm text-slate-600">Everything you need to know about our {city.displayName} service</div>
+                  <div className="text-2xl font-bold text-slate-900">
+                    Service Information
+                  </div>
+                  <div className="text-sm text-slate-600">
+                    Everything you need to know about our {city.displayName}{" "}
+                    service
+                  </div>
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-8">
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-4">Service Hours</h3>
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">
+                    Service Hours
+                  </h3>
                   <div className="space-y-2 text-slate-600">
                     <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                       <span>Monday - Friday</span>
@@ -258,27 +289,39 @@ export default async function CityPage({ params }: CityPageProps) {
                     </div>
                     <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                       <span>Sunday</span>
-                      <span className="font-semibold text-slate-500">Closed</span>
+                      <span className="font-semibold text-slate-500">
+                        Closed
+                      </span>
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-4">Contact Information</h3>
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">
+                    Contact Information
+                  </h3>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-brand-50 to-brand-100 border border-brand-200 rounded-2xl">
                       <Phone className="size-5 text-brand-600" />
                       <div>
-                        <div className="font-semibold text-slate-900">{city.localBusiness.phone}</div>
-                        <div className="text-sm text-slate-600">Call for immediate service</div>
+                        <div className="font-semibold text-slate-900">
+                          {city.localBusiness.phone}
+                        </div>
+                        <div className="text-sm text-slate-600">
+                          Call for immediate service
+                        </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
                       <MapPin className="size-5 text-slate-600" />
                       <div>
-                        <div className="font-semibold text-slate-900">{city.localBusiness.address}</div>
-                        <div className="text-sm text-slate-600">Local service area</div>
+                        <div className="font-semibold text-slate-900">
+                          {city.localBusiness.address}
+                        </div>
+                        <div className="text-sm text-slate-600">
+                          Local service area
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -296,15 +339,22 @@ export default async function CityPage({ params }: CityPageProps) {
                     <MapPin className="h-5 w-5 text-purple-600" />
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-slate-900">Extended Service Areas</div>
-                    <div className="text-sm text-slate-600">We also serve these nearby communities</div>
+                    <div className="text-xl font-bold text-slate-900">
+                      Extended Service Areas
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      We also serve these nearby communities
+                    </div>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {city.serviceAreas.map((area) => (
-                    <div key={area} className="flex items-center gap-2 p-3 bg-slate-50 rounded-2xl">
+                    <div
+                      key={area}
+                      className="flex items-center gap-2 p-3 bg-slate-50 rounded-2xl"
+                    >
                       <CheckCircle className="size-4 text-green-600" />
                       <span className="font-medium text-slate-900">{area}</span>
                     </div>
@@ -321,7 +371,8 @@ export default async function CityPage({ params }: CityPageProps) {
                 Ready to Get Started in {city.displayName}?
               </h2>
               <p className="text-xl text-brand-100 mb-8 max-w-2xl mx-auto">
-                Join hundreds of satisfied customers enjoying clean yards and smart wellness insights.
+                Join hundreds of satisfied customers enjoying clean yards and
+                smart wellness insights.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/quote?businessId=yardura">
@@ -342,7 +393,7 @@ export default async function CityPage({ params }: CityPageProps) {
           </div>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: leadId } = await params;
 
     if (!leadId) {
       return NextResponse.json(
-        { error: 'Lead ID is required' },
-        { status: 400 }
+        { error: "Lead ID is required" },
+        { status: 400 },
       );
     }
 
@@ -43,15 +43,12 @@ export async function GET(
     });
 
     if (!lead) {
-      return NextResponse.json(
-        { error: 'Lead not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
     // Parse areasToClean if it's stored as JSON string
     let parsedAreasToClean = lead.areasToClean;
-    if (typeof lead.areasToClean === 'string') {
+    if (typeof lead.areasToClean === "string") {
       try {
         parsedAreasToClean = JSON.parse(lead.areasToClean);
       } catch (e) {
@@ -75,10 +72,10 @@ export async function GET(
       createdAt: lead.submittedAt, // For backward compatibility
     });
   } catch (error) {
-    console.error('Error fetching lead:', error);
+    console.error("Error fetching lead:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

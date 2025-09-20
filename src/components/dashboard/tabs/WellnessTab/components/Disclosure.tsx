@@ -1,6 +1,6 @@
-import React, { useState, ReactNode } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState, ReactNode } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DisclosureProps {
   title: string;
@@ -13,7 +13,7 @@ export const Disclosure: React.FC<DisclosureProps> = ({
   title,
   defaultOpen = false,
   children,
-  className = '',
+  className = "",
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -24,7 +24,7 @@ export const Disclosure: React.FC<DisclosureProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         className="w-full justify-between p-4 h-auto font-medium text-left hover:bg-slate-50"
         aria-expanded={isOpen}
-        aria-controls={`disclosure-content-${title.replace(/\s+/g, '-').toLowerCase()}`}
+        aria-controls={`disclosure-content-${title.replace(/\s+/g, "-").toLowerCase()}`}
       >
         <span className="flex items-center gap-2">
           {isOpen ? (
@@ -34,12 +34,14 @@ export const Disclosure: React.FC<DisclosureProps> = ({
           )}
           {title}
         </span>
-        <span className="text-sm text-slate-500">{isOpen ? 'Hide details' : 'Show details'}</span>
+        <span className="text-sm text-slate-500">
+          {isOpen ? "Hide details" : "Show details"}
+        </span>
       </Button>
 
       {isOpen && (
         <div
-          id={`disclosure-content-${title.replace(/\s+/g, '-').toLowerCase()}`}
+          id={`disclosure-content-${title.replace(/\s+/g, "-").toLowerCase()}`}
           className="px-4 pb-4"
         >
           {children}

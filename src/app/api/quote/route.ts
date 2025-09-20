@@ -1,12 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
-import { validateFormSubmission, logSuspiciousActivity } from '@/lib/formProtection';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
+import {
+  validateFormSubmission,
+  logSuspiciousActivity,
+} from "@/lib/formProtection";
+import { prisma } from "@/lib/prisma";
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 const formatCurrency = (value?: number) => {
-  if (typeof value !== 'number' || Number.isNaN(value)) return '—';
+  if (typeof value !== "number" || Number.isNaN(value)) return "—";
   return `$${(value / 100).toFixed(2)}`;
 };
 
@@ -18,11 +23,11 @@ export async function POST(req: NextRequest) {
     const url = new URL(req.url);
     const businessId =
       body.businessId ||
-      url.searchParams.get('businessId') ||
-      url.searchParams.get('org') ||
-      url.searchParams.get('tenant') ||
-      url.searchParams.get('tenantId') ||
-      'yardura';
+      url.searchParams.get("businessId") ||
+      url.searchParams.get("org") ||
+      url.searchParams.get("tenant") ||
+      url.searchParams.get("tenantId") ||
+      "yardura";
 
     // Skip form protection for now to allow onboarding flow to work
     // TODO: Re-enable with proper reCAPTCHA setup
@@ -53,15 +58,15 @@ export async function POST(req: NextRequest) {
 
     // Basic validation - check for email in either location
     const email = body?.email || body?.contact?.email;
-    const firstName = body?.firstName || body?.contact?.name || 'Customer';
+    const firstName = body?.firstName || body?.contact?.name || "Customer";
 
     if (!email) {
       return NextResponse.json(
         {
           ok: false,
-          errors: ['Email is required'],
+          errors: ["Email is required"],
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -73,12 +78,12 @@ export async function POST(req: NextRequest) {
           orgId: businessId,
           // Contact information
           firstName: firstName,
-          lastName: body?.lastName || '',
+          lastName: body?.lastName || "",
           email: email,
           phone: body?.phone || body?.contact?.phone,
 
           // Service details
-          serviceType: body.serviceType || body.propertyType || 'residential',
+          serviceType: body.serviceType || body.propertyType || "residential",
           dogs: body.dogs,
           yardSize: body.yardSize,
           frequency: body.frequency,
@@ -103,11 +108,15 @@ export async function POST(req: NextRequest) {
           divertMode: body.addOns?.divertMode,
 
           // Additional areas to clean
-          areasToClean: body.areasToClean ? JSON.stringify(body.areasToClean) : undefined,
+          areasToClean: body.areasToClean
+            ? JSON.stringify(body.areasToClean)
+            : undefined,
 
           // Cleanup timing
           lastCleanedBucket: body.lastCleanedBucket,
-          lastCleanedDate: body.lastCleanedDate ? new Date(body.lastCleanedDate) : null,
+          lastCleanedDate: body.lastCleanedDate
+            ? new Date(body.lastCleanedDate)
+            : null,
           initialClean: body.initialClean || false,
           daysSinceLastCleanup: body.daysSinceLastCleanup,
 
@@ -116,32 +125,37 @@ export async function POST(req: NextRequest) {
           referralSource: body.referralSource || body.howDidYouHear,
           preferredContactMethod:
             body.preferredContactMethod ||
-            (Array.isArray(body.preferredContactMethods) ? body.preferredContactMethods[0] : undefined),
+            (Array.isArray(body.preferredContactMethods)
+              ? body.preferredContactMethods[0]
+              : undefined),
 
           // Wellness insights consent
           wellnessOptIn: body.consent?.stoolPhotosOptIn || false,
 
           // Form protection and analytics (temporarily disabled)
           protectionScore: 0, // Default score when protection is skipped
-          ipAddress: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-                    req.headers.get('x-real-ip') ||
-                    req.headers.get('cf-connecting-ip') ||
-                    req.headers.get('x-client-ip') ||
-                    'unknown',
-          userAgent: req.headers.get('user-agent'),
+          ipAddress:
+            req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+            req.headers.get("x-real-ip") ||
+            req.headers.get("cf-connecting-ip") ||
+            req.headers.get("x-client-ip") ||
+            "unknown",
+          userAgent: req.headers.get("user-agent"),
           recaptchaToken: body.recaptchaToken,
 
           // Pricing snapshot
           estimatedPrice:
-            typeof body.pricingSnapshot?.total === 'number'
+            typeof body.pricingSnapshot?.total === "number"
               ? body.pricingSnapshot.total
-              : typeof body.pricingSnapshot?.monthly === 'number'
+              : typeof body.pricingSnapshot?.monthly === "number"
                 ? body.pricingSnapshot.monthly
                 : undefined,
           pricingBreakdown: (() => {
             const metadata = {
               preferredStartDate: body.preferredStartDate || null,
-              preferredContactMethods: Array.isArray(body.preferredContactMethods)
+              preferredContactMethods: Array.isArray(
+                body.preferredContactMethods,
+              )
                 ? body.preferredContactMethods
                 : null,
               howDidYouHear: body.howDidYouHear || body.referralSource || null,
@@ -160,38 +174,49 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch (error) {
-      console.error('Failed to create lead:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error("Failed to create lead:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       const errorStack = error instanceof Error ? error.stack : undefined;
-      console.error('Error details:', errorMessage);
-      if (errorStack) console.error('Error stack:', errorStack);
+      console.error("Error details:", errorMessage);
+      if (errorStack) console.error("Error stack:", errorStack);
       return NextResponse.json(
         {
           ok: false,
           errors: [`Failed to process quote: ${errorMessage}`],
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Send notification email
     if (resend) {
-      const displayFirstName = body.firstName || body.contact?.name?.split(' ')?.[0] || 'Customer';
-      const displayLastName = body.lastName || body.contact?.name?.split(' ')?.slice(1).join(' ');
-      const displayName = [displayFirstName, displayLastName].filter(Boolean).join(' ').trim() || 'Customer';
-      const contactEmail = body.email || body.contact?.email || 'N/A';
-      const contactPhone = body.phone || body.contact?.phone || 'N/A';
-      const locationLine = body.address
-        || [body.addressMeta?.city, body.addressMeta?.state, body.zipCode || body.addressMeta?.postalCode]
+      const displayFirstName =
+        body.firstName || body.contact?.name?.split(" ")?.[0] || "Customer";
+      const displayLastName =
+        body.lastName || body.contact?.name?.split(" ")?.slice(1).join(" ");
+      const displayName =
+        [displayFirstName, displayLastName].filter(Boolean).join(" ").trim() ||
+        "Customer";
+      const contactEmail = body.email || body.contact?.email || "N/A";
+      const contactPhone = body.phone || body.contact?.phone || "N/A";
+      const locationLine =
+        body.address ||
+        [
+          body.addressMeta?.city,
+          body.addressMeta?.state,
+          body.zipCode || body.addressMeta?.postalCode,
+        ]
           .filter(Boolean)
-          .join(', ')
-        || 'Not provided';
-      const serviceSummary = `${body.serviceType || body.propertyType || 'residential'} • ${body.frequency || 'n/a'} • ${body.yardSize || 'n/a'} yard`;
+          .join(", ") ||
+        "Not provided";
+      const serviceSummary = `${body.serviceType || body.propertyType || "residential"} • ${body.frequency || "n/a"} • ${body.yardSize || "n/a"} yard`;
       const pricing = body.pricingSnapshot || {};
 
-      const envTo = process.env.CONTACT_TO_EMAIL || 'ayden@yardura.com,austyn@yardura.com';
+      const envTo =
+        process.env.CONTACT_TO_EMAIL || "ayden@yardura.com,austyn@yardura.com";
       const recipients = envTo
-        .split(',')
+        .split(",")
         .map((e) => e.trim())
         .filter(Boolean);
 
@@ -200,17 +225,20 @@ export async function POST(req: NextRequest) {
         leadId: lead.id,
         submittedAt: new Date().toISOString(),
         protectionScore: 0, // Default score when protection is skipped
-        ipAddress: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-                  req.headers.get('x-real-ip') ||
-                  req.headers.get('cf-connecting-ip') ||
-                  req.headers.get('x-client-ip') ||
-                  'unknown',
+        ipAddress:
+          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          req.headers.get("x-real-ip") ||
+          req.headers.get("cf-connecting-ip") ||
+          req.headers.get("x-client-ip") ||
+          "unknown",
       };
 
-      const safeJson = JSON.stringify(quoteData, null, 2).replace(/</g, '&lt;');
+      const safeJson = JSON.stringify(quoteData, null, 2).replace(/</g, "&lt;");
       const monthlyPrice = formatCurrency(pricing?.monthly);
       const perVisitPrice = formatCurrency(pricing?.perVisit);
-      const initialVisitPrice = formatCurrency(pricing?.initialClean ?? pricing?.oneTime);
+      const initialVisitPrice = formatCurrency(
+        pricing?.initialClean ?? pricing?.oneTime,
+      );
 
       const html = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #111827;">
@@ -270,7 +298,7 @@ export async function POST(req: NextRequest) {
       `;
 
       const text = [
-        'New Quote Submitted',
+        "New Quote Submitted",
         `Lead ID: ${lead.id}`,
         `Customer: ${displayName}`,
         `Email: ${contactEmail}`,
@@ -280,15 +308,15 @@ export async function POST(req: NextRequest) {
         `Monthly: ${monthlyPrice}`,
         `Per Visit: ${perVisitPrice}`,
         `Initial Visit: ${initialVisitPrice}`,
-        '',
+        "",
         JSON.stringify(quoteData, null, 2),
-      ].join('\n');
+      ].join("\n");
 
       await resend.emails.send({
-        from: 'Yardura <notifications@yardura.com>',
+        from: "Yardura <notifications@yardura.com>",
         to: recipients,
         subject: `New Quote Request from ${displayName}`,
-        replyTo: contactEmail !== 'N/A' ? contactEmail : undefined,
+        replyTo: contactEmail !== "N/A" ? contactEmail : undefined,
         html,
         text,
       });
@@ -296,18 +324,18 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      message: 'Quote submitted successfully',
+      message: "Quote submitted successfully",
       leadId: lead.id,
       protectionScore: 0, // Default score when protection is skipped
     });
   } catch (e) {
-    console.error('Quote submission error:', e);
+    console.error("Quote submission error:", e);
     return NextResponse.json(
       {
         ok: false,
-        errors: ['Internal server error. Please try again.'],
+        errors: ["Internal server error. Please try again."],
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

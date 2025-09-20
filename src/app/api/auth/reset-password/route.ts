@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database-access';
-import bcrypt from 'bcryptjs';
+import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/database-access";
+import bcrypt from "bcryptjs";
 
 const prisma = getDb();
 
@@ -10,15 +10,15 @@ export async function POST(request: NextRequest) {
 
     if (!token || !password) {
       return NextResponse.json(
-        { error: 'Token and password are required' },
-        { status: 400 }
+        { error: "Token and password are required" },
+        { status: 400 },
       );
     }
 
     if (password.length < 8) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
-        { status: 400 }
+        { error: "Password must be at least 8 characters long" },
+        { status: 400 },
       );
     }
 
@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
 
     if (!account) {
       return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 400 }
+        { error: "Invalid or expired token" },
+        { status: 400 },
       );
     }
 
@@ -67,13 +67,13 @@ export async function POST(request: NextRequest) {
     // });
 
     return NextResponse.json({
-      message: 'Password reset successfully',
+      message: "Password reset successfully",
     });
   } catch (error) {
-    console.error('Password reset error:', error);
+    console.error("Password reset error:", error);
     return NextResponse.json(
-      { error: 'An error occurred while resetting the password' },
-      { status: 500 }
+      { error: "An error occurred while resetting the password" },
+      { status: 500 },
     );
   }
 }

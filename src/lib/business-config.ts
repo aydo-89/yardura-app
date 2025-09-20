@@ -9,7 +9,7 @@
  * - Add-on configurations
  */
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from "@/lib/prisma";
 
 export interface ServiceZoneConfig {
   zoneId: string;
@@ -27,7 +27,7 @@ export interface PricingTier {
 }
 
 export interface FrequencyPricing {
-  frequency: 'weekly' | 'twice-weekly' | 'bi-weekly' | 'monthly' | 'one-time';
+  frequency: "weekly" | "twice-weekly" | "bi-weekly" | "monthly" | "one-time";
   multiplier: number;
   visitsPerMonth: number;
 }
@@ -38,12 +38,12 @@ export interface AddOnConfig {
   priceCents: number;
   description: string;
   available: boolean;
-  billingMode: 'first-visit' | 'each-visit' | 'every-other' | 'one-time';
+  billingMode: "first-visit" | "each-visit" | "every-other" | "one-time";
   required: boolean;
 }
 
 export interface YardSizePricing {
-  size: 'small' | 'medium' | 'large' | 'xlarge';
+  size: "small" | "medium" | "large" | "xlarge";
   multiplier: number;
   description: string;
   enabled: boolean;
@@ -118,31 +118,31 @@ export interface BusinessConfig {
 
 // Default configuration for Yardura (can be overridden)
 export const DEFAULT_YARDURA_CONFIG: BusinessConfig = {
-  businessId: 'yardura',
-  businessName: 'Yardura',
+  businessId: "yardura",
+  businessName: "Yardura",
 
   serviceZones: [
     {
-      zoneId: 'zone-urban-core',
-      name: 'Urban Core',
+      zoneId: "zone-urban-core",
+      name: "Urban Core",
       baseMultiplier: 1.2,
-      description: 'High-demand urban area',
+      description: "High-demand urban area",
       serviceable: true,
       zipCodes: [],
     },
     {
-      zoneId: 'zone-suburban',
-      name: 'Suburban',
+      zoneId: "zone-suburban",
+      name: "Suburban",
       baseMultiplier: 1.0,
-      description: 'Standard suburban area',
+      description: "Standard suburban area",
       serviceable: true,
       zipCodes: [],
     },
     {
-      zoneId: 'zone-rural',
-      name: 'Rural',
+      zoneId: "zone-rural",
+      name: "Rural",
       baseMultiplier: 0.95,
-      description: 'Rural area with extended travel time',
+      description: "Rural area with extended travel time",
       serviceable: true,
       zipCodes: [],
     },
@@ -156,17 +156,37 @@ export const DEFAULT_YARDURA_CONFIG: BusinessConfig = {
       { dogCount: 4, basePriceCents: 4000, extraDogPriceCents: 500 }, // $40 for 4+ dogs, $5 each additional
     ],
     frequencies: [
-      { frequency: 'weekly', multiplier: 1.0, visitsPerMonth: 4.33 },
-      { frequency: 'twice-weekly', multiplier: 1.8, visitsPerMonth: 8.67 },
-      { frequency: 'bi-weekly', multiplier: 0.5, visitsPerMonth: 2.17 },
-      { frequency: 'monthly', multiplier: 1.5, visitsPerMonth: 1 },
-      { frequency: 'one-time', multiplier: 1.0, visitsPerMonth: 1 },
+      { frequency: "weekly", multiplier: 1.0, visitsPerMonth: 4.33 },
+      { frequency: "twice-weekly", multiplier: 1.8, visitsPerMonth: 8.67 },
+      { frequency: "bi-weekly", multiplier: 0.5, visitsPerMonth: 2.17 },
+      { frequency: "monthly", multiplier: 1.5, visitsPerMonth: 1 },
+      { frequency: "one-time", multiplier: 1.0, visitsPerMonth: 1 },
     ],
     yardSizes: [
-      { size: 'small', multiplier: 0.8, description: '< 1/4 acre', enabled: true },
-      { size: 'medium', multiplier: 1.0, description: '1/4 - 1/2 acre', enabled: true },
-      { size: 'large', multiplier: 1.2, description: '1/2 - 1 acre', enabled: true },
-      { size: 'xlarge', multiplier: 1.4, description: '> 1 acre', enabled: true },
+      {
+        size: "small",
+        multiplier: 0.8,
+        description: "< 1/4 acre",
+        enabled: true,
+      },
+      {
+        size: "medium",
+        multiplier: 1.0,
+        description: "1/4 - 1/2 acre",
+        enabled: true,
+      },
+      {
+        size: "large",
+        multiplier: 1.2,
+        description: "1/2 - 1 acre",
+        enabled: true,
+      },
+      {
+        size: "xlarge",
+        multiplier: 1.4,
+        description: "> 1 acre",
+        enabled: true,
+      },
     ],
     areaPricing: {
       enabled: true,
@@ -180,74 +200,96 @@ export const DEFAULT_YARDURA_CONFIG: BusinessConfig = {
       floorPriceCents: 4900, // $49 minimum
       useDaysSinceLastClean: true,
       buckets: [
-        { bucket: '7', multiplier: 1.0, floorPriceCents: 4900, label: 'Today / ≤ 7 days (Well maintained)' },
-        { bucket: '14', multiplier: 1.0, floorPriceCents: 4900, label: '≤ 2 weeks (Well maintained)' },
-        { bucket: '42', multiplier: 1.75, floorPriceCents: 6900, label: "2–6 weeks (It's pretty neglected)" },
-        { bucket: '999', multiplier: 2.5, floorPriceCents: 8900, label: '> 6 weeks (Watch your step!)' },
+        {
+          bucket: "7",
+          multiplier: 1.0,
+          floorPriceCents: 4900,
+          label: "Today / ≤ 7 days (Well maintained)",
+        },
+        {
+          bucket: "14",
+          multiplier: 1.0,
+          floorPriceCents: 4900,
+          label: "≤ 2 weeks (Well maintained)",
+        },
+        {
+          bucket: "42",
+          multiplier: 1.75,
+          floorPriceCents: 6900,
+          label: "2–6 weeks (It's pretty neglected)",
+        },
+        {
+          bucket: "999",
+          multiplier: 2.5,
+          floorPriceCents: 8900,
+          label: "> 6 weeks (Watch your step!)",
+        },
       ],
     },
     addOns: [
       {
-        id: 'deodorize',
-        name: 'Enhanced Deodorizing',
+        id: "deodorize",
+        name: "Enhanced Deodorizing",
         priceCents: 2500,
-        description: 'Premium odor-neutralizing treatment',
+        description: "Premium odor-neutralizing treatment",
         available: true,
-        billingMode: 'each-visit' as const,
+        billingMode: "each-visit" as const,
         required: false,
       },
       {
-        id: 'spray-deck',
-        name: 'Spray Deck/Patio',
+        id: "spray-deck",
+        name: "Spray Deck/Patio",
         priceCents: 1750,
-        description: 'Pressure wash and clean outdoor surfaces',
+        description: "Pressure wash and clean outdoor surfaces",
         available: true,
-        billingMode: 'each-visit' as const,
+        billingMode: "each-visit" as const,
         required: false,
       },
       {
-        id: 'divert-takeaway',
-        name: 'Take Away Waste (100% Diversion)',
+        id: "divert-takeaway",
+        name: "Take Away Waste (100% Diversion)",
         priceCents: 200,
-        description: 'Remove 100% of waste, 100% diverted from landfills to compost',
+        description:
+          "Remove 100% of waste, 100% diverted from landfills to compost",
         available: true,
-        billingMode: 'each-visit' as const,
+        billingMode: "each-visit" as const,
         required: false,
       },
       {
-        id: 'divert-25',
-        name: 'Waste Diversion (25% Compost)',
+        id: "divert-25",
+        name: "Waste Diversion (25% Compost)",
         priceCents: 150,
-        description: '25% of waste diverted to compost facilities',
+        description: "25% of waste diverted to compost facilities",
         available: true,
-        billingMode: 'each-visit' as const,
+        billingMode: "each-visit" as const,
         required: false,
       },
       {
-        id: 'divert-50',
-        name: 'Waste Diversion (50% Compost)',
+        id: "divert-50",
+        name: "Waste Diversion (50% Compost)",
         priceCents: 100,
-        description: '50% of waste diverted to compost facilities',
+        description: "50% of waste diverted to compost facilities",
         available: true,
-        billingMode: 'each-visit' as const,
+        billingMode: "each-visit" as const,
         required: false,
       },
       {
-        id: 'divert-100',
-        name: 'Waste Diversion (100% Compost)',
+        id: "divert-100",
+        name: "Waste Diversion (100% Compost)",
         priceCents: 250,
-        description: '100% of waste diverted to compost facilities (no landfill)',
+        description:
+          "100% of waste diverted to compost facilities (no landfill)",
         available: true,
-        billingMode: 'each-visit' as const,
+        billingMode: "each-visit" as const,
         required: false,
       },
       {
-        id: 'litter',
-        name: 'Cat Litter Cleanup',
+        id: "litter",
+        name: "Cat Litter Cleanup",
         priceCents: 800,
-        description: 'Clean up cat litter from outdoor areas',
+        description: "Clean up cat litter from outdoor areas",
         available: true,
-        billingMode: 'each-visit' as const,
+        billingMode: "each-visit" as const,
         required: false,
       },
     ],
@@ -280,15 +322,19 @@ export const DEFAULT_YARDURA_CONFIG: BusinessConfig = {
 /**
  * Get business configuration from database
  */
-export async function getBusinessConfig(businessId: string = 'yardura'): Promise<BusinessConfig> {
+export async function getBusinessConfig(
+  businessId: string = "yardura",
+): Promise<BusinessConfig> {
   try {
     // Try to load BusinessConfig directly (avoids Org include typing issues)
     const org = await prisma.org.findUnique({ where: { id: businessId } });
-    const bc = await (prisma as any).businessConfig.findUnique({ where: { orgId: businessId } });
+    const bc = await (prisma as any).businessConfig.findUnique({
+      where: { orgId: businessId },
+    });
 
     if (bc) {
       // Normalize shapes defensively so callers never crash on undefined
-      const rawServiceZones = (bc.serviceZones as any);
+      const rawServiceZones = bc.serviceZones as any;
       const serviceZones = Array.isArray(rawServiceZones)
         ? rawServiceZones
         : DEFAULT_YARDURA_CONFIG.serviceZones;
@@ -305,14 +351,16 @@ export async function getBusinessConfig(businessId: string = 'yardura'): Promise
           ? rawBasePricing.yardSizes
           : DEFAULT_YARDURA_CONFIG.basePricing.yardSizes,
         areaPricing:
-          rawBasePricing.areaPricing && typeof rawBasePricing.areaPricing === 'object'
+          rawBasePricing.areaPricing &&
+          typeof rawBasePricing.areaPricing === "object"
             ? {
                 ...DEFAULT_YARDURA_CONFIG.basePricing.areaPricing,
                 ...rawBasePricing.areaPricing,
               }
             : DEFAULT_YARDURA_CONFIG.basePricing.areaPricing,
         initialClean:
-          rawBasePricing.initialClean && typeof rawBasePricing.initialClean === 'object'
+          rawBasePricing.initialClean &&
+          typeof rawBasePricing.initialClean === "object"
             ? {
                 ...DEFAULT_YARDURA_CONFIG.basePricing.initialClean,
                 ...rawBasePricing.initialClean,
@@ -324,23 +372,30 @@ export async function getBusinessConfig(businessId: string = 'yardura'): Promise
         addOns: Array.isArray(rawBasePricing.addOns)
           ? rawBasePricing.addOns
           : DEFAULT_YARDURA_CONFIG.basePricing.addOns,
-      } as BusinessConfig['basePricing'];
+      } as BusinessConfig["basePricing"];
 
-      const settings = (bc.settings as any) && typeof (bc.settings as any) === 'object'
-        ? { ...DEFAULT_YARDURA_CONFIG.settings, ...(bc.settings as any) }
-        : DEFAULT_YARDURA_CONFIG.settings;
+      const settings =
+        (bc.settings as any) && typeof (bc.settings as any) === "object"
+          ? { ...DEFAULT_YARDURA_CONFIG.settings, ...(bc.settings as any) }
+          : DEFAULT_YARDURA_CONFIG.settings;
 
-      const operations = (bc.operations as any) && typeof (bc.operations as any) === 'object'
-        ? { ...DEFAULT_YARDURA_CONFIG.operations, ...(bc.operations as any) }
-        : DEFAULT_YARDURA_CONFIG.operations;
+      const operations =
+        (bc.operations as any) && typeof (bc.operations as any) === "object"
+          ? { ...DEFAULT_YARDURA_CONFIG.operations, ...(bc.operations as any) }
+          : DEFAULT_YARDURA_CONFIG.operations;
 
-      const communication = (bc.communication as any) && typeof (bc.communication as any) === 'object'
-        ? { ...DEFAULT_YARDURA_CONFIG.communication, ...(bc.communication as any) }
-        : DEFAULT_YARDURA_CONFIG.communication;
+      const communication =
+        (bc.communication as any) &&
+        typeof (bc.communication as any) === "object"
+          ? {
+              ...DEFAULT_YARDURA_CONFIG.communication,
+              ...(bc.communication as any),
+            }
+          : DEFAULT_YARDURA_CONFIG.communication;
 
       return {
         businessId,
-        businessName: bc.businessName || org?.name || 'Business',
+        businessName: bc.businessName || org?.name || "Business",
         serviceZones,
         basePricing,
         settings,
@@ -349,7 +404,7 @@ export async function getBusinessConfig(businessId: string = 'yardura'): Promise
       };
     }
   } catch (error) {
-    console.error('Error loading business config from database:', error);
+    console.error("Error loading business config from database:", error);
   }
 
   // Fall back to default configuration
@@ -359,7 +414,9 @@ export async function getBusinessConfig(businessId: string = 'yardura'): Promise
 /**
  * Register a new business configuration in database
  */
-export async function registerBusinessConfig(config: BusinessConfig): Promise<void> {
+export async function registerBusinessConfig(
+  config: BusinessConfig,
+): Promise<void> {
   try {
     // Ensure Org record exists first
     await prisma.org.upsert({
@@ -398,7 +455,7 @@ export async function registerBusinessConfig(config: BusinessConfig): Promise<vo
       },
     });
   } catch (error) {
-    console.error('Error saving business config to database:', error);
+    console.error("Error saving business config to database:", error);
     throw error;
   }
 }
@@ -406,7 +463,10 @@ export async function registerBusinessConfig(config: BusinessConfig): Promise<vo
 /**
  * Update existing business configuration in database
  */
-export async function updateBusinessConfig(businessId: string, updates: Partial<BusinessConfig>): Promise<void> {
+export async function updateBusinessConfig(
+  businessId: string,
+  updates: Partial<BusinessConfig>,
+): Promise<void> {
   try {
     const existing = await getBusinessConfig(businessId);
 
@@ -415,7 +475,7 @@ export async function updateBusinessConfig(businessId: string, updates: Partial<
       await registerBusinessConfig(updatedConfig);
     }
   } catch (error) {
-    console.error('Error updating business config in database:', error);
+    console.error("Error updating business config in database:", error);
     throw error;
   }
 }
@@ -423,18 +483,28 @@ export async function updateBusinessConfig(businessId: string, updates: Partial<
 /**
  * Get service zones for a business
  */
-export async function getServiceZones(businessId: string = 'yardura'): Promise<ServiceZoneConfig[]> {
+export async function getServiceZones(
+  businessId: string = "yardura",
+): Promise<ServiceZoneConfig[]> {
   const config = await getBusinessConfig(businessId);
-  console.log('getServiceZones result:', typeof config.serviceZones, Array.isArray(config.serviceZones), config.serviceZones);
+  console.log(
+    "getServiceZones result:",
+    typeof config.serviceZones,
+    Array.isArray(config.serviceZones),
+    config.serviceZones,
+  );
   return config.serviceZones;
 }
 
 /**
  * Get zone multiplier for a ZIP code
  */
-export async function getZoneMultiplierForZip(zipCode: string, businessId: string = 'yardura'): Promise<number> {
+export async function getZoneMultiplierForZip(
+  zipCode: string,
+  businessId: string = "yardura",
+): Promise<number> {
   const zones = await getServiceZones(businessId);
-  const cleanZip = zipCode.replace(/\s+/g, '').toUpperCase();
+  const cleanZip = zipCode.replace(/\s+/g, "").toUpperCase();
 
   for (const zone of zones) {
     if (zone.zipCodes.includes(cleanZip)) {
@@ -449,9 +519,12 @@ export async function getZoneMultiplierForZip(zipCode: string, businessId: strin
 /**
  * Check if ZIP code is serviceable
  */
-export async function isZipServiceable(zipCode: string, businessId: string = 'yardura'): Promise<boolean> {
+export async function isZipServiceable(
+  zipCode: string,
+  businessId: string = "yardura",
+): Promise<boolean> {
   const zones = await getServiceZones(businessId);
-  const cleanZip = zipCode.replace(/\s+/g, '').toUpperCase();
+  const cleanZip = zipCode.replace(/\s+/g, "").toUpperCase();
 
   for (const zone of zones) {
     if (zone.zipCodes.includes(cleanZip)) {
@@ -465,9 +538,12 @@ export async function isZipServiceable(zipCode: string, businessId: string = 'ya
 /**
  * Get zone information for a ZIP code
  */
-export async function getZoneForZip(zipCode: string, businessId: string = 'yardura'): Promise<ServiceZoneConfig | null> {
+export async function getZoneForZip(
+  zipCode: string,
+  businessId: string = "yardura",
+): Promise<ServiceZoneConfig | null> {
   const zones = await getServiceZones(businessId);
-  const cleanZip = zipCode.replace(/\s+/g, '').toUpperCase();
+  const cleanZip = zipCode.replace(/\s+/g, "").toUpperCase();
 
   for (const zone of zones) {
     if (zone.zipCodes.includes(cleanZip)) {
@@ -481,9 +557,13 @@ export async function getZoneForZip(zipCode: string, businessId: string = 'yardu
 /**
  * Add ZIP codes to an existing zone
  */
-export async function addZipsToZone(businessId: string, zoneId: string, zipCodes: string[]): Promise<boolean> {
+export async function addZipsToZone(
+  businessId: string,
+  zoneId: string,
+  zipCodes: string[],
+): Promise<boolean> {
   const config = await getBusinessConfig(businessId);
-  const zone = config.serviceZones.find(z => z.zoneId === zoneId);
+  const zone = config.serviceZones.find((z) => z.zoneId === zoneId);
 
   if (!zone) {
     return false;
@@ -491,7 +571,7 @@ export async function addZipsToZone(businessId: string, zoneId: string, zipCodes
 
   // Add new ZIP codes (avoid duplicates)
   const existingZips = new Set(zone.zipCodes);
-  zipCodes.forEach(zip => existingZips.add(zip.toUpperCase()));
+  zipCodes.forEach((zip) => existingZips.add(zip.toUpperCase()));
   zone.zipCodes = Array.from(existingZips);
 
   await updateBusinessConfig(businessId, { serviceZones: config.serviceZones });
@@ -501,11 +581,14 @@ export async function addZipsToZone(businessId: string, zoneId: string, zipCodes
 /**
  * Create a new service zone
  */
-export async function createServiceZone(businessId: string, zone: ServiceZoneConfig): Promise<boolean> {
+export async function createServiceZone(
+  businessId: string,
+  zone: ServiceZoneConfig,
+): Promise<boolean> {
   const config = await getBusinessConfig(businessId);
 
   // Check if zone ID already exists
-  if (config.serviceZones.some(z => z.zoneId === zone.zoneId)) {
+  if (config.serviceZones.some((z) => z.zoneId === zone.zoneId)) {
     return false;
   }
 
@@ -517,17 +600,21 @@ export async function createServiceZone(businessId: string, zone: ServiceZoneCon
 /**
  * Get all serviceable ZIP codes for a business
  */
-export async function getServiceableZips(businessId: string = 'yardura'): Promise<string[]> {
+export async function getServiceableZips(
+  businessId: string = "yardura",
+): Promise<string[]> {
   const zones = await getServiceZones(businessId);
   return zones
-    .filter(zone => zone.serviceable)
-    .flatMap(zone => zone.zipCodes);
+    .filter((zone) => zone.serviceable)
+    .flatMap((zone) => zone.zipCodes);
 }
 
 /**
  * Export configuration for backup/admin purposes
  */
-export async function exportBusinessConfig(businessId: string): Promise<string> {
+export async function exportBusinessConfig(
+  businessId: string,
+): Promise<string> {
   const config = await getBusinessConfig(businessId);
   return JSON.stringify(config, null, 2);
 }
@@ -535,13 +622,15 @@ export async function exportBusinessConfig(businessId: string): Promise<string> 
 /**
  * Import configuration from JSON
  */
-export async function importBusinessConfig(jsonConfig: string): Promise<boolean> {
+export async function importBusinessConfig(
+  jsonConfig: string,
+): Promise<boolean> {
   try {
     const config: BusinessConfig = JSON.parse(jsonConfig);
     await registerBusinessConfig(config);
     return true;
   } catch (error) {
-    console.error('Failed to import business config:', error);
+    console.error("Failed to import business config:", error);
     return false;
   }
 }
@@ -552,11 +641,11 @@ export async function importBusinessConfig(jsonConfig: string): Promise<boolean>
 export async function getRegisteredBusinesses(): Promise<string[]> {
   try {
     const businesses = await (prisma as any).businessConfig.findMany({
-      select: { orgId: true }
+      select: { orgId: true },
     });
     return (businesses as Array<{ orgId: string }>).map((b) => b.orgId);
   } catch (error) {
-    console.error('Error getting registered businesses:', error);
+    console.error("Error getting registered businesses:", error);
     return [];
   }
 }
@@ -564,23 +653,26 @@ export async function getRegisteredBusinesses(): Promise<string[]> {
 /**
  * Validate business configuration
  */
-export function validateBusinessConfig(config: BusinessConfig): { valid: boolean; errors: string[] } {
+export function validateBusinessConfig(config: BusinessConfig): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   if (!config.businessId) {
-    errors.push('Business ID is required');
+    errors.push("Business ID is required");
   }
 
   if (!config.businessName) {
-    errors.push('Business name is required');
+    errors.push("Business name is required");
   }
 
   if (!config.serviceZones || config.serviceZones.length === 0) {
-    errors.push('At least one service zone is required');
+    errors.push("At least one service zone is required");
   }
 
   if (!config.basePricing.tiers || config.basePricing.tiers.length === 0) {
-    errors.push('At least one pricing tier is required');
+    errors.push("At least one pricing tier is required");
   }
 
   return {

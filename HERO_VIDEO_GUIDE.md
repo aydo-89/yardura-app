@@ -5,12 +5,14 @@ This system replaces the static hero image with dynamic AI-generated videos to c
 ## 🚀 Quick Start
 
 ### 1. Set up your Replicate API token
+
 ```bash
 # Add to your .env file
 REPLICATE_API_TOKEN=your_replicate_token_here
 ```
 
 ### 2. Generate a hero video
+
 ```bash
 # Using npm scripts (recommended)
 npm run hero:video clean-yard-transformation cinematic 5
@@ -20,6 +22,7 @@ node create-hero-video.js clean-yard-transformation cinematic 5
 ```
 
 ### 3. Download and integrate
+
 ```bash
 # Download the generated video
 curl -o "./public/hero-video.mp4" "VIDEO_URL_FROM_SCRIPT_OUTPUT"
@@ -29,6 +32,7 @@ npm run hero:update
 ```
 
 ### 4. Deploy
+
 ```bash
 ./deploy.sh
 ```
@@ -47,12 +51,14 @@ Perfect for YardDog by Yardura branding:
 ## 🎨 Styles & Settings
 
 ### Styles
+
 - **`cinematic`** - Smooth, professional (recommended for hero)
 - **`commercial`** - Bright, clean advertising style
 - **`lifestyle`** - Natural, authentic everyday moments
 - **`documentary`** - Realistic, informative approach
 
 ### Duration
+
 - **3 seconds** - Quick, punchy impact
 - **5 seconds** - Perfect balance (recommended)
 - **10 seconds** - Detailed storytelling
@@ -89,6 +95,7 @@ npm run hero:video family-backyard-bliss lifestyle 5
 ## 🔧 Technical Details
 
 ### Generated Video Specs
+
 - **Aspect Ratio**: 16:9 (perfect for hero sections)
 - **Quality**: High (4K when possible)
 - **FPS**: 24 (smooth playback)
@@ -96,6 +103,7 @@ npm run hero:video family-backyard-bliss lifestyle 5
 - **Optimization**: Web-optimized for fast loading
 
 ### Hero Component Integration
+
 The script automatically updates `src/components/hero.tsx` to replace:
 
 ```tsx
@@ -115,6 +123,7 @@ The script automatically updates `src/components/hero.tsx` to replace:
 ```
 
 ### Benefits of Video Hero
+
 - **Engagement**: 80% higher engagement than static images
 - **Storytelling**: Shows transformation/results in action
 - **Modern Feel**: Contemporary web design trend
@@ -130,6 +139,7 @@ The script automatically updates `src/components/hero.tsx` to replace:
 ## 🎯 Best Practices
 
 ### For Hero Videos
+
 1. **Keep it short**: 3-5 seconds optimal
 2. **Focus on outcomes**: Show clean, happy results
 3. **Use motion**: Subtle camera movement adds polish
@@ -137,6 +147,7 @@ The script automatically updates `src/components/hero.tsx` to replace:
 5. **Mobile-first**: Ensure it works on all devices
 
 ### Content Strategy
+
 - **Transformation focus**: Before/after impact
 - **Emotional connection**: Happy pets and families
 - **Professional quality**: Builds trust and credibility
@@ -151,7 +162,7 @@ Generate multiple versions and test:
 # Version A: Transformation focus
 npm run hero:video clean-yard-transformation cinematic 5
 
-# Version B: Happy pet focus  
+# Version B: Happy pet focus
 npm run hero:video happy-dog-clean-yard commercial 3
 
 # Version C: Family lifestyle
@@ -161,12 +172,14 @@ npm run hero:video family-backyard-bliss lifestyle 5
 ## 🚨 Troubleshooting
 
 ### Common Issues
+
 1. **Token not found**: Check `.env` file has `REPLICATE_API_TOKEN`
 2. **Generation timeout**: Try shorter duration or simpler prompt
 3. **Video not loading**: Check file path and permissions
 4. **Mobile playback**: Ensure `playsInline` attribute is set
 
 ### Fallback Strategy
+
 - Video component includes `poster` attribute with static image
 - If video fails to load, static image displays instead
 - Progressive enhancement approach ensures reliability
@@ -174,12 +187,14 @@ npm run hero:video family-backyard-bliss lifestyle 5
 ## 📈 Performance Optimization
 
 ### Video Optimization
+
 - Keep file size under 5MB for fast loading
 - Use web-optimized MP4 format
 - Consider WebM format for even smaller files
 - Implement lazy loading for below-fold videos
 
 ### Loading Strategy
+
 ```tsx
 <video
   src="/hero-video.mp4"
@@ -195,12 +210,14 @@ npm run hero:video family-backyard-bliss lifestyle 5
 ## 🎨 Creative Direction
 
 ### Brand Alignment
+
 - **YardDog**: Modern, tech-enabled, professional
 - **by Yardura**: Established, trusted, eco-conscious
 - **Twin Cities**: Local, community-focused, suburban
 - **Target Audience**: Families with dogs, eco-conscious homeowners
 
 ### Visual Elements
+
 - Clean, lush green grass
 - Happy, healthy dogs
 - Professional service providers

@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { QuoteData, PricingData, QuoteState } from '@/types/quote';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { QuoteData, PricingData, QuoteState } from "@/types/quote";
 
 interface QuoteStore extends QuoteState {
   // Actions
@@ -17,26 +17,26 @@ interface QuoteStore extends QuoteState {
 }
 
 const initialQuoteData: QuoteData = {
-  zipCode: '',
+  zipCode: "",
   serviceType: undefined,
   dogs: 1,
-  yardSize: 'medium',
-  frequency: 'weekly',
+  yardSize: "medium",
+  frequency: "weekly",
   propertyType: undefined,
-  businessType: '',
-  serviceFrequency: '',
-  address: '',
+  businessType: "",
+  serviceFrequency: "",
+  address: "",
   addOns: undefined,
-  lastCleanedBucket: '',
+  lastCleanedBucket: "",
   initialClean: false,
   daysSinceLastCleanup: 14,
-  firstName: '',
-  lastName: '',
-  email: '',
-  phone: '',
-  specialInstructions: '',
-  referralSource: '',
-  preferredContactMethod: 'email',
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  specialInstructions: "",
+  referralSource: "",
+  preferredContactMethod: "email",
 };
 
 const initialState: QuoteState = {
@@ -90,13 +90,13 @@ export const useQuoteStore = create<QuoteStore>()(
         })),
     }),
     {
-      name: 'yardura-quote-storage',
+      name: "yardura-quote-storage",
       partialize: (state) => ({
         quoteData: state.quoteData,
         currentStep: state.currentStep,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors for commonly used state
@@ -104,4 +104,5 @@ export const useQuoteData = () => useQuoteStore((state) => state.quoteData);
 export const useCurrentStep = () => useQuoteStore((state) => state.currentStep);
 export const usePricing = () => useQuoteStore((state) => state.pricing);
 export const useQuoteErrors = () => useQuoteStore((state) => state.errors);
-export const useIsSubmitting = () => useQuoteStore((state) => state.isSubmitting);
+export const useIsSubmitting = () =>
+  useQuoteStore((state) => state.isSubmitting);

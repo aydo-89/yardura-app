@@ -1,18 +1,23 @@
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Info } from 'lucide-react';
-import { useWellnessData } from './hooks/useWellnessData';
-import { WellnessHeader } from './components/WellnessHeader';
-import { WeeklyTimeline } from './components/WeeklyTimeline';
-import { WeeklyDetailsGrid } from './components/WeeklyDetailsGrid';
-import { KeyInsights } from './components/KeyInsights';
-import { ColorAnalysis } from './components/ColorAnalysis';
-import { ConsistencyAnalysis } from './components/ConsistencyAnalysis';
-import { ContentSignals } from './components/ContentSignals';
-import { FrequencyAnalysis } from './components/FrequencyAnalysis';
-import { ComingSoonOverlay } from './components/ComingSoonOverlay';
-import { wellnessTheme } from '@/shared/wellness';
-import type { DataReading, ServiceVisit, WeekRollup, WellnessComputed } from '@/shared/wellness';
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Info } from "lucide-react";
+import { useWellnessData } from "./hooks/useWellnessData";
+import { WellnessHeader } from "./components/WellnessHeader";
+import { WeeklyTimeline } from "./components/WeeklyTimeline";
+import { WeeklyDetailsGrid } from "./components/WeeklyDetailsGrid";
+import { KeyInsights } from "./components/KeyInsights";
+import { ColorAnalysis } from "./components/ColorAnalysis";
+import { ConsistencyAnalysis } from "./components/ConsistencyAnalysis";
+import { ContentSignals } from "./components/ContentSignals";
+import { FrequencyAnalysis } from "./components/FrequencyAnalysis";
+import { ComingSoonOverlay } from "./components/ComingSoonOverlay";
+import { wellnessTheme } from "@/shared/wellness";
+import type {
+  DataReading,
+  ServiceVisit,
+  WeekRollup,
+  WellnessComputed,
+} from "@/shared/wellness";
 
 interface WellnessTabProps {
   dataReadings: DataReading[];
@@ -21,7 +26,9 @@ interface WellnessTabProps {
 }
 
 // Temporary adapter functions to convert new data format to old format
-const convertWeeklyToWeekRollup = (weekly: WellnessComputed['weekly']): WeekRollup[] => {
+const convertWeeklyToWeekRollup = (
+  weekly: WellnessComputed["weekly"],
+): WeekRollup[] => {
   return weekly.map((week) => ({
     startISO: week.startISO,
     start: new Date(week.startISO),
@@ -33,7 +40,11 @@ const convertWeeklyToWeekRollup = (weekly: WellnessComputed['weekly']): WeekRoll
     issues: week.issues,
     status: week.status,
     healthStatus:
-      week.status === 'good' ? 'normal' : week.status === 'monitor' ? 'monitor' : 'action',
+      week.status === "good"
+        ? "normal"
+        : week.status === "monitor"
+          ? "monitor"
+          : "action",
     wellnessScore: 85, // Simplified
   }));
 };
@@ -48,65 +59,70 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
 
   const handleExport = () => {
     // Navigate to reports page - this preserves existing functionality
-    window.location.href = '/reports';
+    window.location.href = "/reports";
   };
 
   const handleNavigateToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
   const handleJoinWaitlist = async (email: string) => {
     try {
       // Send to your backend API
-      const response = await fetch('/api/waitlist/wellness-insights', {
-        method: 'POST',
+      const response = await fetch("/api/waitlist/wellness-insights", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
-          feature: 'wellness-insights',
+          feature: "wellness-insights",
           timestamp: new Date().toISOString(),
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to join waitlist');
+        throw new Error("Failed to join waitlist");
       }
 
       const result = await response.json();
 
       // You could also send analytics events here
-      console.log('Successfully joined waitlist:', result);
+      console.log("Successfully joined waitlist:", result);
 
       // Optional: Send confirmation email
       // This would typically be handled by your backend
     } catch (error) {
-      console.error('Error joining waitlist:', error);
+      console.error("Error joining waitlist:", error);
 
       // Fallback: Store locally if API fails
       const waitlistData = {
         email,
-        feature: 'wellness-insights',
+        feature: "wellness-insights",
         timestamp: new Date().toISOString(),
         offline: true, // Mark as offline submission
       };
 
       // Store in localStorage as fallback
-      const existingWaitlist = JSON.parse(localStorage.getItem('yardura_waitlist') || '[]');
+      const existingWaitlist = JSON.parse(
+        localStorage.getItem("yardura_waitlist") || "[]",
+      );
       existingWaitlist.push(waitlistData);
-      localStorage.setItem('yardura_waitlist', JSON.stringify(existingWaitlist));
+      localStorage.setItem(
+        "yardura_waitlist",
+        JSON.stringify(existingWaitlist),
+      );
 
-      console.log('Stored waitlist signup locally:', waitlistData);
+      console.log("Stored waitlist signup locally:", waitlistData);
     }
 
     // Show success message to user
     setTimeout(() => {
       alert(
-        `Thank you for joining the waitlist! We'll notify you at ${email} when advanced wellness insights are available.`
+        `Thank you for joining the waitlist! We'll notify you at ${email} when advanced wellness insights are available.`,
       );
     }, 500);
   };
@@ -172,7 +188,9 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
                     pct:
                       totalColorCount > 0
                         ? Math.round(
-                            (wellnessData.trends.colorDonut.normal / totalColorCount) * 100
+                            (wellnessData.trends.colorDonut.normal /
+                              totalColorCount) *
+                              100,
                           )
                         : 0,
                   },
@@ -181,7 +199,9 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
                     pct:
                       totalColorCount > 0
                         ? Math.round(
-                            (wellnessData.trends.colorDonut.yellow / totalColorCount) * 100
+                            (wellnessData.trends.colorDonut.yellow /
+                              totalColorCount) *
+                              100,
                           )
                         : 0,
                   },
@@ -189,14 +209,22 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
                     count: wellnessData.trends.colorDonut.red,
                     pct:
                       totalColorCount > 0
-                        ? Math.round((wellnessData.trends.colorDonut.red / totalColorCount) * 100)
+                        ? Math.round(
+                            (wellnessData.trends.colorDonut.red /
+                              totalColorCount) *
+                              100,
+                          )
                         : 0,
                   },
                   black: {
                     count: wellnessData.trends.colorDonut.black,
                     pct:
                       totalColorCount > 0
-                        ? Math.round((wellnessData.trends.colorDonut.black / totalColorCount) * 100)
+                        ? Math.round(
+                            (wellnessData.trends.colorDonut.black /
+                              totalColorCount) *
+                              100,
+                          )
                         : 0,
                   },
                 }}
@@ -211,15 +239,24 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
           <ConsistencyAnalysis
             consistencyStats={{
               normal: {
-                count: wellnessData.trends.consistencyStack.reduce((sum, w) => sum + w.normal, 0),
+                count: wellnessData.trends.consistencyStack.reduce(
+                  (sum, w) => sum + w.normal,
+                  0,
+                ),
                 pct: 0,
               },
               soft: {
-                count: wellnessData.trends.consistencyStack.reduce((sum, w) => sum + w.soft, 0),
+                count: wellnessData.trends.consistencyStack.reduce(
+                  (sum, w) => sum + w.soft,
+                  0,
+                ),
                 pct: 0,
               },
               dry: {
-                count: wellnessData.trends.consistencyStack.reduce((sum, w) => sum + w.dry, 0),
+                count: wellnessData.trends.consistencyStack.reduce(
+                  (sum, w) => sum + w.dry,
+                  0,
+                ),
                 pct: 0,
               },
             }}
@@ -253,23 +290,27 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
           <div className="flex items-start gap-3">
             <Info className="size-5 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-blue-800">
-              <div className="font-semibold mb-2">Important Medical Disclaimer</div>
+              <div className="font-semibold mb-2">
+                Important Medical Disclaimer
+              </div>
               <div className="space-y-1 text-blue-700">
                 <div>
-                  • This waste monitoring system is{' '}
-                  <strong>not a substitute for professional veterinary care</strong>
+                  • This waste monitoring system is{" "}
+                  <strong>
+                    not a substitute for professional veterinary care
+                  </strong>
                 </div>
                 <div>
-                  • Waste quality scores and alerts are monitoring tools only - they do not
-                  constitute medical diagnosis
+                  • Waste quality scores and alerts are monitoring tools only -
+                  they do not constitute medical diagnosis
                 </div>
                 <div>
-                  • Always consult your veterinarian for any health concerns or changes in your
-                  pet's waste patterns
+                  • Always consult your veterinarian for any health concerns or
+                  changes in your pet's waste patterns
                 </div>
                 <div>
-                  • Regular veterinary check-ups are essential for your pet's overall health and
-                  wellness
+                  • Regular veterinary check-ups are essential for your pet's
+                  overall health and wellness
                 </div>
               </div>
             </div>
@@ -278,7 +319,12 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
       </Card>
 
       {/* Coming Soon Overlay */}
-      {showOverlay && <ComingSoonOverlay onJoinWaitlist={handleJoinWaitlist} closable={false} />}
+      {showOverlay && (
+        <ComingSoonOverlay
+          onJoinWaitlist={handleJoinWaitlist}
+          closable={false}
+        />
+      )}
     </div>
   );
 };

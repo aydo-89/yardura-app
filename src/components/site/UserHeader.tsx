@@ -1,7 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { useState, useEffect, useRef } from "react";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 import {
   User,
   Settings,
@@ -14,13 +19,13 @@ import {
   MapPin,
   Bell,
   ChevronDown,
-  Shield
-} from 'lucide-react';
-import { useSession, signOut } from 'next-auth/react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import Image from 'next/image';
+  Shield,
+} from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import Image from "next/image";
 
 interface UserHeaderProps {
   className?: string;
@@ -35,29 +40,29 @@ type UserMenuItem = {
 
 const userMenuItems: UserMenuItem[] = [
   {
-    href: '/dashboard',
-    label: 'Dashboard',
+    href: "/dashboard",
+    label: "Dashboard",
     icon: Home,
-    description: 'View your service overview'
+    description: "View your service overview",
   },
   {
-    href: '/account',
-    label: 'Account Settings',
+    href: "/account",
+    label: "Account Settings",
     icon: Settings,
-    description: 'Manage your profile and preferences'
+    description: "Manage your profile and preferences",
   },
   {
-    href: '/dashboard#billing',
-    label: 'Billing & Payments',
+    href: "/dashboard#billing",
+    label: "Billing & Payments",
     icon: CreditCard,
-    description: 'View invoices and payment methods'
+    description: "View invoices and payment methods",
   },
   {
-    href: '/city',
-    label: 'Service Areas',
+    href: "/city",
+    label: "Service Areas",
     icon: MapPin,
-    description: 'Explore available service locations'
-  }
+    description: "Explore available service locations",
+  },
 ];
 
 export default function UserHeader({ className }: UserHeaderProps) {
@@ -68,7 +73,11 @@ export default function UserHeader({ className }: UserHeaderProps) {
   const lastScrollY = useRef(0);
 
   // Debug logging
-  console.log('UserHeader session:', { status, user: session?.user, isAdmin: (session as any)?.isAdmin });
+  console.log("UserHeader session:", {
+    status,
+    user: session?.user,
+    isAdmin: (session as any)?.isAdmin,
+  });
 
   const { scrollY } = useScroll();
   const headerHeight = useTransform(scrollY, [0, 100], [80, 64]); // 80px to 64px
@@ -90,8 +99,8 @@ export default function UserHeader({ className }: UserHeaderProps) {
       requestAnimationFrame(updateScrollState);
     };
 
-    window.addEventListener('scroll', throttledUpdate, { passive: true });
-    return () => window.removeEventListener('scroll', throttledUpdate);
+    window.addEventListener("scroll", throttledUpdate, { passive: true });
+    return () => window.removeEventListener("scroll", throttledUpdate);
   }, []);
 
   // Close menus when clicking outside
@@ -99,22 +108,22 @@ export default function UserHeader({ className }: UserHeaderProps) {
     const handleClickOutside = (event: MouseEvent) => {
       if (isMenuOpen || isUserMenuOpen) {
         const target = event.target as HTMLElement;
-        if (!target.closest('.user-header-menu')) {
+        if (!target.closest(".user-header-menu")) {
           setIsMenuOpen(false);
           setIsUserMenuOpen(false);
         }
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMenuOpen, isUserMenuOpen]);
 
   const handleLogout = async () => {
     try {
-      await signOut({ callbackUrl: '/' });
+      await signOut({ callbackUrl: "/" });
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -122,9 +131,14 @@ export default function UserHeader({ className }: UserHeaderProps) {
   const userRole = (session as any)?.userRole;
   const isAdmin = (session as any)?.isAdmin;
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
-      <header className={cn("w-full bg-white/95 backdrop-blur-sm border-b border-slate-200/60", className)}>
+      <header
+        className={cn(
+          "w-full bg-white/95 backdrop-blur-sm border-b border-slate-200/60",
+          className,
+        )}
+      >
         <div className="container mx-auto px-4 h-16 flex items-center justify-center">
           <div className="animate-pulse bg-slate-200 h-8 w-32 rounded"></div>
         </div>
@@ -138,7 +152,10 @@ export default function UserHeader({ className }: UserHeaderProps) {
 
   return (
     <motion.header
-      className={cn("w-full bg-white/95 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-50 transition-all duration-300", className)}
+      className={cn(
+        "w-full bg-white/95 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-50 transition-all duration-300",
+        className,
+      )}
       style={{ height: headerHeight }}
     >
       <div className="container mx-auto px-4">
@@ -146,13 +163,9 @@ export default function UserHeader({ className }: UserHeaderProps) {
           className="flex items-center justify-between"
           style={{ height: headerHeight }}
         >
-
           {/* Logo and Brand */}
           <Link href="/" className="flex items-center gap-3 group">
-            <motion.div
-              className="relative"
-              style={{ scale: logoScale }}
-            >
+            <motion.div className="relative" style={{ scale: logoScale }}>
               <Image
                 src="/yeller_icon_centered.png"
                 alt="Yeller logo"
@@ -169,7 +182,7 @@ export default function UserHeader({ className }: UserHeaderProps) {
             <motion.div
               className="hidden sm:block overflow-hidden"
               animate={{
-                width: isScrolled ? 'auto' : 'auto',
+                width: isScrolled ? "auto" : "auto",
                 opacity: 1,
               }}
               transition={{ duration: 0.3 }}
@@ -177,7 +190,7 @@ export default function UserHeader({ className }: UserHeaderProps) {
               <motion.div
                 className="font-black text-xl bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight"
                 animate={{
-                  fontSize: isScrolled ? '1.125rem' : '1.25rem', // 18px to 20px
+                  fontSize: isScrolled ? "1.125rem" : "1.25rem", // 18px to 20px
                 }}
                 transition={{ duration: 0.3 }}
               >
@@ -187,8 +200,8 @@ export default function UserHeader({ className }: UserHeaderProps) {
                 className="text-xs text-slate-500 -mt-0.5 leading-tight flex items-center gap-1"
                 style={{ opacity: taglineOpacity }}
                 animate={{
-                  height: isScrolled ? 0 : 'auto',
-                  marginTop: isScrolled ? 0 : '-2px',
+                  height: isScrolled ? 0 : "auto",
+                  marginTop: isScrolled ? 0 : "-2px",
                 }}
                 transition={{ duration: 0.3 }}
               >
@@ -198,7 +211,7 @@ export default function UserHeader({ className }: UserHeaderProps) {
                   alt="Yardura"
                   className="h-4 w-4 rounded-sm object-contain"
                 />
-                {isAdmin ? 'Admin Portal' : 'My Services'}
+                {isAdmin ? "Admin Portal" : "My Services"}
               </motion.div>
             </motion.div>
           </Link>
@@ -247,21 +260,25 @@ export default function UserHeader({ className }: UserHeaderProps) {
                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors duration-200 group"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+                  {user.name?.charAt(0)?.toUpperCase() ||
+                    user.email?.charAt(0)?.toUpperCase() ||
+                    "U"}
                 </div>
                 <div className="hidden sm:block text-left">
                   <div className="text-sm font-medium text-slate-900 group-hover:text-brand-600 transition-colors">
-                    {user.name || 'User'}
+                    {user.name || "User"}
                   </div>
                   <div className="text-xs text-slate-500 flex items-center gap-1">
                     {isAdmin && <Shield className="w-3 h-3 text-amber-500" />}
-                    {userRole === 'ADMIN' ? 'Administrator' : 'Customer'}
+                    {userRole === "ADMIN" ? "Administrator" : "Customer"}
                   </div>
                 </div>
-                <ChevronDown className={cn(
-                  "w-4 h-4 text-slate-400 transition-transform duration-200",
-                  isUserMenuOpen && "rotate-180"
-                )} />
+                <ChevronDown
+                  className={cn(
+                    "w-4 h-4 text-slate-400 transition-transform duration-200",
+                    isUserMenuOpen && "rotate-180",
+                  )}
+                />
               </button>
 
               {/* User Dropdown Menu */}
@@ -277,11 +294,17 @@ export default function UserHeader({ className }: UserHeaderProps) {
                     <div className="p-4 border-b border-slate-100">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+                          {user.name?.charAt(0)?.toUpperCase() ||
+                            user.email?.charAt(0)?.toUpperCase() ||
+                            "U"}
                         </div>
                         <div>
-                          <div className="font-medium text-slate-900">{user.name || 'User'}</div>
-                          <div className="text-sm text-slate-500">{user.email}</div>
+                          <div className="font-medium text-slate-900">
+                            {user.name || "User"}
+                          </div>
+                          <div className="text-sm text-slate-500">
+                            {user.email}
+                          </div>
                           {isAdmin && (
                             <div className="text-xs text-amber-600 font-medium flex items-center gap-1 mt-1">
                               <Shield className="w-3 h-3" />
@@ -304,7 +327,9 @@ export default function UserHeader({ className }: UserHeaderProps) {
                           <div>
                             <div className="font-medium">{item.label}</div>
                             {item.description && (
-                              <div className="text-xs text-slate-500 mt-0.5">{item.description}</div>
+                              <div className="text-xs text-slate-500 mt-0.5">
+                                {item.description}
+                              </div>
                             )}
                           </div>
                         </Link>
@@ -319,7 +344,9 @@ export default function UserHeader({ className }: UserHeaderProps) {
                           <Shield className="w-4 h-4 text-amber-500 group-hover:text-amber-600 transition-colors" />
                           <div>
                             <div className="font-medium">Admin Panel</div>
-                            <div className="text-xs text-amber-600 mt-0.5">Manage system settings</div>
+                            <div className="text-xs text-amber-600 mt-0.5">
+                              Manage system settings
+                            </div>
                           </div>
                         </Link>
                       )}
@@ -347,7 +374,11 @@ export default function UserHeader({ className }: UserHeaderProps) {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors duration-200"
             >
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
             </button>
           </div>
         </motion.div>
@@ -357,7 +388,7 @@ export default function UserHeader({ className }: UserHeaderProps) {
           {isMenuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
               className="md:hidden border-t border-slate-200/60 bg-white/95 backdrop-blur-sm"
@@ -374,7 +405,9 @@ export default function UserHeader({ className }: UserHeaderProps) {
                     <div>
                       <div className="font-medium">{item.label}</div>
                       {item.description && (
-                        <div className="text-sm text-slate-500">{item.description}</div>
+                        <div className="text-sm text-slate-500">
+                          {item.description}
+                        </div>
                       )}
                     </div>
                   </Link>
@@ -389,7 +422,9 @@ export default function UserHeader({ className }: UserHeaderProps) {
                     <Shield className="w-5 h-5 text-amber-500" />
                     <div>
                       <div className="font-medium">Admin Panel</div>
-                      <div className="text-sm text-amber-600">Manage system settings</div>
+                      <div className="text-sm text-amber-600">
+                        Manage system settings
+                      </div>
                     </div>
                   </Link>
                 )}

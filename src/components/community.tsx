@@ -1,14 +1,26 @@
-import { Shield, Fingerprint, Database, FlaskConical, Camera, TrendingUp } from 'lucide-react';
+import {
+  Shield,
+  Fingerprint,
+  Database,
+  FlaskConical,
+  Camera,
+  TrendingUp,
+} from "lucide-react";
 
 export default function Community() {
   return (
-    <section id="community" className="border-t bg-gradient-to-b from-white to-brand-50/50">
+    <section
+      id="community"
+      className="border-t bg-gradient-to-b from-white to-brand-50/50"
+    >
       <div className="container py-16">
         <div className="max-w-3xl">
-          <h2 className="text-3xl font-extrabold text-ink">Community‑Backed Science (Opt‑In)</h2>
+          <h2 className="text-3xl font-extrabold text-ink">
+            Community‑Backed Science (Opt‑In)
+          </h2>
           <p className="text-slate-700 mt-2">
-            Opt‑in to help improve our non‑diagnostic GI trend insights so owners get clearer
-            awareness and better vet conversations.
+            Opt‑in to help improve our non‑diagnostic GI trend insights so
+            owners get clearer awareness and better vet conversations.
           </p>
         </div>
 
@@ -38,7 +50,8 @@ export default function Community() {
               <div className="font-semibold text-ink">Trend insights</div>
             </div>
             <p className="text-sm text-slate-600 mt-2">
-              3 C’s (Color, Content, Consistency) + Moisture, Weight & Frequency.
+              3 C’s (Color, Content, Consistency) + Moisture, Weight &
+              Frequency.
             </p>
           </div>
         </div>
@@ -54,21 +67,21 @@ export default function Community() {
                 Help build safer, clearer, non‑diagnostic models
               </h3>
               <p className="text-slate-700 text-sm mt-3">
-                Participation is optional. You can opt out anytime. Insights are informational only
-                — not veterinary advice.
+                Participation is optional. You can opt out anytime. Insights are
+                informational only — not veterinary advice.
               </p>
               <ul className="text-sm text-slate-700 mt-4 space-y-2">
                 <li className="flex items-start gap-2">
-                  <Fingerprint className="size-4 text-brand-700 mt-1" /> De‑identified IDs & secure
-                  storage
+                  <Fingerprint className="size-4 text-brand-700 mt-1" />{" "}
+                  De‑identified IDs & secure storage
                 </li>
                 <li className="flex items-start gap-2">
-                  <Database className="size-4 text-brand-700 mt-1" /> Delete‑on‑request &
-                  transparent controls
+                  <Database className="size-4 text-brand-700 mt-1" />{" "}
+                  Delete‑on‑request & transparent controls
                 </li>
                 <li className="flex items-start gap-2">
-                  <Shield className="size-4 text-brand-700 mt-1" /> Vet partners & external
-                  reviewers
+                  <Shield className="size-4 text-brand-700 mt-1" /> Vet partners
+                  & external reviewers
                 </li>
               </ul>
             </div>

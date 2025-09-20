@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database-access';
-import { getEmailConfig } from '@/lib/env';
-import crypto from 'crypto';
+import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/database-access";
+import { getEmailConfig } from "@/lib/env";
+import crypto from "crypto";
 
 const prisma = getDb();
 
@@ -10,10 +10,7 @@ export async function POST(request: NextRequest) {
     const { email } = await request.json();
 
     if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     // Find user by email
@@ -25,24 +22,26 @@ export async function POST(request: NextRequest) {
     if (!user) {
       // For security, don't reveal if email exists or not
       return NextResponse.json({
-        message: 'If an account with this email exists, we have sent a password reset link.',
+        message:
+          "If an account with this email exists, we have sent a password reset link.",
       });
     }
 
     // Find the credentials account (password-based auth)
     const credentialsAccount = user.accounts.find(
-      (account) => account.provider === 'credentials'
+      (account) => account.provider === "credentials",
     );
 
     if (!credentialsAccount) {
       // User doesn't have a password account (e.g., only OAuth)
       return NextResponse.json({
-        message: 'If an account with this email exists, we have sent a password reset link.',
+        message:
+          "If an account with this email exists, we have sent a password reset link.",
       });
     }
 
     // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Save reset token to database
@@ -56,28 +55,29 @@ export async function POST(request: NextRequest) {
 
     // Send reset email
     const emailConfig = getEmailConfig();
-    const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
 
     const emailSent = await sendPasswordResetEmail(
       email,
-      user.name || 'User',
+      user.name || "User",
       resetUrl,
-      emailConfig
+      emailConfig,
     );
 
     if (!emailSent) {
-      console.error('Failed to send password reset email');
+      console.error("Failed to send password reset email");
       // Don't reveal email sending failure for security
     }
 
     return NextResponse.json({
-      message: 'If an account with this email exists, we have sent a password reset link.',
+      message:
+        "If an account with this email exists, we have sent a password reset link.",
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
+    console.error("Forgot password error:", error);
     return NextResponse.json(
-      { error: 'An error occurred. Please try again.' },
-      { status: 500 }
+      { error: "An error occurred. Please try again." },
+      { status: 500 },
     );
   }
 }
@@ -86,9 +86,9 @@ async function sendPasswordResetEmail(
   to: string,
   name: string,
   resetUrl: string,
-  emailConfig: any
+  emailConfig: any,
 ): Promise<boolean> {
-  const subject = 'Reset your Yardura password';
+  const subject = "Reset your Yardura password";
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -165,9 +165,9 @@ async function sendPasswordResetEmail(
   `;
 
   try {
-    if (emailConfig.provider === 'smtp' && emailConfig.smtp) {
+    if (emailConfig.provider === "smtp" && emailConfig.smtp) {
       // Send via SMTP
-      const nodemailer = await import('nodemailer');
+      const nodemailer = await import("nodemailer");
       const transporter = nodemailer.createTransport(emailConfig.smtp as any);
 
       await transporter.sendMail({
@@ -177,15 +177,17 @@ async function sendPasswordResetEmail(
         html: htmlContent,
         text: textContent,
       });
-    } else if (emailConfig.provider === 'resend' && emailConfig.resendApiKey) {
+    } else if (emailConfig.provider === "resend" && emailConfig.resendApiKey) {
       // Send via Resend
-      const { Resend } = await import('resend');
+      const { Resend } = await import("resend");
       const resend = new Resend(emailConfig.resendApiKey);
 
       // In development, if using a non-verified domain, use Resend's onboarding sender to ensure delivery
-      const fromAddress = (process.env.NODE_ENV === 'development' && /@yardura\.com$/i.test(emailConfig.from))
-        ? 'Yardura <onboarding@resend.dev>'
-        : emailConfig.from;
+      const fromAddress =
+        process.env.NODE_ENV === "development" &&
+        /@yardura\.com$/i.test(emailConfig.from)
+          ? "Yardura <onboarding@resend.dev>"
+          : emailConfig.from;
 
       const result = await resend.emails.send({
         from: fromAddress,
@@ -197,24 +199,24 @@ async function sendPasswordResetEmail(
 
       // Basic logging for diagnostics
       if ((result as any)?.error) {
-        console.error('Resend send error:', (result as any).error);
-        throw new Error('Resend send failed');
+        console.error("Resend send error:", (result as any).error);
+        throw new Error("Resend send failed");
       }
       if ((result as any)?.data?.id) {
-        console.log('Resend email id:', (result as any).data.id);
+        console.log("Resend email id:", (result as any).data.id);
       }
     } else {
       // Development: log to console
-      console.log('\n[Password Reset Email - DEV MODE]');
-      console.log('To:', to);
-      console.log('Subject:', subject);
-      console.log('Reset URL:', resetUrl);
-      console.log('Email content would be sent in production\n');
+      console.log("\n[Password Reset Email - DEV MODE]");
+      console.log("To:", to);
+      console.log("Subject:", subject);
+      console.log("Reset URL:", resetUrl);
+      console.log("Email content would be sent in production\n");
     }
 
     return true;
   } catch (error) {
-    console.error('Email sending failed:', error);
+    console.error("Email sending failed:", error);
     return false;
   }
 }

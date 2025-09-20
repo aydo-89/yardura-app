@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Mail,
   Clock,
@@ -13,8 +13,8 @@ import {
   Zap,
   X,
   Droplets,
-} from 'lucide-react';
-import { wellnessTheme } from '@/shared/wellness';
+} from "lucide-react";
+import { wellnessTheme } from "@/shared/wellness";
 
 interface ComingSoonOverlayProps {
   onJoinWaitlist: (email: string) => void;
@@ -27,7 +27,7 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
   onClose,
   closable = true,
 }) => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -51,16 +51,16 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ type: 'spring', duration: 0.3 }}
+        transition={{ type: "spring", duration: 0.3 }}
         className="absolute inset-0 z-20 flex items-start justify-center p-6 pt-12"
       >
         {/* Semi-transparent background overlay */}
         <div
           className={`absolute inset-0 bg-white/30 backdrop-blur-[2px] rounded-lg ${
-            closable ? 'cursor-pointer' : ''
+            closable ? "cursor-pointer" : ""
           }`}
           onClick={closable && onClose ? onClose : undefined}
-          aria-label={closable ? 'Close overlay' : undefined}
+          aria-label={closable ? "Close overlay" : undefined}
         />
 
         {/* Close button - only show if closable */}
@@ -85,9 +85,9 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
           <Card
             className="shadow-xl border-0"
             style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
               borderRadius: wellnessTheme.radiusLg,
-              backdropFilter: 'blur(10px)',
+              backdropFilter: "blur(10px)",
             }}
           >
             <CardContent className="p-6">
@@ -100,7 +100,9 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
                   className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-teal-50 to-blue-50 rounded-full border border-teal-200 mb-4"
                 >
                   <Clock className="size-3.5 text-teal-600" />
-                  <span className="text-xs font-medium text-teal-700">Coming Soon</span>
+                  <span className="text-xs font-medium text-teal-700">
+                    Coming Soon
+                  </span>
                 </motion.div>
 
                 <motion.h1
@@ -118,8 +120,9 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
                   transition={{ delay: 0.4 }}
                   className="text-sm text-slate-600 max-w-lg mx-auto"
                 >
-                  Get comprehensive health insights from your pet's waste patterns. Monitor trends,
-                  receive personalized recommendations, and stay ahead of potential health issues.
+                  Get comprehensive health insights from your pet's waste
+                  patterns. Monitor trends, receive personalized
+                  recommendations, and stay ahead of potential health issues.
                 </motion.p>
               </div>
 
@@ -138,7 +141,9 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
                   <div className="flex items-start gap-3 p-3 bg-slate-50/80 rounded-lg">
                     <TrendingUp className="size-5 text-teal-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-slate-900 text-sm mb-1">Weekly Trends</h4>
+                      <h4 className="font-medium text-slate-900 text-sm mb-1">
+                        Weekly Trends
+                      </h4>
                       <p className="text-xs text-slate-600">
                         Track deposit frequency and patterns over time
                       </p>
@@ -160,7 +165,9 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
                   <div className="flex items-start gap-3 p-3 bg-slate-50/80 rounded-lg">
                     <Palette className="size-5 text-teal-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-slate-900 text-sm mb-1">Color Analysis</h4>
+                      <h4 className="font-medium text-slate-900 text-sm mb-1">
+                        Color Analysis
+                      </h4>
                       <p className="text-xs text-slate-600">
                         Detailed breakdown of waste colors and patterns
                       </p>
@@ -170,7 +177,9 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
                   <div className="flex items-start gap-3 p-3 bg-slate-50/80 rounded-lg">
                     <Droplets className="size-5 text-teal-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-slate-900 text-sm mb-1">Content Signals</h4>
+                      <h4 className="font-medium text-slate-900 text-sm mb-1">
+                        Content Signals
+                      </h4>
                       <p className="text-xs text-slate-600">
                         Detect mucous, greasy, parasites, and foreign objects
                       </p>
@@ -192,7 +201,9 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
                   <div className="flex items-start gap-3 p-3 bg-slate-50/80 rounded-lg">
                     <Zap className="size-5 text-teal-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-slate-900 text-sm mb-1">Smart Alerts</h4>
+                      <h4 className="font-medium text-slate-900 text-sm mb-1">
+                        Smart Alerts
+                      </h4>
                       <p className="text-xs text-slate-600">
                         Notifications about concerning health changes
                       </p>
@@ -208,10 +219,13 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
                 transition={{ delay: 0.6 }}
                 className="text-center"
               >
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Be the First to Know</h3>
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">
+                  Be the First to Know
+                </h3>
 
                 <p className="text-slate-600 mb-4 max-w-sm mx-auto text-sm">
-                  Join our waitlist to get early access when we launch advanced wellness insights.
+                  Join our waitlist to get early access when we launch advanced
+                  wellness insights.
                 </p>
 
                 {!isSubmitted ? (
@@ -237,7 +251,7 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
                           borderRadius: wellnessTheme.radiusLg,
                         }}
                       >
-                        {isSubmitting ? 'Joining...' : 'Join Waitlist'}
+                        {isSubmitting ? "Joining..." : "Join Waitlist"}
                       </Button>
                     </div>
                     <p className="text-xs text-slate-500">
@@ -253,9 +267,12 @@ export const ComingSoonOverlay: React.FC<ComingSoonOverlayProps> = ({
                     <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                       <div className="text-green-600 text-center">
                         <Mail className="size-6 mx-auto mb-2" />
-                        <h4 className="font-medium text-sm mb-1">You're on the list!</h4>
+                        <h4 className="font-medium text-sm mb-1">
+                          You're on the list!
+                        </h4>
                         <p className="text-xs">
-                          We'll notify you when advanced wellness insights are available.
+                          We'll notify you when advanced wellness insights are
+                          available.
                         </p>
                       </div>
                     </div>

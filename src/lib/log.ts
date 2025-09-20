@@ -2,7 +2,7 @@
  * Scoped logging utility for debugging and production
  */
 
-const DEBUG_ENABLED = process.env.NEXT_PUBLIC_DEBUG === 'true';
+const DEBUG_ENABLED = process.env.NEXT_PUBLIC_DEBUG === "true";
 
 /**
  * Debug logger with scope prefixing
@@ -31,9 +31,7 @@ export function error(scope: string, ...args: any[]): void {
  * Info logger (always enabled in development)
  */
 export function info(scope: string, ...args: any[]): void {
-  if (process.env.NODE_ENV === 'development' || DEBUG_ENABLED) {
+  if (process.env.NODE_ENV === "development" || DEBUG_ENABLED) {
     console.info(`[${scope}]`, ...args);
   }
 }
-
-

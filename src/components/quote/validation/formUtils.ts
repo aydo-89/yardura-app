@@ -11,7 +11,7 @@ export interface FieldRef {
  */
 export function scrollToFirstError(
   fieldRefs: Record<string, FieldRef>,
-  firstInvalidKey?: string
+  firstInvalidKey?: string,
 ): void {
   if (!firstInvalidKey) return;
 
@@ -20,16 +20,19 @@ export function scrollToFirstError(
 
   // Scroll into view
   fieldRef.current.scrollIntoView({
-    behavior: 'smooth',
-    block: 'center',
-    inline: 'nearest',
+    behavior: "smooth",
+    block: "center",
+    inline: "nearest",
   });
 
   // Focus the field
   fieldRef.current.focus();
 
   // If it's an input, select all text for easy replacement
-  if (fieldRef.current.tagName === 'INPUT' || fieldRef.current.tagName === 'TEXTAREA') {
+  if (
+    fieldRef.current.tagName === "INPUT" ||
+    fieldRef.current.tagName === "TEXTAREA"
+  ) {
     (fieldRef.current as HTMLInputElement).select();
   }
 }
@@ -39,7 +42,7 @@ export function scrollToFirstError(
  */
 export function announceValidationErrors(
   liveRegionRef: React.RefObject<HTMLDivElement>,
-  message: string
+  message: string,
 ): void {
   if (!liveRegionRef.current) return;
 
@@ -48,7 +51,7 @@ export function announceValidationErrors(
   // Clear the message after a delay to allow re-announcement
   setTimeout(() => {
     if (liveRegionRef.current) {
-      liveRegionRef.current.textContent = '';
+      liveRegionRef.current.textContent = "";
     }
   }, 1000);
 }
@@ -66,5 +69,3 @@ export function generateFieldId(fieldName: string, stepId: string): string {
 export function generateErrorId(fieldName: string, stepId: string): string {
   return `quote-${stepId}-${fieldName}-error`;
 }
-
-

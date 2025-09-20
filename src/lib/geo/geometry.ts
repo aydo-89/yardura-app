@@ -2,9 +2,9 @@
  * Geometry operations and validation utilities
  */
 
-import * as turf from '@turf/turf';
-import { unkinkPolygon } from '@turf/unkink-polygon';
-import type { GeoJSON, Feature, Point } from 'geojson';
+import * as turf from "@turf/turf";
+import { unkinkPolygon } from "@turf/unkink-polygon";
+import type { GeoJSON, Feature, Point } from "geojson";
 
 /**
  * Safely rewind a feature to correct winding order
@@ -13,7 +13,7 @@ export function rewindSafe<T extends GeoJSON.Feature>(feature: T): T {
   try {
     return turf.rewind(feature, { reverse: false }) as T;
   } catch (error) {
-    console.warn('Rewind failed, returning original:', error);
+    console.warn("Rewind failed, returning original:", error);
     return feature;
   }
 }
@@ -26,7 +26,7 @@ export function unkinkSafe<T extends GeoJSON.Feature>(feature: T): T[] {
     const unkinked = unkinkPolygon(feature as any);
     return unkinked.features as T[];
   } catch (error) {
-    console.warn('Unkink failed, returning original:', error);
+    console.warn("Unkink failed, returning original:", error);
     return [feature];
   }
 }
@@ -34,14 +34,13 @@ export function unkinkSafe<T extends GeoJSON.Feature>(feature: T): T[] {
 /**
  * Latitude-aware geometry simplification
  */
-export function simplifyMeters<T extends GeoJSON.Feature | GeoJSON.FeatureCollection>(
-  geometry: T,
-  meters: number
-): T {
+export function simplifyMeters<
+  T extends GeoJSON.Feature | GeoJSON.FeatureCollection,
+>(geometry: T, meters: number): T {
   try {
     // Calculate centroid to get latitude for proper conversion
     let centroid: Feature<Point>;
-    if (geometry.type === 'FeatureCollection') {
+    if (geometry.type === "FeatureCollection") {
       // For feature collections, use the first feature's centroid
       if (geometry.features.length > 0) {
         centroid = turf.centroid(geometry.features[0] as any);
@@ -67,10 +66,10 @@ export function simplifyMeters<T extends GeoJSON.Feature | GeoJSON.FeatureCollec
 
     return turf.simplify(geometry, {
       tolerance: toleranceDegrees,
-      highQuality: false
+      highQuality: false,
     });
   } catch (error) {
-    console.warn('Simplify failed, returning original:', error);
+    console.warn("Simplify failed, returning original:", error);
     return geometry;
   }
 }
@@ -91,10 +90,10 @@ export function fastDisjoint(a: GeoJSON.Feature, b: GeoJSON.Feature): boolean {
         bboxA[2] > bboxB[0] && // a.right > b.left
         bboxA[0] < bboxB[2] && // a.left < b.right
         bboxA[3] > bboxB[1] && // a.top > b.bottom
-        bboxA[1] < bboxB[3]    // a.bottom < b.top
+        bboxA[1] < bboxB[3] // a.bottom < b.top
       );
     } catch (bboxError) {
-      console.warn('Both disjoint check and bbox fallback failed:', bboxError);
+      console.warn("Both disjoint check and bbox fallback failed:", bboxError);
       return false; // Assume they might intersect if we can't determine
     }
   }
@@ -107,7 +106,7 @@ export function validateAndClean(polygon: GeoJSON.Feature): GeoJSON.Feature {
   try {
     return turf.cleanCoords(polygon);
   } catch (error) {
-    console.warn('Geometry cleaning failed:', error);
+    console.warn("Geometry cleaning failed:", error);
     return polygon;
   }
 }
@@ -115,15 +114,20 @@ export function validateAndClean(polygon: GeoJSON.Feature): GeoJSON.Feature {
 /**
  * Check if geometries intersect with proper error handling
  */
-export function safeIntersects(a: GeoJSON.Feature, b: GeoJSON.Feature): boolean {
+export function safeIntersects(
+  a: GeoJSON.Feature,
+  b: GeoJSON.Feature,
+): boolean {
   try {
     // First try bbox check for performance
     const bboxA = turf.bbox(a);
     const bboxB = turf.bbox(b);
 
     const bboxIntersects = !(
-      bboxA[2] < bboxB[0] || bboxA[0] > bboxB[2] ||
-      bboxA[3] < bboxB[1] || bboxA[1] > bboxB[3]
+      bboxA[2] < bboxB[0] ||
+      bboxA[0] > bboxB[2] ||
+      bboxA[3] < bboxB[1] ||
+      bboxA[1] > bboxB[3]
     );
 
     if (!bboxIntersects) {
@@ -134,7 +138,7 @@ export function safeIntersects(a: GeoJSON.Feature, b: GeoJSON.Feature): boolean 
     return turf.booleanIntersects(a, b);
   } catch (error) {
     // On error, assume they might intersect
-    console.warn('Intersection check failed:', error);
+    console.warn("Intersection check failed:", error);
     return true;
   }
 }

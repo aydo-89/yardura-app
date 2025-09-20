@@ -3,10 +3,13 @@ declare global {
     google: {
       maps: {
         places: {
-          Autocomplete: new (input: HTMLInputElement, options?: {
-            types?: string[];
-            componentRestrictions?: { country: string };
-          }) => google.maps.places.Autocomplete;
+          Autocomplete: new (
+            input: HTMLInputElement,
+            options?: {
+              types?: string[];
+              componentRestrictions?: { country: string };
+            },
+          ) => google.maps.places.Autocomplete;
         };
       };
     };
@@ -16,10 +19,13 @@ declare global {
     namespace maps {
       namespace places {
         class Autocomplete {
-          constructor(input: HTMLInputElement, options?: {
-            types?: string[];
-            componentRestrictions?: { country: string };
-          });
+          constructor(
+            input: HTMLInputElement,
+            options?: {
+              types?: string[];
+              componentRestrictions?: { country: string };
+            },
+          );
           addListener(eventName: string, handler: () => void): void;
           getPlace(): google.maps.places.PlaceResult;
         }
@@ -37,5 +43,3 @@ declare global {
 }
 
 export {};
-
-

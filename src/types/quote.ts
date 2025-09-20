@@ -2,15 +2,15 @@
 export interface QuoteData {
   // Service area validation
   zipCode?: string;
-  serviceType?: 'residential' | 'commercial';
+  serviceType?: "residential" | "commercial";
 
   // Basic service details
   dogs?: number;
-  yardSize?: 'small' | 'medium' | 'large' | 'xl';
-  frequency?: 'weekly' | 'biweekly' | 'twice-weekly' | 'monthly' | 'one-time';
+  yardSize?: "small" | "medium" | "large" | "xl";
+  frequency?: "weekly" | "biweekly" | "twice-weekly" | "monthly" | "one-time";
 
   // Property info
-  propertyType?: 'residential' | 'commercial'; // Legacy field, use serviceType instead
+  propertyType?: "residential" | "commercial"; // Legacy field, use serviceType instead
   businessType?: string; // Added for commercial business type
   serviceFrequency?: string; // Added for commercial service frequency
 
@@ -28,10 +28,10 @@ export interface QuoteData {
   // Add-ons and services
   addOns?: {
     deodorize?: boolean;
-    deodorizeMode?: 'first-visit' | 'each-visit' | 'every-other' | 'one-time';
+    deodorizeMode?: "first-visit" | "each-visit" | "every-other" | "one-time";
     sprayDeck?: boolean;
-    sprayDeckMode?: 'first-visit' | 'each-visit' | 'every-other' | 'one-time';
-    divertMode?: 'none' | 'takeaway' | '25' | '50' | '100';
+    sprayDeckMode?: "first-visit" | "each-visit" | "every-other" | "one-time";
+    divertMode?: "none" | "takeaway" | "25" | "50" | "100";
   };
 
   // Additional service areas (legacy property)
@@ -58,7 +58,7 @@ export interface QuoteData {
   // Additional preferences
   specialInstructions?: string;
   referralSource?: string;
-  preferredContactMethod?: 'email' | 'phone';
+  preferredContactMethod?: "email" | "phone";
   preferredContactMethods?: string[]; // For multiple selections
   smsConsent?: boolean;
   howDidYouHear?: string;

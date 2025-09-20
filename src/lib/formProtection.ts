@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest } from "next/server";
 
 // Rate limiting store (in production, use Redis)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -31,14 +31,14 @@ const SUSPICIOUS_PATTERNS = [
 ];
 
 const SUSPICIOUS_EMAIL_DOMAINS = [
-  '10minutemail.com',
-  'guerrillamail.com',
-  'mailinator.com',
-  'temp-mail.org',
-  'throwaway.email',
-  'yopmail.com',
-  'maildrop.cc',
-  'dispostable.com',
+  "10minutemail.com",
+  "guerrillamail.com",
+  "mailinator.com",
+  "temp-mail.org",
+  "throwaway.email",
+  "yopmail.com",
+  "maildrop.cc",
+  "dispostable.com",
 ];
 
 export interface FormProtectionResult {
@@ -65,7 +65,7 @@ export interface RateLimitResult {
 export function checkRateLimit(
   identifier: string,
   action: keyof typeof RATE_LIMITS,
-  request?: NextRequest
+  request?: NextRequest,
 ): RateLimitResult {
   const now = Date.now();
   const limit = RATE_LIMITS[action];
@@ -110,16 +110,19 @@ export function checkRateLimit(
 
 // Input sanitization
 export function sanitizeInput(input: string): string {
-  if (typeof input !== 'string') return '';
+  if (typeof input !== "string") return "";
 
   return input
     .trim()
-    .replace(/[<>'"&]/g, '') // Remove potentially dangerous characters
+    .replace(/[<>'"&]/g, "") // Remove potentially dangerous characters
     .slice(0, 1000); // Limit length
 }
 
 // Suspicious activity detection
-export function detectSuspiciousActivity(input: string, email?: string): boolean {
+export function detectSuspiciousActivity(
+  input: string,
+  email?: string,
+): boolean {
   if (!input) return false;
 
   // Check for suspicious patterns
@@ -131,7 +134,7 @@ export function detectSuspiciousActivity(input: string, email?: string): boolean
 
   // Check email domain if provided
   if (email) {
-    const domain = email.split('@')[1]?.toLowerCase();
+    const domain = email.split("@")[1]?.toLowerCase();
     if (domain && SUSPICIOUS_EMAIL_DOMAINS.includes(domain)) {
       return true;
     }
@@ -155,25 +158,28 @@ export function detectSuspiciousActivity(input: string, email?: string): boolean
 // Honeypot validation
 export function validateHoneypot(honeypotValue?: string): boolean {
   // Honeypot field should be empty
-  return !honeypotValue || honeypotValue.trim() === '';
+  return !honeypotValue || honeypotValue.trim() === "";
 }
 
 // reCAPTCHA validation
 export async function validateRecaptcha(
   token: string,
-  secretKey: string
+  secretKey: string,
 ): Promise<{ success: boolean; score?: number }> {
   try {
-    const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+    const response = await fetch(
+      "https://www.google.com/recaptcha/api/siteverify",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          secret: secretKey,
+          response: token,
+        }),
       },
-      body: new URLSearchParams({
-        secret: secretKey,
-        response: token,
-      }),
-    });
+    );
 
     const result = await response.json();
     return {
@@ -181,15 +187,18 @@ export async function validateRecaptcha(
       score: result.score,
     };
   } catch (error) {
-    console.error('reCAPTCHA validation error:', error);
+    console.error("reCAPTCHA validation error:", error);
     return { success: false };
   }
 }
 
 // Enhanced email validation
-export function validateEmail(email: string): { isValid: boolean; reason?: string } {
-  if (!email || typeof email !== 'string') {
-    return { isValid: false, reason: 'Email is required' };
+export function validateEmail(email: string): {
+  isValid: boolean;
+  reason?: string;
+} {
+  if (!email || typeof email !== "string") {
+    return { isValid: false, reason: "Email is required" };
   }
 
   const trimmedEmail = email.trim();
@@ -197,25 +206,25 @@ export function validateEmail(email: string): { isValid: boolean; reason?: strin
   // Basic format validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(trimmedEmail)) {
-    return { isValid: false, reason: 'Invalid email format' };
+    return { isValid: false, reason: "Invalid email format" };
   }
 
   // Check domain
-  const domain = trimmedEmail.split('@')[1]?.toLowerCase();
+  const domain = trimmedEmail.split("@")[1]?.toLowerCase();
   if (!domain) {
-    return { isValid: false, reason: 'Invalid email domain' };
+    return { isValid: false, reason: "Invalid email domain" };
   }
 
   // Check for suspicious domains
   if (SUSPICIOUS_EMAIL_DOMAINS.includes(domain)) {
-    return { isValid: false, reason: 'Temporary email addresses not allowed' };
+    return { isValid: false, reason: "Temporary email addresses not allowed" };
   }
 
   // Check for common typos
-  const commonTypos = ['gmail.co', 'yahoo.co', 'hotmail.co', 'outlook.co'];
+  const commonTypos = ["gmail.co", "yahoo.co", "hotmail.co", "outlook.co"];
   for (const typo of commonTypos) {
     if (domain.includes(typo)) {
-      return { isValid: false, reason: 'Please check your email domain' };
+      return { isValid: false, reason: "Please check your email domain" };
     }
   }
 
@@ -223,65 +232,74 @@ export function validateEmail(email: string): { isValid: boolean; reason?: strin
 }
 
 // Phone validation
-export function validatePhone(phone: string): { isValid: boolean; reason?: string } {
-  if (!phone || typeof phone !== 'string') {
-    return { isValid: false, reason: 'Phone number is required' };
+export function validatePhone(phone: string): {
+  isValid: boolean;
+  reason?: string;
+} {
+  if (!phone || typeof phone !== "string") {
+    return { isValid: false, reason: "Phone number is required" };
   }
 
   // Remove all non-digits
-  const digitsOnly = phone.replace(/\D/g, '');
+  const digitsOnly = phone.replace(/\D/g, "");
 
   // Check length (should be 10 digits for US numbers)
   if (digitsOnly.length < 10 || digitsOnly.length > 11) {
-    return { isValid: false, reason: 'Phone number should be 10 digits' };
+    return { isValid: false, reason: "Phone number should be 10 digits" };
   }
 
   // Check if it starts with 1 (country code)
-  if (digitsOnly.length === 11 && !digitsOnly.startsWith('1')) {
-    return { isValid: false, reason: 'Invalid phone number format' };
+  if (digitsOnly.length === 11 && !digitsOnly.startsWith("1")) {
+    return { isValid: false, reason: "Invalid phone number format" };
   }
 
   return { isValid: true };
 }
 
 // Name validation
-export function validateName(name: string): { isValid: boolean; reason?: string } {
-  if (!name || typeof name !== 'string') {
-    return { isValid: false, reason: 'Name is required' };
+export function validateName(name: string): {
+  isValid: boolean;
+  reason?: string;
+} {
+  if (!name || typeof name !== "string") {
+    return { isValid: false, reason: "Name is required" };
   }
 
   const trimmedName = name.trim();
 
   if (trimmedName.length < 2) {
-    return { isValid: false, reason: 'Name must be at least 2 characters' };
+    return { isValid: false, reason: "Name must be at least 2 characters" };
   }
 
   if (trimmedName.length > 100) {
-    return { isValid: false, reason: 'Name is too long' };
+    return { isValid: false, reason: "Name is too long" };
   }
 
   // Check for only letters, spaces, hyphens, apostrophes
   if (!/^[a-zA-Z\s\-']+$/.test(trimmedName)) {
-    return { isValid: false, reason: 'Name contains invalid characters' };
+    return { isValid: false, reason: "Name contains invalid characters" };
   }
 
   return { isValid: true };
 }
 
 // Address validation
-export function validateAddress(address: string): { isValid: boolean; reason?: string } {
-  if (!address || typeof address !== 'string') {
-    return { isValid: false, reason: 'Address is required' };
+export function validateAddress(address: string): {
+  isValid: boolean;
+  reason?: string;
+} {
+  if (!address || typeof address !== "string") {
+    return { isValid: false, reason: "Address is required" };
   }
 
   const trimmedAddress = address.trim();
 
   if (trimmedAddress.length < 5) {
-    return { isValid: false, reason: 'Address is too short' };
+    return { isValid: false, reason: "Address is too short" };
   }
 
   if (trimmedAddress.length > 200) {
-    return { isValid: false, reason: 'Address is too long' };
+    return { isValid: false, reason: "Address is too long" };
   }
 
   return { isValid: true };
@@ -291,48 +309,51 @@ export function validateAddress(address: string): { isValid: boolean; reason?: s
 export async function validateFormSubmission(
   data: Record<string, any>,
   request: NextRequest,
-  formType: 'quote' | 'contact' | 'general' = 'general'
+  formType: "quote" | "contact" | "general" = "general",
 ): Promise<FormProtectionResult> {
   const errors: string[] = [];
   // Get IP address from headers (Next.js removed request.ip in newer versions)
   const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    request.headers.get('cf-connecting-ip') ||
-    request.headers.get('x-client-ip') ||
-    'unknown';
-  const userAgent = request.headers.get('user-agent') || '';
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-client-ip") ||
+    "unknown";
+  const userAgent = request.headers.get("user-agent") || "";
 
   // Rate limiting
   const rateLimitKey =
-    formType === 'quote'
-      ? ('quoteForm' as const)
-      : formType === 'contact'
-        ? ('contactForm' as const)
-        : ('general' as const);
+    formType === "quote"
+      ? ("quoteForm" as const)
+      : formType === "contact"
+        ? ("contactForm" as const)
+        : ("general" as const);
   const rateLimitResult = checkRateLimit(ip, rateLimitKey, request);
   if (!rateLimitResult.allowed) {
-    errors.push('Too many requests. Please try again later.');
+    errors.push("Too many requests. Please try again later.");
   }
 
   // Honeypot validation
   if (!validateHoneypot(data.honeypot)) {
-    errors.push('Form submission rejected.');
+    errors.push("Form submission rejected.");
   }
 
   // reCAPTCHA validation (if token provided)
   if (data.recaptchaToken) {
     const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY;
     if (recaptchaSecret) {
-      const recaptchaResult = await validateRecaptcha(data.recaptchaToken, recaptchaSecret);
+      const recaptchaResult = await validateRecaptcha(
+        data.recaptchaToken,
+        recaptchaSecret,
+      );
       if (!recaptchaResult.success) {
-        errors.push('reCAPTCHA verification failed.');
+        errors.push("reCAPTCHA verification failed.");
       }
     }
   }
 
   // Input validation based on form type
-  if (formType === 'quote') {
+  if (formType === "quote") {
     // Validate quote-specific fields
     if (data.email) {
       const emailValidation = validateEmail(data.email);
@@ -365,21 +386,26 @@ export async function validateFormSubmission(
 
   // Suspicious activity detection
   const suspiciousActivity = Object.values(data).some((value: any) => {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       return detectSuspiciousActivity(value, data.contact?.email);
     }
     return false;
   });
 
   if (suspiciousActivity) {
-    errors.push('Form submission contains suspicious content.');
+    errors.push("Form submission contains suspicious content.");
   }
 
   return {
     isValid: errors.length === 0,
     errors,
     score: data.recaptchaToken
-      ? (await validateRecaptcha(data.recaptchaToken, process.env.RECAPTCHA_SECRET_KEY || '')).score
+      ? (
+          await validateRecaptcha(
+            data.recaptchaToken,
+            process.env.RECAPTCHA_SECRET_KEY || "",
+          )
+        ).score
       : undefined,
     metadata: {
       ip,
@@ -403,7 +429,7 @@ export function validateCSRFToken(token: string, storedToken: string): boolean {
 
 // Input sanitization for database
 export function sanitizeForDatabase(input: any): any {
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     return sanitizeInput(input);
   }
 
@@ -411,7 +437,7 @@ export function sanitizeForDatabase(input: any): any {
     return input.map((item) => sanitizeForDatabase(item));
   }
 
-  if (typeof input === 'object' && input !== null) {
+  if (typeof input === "object" && input !== null) {
     const sanitized: Record<string, any> = {};
     for (const [key, value] of Object.entries(input)) {
       sanitized[key] = sanitizeForDatabase(value);
@@ -425,8 +451,8 @@ export function sanitizeForDatabase(input: any): any {
 // Log suspicious activity
 export function logSuspiciousActivity(
   data: any,
-  metadata: FormProtectionResult['metadata'],
-  formType: string
+  metadata: FormProtectionResult["metadata"],
+  formType: string,
 ): void {
   const logEntry = {
     timestamp: new Date().toISOString(),
@@ -436,7 +462,7 @@ export function logSuspiciousActivity(
     metadata,
   };
 
-  console.warn('Suspicious form submission detected:', logEntry);
+  console.warn("Suspicious form submission detected:", logEntry);
 
   // In production, you might want to send this to a logging service
   // or store it in a database for review

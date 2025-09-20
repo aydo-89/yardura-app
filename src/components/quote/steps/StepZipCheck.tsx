@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   MapPin,
   ArrowRight,
@@ -17,21 +17,20 @@ import {
   Truck,
   Heart,
   LucideIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { track } from '@/lib/analytics';
-import { StepProps } from '@/types/quote';
-import { ZipEligibilityResult } from '@/lib/zip-eligibility';
+import { track } from "@/lib/analytics";
+import { StepProps } from "@/types/quote";
+import { ZipEligibilityResult } from "@/lib/zip-eligibility";
 
 interface ValidationResult {
   valid: boolean;
   message: string;
   location?: string;
-  zone?: ZipEligibilityResult['zone'];
+  zone?: ZipEligibilityResult["zone"];
   eligible?: boolean;
   estimatedDelivery?: string;
 }
-
 
 // Trust signals (removed false claims about customer count)
 
@@ -40,13 +39,14 @@ export const StepZipCheck: React.FC<StepProps> = ({
   updateQuoteData,
   onNext,
 }) => {
-  const [zipCode, setZipCode] = useState(quoteData.zipCode || '');
+  const [zipCode, setZipCode] = useState(quoteData.zipCode || "");
   const [isValidating, setIsValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult | null>(null);
 
   const validateZipCode = async () => {
     if (!zipCode.trim()) {
-      setValidationResult({ valid: false, message: 'Please enter a zip code' });
+      setValidationResult({ valid: false, message: "Please enter a zip code" });
       return;
     }
 
@@ -55,29 +55,31 @@ export const StepZipCheck: React.FC<StepProps> = ({
 
     try {
       const params = new URLSearchParams({ zipCode: zipCode.trim() });
-      const res = await fetch(`/api/zip-eligibility?${params.toString()}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to validate ZIP');
+      const res = await fetch(`/api/zip-eligibility?${params.toString()}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Failed to validate ZIP");
       const eligibilityResult: ZipEligibilityResult = await res.json();
 
       setValidationResult({
         valid: eligibilityResult.eligible,
         message: eligibilityResult.message,
-        location: eligibilityResult.zone?.name || 'Outside Service Area',
+        location: eligibilityResult.zone?.name || "Outside Service Area",
         zone: eligibilityResult.zone,
       });
 
-      track('zip_check', {
+      track("zip_check", {
         zip: zipCode.trim(),
         inArea: eligibilityResult.eligible,
-        location: eligibilityResult.zone?.name || 'Outside Service Area',
+        location: eligibilityResult.zone?.name || "Outside Service Area",
         zone: eligibilityResult.zone?.zoneId || null,
         estimatedDelivery: eligibilityResult.estimatedDelivery || null,
       });
     } catch (error) {
-      console.error('ZIP validation error:', error);
+      console.error("ZIP validation error:", error);
       setValidationResult({
         valid: false,
-        message: 'Unable to validate ZIP code. Please try again.',
+        message: "Unable to validate ZIP code. Please try again.",
       });
     }
 
@@ -100,7 +102,8 @@ export const StepZipCheck: React.FC<StepProps> = ({
             Service Area Check
           </CardTitle>
           <p className="text-muted">
-            Let's make sure we can provide service in your area. Enter your zip code below.
+            Let's make sure we can provide service in your area. Enter your zip
+            code below.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -112,13 +115,14 @@ export const StepZipCheck: React.FC<StepProps> = ({
               </div>
               <div>
                 <p className="font-medium text-accent">
-                  {validationResult?.location || 'Twin Cities Metro Area'}
+                  {validationResult?.location || "Twin Cities Metro Area"}
                 </p>
                 <p className="text-sm text-muted">Minnesota</p>
               </div>
             </div>
             <p className="text-xs text-muted mt-2">
-              Serving Minneapolis, Richfield, Edina, Bloomington, and surrounding areas
+              Serving Minneapolis, Richfield, Edina, Bloomington, and
+              surrounding areas
             </p>
           </div>
 
@@ -133,10 +137,15 @@ export const StepZipCheck: React.FC<StepProps> = ({
                 type="text"
                 maxLength={5}
                 value={zipCode}
-                onChange={(e) => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                onChange={(e) =>
+                  setZipCode(e.target.value.replace(/\D/g, "").slice(0, 5))
+                }
                 onBlur={() => {
                   // Simple ZIP validation on blur
-                  if (zipCode && (!zipCode.match(/^\d{5}$/) || zipCode.length !== 5)) {
+                  if (
+                    zipCode &&
+                    (!zipCode.match(/^\d{5}$/) || zipCode.length !== 5)
+                  ) {
                     // Could add error state here if needed
                   }
                 }}
@@ -148,7 +157,11 @@ export const StepZipCheck: React.FC<StepProps> = ({
                 disabled={!zipCode.trim() || isValidating}
                 className="px-6"
               >
-                {isValidating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Check'}
+                {isValidating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Check"
+                )}
               </Button>
             </div>
           </div>
@@ -160,14 +173,14 @@ export const StepZipCheck: React.FC<StepProps> = ({
               animate={{ opacity: 1, y: 0 }}
               className={`p-4 rounded-lg border ${
                 validationResult.valid
-                  ? 'bg-green-50 border-green-200 text-green-800'
-                  : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                  ? "bg-green-50 border-green-200 text-green-800"
+                  : "bg-yellow-50 border-yellow-200 text-yellow-800"
               }`}
             >
               <div className="flex items-start gap-3">
                 <div
                   className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    validationResult.valid ? 'bg-green-500' : 'bg-yellow-500'
+                    validationResult.valid ? "bg-green-500" : "bg-yellow-500"
                   }`}
                 >
                   {validationResult.valid ? (
@@ -179,16 +192,16 @@ export const StepZipCheck: React.FC<StepProps> = ({
                 <div>
                   <p className="font-medium">{validationResult.message}</p>
                   {validationResult.location && (
-                    <p className="text-sm mt-1 opacity-80">{validationResult.location}</p>
+                    <p className="text-sm mt-1 opacity-80">
+                      {validationResult.location}
+                    </p>
                   )}
                 </div>
               </div>
             </motion.div>
           )}
-
         </CardContent>
       </Card>
     </div>
   );
 };
-

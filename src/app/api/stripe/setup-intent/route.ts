@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { prisma } from '@/lib/prisma';
-import { calculatePricingWithConfig } from '@/lib/pricing';
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { prisma } from "@/lib/prisma";
+import { calculatePricingWithConfig } from "@/lib/pricing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil',
+  apiVersion: "2025-08-27.basil",
 });
 
 export async function POST(request: NextRequest) {
@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
 
     if (!leadId) {
       return NextResponse.json(
-        { error: 'Lead ID is required' },
-        { status: 400 }
+        { error: "Lead ID is required" },
+        { status: 400 },
       );
     }
 
@@ -45,10 +45,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!lead) {
-      return NextResponse.json(
-        { error: 'Lead not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
     // Calculate pricing
@@ -59,9 +56,9 @@ export async function POST(request: NextRequest) {
 
     const pricing = await calculatePricingWithConfig(
       lead.dogs || 1,
-      lead.frequency as 'weekly' | 'bi-weekly' | 'twice-weekly' | 'one-time',
-      lead.yardSize as 'small' | 'medium' | 'large' | 'xlarge',
-      addOns
+      lead.frequency as "weekly" | "bi-weekly" | "twice-weekly" | "one-time",
+      lead.yardSize as "small" | "medium" | "large" | "xlarge",
+      addOns,
     );
 
     // Create Stripe customer if they don't exist
@@ -72,20 +69,22 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingCustomer?.stripeCustomerId) {
-      customer = await stripe.customers.retrieve(existingCustomer.stripeCustomerId);
+      customer = await stripe.customers.retrieve(
+        existingCustomer.stripeCustomerId,
+      );
     } else {
       customer = await stripe.customers.create({
         email: lead.email,
-        name: `${lead.firstName} ${lead.lastName || ''}`.trim(),
+        name: `${lead.firstName} ${lead.lastName || ""}`.trim(),
         address: {
-          line1: lead.address || '',
-          city: lead.city || '',
-          postal_code: lead.zipCode || '',
-          country: 'US',
+          line1: lead.address || "",
+          city: lead.city || "",
+          postal_code: lead.zipCode || "",
+          country: "US",
         },
         metadata: {
           leadId: lead.id,
-          serviceType: lead.serviceType || 'residential',
+          serviceType: lead.serviceType || "residential",
         },
       });
     }
@@ -93,11 +92,11 @@ export async function POST(request: NextRequest) {
     // Create SetupIntent for payment method collection
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['card'],
+      payment_method_types: ["card"],
       metadata: {
         leadId: lead.id,
-        serviceType: lead.serviceType || 'residential',
-        frequency: lead.frequency || 'weekly',
+        serviceType: lead.serviceType || "residential",
+        frequency: lead.frequency || "weekly",
       },
     });
 
@@ -115,10 +114,10 @@ export async function POST(request: NextRequest) {
       customerId: customer.id,
     });
   } catch (error) {
-    console.error('SetupIntent creation error:', error);
+    console.error("SetupIntent creation error:", error);
     return NextResponse.json(
-      { error: 'Failed to create payment setup' },
-      { status: 500 }
+      { error: "Failed to create payment setup" },
+      { status: 500 },
     );
   }
 }

@@ -1,9 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { supabaseAdmin, createSignedUrl } from '@/lib/supabase-admin';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { supabaseAdmin, createSignedUrl } from "@/lib/supabase-admin";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
-async function generatePdf(params: { orgId: string; customerId?: string | null; month: string }) {
+async function generatePdf(params: {
+  orgId: string;
+  customerId?: string | null;
+  month: string;
+}) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([612, 792]);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -11,36 +15,40 @@ async function generatePdf(params: { orgId: string; customerId?: string | null; 
     page.drawText(text, { x, y, size, font, color: rgb(0.1, 0.1, 0.1) });
   };
 
-  draw('Yardura Monthly Report', 50, 740, 18);
+  draw("Yardura Monthly Report", 50, 740, 18);
   draw(`Org: ${params.orgId}`, 50, 720);
-  draw(`Customer: ${params.customerId || 'N/A'}`, 50, 704);
+  draw(`Customer: ${params.customerId || "N/A"}`, 50, 704);
   draw(`Month: ${params.month}`, 50, 688);
 
   const samples = await prisma.sample.findMany({
     where: { orgId: params.orgId },
-    orderBy: { capturedAt: 'asc' },
+    orderBy: { capturedAt: "asc" },
     take: 30,
     include: { scores: true },
   });
   const weights = samples.map((s) => s.weightG || 0).filter(Boolean);
-  const avgWeight = weights.length ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
-  const alerts = await prisma.alert.findMany({ where: { orgId: params.orgId } });
+  const avgWeight = weights.length
+    ? weights.reduce((a, b) => a + b, 0) / weights.length
+    : 0;
+  const alerts = await prisma.alert.findMany({
+    where: { orgId: params.orgId },
+  });
 
   draw(
     `Samples: ${samples.length}   Avg Weight: ${avgWeight.toFixed(1)} g   Alerts: ${alerts.length}`,
     50,
-    672
+    672,
   );
 
   let y = 660;
-  draw('Recent Samples:', 50, y);
+  draw("Recent Samples:", 50, y);
   y -= 16;
   for (const s of samples) {
     const sc = s.scores[0];
     draw(
-      `${s.capturedAt.toISOString()}  wt:${s.weightG ?? '-'}g  color:${sc?.colorLabel ?? '-'}  cons:${sc?.consistencyLabel ?? '-'}`,
+      `${s.capturedAt.toISOString()}  wt:${s.weightG ?? "-"}g  color:${sc?.colorLabel ?? "-"}  cons:${sc?.consistencyLabel ?? "-"}`,
       50,
-      y
+      y,
     );
     y -= 14;
     if (y < 60) {
@@ -55,22 +63,29 @@ async function generatePdf(params: { orgId: string; customerId?: string | null; 
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const orgId = searchParams.get('orgId');
-  const customerId = searchParams.get('customerId');
-  const month = searchParams.get('month'); // YYYY-MM
+  const orgId = searchParams.get("orgId");
+  const customerId = searchParams.get("customerId");
+  const month = searchParams.get("month"); // YYYY-MM
   if (!orgId || !month)
-    return NextResponse.json({ error: 'orgId and month required' }, { status: 400 });
+    return NextResponse.json(
+      { error: "orgId and month required" },
+      { status: 400 },
+    );
 
   const pdf = await generatePdf({ orgId, customerId, month });
-  const path = `reports/${orgId}/${customerId || 'all'}/${month}.pdf`;
+  const path = `reports/${orgId}/${customerId || "all"}/${month}.pdf`;
   await supabaseAdmin.storage
-    .from(process.env.STORAGE_BUCKET || 'stool-samples')
+    .from(process.env.STORAGE_BUCKET || "stool-samples")
     .upload(path, pdf, {
-      contentType: 'application/pdf',
+      contentType: "application/pdf",
       upsert: true,
     });
-  const url = await createSignedUrl(process.env.STORAGE_BUCKET || 'stool-samples', path, 3600);
+  const url = await createSignedUrl(
+    process.env.STORAGE_BUCKET || "stool-samples",
+    path,
+    3600,
+  );
   return NextResponse.json({ url, path });
 }
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database-access';
-import bcrypt from 'bcryptjs';
-import { UserRole } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/database-access";
+import bcrypt from "bcryptjs";
+import { UserRole } from "@prisma/client";
 
 const prisma = getDb();
 
@@ -11,7 +11,10 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 },
+      );
     }
 
     // Check if user already exists
@@ -20,15 +23,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 });
+      return NextResponse.json(
+        { error: "User with this email already exists" },
+        { status: 400 },
+      );
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create a personal organization for the user
-    const orgName = `${name || email.split('@')[0]}'s Yardura Service`;
-    const orgSlug = `${email.split('@')[0]}-${Date.now()}`.toLowerCase();
+    const orgName = `${name || email.split("@")[0]}'s Yardura Service`;
+    const orgSlug = `${email.split("@")[0]}-${Date.now()}`.toLowerCase();
 
     const organization = await prisma.org.create({
       data: {
@@ -40,15 +46,15 @@ export async function POST(request: NextRequest) {
     // Create the user account with organization association
     const user = await prisma.user.create({
       data: {
-        name: name || email.split('@')[0], // Use email prefix if no name provided
+        name: name || email.split("@")[0], // Use email prefix if no name provided
         email,
         role: UserRole.CUSTOMER,
         orgId: organization.id, // Associate user with their organization
         // Create a direct password account
         accounts: {
           create: {
-            type: 'credentials',
-            provider: 'credentials',
+            type: "credentials",
+            provider: "credentials",
             providerAccountId: email,
             access_token: hashedPassword,
           },
@@ -57,11 +63,14 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      message: 'Account created successfully',
+      message: "Account created successfully",
       userId: user.id,
     });
   } catch (error) {
-    console.error('Signup error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Signup error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

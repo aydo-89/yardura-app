@@ -1,8 +1,8 @@
-import React from 'react';
-import { Search, Filter, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ARTICLE_CATEGORIES } from '@/lib/articles';
+import React from "react";
+import { Search, Filter, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ARTICLE_CATEGORIES } from "@/lib/articles";
 
 interface ArticleFiltersProps {
   searchQuery: string;
@@ -32,12 +32,13 @@ export default function ArticleFilters({
   };
 
   const clearFilters = () => {
-    onSearchChange('');
+    onSearchChange("");
     onCategoryChange(null);
     onTagsChange([]);
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory || selectedTags.length > 0;
+  const hasActiveFilters =
+    searchQuery || selectedCategory || selectedTags.length > 0;
 
   return (
     <div className="bg-white border border-accent/10 rounded-xl p-6 space-y-6">
@@ -64,8 +65,8 @@ export default function ArticleFilters({
             onClick={() => onCategoryChange(null)}
             className={`px-3 py-1 rounded-full text-sm transition-colors ${
               !selectedCategory
-                ? 'bg-accent text-white'
-                : 'bg-accent-soft/50 text-accent hover:bg-accent-soft'
+                ? "bg-accent text-white"
+                : "bg-accent-soft/50 text-accent hover:bg-accent-soft"
             }`}
           >
             All
@@ -76,8 +77,8 @@ export default function ArticleFilters({
               onClick={() => onCategoryChange(category.slug)}
               className={`px-3 py-1 rounded-full text-sm transition-colors ${
                 selectedCategory === category.slug
-                  ? 'bg-accent text-white'
-                  : 'bg-accent-soft/50 text-accent hover:bg-accent-soft'
+                  ? "bg-accent text-white"
+                  : "bg-accent-soft/50 text-accent hover:bg-accent-soft"
               }`}
             >
               {category.name}
@@ -96,8 +97,8 @@ export default function ArticleFilters({
               onClick={() => toggleTag(tag.slug)}
               className={`px-3 py-1 rounded-full text-sm transition-colors ${
                 selectedTags.includes(tag.slug)
-                  ? 'bg-accent text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? "bg-accent text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               {tag.name}
@@ -114,22 +115,33 @@ export default function ArticleFilters({
             {searchQuery && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-accent-soft/50 rounded-md">
                 Search: "{searchQuery}"
-                <button onClick={() => onSearchChange('')} className="hover:text-accent">
+                <button
+                  onClick={() => onSearchChange("")}
+                  className="hover:text-accent"
+                >
                   <X className="size-3" />
                 </button>
               </span>
             )}
             {selectedCategory && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-accent-soft/50 rounded-md">
-                {ARTICLE_CATEGORIES.find((cat) => cat.slug === selectedCategory)?.name}
-                <button onClick={() => onCategoryChange(null)} className="hover:text-accent">
+                {
+                  ARTICLE_CATEGORIES.find(
+                    (cat) => cat.slug === selectedCategory,
+                  )?.name
+                }
+                <button
+                  onClick={() => onCategoryChange(null)}
+                  className="hover:text-accent"
+                >
                   <X className="size-3" />
                 </button>
               </span>
             )}
             {selectedTags.length > 0 && (
               <span className="text-accent-soft/70">
-                {selectedTags.length} tag{selectedTags.length !== 1 ? 's' : ''} selected
+                {selectedTags.length} tag{selectedTags.length !== 1 ? "s" : ""}{" "}
+                selected
               </span>
             )}
           </div>

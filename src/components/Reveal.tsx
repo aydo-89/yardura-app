@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { PropsWithChildren, ElementType } from 'react';
-import { motion } from 'framer-motion';
-import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
-import { reveal, createStaggerItem, dur, ease } from '@/lib/motion/presets';
+import { PropsWithChildren, ElementType } from "react";
+import { motion } from "framer-motion";
+import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import { reveal, createStaggerItem, dur, ease } from "@/lib/motion/presets";
 
 type RevealProps = PropsWithChildren<{
   // Animation control
@@ -12,7 +12,7 @@ type RevealProps = PropsWithChildren<{
   once?: boolean;
 
   // Animation type
-  variant?: 'reveal' | 'slideUp' | 'scaleIn' | 'fadeIn';
+  variant?: "reveal" | "slideUp" | "scaleIn" | "fadeIn";
 
   // Viewport settings
   margin?: string;
@@ -31,8 +31,8 @@ export default function Reveal({
   delay = 0,
   staggerDelay,
   once = true,
-  variant = 'reveal',
-  margin = '-50px',
+  variant = "reveal",
+  margin = "-50px",
   as: Component = motion.div,
   className,
   whileHover,
@@ -44,17 +44,17 @@ export default function Reveal({
   // Select animation variant
   const getVariant = () => {
     switch (variant) {
-      case 'slideUp':
+      case "slideUp":
         return {
           initial: { y: 20, opacity: 0 },
           animate: { y: 0, opacity: 1 },
         };
-      case 'scaleIn':
+      case "scaleIn":
         return {
           initial: { scale: 0.98, opacity: 0 },
           animate: { scale: 1, opacity: 1 },
         };
-      case 'fadeIn':
+      case "fadeIn":
         return {
           initial: { opacity: 0 },
           animate: { opacity: 1 },
@@ -67,7 +67,9 @@ export default function Reveal({
   const selectedVariant = getVariant();
 
   // Create stagger item if staggerDelay is provided
-  const staggerVariant = staggerDelay ? createStaggerItem(delay) : selectedVariant;
+  const staggerVariant = staggerDelay
+    ? createStaggerItem(delay)
+    : selectedVariant;
 
   // Motion configuration
   const motionConfig = {
@@ -94,7 +96,7 @@ export default function Reveal({
     whileInView: { opacity: 1 },
     transition: {
       duration: dur.slow,
-      ease: 'linear',
+      ease: "linear",
       delay: staggerDelay ? 0 : delay,
     },
   });

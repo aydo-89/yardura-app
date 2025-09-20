@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
 
     // Overall health status
     const isHealthy = dbStatus.healthy && redisStatus.healthy;
-    const status = isHealthy ? 'healthy' : 'unhealthy';
+    const status = isHealthy ? "healthy" : "unhealthy";
 
     const healthData = {
       status,
       timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version || '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
+      version: process.env.npm_package_version || "1.0.0",
+      environment: process.env.NODE_ENV || "development",
       uptime: process.uptime(),
       responseTime: `${responseTime}ms`,
       services: {
@@ -39,16 +39,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(healthData, {
       status: isHealthy ? 200 : 503,
     });
-
   } catch (error) {
-    console.error('Health check failed:', error);
+    console.error("Health check failed:", error);
 
-    return NextResponse.json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: 'Health check failed',
-      responseTime: `${Date.now() - startTime}ms`,
-    }, { status: 503 });
+    return NextResponse.json(
+      {
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: "Health check failed",
+        responseTime: `${Date.now() - startTime}ms`,
+      },
+      { status: 503 },
+    );
   }
 }
 
@@ -71,13 +73,12 @@ async function checkDatabaseHealth() {
         serviceVisits: serviceVisitCount,
       },
     };
-
   } catch (error) {
-    console.error('Database health check failed:', error);
+    console.error("Database health check failed:", error);
     return {
       healthy: false,
-      error: error instanceof Error ? error.message : 'Unknown database error',
-      responseTime: 'N/A',
+      error: error instanceof Error ? error.message : "Unknown database error",
+      responseTime: "N/A",
     };
   }
 }
@@ -88,13 +89,13 @@ async function checkRedisHealth() {
     if (!process.env.REDIS_URL) {
       return {
         healthy: true,
-        status: 'not_configured',
-        message: 'Redis not configured (optional)',
+        status: "not_configured",
+        message: "Redis not configured (optional)",
       };
     }
 
     // Test Redis connectivity
-    const redis = await import('redis');
+    const redis = await import("redis");
     const client = redis.createClient({ url: process.env.REDIS_URL });
 
     const startTime = Date.now();
@@ -106,16 +107,15 @@ async function checkRedisHealth() {
     return {
       healthy: true,
       responseTime: `${responseTime}ms`,
-      status: 'connected',
+      status: "connected",
     };
-
   } catch (error) {
-    console.error('Redis health check failed:', error);
+    console.error("Redis health check failed:", error);
     return {
       healthy: false,
-      error: error instanceof Error ? error.message : 'Unknown Redis error',
-      responseTime: 'N/A',
-      status: 'disconnected',
+      error: error instanceof Error ? error.message : "Unknown Redis error",
+      responseTime: "N/A",
+      status: "disconnected",
     };
   }
 }

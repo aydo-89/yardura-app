@@ -2,8 +2,8 @@
 
 let withBundleAnalyzer = (config) => config;
 try {
-  withBundleAnalyzer = require('@next/bundle-analyzer')({
-    enabled: process.env.ANALYZE === 'true',
+  withBundleAnalyzer = require("@next/bundle-analyzer")({
+    enabled: process.env.ANALYZE === "true",
   });
 } catch (e) {
   // bundle-analyzer not available in production
@@ -12,7 +12,7 @@ try {
 const nextConfig = {
   // Performance optimizations
   experimental: {
-    optimizePackageImports: ['lucide-react'], // Tree-shake Lucide icons
+    optimizePackageImports: ["lucide-react"], // Tree-shake Lucide icons
   },
   // Temporarily remove standalone output for dev mode
   // output: 'standalone',
@@ -24,7 +24,7 @@ const nextConfig = {
 
   // Disable static generation for pages that require database access
   generateBuildId: async () => {
-    return 'build-' + Date.now();
+    return "build-" + Date.now();
   },
   eslint: {
     // Unblock CI/builds while we stabilize lint config
@@ -33,7 +33,7 @@ const nextConfig = {
 
   // Image optimization
   images: {
-    formats: ['image/webp', 'image/avif'], // AVIF/WebP fallbacks for better compression
+    formats: ["image/webp", "image/avif"], // AVIF/WebP fallbacks for better compression
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
@@ -47,15 +47,15 @@ const nextConfig = {
         // Separate vendor chunks for better caching
         vendor: {
           test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
-          chunks: 'all',
+          name: "vendors",
+          chunks: "all",
           priority: 10,
         },
         // Separate Framer Motion for better caching
-        'framer-motion': {
+        "framer-motion": {
           test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
-          name: 'framer-motion',
-          chunks: 'all',
+          name: "framer-motion",
+          chunks: "all",
           priority: 20,
         },
       };
@@ -101,11 +101,11 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/static/(.*)',
+        source: "/static/(.*)",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },

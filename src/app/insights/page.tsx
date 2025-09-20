@@ -1,6 +1,6 @@
-import AnimatedHeader from '@/components/site/AnimatedHeader';
-import Footer from '@/components/footer';
-import Insights from '@/components/insights';
+import AnimatedHeader from "@/components/site/AnimatedHeader";
+import Footer from "@/components/footer";
+import Insights from "@/components/insights";
 
 export default function InsightsPage() {
   return (
@@ -13,4 +13,3 @@ export default function InsightsPage() {
     </div>
   );
 }
-

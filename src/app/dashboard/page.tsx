@@ -1,19 +1,19 @@
-import { prisma } from '@/lib/prisma';
-import { redirect } from 'next/navigation';
-import { safeGetServerSession } from '@/lib/auth';
-import Dashboard from '@/components/dashboard/Dashboard';
-import UserLayout from '@/components/layout/UserLayout';
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import { safeGetServerSession } from "@/lib/auth";
+import Dashboard from "@/components/dashboard/Dashboard";
+import UserLayout from "@/components/layout/UserLayout";
 import {
   generateMockDashboardData,
   generateMockDashboardDataNormal,
-} from '@/lib/mockDashboardData';
+} from "@/lib/mockDashboardData";
 
 export default async function DashboardPage() {
   // Get authenticated user session
   const session = await safeGetServerSession({
     callbacks: {
       session: async ({ session, token }: any) => {
-        if (token?.uid && typeof token.uid === 'string') {
+        if (token?.uid && typeof token.uid === "string") {
           (session.user as any).id = token.uid;
         }
 
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
               (session.user as any).orgId = user.orgId;
             }
           } catch (error) {
-            console.error('Error fetching user role:', error);
+            console.error("Error fetching user role:", error);
           }
         }
 
@@ -46,24 +46,29 @@ export default async function DashboardPage() {
   });
 
   if (!session?.user?.email) {
-    redirect('/signin?callbackUrl=/dashboard');
+    redirect("/signin?callbackUrl=/dashboard");
   }
 
   // Redirect admin users to admin dashboard
   const userRole = (session as any).userRole;
-  if (userRole === 'ADMIN' || userRole === 'OWNER' || userRole === 'TECH') {
-    redirect('/admin');
+  if (userRole === "ADMIN" || userRole === "OWNER" || userRole === "TECH") {
+    redirect("/admin");
   }
 
   // DEVELOPMENT: Allow mock data in development for demo purposes
-  const useMock = process.env.DASHBOARD_USE_MOCK === '1' && process.env.NODE_ENV === 'development' && false; // Disabled by default
-  const mockProfile = process.env.DASHBOARD_MOCK_PROFILE || 'diverse'; // 'diverse' | 'normal'
+  const useMock =
+    process.env.DASHBOARD_USE_MOCK === "1" &&
+    process.env.NODE_ENV === "development" &&
+    false; // Disabled by default
+  const mockProfile = process.env.DASHBOARD_MOCK_PROFILE || "diverse"; // 'diverse' | 'normal'
   let user;
 
   if (useMock) {
     // Use mock data for development demo
     const mockData =
-      mockProfile === 'normal' ? generateMockDashboardDataNormal() : generateMockDashboardData();
+      mockProfile === "normal"
+        ? generateMockDashboardDataNormal()
+        : generateMockDashboardData();
     user = mockData.user;
   } else {
     try {
@@ -73,11 +78,11 @@ export default async function DashboardPage() {
         include: {
           dogs: true,
           serviceVisits: {
-            orderBy: { scheduledDate: 'desc' },
+            orderBy: { scheduledDate: "desc" },
             take: 20,
           },
           dataReadings: {
-            orderBy: { timestamp: 'desc' },
+            orderBy: { timestamp: "desc" },
             take: 100,
           },
         },
@@ -85,11 +90,11 @@ export default async function DashboardPage() {
 
       if (!user) {
         // User not found in database, redirect to signin
-        redirect('/signin?callbackUrl=/dashboard');
+        redirect("/signin?callbackUrl=/dashboard");
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
-      redirect('/signin?callbackUrl=/dashboard');
+      console.error("Error loading user data:", error);
+      redirect("/signin?callbackUrl=/dashboard");
     }
   }
 
@@ -132,7 +137,9 @@ export default async function DashboardPage() {
   if (useMock) {
     // Use new mock data system instead of old hardcoded data
     const mockData =
-      mockProfile === 'normal' ? generateMockDashboardDataNormal() : generateMockDashboardData();
+      mockProfile === "normal"
+        ? generateMockDashboardDataNormal()
+        : generateMockDashboardData();
     clientUser = mockData.user;
     clientDogs = mockData.dogs;
     clientServiceVisits = mockData.serviceVisits;
@@ -146,7 +153,7 @@ export default async function DashboardPage() {
   } else {
     if (!user) {
       // This should never happen since we redirect if user is not found
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     clientUser = {
@@ -161,30 +168,33 @@ export default async function DashboardPage() {
       orgId: user.orgId || null,
     } as const;
 
-    clientDogs = (user as any).dogs?.map((d: DogRecord) => ({
-      id: d.id,
-      name: d.name,
-      breed: d.breed,
-      age: d.age,
-      weight: d.weight,
-    })) || [];
+    clientDogs =
+      (user as any).dogs?.map((d: DogRecord) => ({
+        id: d.id,
+        name: d.name,
+        breed: d.breed,
+        age: d.age,
+        weight: d.weight,
+      })) || [];
 
-    clientServiceVisits = (user as any).serviceVisits?.map((v: ServiceVisitRecord) => ({
-      id: v.id,
-      scheduledDate: v.scheduledDate.toISOString(),
-      status: v.status,
-      serviceType: v.serviceType,
-      yardSize: v.yardSize,
-    })) || [];
+    clientServiceVisits =
+      (user as any).serviceVisits?.map((v: ServiceVisitRecord) => ({
+        id: v.id,
+        scheduledDate: v.scheduledDate.toISOString(),
+        status: v.status,
+        serviceType: v.serviceType,
+        yardSize: v.yardSize,
+      })) || [];
 
-    clientDataReadings = (user as any).dataReadings?.map((r: DataReadingRecord) => ({
-      id: r.id,
-      timestamp: r.timestamp.toISOString(),
-      weight: r.weight,
-      volume: r.volume,
-      color: r.color,
-      consistency: r.consistency,
-    })) || [];
+    clientDataReadings =
+      (user as any).dataReadings?.map((r: DataReadingRecord) => ({
+        id: r.id,
+        timestamp: r.timestamp.toISOString(),
+        weight: r.weight,
+        volume: r.volume,
+        color: r.color,
+        consistency: r.consistency,
+      })) || [];
   }
 
   return (
@@ -200,4 +210,3 @@ export default async function DashboardPage() {
     </UserLayout>
   );
 }
-

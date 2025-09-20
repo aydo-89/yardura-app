@@ -5,6 +5,7 @@ This directory contains the complete infrastructure for migrating Yardura from S
 ## Overview
 
 The migration process is designed to be:
+
 - **Safe**: Full backup and rollback capabilities
 - **Gradual**: Feature flags control the migration process
 - **Tested**: Comprehensive validation at each step
@@ -27,6 +28,7 @@ infra/
 ## Prerequisites
 
 1. **Environment Variables**: Add to your `.env` file:
+
    ```bash
    # Existing SQLite (keep as-is)
    DATABASE_URL="file:./prisma/dev.db"
@@ -39,6 +41,7 @@ infra/
    ```
 
 2. **Postgres Database**: Create a new Postgres database
+
    ```sql
    CREATE DATABASE yardura_prod;
    ```
@@ -57,6 +60,7 @@ npm run migrate:export
 ```
 
 This creates JSON files in `infra/data/` containing all your data:
+
 - `user.json`, `account.json`, `session.json`
 - `servicevisit.json`, `dog.json`, `datareading.json`
 - `org.json`, `customer.json`, `job.json`
@@ -69,6 +73,7 @@ npm run migrate:import
 ```
 
 This:
+
 1. Runs the Postgres schema initialization script
 2. Imports all data from JSON files
 3. Validates the import process
@@ -80,6 +85,7 @@ npm run migrate
 ```
 
 This runs the complete migration process:
+
 1. Prerequisites check
 2. SQLite backup creation
 3. Data export
@@ -159,6 +165,7 @@ export USE_POSTGRES=true
 If issues occur during migration:
 
 ### Immediate Rollback
+
 ```bash
 # Switch back to SQLite
 export USE_POSTGRES=false
@@ -170,6 +177,7 @@ npm run dev
 ```
 
 ### Complete Rollback
+
 ```bash
 # Restore from backup
 cp prisma/dev.db.backup-1234567890 prisma/dev.db
@@ -186,6 +194,7 @@ export MIGRATION_MODE=false
 ### Migration Logs
 
 All migration scripts produce detailed logs with timestamps:
+
 ```
 ✅ [2025-09-11T10:30:00.000Z] Starting data export from SQLite...
 ✅ [2025-09-11T10:30:05.000Z] Exported 1500 records from User...
@@ -195,15 +204,19 @@ All migration scripts produce detailed logs with timestamps:
 ### Common Issues
 
 1. **Connection Failed**
+
    ```
    Error: POSTGRES_DATABASE_URL environment variable is required
    ```
+
    Solution: Set the `POSTGRES_DATABASE_URL` environment variable
 
 2. **Permission Denied**
+
    ```
    Error: permission denied for database yardura_prod
    ```
+
    Solution: Grant proper permissions to the Postgres user
 
 3. **Data Validation Failed**
@@ -231,16 +244,19 @@ All migration scripts produce detailed logs with timestamps:
 ### Deployment Steps
 
 1. **Create Backup**
+
    ```bash
    npm run migrate:export
    ```
 
 2. **Initialize Production Postgres**
+
    ```bash
    npm run migrate:import
    ```
 
 3. **Enable Read-Only Mode**
+
    ```bash
    export READ_POSTGRES=true
    # Deploy application
@@ -252,6 +268,7 @@ All migration scripts produce detailed logs with timestamps:
    - Validate data consistency
 
 5. **Enable Write Mode**
+
    ```bash
    export WRITE_POSTGRES=true
    # Deploy application
@@ -269,6 +286,7 @@ All migration scripts produce detailed logs with timestamps:
 After migration, validate that:
 
 1. **Record Counts Match**
+
    ```sql
    -- SQLite
    SELECT COUNT(*) FROM User;
@@ -312,5 +330,3 @@ After successful migration:
 
 **Migration Infrastructure Complete** ✅
 Ready for safe, gradual transition to Postgres
-
-

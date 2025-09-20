@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 import {
   getBusinessConfig,
   registerBusinessConfig,
@@ -8,13 +8,13 @@ import {
   exportBusinessConfig,
   importBusinessConfig,
   getRegisteredBusinesses,
-} from '@/lib/business-config';
+} from "@/lib/business-config";
 
 // GET /api/admin/business-config - Get all business configurations
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const businessId = searchParams.get('businessId');
+    const businessId = searchParams.get("businessId");
 
     if (businessId) {
       // Get specific business config
@@ -27,16 +27,16 @@ export async function GET(request: NextRequest) {
         businesses.map(async (id: string) => ({
           id,
           config: await getBusinessConfig(id),
-        }))
+        })),
       );
 
       return NextResponse.json({ businesses: configs });
     }
   } catch (error) {
-    console.error('Error fetching business configs:', error);
+    console.error("Error fetching business configs:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch business configurations' },
-      { status: 500 }
+      { error: "Failed to fetch business configurations" },
+      { status: 500 },
     );
   }
 }
@@ -49,17 +49,17 @@ export async function POST(request: NextRequest) {
 
     if (!businessId) {
       return NextResponse.json(
-        { error: 'Business ID is required' },
-        { status: 400 }
+        { error: "Business ID is required" },
+        { status: 400 },
       );
     }
 
     switch (action) {
-      case 'create':
+      case "create":
         if (!config) {
           return NextResponse.json(
-            { error: 'Configuration data is required for creation' },
-            { status: 400 }
+            { error: "Configuration data is required for creation" },
+            { status: 400 },
           );
         }
 
@@ -67,79 +67,89 @@ export async function POST(request: NextRequest) {
         const validation = validateBusinessConfig(config as BusinessConfig);
         if (!validation.valid) {
           return NextResponse.json(
-            { error: 'Invalid configuration', details: validation.errors },
-            { status: 400 }
+            { error: "Invalid configuration", details: validation.errors },
+            { status: 400 },
           );
         }
 
         await registerBusinessConfig(config as BusinessConfig);
         return NextResponse.json({
-          message: 'Business configuration created successfully',
+          message: "Business configuration created successfully",
           config: await getBusinessConfig(businessId),
         });
 
-      case 'update':
+      case "update":
         if (!config) {
           return NextResponse.json(
-            { error: 'Configuration data is required for update' },
-            { status: 400 }
+            { error: "Configuration data is required for update" },
+            { status: 400 },
           );
         }
 
         // Validate the configuration
-        const updateValidation = validateBusinessConfig(config as BusinessConfig);
+        const updateValidation = validateBusinessConfig(
+          config as BusinessConfig,
+        );
         if (!updateValidation.valid) {
           return NextResponse.json(
-            { error: 'Invalid configuration', details: updateValidation.errors },
-            { status: 400 }
+            {
+              error: "Invalid configuration",
+              details: updateValidation.errors,
+            },
+            { status: 400 },
           );
         }
 
-        await updateBusinessConfig(businessId, config as Partial<BusinessConfig>);
+        await updateBusinessConfig(
+          businessId,
+          config as Partial<BusinessConfig>,
+        );
         return NextResponse.json({
-          message: 'Business configuration updated successfully',
+          message: "Business configuration updated successfully",
           config: await getBusinessConfig(businessId),
         });
 
-      case 'export':
+      case "export":
         const exportedConfig = exportBusinessConfig(businessId);
         return NextResponse.json({
           config: exportedConfig,
-          filename: `${businessId}-config-${new Date().toISOString().split('T')[0]}.json`,
+          filename: `${businessId}-config-${new Date().toISOString().split("T")[0]}.json`,
         });
 
-      case 'import':
+      case "import":
         if (!config) {
           return NextResponse.json(
-            { error: 'Configuration JSON is required for import' },
-            { status: 400 }
+            { error: "Configuration JSON is required for import" },
+            { status: 400 },
           );
         }
 
         const importSuccess = importBusinessConfig(config as string);
         if (!importSuccess) {
           return NextResponse.json(
-            { error: 'Failed to import configuration' },
-            { status: 400 }
+            { error: "Failed to import configuration" },
+            { status: 400 },
           );
         }
 
         return NextResponse.json({
-          message: 'Business configuration imported successfully',
+          message: "Business configuration imported successfully",
           config: getBusinessConfig(businessId),
         });
 
       default:
         return NextResponse.json(
-          { error: 'Invalid action. Must be create, update, export, or import' },
-          { status: 400 }
+          {
+            error: "Invalid action. Must be create, update, export, or import",
+          },
+          { status: 400 },
         );
     }
   } catch (error) {
-    console.error('Error managing business config:', error);
+    console.error("Error managing business config:", error);
     return NextResponse.json(
-      { error: 'Failed to manage business configuration' },
-      { status: 500 }
+      { error: "Failed to manage business configuration" },
+      { status: 500 },
     );
   }
 }
@@ -148,28 +158,28 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const businessId = searchParams.get('businessId');
+    const businessId = searchParams.get("businessId");
 
     if (!businessId) {
       return NextResponse.json(
-        { error: 'Business ID is required' },
-        { status: 400 }
+        { error: "Business ID is required" },
+        { status: 400 },
       );
     }
 
     // Note: In a real implementation, you'd want to implement proper deletion
     // For now, we'll just reset to default
-    const defaultConfig = await getBusinessConfig('yardura');
+    const defaultConfig = await getBusinessConfig("yardura");
     await updateBusinessConfig(businessId, defaultConfig);
 
     return NextResponse.json({
-      message: 'Business configuration reset to default',
+      message: "Business configuration reset to default",
     });
   } catch (error) {
-    console.error('Error deleting business config:', error);
+    console.error("Error deleting business config:", error);
     return NextResponse.json(
-      { error: 'Failed to delete business configuration' },
-      { status: 500 }
+      { error: "Failed to delete business configuration" },
+      { status: 500 },
     );
   }
 }

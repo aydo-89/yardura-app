@@ -1,15 +1,18 @@
 # Business Provisioning Workflow
 
 ## Overview
+
 When a new business signs a contract with Yardura, we need to provision them with their own admin account and organization setup. This is handled through the God Mode panel.
 
 ## Workflow Steps
 
 ### 1. Business Signs Contract
+
 - Business provides contact information (name, email)
 - Choose an organization ID (e.g., "smithlandscaping", "greenvalleylandscape")
 
 ### 2. Create Business Admin Account (God Mode)
+
 - Access God Mode panel (`/admin/god-mode`)
 - Click "Invite Business Admin"
 - Fill out the form:
@@ -19,6 +22,7 @@ When a new business signs a contract with Yardura, we need to provision them wit
   - **Role**: Admin (Business Owner)
 
 ### 3. System Actions
+
 - Creates user account in database
 - Assigns user to their organization
 - Generates temporary password
@@ -29,6 +33,7 @@ When a new business signs a contract with Yardura, we need to provision them wit
   - Next steps guidance
 
 ### 4. Business Admin Setup
+
 - Receives email with login link
 - Signs in with magic link
 - Completes profile setup
@@ -39,6 +44,7 @@ When a new business signs a contract with Yardura, we need to provision them wit
   - Business information
 
 ### 5. Business Operations
+
 - Business admin can now:
   - Invite team members
   - Manage leads
@@ -99,17 +105,19 @@ The Yardura Team
 ## Troubleshooting
 
 ### Business Can't Access Admin Panel
+
 - Verify organization ID is correct
 - Check if user role is set to ADMIN
 - Ensure user account was created successfully
 
 ### Email Not Received
+
 - Check spam/junk folder
 - Verify email address is correct
 - Resend invitation from God Mode panel
 
 ### Organization Setup Issues
+
 - Organization ID must be unique
 - Business admin must complete initial setup
 - Pricing configuration required before accepting leads
-

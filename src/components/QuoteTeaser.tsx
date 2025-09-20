@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowRight, Calculator, CheckCircle } from 'lucide-react';
-import Reveal from './Reveal';
+import { useState } from "react";
+import Link from "next/link";
+import { ArrowRight, Calculator, CheckCircle } from "lucide-react";
+import Reveal from "./Reveal";
 
 interface PricingPreview {
   dogs: number;
-  frequency: 'weekly' | 'biweekly';
+  frequency: "weekly" | "biweekly";
   estimate: string;
 }
 
 const pricingPreviews: PricingPreview[] = [
-  { dogs: 1, frequency: 'weekly', estimate: '$25-35/visit' },
-  { dogs: 2, frequency: 'weekly', estimate: '$30-45/visit' },
-  { dogs: 1, frequency: 'biweekly', estimate: '$28-40/visit' },
+  { dogs: 1, frequency: "weekly", estimate: "$25-35/visit" },
+  { dogs: 2, frequency: "weekly", estimate: "$30-45/visit" },
+  { dogs: 1, frequency: "biweekly", estimate: "$28-40/visit" },
 ];
 
 export default function QuoteTeaser() {
@@ -30,8 +30,8 @@ export default function QuoteTeaser() {
                 Ready for Professional Minneapolis Dog Waste Removal?
               </h2>
               <p className="text-lg text-muted max-w-2xl mx-auto">
-                Get started with eco-friendly weekly service. See pricing instantly and book your
-                first visit today.
+                Get started with eco-friendly weekly service. See pricing
+                instantly and book your first visit today.
               </p>
             </div>
 
@@ -41,7 +41,9 @@ export default function QuoteTeaser() {
                 <div className="bg-gradient-to-br from-accent-soft/30 to-accent-soft/10 rounded-2xl p-8 border border-accent/10">
                   <div className="flex items-center gap-3 mb-6">
                     <Calculator className="size-6 text-accent" />
-                    <h3 className="text-xl font-bold text-ink">Instant Pricing Preview</h3>
+                    <h3 className="text-xl font-bold text-ink">
+                      Instant Pricing Preview
+                    </h3>
                   </div>
 
                   <div className="space-y-3 mb-6">
@@ -51,15 +53,18 @@ export default function QuoteTeaser() {
                         onClick={() => setSelectedPreview(index)}
                         className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${
                           selectedPreview === index
-                            ? 'border-accent bg-accent-soft/20 shadow-soft'
-                            : 'border-accent/20 hover:border-accent/40'
+                            ? "border-accent bg-accent-soft/20 shadow-soft"
+                            : "border-accent/20 hover:border-accent/40"
                         }`}
                       >
                         <div className="flex justify-between items-center">
                           <span className="text-ink">
-                            {preview.dogs} dog{preview.dogs > 1 ? 's' : ''}, {preview.frequency}
+                            {preview.dogs} dog{preview.dogs > 1 ? "s" : ""},{" "}
+                            {preview.frequency}
                           </span>
-                          <span className="font-semibold text-accent">{preview.estimate}</span>
+                          <span className="font-semibold text-accent">
+                            {preview.estimate}
+                          </span>
                         </div>
                       </button>
                     ))}
@@ -67,8 +72,8 @@ export default function QuoteTeaser() {
 
                   <div className="text-center">
                     <p className="text-sm text-muted mb-4">
-                      Starting at {pricingPreviews[selectedPreview].estimate} • Final quote
-                      confirmed after first visit
+                      Starting at {pricingPreviews[selectedPreview].estimate} •
+                      Final quote confirmed after first visit
                     </p>
                   </div>
                 </div>
@@ -81,7 +86,9 @@ export default function QuoteTeaser() {
                     <div className="flex items-start gap-3">
                       <CheckCircle className="size-5 text-accent mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-semibold text-ink">Eco-Friendly Disposal</h4>
+                        <h4 className="font-semibold text-ink">
+                          Eco-Friendly Disposal
+                        </h4>
                         <p className="text-sm text-muted">
                           Landfill diversion through composting programs
                         </p>
@@ -91,7 +98,9 @@ export default function QuoteTeaser() {
                     <div className="flex items-start gap-3">
                       <CheckCircle className="size-5 text-accent mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-semibold text-ink">Health Insights Included</h4>
+                        <h4 className="font-semibold text-ink">
+                          Health Insights Included
+                        </h4>
                         <p className="text-sm text-muted">
                           Optional AI stool analysis (non-diagnostic)
                         </p>
@@ -101,7 +110,9 @@ export default function QuoteTeaser() {
                     <div className="flex items-start gap-3">
                       <CheckCircle className="size-5 text-accent mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-semibold text-ink">Licensed & Insured</h4>
+                        <h4 className="font-semibold text-ink">
+                          Licensed & Insured
+                        </h4>
                         <p className="text-sm text-muted">
                           Professional service with satisfaction guarantee
                         </p>
@@ -111,15 +122,21 @@ export default function QuoteTeaser() {
                     <div className="flex items-start gap-3">
                       <CheckCircle className="size-5 text-accent mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-semibold text-ink">Same-Day Service</h4>
+                        <h4 className="font-semibold text-ink">
+                          Same-Day Service
+                        </h4>
                         <p className="text-sm text-muted">
-                          Available in Minneapolis, Richfield, Edina & Bloomington
+                          Available in Minneapolis, Richfield, Edina &
+                          Bloomington
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <Link href="/quote?businessId=yardura" data-analytics="cta_quote_teaser">
+                  <Link
+                    href="/quote?businessId=yardura"
+                    data-analytics="cta_quote_teaser"
+                  >
                     <button className="w-full bg-accent hover:bg-accent/90 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-soft hover:shadow-lg flex items-center justify-center gap-2 group">
                       Get Your Free Minneapolis Quote
                       <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { calculatePrice } from '@/lib/priceEstimator';
+import { NextRequest, NextResponse } from "next/server";
+import { calculatePrice } from "@/lib/priceEstimator";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,11 +42,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Price calculation API error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error("Price calculation API error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: 'Failed to calculate pricing', details: errorMessage },
-      { status: 500 }
+      { error: "Failed to calculate pricing", details: errorMessage },
+      { status: 500 },
     );
   }
 }

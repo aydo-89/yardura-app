@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { z } from 'zod';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { z } from "zod";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 const DEFAULT_PAGE_SIZE = 25;
 
@@ -19,21 +19,25 @@ const createActivitySchema = z.object({
         filename: z.string(),
         url: z.string().url(),
         mimeType: z.string().optional(),
-      })
+      }),
     )
     .optional(),
   location: z
-    .object({ lat: z.number(), lng: z.number(), accuracy: z.number().optional() })
+    .object({
+      lat: z.number(),
+      lng: z.number(),
+      accuracy: z.number().optional(),
+    })
     .optional(),
 });
 
-function forbidden(message = 'Unauthorized') {
+function forbidden(message = "Unauthorized") {
   return NextResponse.json({ ok: false, error: message }, { status: 403 });
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -43,7 +47,10 @@ export async function GET(
 
     const { id: leadId } = await params;
     if (!leadId) {
-      return NextResponse.json({ ok: false, error: 'Lead ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Lead ID is required" },
+        { status: 400 },
+      );
     }
 
     const orgId = (session.user as any)?.orgId;
@@ -51,7 +58,10 @@ export async function GET(
     const role = (session as any)?.userRole;
 
     if (!orgId) {
-      return NextResponse.json({ ok: false, error: 'Organization not set' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Organization not set" },
+        { status: 400 },
+      );
     }
 
     const lead = await prisma.lead.findFirst({
@@ -60,10 +70,13 @@ export async function GET(
     });
 
     if (!lead) {
-      return NextResponse.json({ ok: false, error: 'Lead not found' }, { status: 404 });
+      return NextResponse.json(
+        { ok: false, error: "Lead not found" },
+        { status: 404 },
+      );
     }
 
-    if (role === 'SALES_REP' && userId) {
+    if (role === "SALES_REP" && userId) {
       const ownsLead = lead.ownerId === userId || lead.salesRepId === userId;
       if (!ownsLead) {
         return forbidden();
@@ -71,14 +84,17 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || `${DEFAULT_PAGE_SIZE}`, 10), 100);
-    const cursor = searchParams.get('cursor') || undefined;
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") || `${DEFAULT_PAGE_SIZE}`, 10),
+      100,
+    );
+    const cursor = searchParams.get("cursor") || undefined;
 
     const activities = await prisma.leadActivity.findMany({
       where: { leadId },
       take: limit + 1,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-      orderBy: { occurredAt: 'desc' },
+      orderBy: { occurredAt: "desc" },
       include: {
         user: { select: { id: true, name: true, email: true } },
       },
@@ -98,14 +114,17 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('GET /api/leads/[id]/activities error', error);
-    return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
+    console.error("GET /api/leads/[id]/activities error", error);
+    return NextResponse.json(
+      { ok: false, error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -115,7 +134,10 @@ export async function POST(
 
     const { id: leadId } = await params;
     if (!leadId) {
-      return NextResponse.json({ ok: false, error: 'Lead ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Lead ID is required" },
+        { status: 400 },
+      );
     }
 
     const orgId = (session.user as any)?.orgId;
@@ -123,7 +145,10 @@ export async function POST(
     const role = (session as any)?.userRole;
 
     if (!orgId) {
-      return NextResponse.json({ ok: false, error: 'Organization not set' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Organization not set" },
+        { status: 400 },
+      );
     }
 
     const lead = await prisma.lead.findFirst({
@@ -132,10 +157,13 @@ export async function POST(
     });
 
     if (!lead) {
-      return NextResponse.json({ ok: false, error: 'Lead not found' }, { status: 404 });
+      return NextResponse.json(
+        { ok: false, error: "Lead not found" },
+        { status: 404 },
+      );
     }
 
-    if (role === 'SALES_REP' && userId) {
+    if (role === "SALES_REP" && userId) {
       const ownsLead = lead.ownerId === userId || lead.salesRepId === userId;
       if (!ownsLead) {
         return forbidden();
@@ -145,8 +173,12 @@ export async function POST(
     const json = await request.json();
     const parsed = createActivitySchema.parse(json);
 
-    const occurredAt = parsed.occurredAt ? new Date(parsed.occurredAt) : new Date();
-    const followUpAt = parsed.followUpAt ? new Date(parsed.followUpAt) : undefined;
+    const occurredAt = parsed.occurredAt
+      ? new Date(parsed.occurredAt)
+      : new Date();
+    const followUpAt = parsed.followUpAt
+      ? new Date(parsed.followUpAt)
+      : undefined;
 
     const activity = await prisma.$transaction(async (tx) => {
       const created = await tx.leadActivity.create({
@@ -163,7 +195,7 @@ export async function POST(
           attachments: parsed.attachments ?? undefined,
           location: parsed.location
             ? {
-                type: 'Point',
+                type: "Point",
                 coordinates: [parsed.location.lng, parsed.location.lat],
                 accuracy: parsed.location.accuracy,
               }
@@ -188,13 +220,16 @@ export async function POST(
 
     return NextResponse.json({ ok: true, data: activity }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/leads/[id]/activities error', error);
+    console.error("POST /api/leads/[id]/activities error", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { ok: false, error: 'Validation error', details: error.flatten() },
-        { status: 400 }
+        { ok: false, error: "Validation error", details: error.flatten() },
+        { status: 400 },
       );
     }
-    return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

@@ -1,14 +1,27 @@
-'use client';
+"use client";
 
-import { useRef, useState } from 'react';
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
-import { Leaf, Shield, ShieldCheck, Sparkles, MapPin, Users } from 'lucide-react';
-import Image from 'next/image';
+import { useRef, useState } from "react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useMotionValue,
+  useSpring,
+} from "framer-motion";
+import {
+  Leaf,
+  Shield,
+  ShieldCheck,
+  Sparkles,
+  MapPin,
+  Users,
+} from "lucide-react";
+import Image from "next/image";
 
-import Reveal from '@/components/Reveal';
-import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
-import { splitHeadline, dur, ease, spring } from '@/lib/motion/presets';
-import { track } from '@/lib/analytics';
+import Reveal from "@/components/Reveal";
+import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import { splitHeadline, dur, ease, spring } from "@/lib/motion/presets";
+import { track } from "@/lib/analytics";
 
 export default function Hero() {
   const heroRef = useRef<HTMLElement>(null);
@@ -18,7 +31,7 @@ export default function Hero() {
 
   const { scrollYProgress } = useScroll({
     target: heroRef,
-    offset: ['start start', 'end start'],
+    offset: ["start start", "end start"],
   });
 
   const { prefersReducedMotion } = useReducedMotionSafe();
@@ -29,8 +42,14 @@ export default function Hero() {
   const blob3Y = useTransform(scrollYProgress, [0, 1], [0, -70]);
 
   // Magnetic hover effect
-  const buttonX = useSpring(useTransform(mouseX, [0, 1920], [-3, 3]), spring.soft);
-  const buttonY = useSpring(useTransform(mouseY, [0, 1080], [-3, 3]), spring.soft);
+  const buttonX = useSpring(
+    useTransform(mouseX, [0, 1920], [-3, 3]),
+    spring.soft,
+  );
+  const buttonY = useSpring(
+    useTransform(mouseY, [0, 1080], [-3, 3]),
+    spring.soft,
+  );
 
   // Handle mouse movement for magnetic effect
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -59,10 +78,14 @@ export default function Hero() {
                   <div className="w-3 h-3 bg-gradient-to-r from-green-600 to-green-700 rounded-full shadow-sm"></div>
                   <div className="absolute inset-0 w-3 h-3 bg-gradient-to-r from-green-600 to-green-700 rounded-full animate-pulse opacity-60"></div>
                 </div>
-                <span className="text-base font-black text-slate-900 tracking-wide uppercase">World's First</span>
+                <span className="text-base font-black text-slate-900 tracking-wide uppercase">
+                  World's First
+                </span>
               </div>
               <div className="h-5 w-px bg-slate-400/80"></div>
-              <span className="text-base text-slate-800 font-semibold tracking-wide">Pet Waste Health Monitoring & Removal Service</span>
+              <span className="text-base text-slate-800 font-semibold tracking-wide">
+                Pet Waste Health Monitoring & Removal Service
+              </span>
             </div>
           </div>
         </div>
@@ -72,7 +95,7 @@ export default function Hero() {
         <div
           className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml,%3Csvg%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22%237BB369%22%20fill-opacity%3D%220.15%22%3E%3Ccircle%20cx%3D%2260%22%20cy%3D%2260%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"
           style={{
-            animation: prefersReducedMotion ? 'none' : 'pulse 20s infinite',
+            animation: prefersReducedMotion ? "none" : "pulse 20s infinite",
           }}
         />
       </div>
@@ -92,7 +115,7 @@ export default function Hero() {
           transition={{
             duration: 25,
             repeat: Infinity,
-            ease: "linear"
+            ease: "linear",
           }}
         />
         <motion.div
@@ -108,7 +131,7 @@ export default function Hero() {
           transition={{
             duration: 30,
             repeat: Infinity,
-            ease: "linear"
+            ease: "linear",
           }}
         />
         <motion.div
@@ -125,7 +148,7 @@ export default function Hero() {
           transition={{
             duration: 20,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
         />
         <motion.div
@@ -137,11 +160,10 @@ export default function Hero() {
           transition={{
             duration: 18,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
         />
       </div>
-
 
       <div
         className="container py-16 md:py-20 grid lg:grid-cols-2 gap-12 items-start relative z-10"
@@ -149,7 +171,6 @@ export default function Hero() {
       >
         <Reveal>
           <div className="lg:pr-8">
-
             {/* Enhanced headline with better typography and no awkward wrapping */}
             <motion.div
               className="text-responsive-4xl font-black leading-[1.1] tracking-tight text-slate-900 mb-2 mt-24"
@@ -157,10 +178,16 @@ export default function Hero() {
               initial="initial"
               animate="animate"
             >
-              <motion.span className="block leading-[1.1]" variants={splitHeadline.line}>
+              <motion.span
+                className="block leading-[1.1]"
+                variants={splitHeadline.line}
+              >
                 Clean yard.
               </motion.span>
-              <motion.span className="block leading-[1.1] bg-gradient-to-r from-green-800 to-green-600 bg-clip-text text-transparent" variants={splitHeadline.line}>
+              <motion.span
+                className="block leading-[1.1] bg-gradient-to-r from-green-800 to-green-600 bg-clip-text text-transparent"
+                variants={splitHeadline.line}
+              >
                 Smarter insights.
               </motion.span>
               <motion.span
@@ -196,10 +223,17 @@ export default function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.6 }}
             >
-              <span className="font-semibold text-green-700">The world's first intelligent pet stool monitoring & removal service.</span>{' '}
-              We combine professional weekly scooping with advanced{' '}
-              <span className="text-green-600 font-semibold">AI-powered health insights</span>{' '}
-              to keep your Twin Cities yard pristine while monitoring your dog's wellness—catching potential health issues before they become problems.
+              <span className="font-semibold text-green-700">
+                The world's first intelligent pet stool monitoring & removal
+                service.
+              </span>{" "}
+              We combine professional weekly scooping with advanced{" "}
+              <span className="text-green-600 font-semibold">
+                AI-powered health insights
+              </span>{" "}
+              to keep your Twin Cities yard pristine while monitoring your dog's
+              wellness—catching potential health issues before they become
+              problems.
             </motion.p>
 
             {/* Coming soon badge with modern styling */}
@@ -210,7 +244,9 @@ export default function Hero() {
               transition={{ delay: 0.4, duration: 0.4 }}
             >
               <Sparkles className="size-4 text-green-600" />
-              <span className="text-sm font-semibold text-slate-800">AI Health Monitoring Coming Soon</span>
+              <span className="text-sm font-semibold text-slate-800">
+                AI Health Monitoring Coming Soon
+              </span>
             </motion.div>
 
             {/* Enhanced service area with modern styling */}
@@ -224,8 +260,12 @@ export default function Hero() {
                 <MapPin className="size-6 text-green-600" />
               </div>
               <div>
-                <div className="text-base font-bold text-slate-900">Currently Serving</div>
-                <div className="text-sm text-slate-600">South Minneapolis • Richfield • Edina • Bloomington</div>
+                <div className="text-base font-bold text-slate-900">
+                  Currently Serving
+                </div>
+                <div className="text-sm text-slate-600">
+                  South Minneapolis • Richfield • Edina • Bloomington
+                </div>
               </div>
             </motion.div>
 
@@ -249,11 +289,13 @@ export default function Hero() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 transition={spring.snappy}
-                onClick={() => track('cta_hero_get_quote')}
+                onClick={() => track("cta_hero_get_quote")}
               >
                 <span className="flex items-center gap-2">
                   Get My Quote
-                  <span className="text-xl group-hover:translate-x-1 transition-transform duration-200">→</span>
+                  <span className="text-xl group-hover:translate-x-1 transition-transform duration-200">
+                    →
+                  </span>
                 </span>
               </motion.a>
 
@@ -264,7 +306,7 @@ export default function Hero() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 transition={spring.snappy}
-                onClick={() => track('cta_hero_how_it_works')}
+                onClick={() => track("cta_hero_how_it_works")}
               >
                 How it works
               </motion.a>
@@ -279,18 +321,23 @@ export default function Hero() {
             >
               <div className="flex items-center gap-2 px-4 py-2 bg-green-100/50 border border-green-700/20 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                 <ShieldCheck className="size-4 text-green-600" />
-                <span className="text-sm font-semibold text-slate-800">No contracts</span>
+                <span className="text-sm font-semibold text-slate-800">
+                  No contracts
+                </span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-green-100/50 border border-green-700/20 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                 <Sparkles className="size-4 text-green-600" />
-                <span className="text-sm font-semibold text-slate-800">Early warning alerts</span>
+                <span className="text-sm font-semibold text-slate-800">
+                  Early warning alerts
+                </span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-green-100/50 border border-green-700/20 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                 <Leaf className="size-4 text-green-700" />
-                <span className="text-sm font-semibold text-slate-800">Eco composting</span>
+                <span className="text-sm font-semibold text-slate-800">
+                  Eco composting
+                </span>
               </div>
             </motion.div>
-
           </div>
         </Reveal>
 
@@ -319,13 +366,23 @@ export default function Hero() {
                 whileHover={{ scale: 1.05, y: -2 }}
               >
                 <div className="text-center min-w-[180px]">
-                  <div className="text-xs text-green-700 font-medium mb-1">Up to</div>
-                  <div className="text-gradient text-4xl font-black mb-1">250+ lbs</div>
-                  <div className="text-sm text-green-700 font-semibold leading-tight">kept out of landfill</div>
-                  <div className="text-xs text-green-600 font-medium">per dog per year</div>
+                  <div className="text-xs text-green-700 font-medium mb-1">
+                    Up to
+                  </div>
+                  <div className="text-gradient text-4xl font-black mb-1">
+                    250+ lbs
+                  </div>
+                  <div className="text-sm text-green-700 font-semibold leading-tight">
+                    kept out of landfill
+                  </div>
+                  <div className="text-xs text-green-600 font-medium">
+                    per dog per year
+                  </div>
                   <div className="mt-3 flex items-center justify-center gap-2 px-3 py-1 bg-gradient-to-r from-green-700/30 to-green-600/40 border border-green-700/20 rounded-full">
                     <Leaf className="size-3 text-green-700" />
-                    <span className="text-xs text-green-700 font-bold">Eco mission!</span>
+                    <span className="text-xs text-green-700 font-bold">
+                      Eco mission!
+                    </span>
                   </div>
                 </div>
               </motion.div>
@@ -343,7 +400,9 @@ export default function Hero() {
                   <div className="flex flex-col leading-none">
                     <span className="text-xs font-medium opacity-90">100%</span>
                     <span className="text-sm font-bold">Satisfaction</span>
-                    <span className="text-xs font-medium opacity-90">Guarantee</span>
+                    <span className="text-xs font-medium opacity-90">
+                      Guarantee
+                    </span>
                   </div>
                 </div>
               </motion.div>
@@ -357,9 +416,15 @@ export default function Hero() {
                 whileHover={{ scale: 1.05, x: -2 }}
               >
                 <div className="text-center min-w-[120px]">
-                  <div className="text-gradient-subtle text-sm font-bold mb-1">Wellness Insights</div>
-                  <div className="text-green-700 text-sm font-bold mb-2">Coming Soon</div>
-                  <div className="text-xs text-slate-600 font-semibold">Twin Cities</div>
+                  <div className="text-gradient-subtle text-sm font-bold mb-1">
+                    Wellness Insights
+                  </div>
+                  <div className="text-green-700 text-sm font-bold mb-2">
+                    Coming Soon
+                  </div>
+                  <div className="text-xs text-slate-600 font-semibold">
+                    Twin Cities
+                  </div>
                   <div className="mt-2 px-3 py-1 bg-gradient-to-r from-green-700/10 to-green-600/15 border border-green-700/20 rounded-full">
                     <div className="text-xs text-green-700 font-bold">2026</div>
                   </div>
@@ -380,8 +445,12 @@ export default function Hero() {
                     <ShieldCheck className="size-5 text-green-700" />
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900">Weekly Service</div>
-                    <div className="text-xs text-slate-600">Consistent, reliable maintenance</div>
+                    <div className="text-sm font-bold text-slate-900">
+                      Weekly Service
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      Consistent, reliable maintenance
+                    </div>
                   </div>
                 </div>
               </div>
@@ -392,8 +461,12 @@ export default function Hero() {
                     <Leaf className="size-5 text-green-700" />
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900">Eco-Friendly</div>
-                    <div className="text-xs text-slate-600">Sustainable composting process</div>
+                    <div className="text-sm font-bold text-slate-900">
+                      Eco-Friendly
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      Sustainable composting process
+                    </div>
                   </div>
                 </div>
               </div>
@@ -404,8 +477,12 @@ export default function Hero() {
                     <MapPin className="size-5 text-green-700" />
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900">Local Service</div>
-                    <div className="text-xs text-slate-600">Twin Cities focused, fast response</div>
+                    <div className="text-sm font-bold text-slate-900">
+                      Local Service
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      Twin Cities focused, fast response
+                    </div>
                   </div>
                 </div>
               </div>
@@ -416,8 +493,12 @@ export default function Hero() {
                     <Sparkles className="size-5 text-green-700" />
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900">Smart Insights</div>
-                    <div className="text-xs text-slate-600">AI-powered health monitoring</div>
+                    <div className="text-sm font-bold text-slate-900">
+                      Smart Insights
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      AI-powered health monitoring
+                    </div>
                   </div>
                 </div>
               </div>
@@ -457,4 +538,3 @@ export default function Hero() {
     </section>
   );
 }
-

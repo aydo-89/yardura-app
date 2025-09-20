@@ -1,36 +1,38 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import type { ChangeEvent } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import AddressAutocomplete from '@/components/AddressAutocomplete';
+import { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 interface AccountPageClientProps {
   userEmail: string;
 }
 
-export default function AccountPageClient({ userEmail }: AccountPageClientProps) {
+export default function AccountPageClient({
+  userEmail,
+}: AccountPageClientProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [zipCode, setZipCode] = useState('');
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [zipCode, setZipCode] = useState("");
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('/api/users', { cache: 'no-store' });
+        const res = await fetch("/api/users", { cache: "no-store" });
         if (res.ok) {
           const { user } = await res.json();
-          setName(user?.name || '');
-          setPhone(user?.phone || '');
-          setAddress(user?.address || '');
-          setCity(user?.city || '');
-          setZipCode(user?.zipCode || '');
+          setName(user?.name || "");
+          setPhone(user?.phone || "");
+          setAddress(user?.address || "");
+          setCity(user?.city || "");
+          setZipCode(user?.zipCode || "");
         }
       } finally {
         setLoading(false);
@@ -42,9 +44,9 @@ export default function AccountPageClient({ userEmail }: AccountPageClientProps)
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ address, city, zipCode, phone }),
       });
     } finally {
@@ -68,21 +70,24 @@ export default function AccountPageClient({ userEmail }: AccountPageClientProps)
             ) : (
               <>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
-                  <Input
-                    value={userEmail}
-                    disabled
-                    className="bg-gray-50"
-                  />
+                  <label className="block text-sm font-medium mb-1">
+                    Email
+                  </label>
+                  <Input value={userEmail} disabled className="bg-gray-50" />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Email cannot be changed. Contact support if you need to update it.
+                    Email cannot be changed. Contact support if you need to
+                    update it.
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Full Name</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Full Name
+                  </label>
                   <Input
                     value={name}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setName(e.target.value)
+                    }
                     disabled
                     className="bg-gray-50"
                   />
@@ -91,15 +96,21 @@ export default function AccountPageClient({ userEmail }: AccountPageClientProps)
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Phone</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Phone
+                  </label>
                   <Input
                     value={phone}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setPhone(e.target.value)
+                    }
                     placeholder="Enter your phone number"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Address</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Address
+                  </label>
                   <AddressAutocomplete
                     value={address}
                     onChange={(val: string) => setAddress(val)}
@@ -108,33 +119,42 @@ export default function AccountPageClient({ userEmail }: AccountPageClientProps)
                       city?: string;
                       postalCode?: string;
                     }) => {
-                      if (addr.formattedAddress) setAddress(addr.formattedAddress);
-                      if (addr.city) setCity(addr.city || '');
-                      if (addr.postalCode) setZipCode(addr.postalCode || '');
+                      if (addr.formattedAddress)
+                        setAddress(addr.formattedAddress);
+                      if (addr.city) setCity(addr.city || "");
+                      if (addr.postalCode) setZipCode(addr.postalCode || "");
                     }}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">City</label>
+                    <label className="block text-sm font-medium mb-1">
+                      City
+                    </label>
                     <Input
                       value={city}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setCity(e.target.value)
+                      }
                       placeholder="Enter city"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">ZIP Code</label>
+                    <label className="block text-sm font-medium mb-1">
+                      ZIP Code
+                    </label>
                     <Input
                       value={zipCode}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setZipCode(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setZipCode(e.target.value)
+                      }
                       placeholder="Enter ZIP code"
                     />
                   </div>
                 </div>
                 <div className="pt-2">
                   <Button onClick={handleSave} disabled={saving}>
-                    {saving ? 'Saving…' : 'Save Changes'}
+                    {saving ? "Saving…" : "Save Changes"}
                   </Button>
                 </div>
               </>
@@ -145,5 +165,3 @@ export default function AccountPageClient({ userEmail }: AccountPageClientProps)
     </div>
   );
 }
-
-

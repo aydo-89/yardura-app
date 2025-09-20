@@ -1,13 +1,19 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowRight, Mail, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React, { useEffect, useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Mail,
+  CheckCircle,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface LeadData {
   id: string;
@@ -37,16 +43,16 @@ function OnboardingStartContent() {
   const router = useRouter();
   const [lead, setLead] = useState<LeadData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
-  const leadId = searchParams.get('leadId');
-  const isCommercial = searchParams.get('commercial') === 'true';
+  const leadId = searchParams.get("leadId");
+  const isCommercial = searchParams.get("commercial") === "true";
 
   useEffect(() => {
     if (!leadId) {
-      router.push('/quote?businessId=yardura');
+      router.push("/quote?businessId=yardura");
       return;
     }
 
@@ -62,12 +68,12 @@ function OnboardingStartContent() {
         setLead(leadData);
         setEmail(leadData.email);
       } else {
-        console.error('Failed to fetch lead data');
-        router.push('/quote?businessId=yardura');
+        console.error("Failed to fetch lead data");
+        router.push("/quote?businessId=yardura");
       }
     } catch (error) {
-      console.error('Error fetching lead:', error);
-      router.push('/quote?businessId=yardura');
+      console.error("Error fetching lead:", error);
+      router.push("/quote?businessId=yardura");
     } finally {
       setIsLoading(false);
     }
@@ -78,9 +84,9 @@ function OnboardingStartContent() {
 
     setIsSendingMagicLink(true);
     try {
-      const response = await fetch('/api/auth/send-magic-link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/send-magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
           leadId: lead.id,
@@ -91,10 +97,10 @@ function OnboardingStartContent() {
       if (response.ok) {
         setMagicLinkSent(true);
       } else {
-        console.error('Failed to send magic link');
+        console.error("Failed to send magic link");
       }
     } catch (error) {
-      console.error('Error sending magic link:', error);
+      console.error("Error sending magic link:", error);
     } finally {
       setIsSendingMagicLink(false);
     }
@@ -116,8 +122,12 @@ function OnboardingStartContent() {
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Quote Not Found</h1>
-          <p className="text-gray-600 mb-6">We couldn't find your quote. Please start over.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Quote Not Found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            We couldn't find your quote. Please start over.
+          </p>
           <Button asChild>
             <Link href="/quote?businessId=yardura">Start New Quote</Link>
           </Button>
@@ -165,12 +175,16 @@ function OnboardingStartContent() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Frequency:</span>
-                    <p className="font-medium capitalize">{lead.frequency?.replace('-', ' ')}</p>
+                    <p className="font-medium capitalize">
+                      {lead.frequency?.replace("-", " ")}
+                    </p>
                   </div>
                 </div>
 
                 <div>
-                  <span className="text-muted-foreground text-sm">Address:</span>
+                  <span className="text-muted-foreground text-sm">
+                    Address:
+                  </span>
                   <p className="font-medium">
                     {lead.address}, {lead.city}, {lead.zipCode}
                   </p>
@@ -192,7 +206,8 @@ function OnboardingStartContent() {
 
                 <div className="pt-4 border-t">
                   <p className="text-sm text-muted-foreground">
-                    Quote created: {new Date(lead.submittedAt).toLocaleDateString()}
+                    Quote created:{" "}
+                    {new Date(lead.submittedAt).toLocaleDateString()}
                   </p>
                 </div>
               </CardContent>
@@ -209,7 +224,8 @@ function OnboardingStartContent() {
               <CardContent className="space-y-6">
                 <div>
                   <p className="text-gray-600 mb-4">
-                    Create a free account to manage your service, view your dashboard, and track your environmental impact.
+                    Create a free account to manage your service, view your
+                    dashboard, and track your environmental impact.
                   </p>
 
                   <div className="space-y-2">
@@ -246,9 +262,12 @@ function OnboardingStartContent() {
                 ) : (
                   <div className="text-center p-6 bg-green-50 rounded-lg">
                     <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                    <h3 className="font-semibold text-green-800 mb-2">Magic Link Sent!</h3>
+                    <h3 className="font-semibold text-green-800 mb-2">
+                      Magic Link Sent!
+                    </h3>
                     <p className="text-sm text-green-700">
-                      Check your email and click the link to complete your account setup.
+                      Check your email and click the link to complete your
+                      account setup.
                     </p>
                   </div>
                 )}
@@ -267,28 +286,36 @@ function OnboardingStartContent() {
           {/* Benefits */}
           <Card className="mt-8 shadow-lg">
             <CardContent className="pt-6">
-              <h3 className="text-xl font-bold text-center mb-6">What You'll Get With Your Account</h3>
+              <h3 className="text-xl font-bold text-center mb-6">
+                What You'll Get With Your Account
+              </h3>
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
                     <span className="text-accent text-xl">📅</span>
                   </div>
                   <h4 className="font-semibold mb-2">Easy Scheduling</h4>
-                  <p className="text-sm text-gray-600">Reschedule visits and manage your service preferences</p>
+                  <p className="text-sm text-gray-600">
+                    Reschedule visits and manage your service preferences
+                  </p>
                 </div>
                 <div className="text-center">
                   <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
                     <span className="text-accent text-xl">📊</span>
                   </div>
                   <h4 className="font-semibold mb-2">Service Dashboard</h4>
-                  <p className="text-sm text-gray-600">Track your service history and view upcoming visits</p>
+                  <p className="text-sm text-gray-600">
+                    Track your service history and view upcoming visits
+                  </p>
                 </div>
                 <div className="text-center">
                   <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3">
                     <span className="text-accent text-xl">🌱</span>
                   </div>
                   <h4 className="font-semibold mb-2">Environmental Impact</h4>
-                  <p className="text-sm text-gray-600">Monitor your carbon footprint and compost contributions</p>
+                  <p className="text-sm text-gray-600">
+                    Monitor your carbon footprint and compost contributions
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -301,14 +328,16 @@ function OnboardingStartContent() {
 
 export default function OnboardingStartPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-accent/5 to-accent-soft/10 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-accent/5 to-accent-soft/10 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <OnboardingStartContent />
     </Suspense>
   );

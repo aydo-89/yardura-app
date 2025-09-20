@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React from "react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface QuoteStepFooterProps {
   currentStep: number;
@@ -67,11 +67,11 @@ export const QuoteStepFooter: React.FC<QuoteStepFooterProps> = ({
               {continueLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {isFinalStep ? 'Creating Account...' : 'Validating...'}
+                  {isFinalStep ? "Creating Account..." : "Validating..."}
                 </>
               ) : (
                 <>
-                  {isFinalStep ? 'Complete Quote' : 'Continue'}
+                  {isFinalStep ? "Complete Quote" : "Continue"}
                   <ChevronRight className="w-4 h-4" />
                 </>
               )}

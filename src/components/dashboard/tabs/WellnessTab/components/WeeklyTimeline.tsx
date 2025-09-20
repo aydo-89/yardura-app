@@ -1,24 +1,24 @@
-import React from 'react';
-import { CheckCircle, Eye, AlertTriangle, TrendingUp } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { wellnessTheme, type WellnessComputed } from '@/shared/wellness';
+import React from "react";
+import { CheckCircle, Eye, AlertTriangle, TrendingUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { wellnessTheme, type WellnessComputed } from "@/shared/wellness";
 
 interface WeeklyTimelineProps {
-  weekly: WellnessComputed['weekly'];
+  weekly: WellnessComputed["weekly"];
 }
 
 const statusConfig = {
   good: {
     color: wellnessTheme.colors.green,
-    label: 'Normal',
+    label: "Normal",
   },
   monitor: {
     color: wellnessTheme.colors.yellow,
-    label: 'Monitor',
+    label: "Monitor",
   },
   attention: {
     color: wellnessTheme.colors.red,
-    label: 'Attention',
+    label: "Attention",
   },
 };
 
@@ -35,9 +35,10 @@ export const WeeklyTimeline: React.FC<WeeklyTimelineProps> = ({ weekly }) => {
 
   // Generate path for the line
   const stepX = innerWidth / (weeks.length - 1);
-  const getY = (value: number) => chartHeight - padding - (value / maxDeposits) * innerHeight;
+  const getY = (value: number) =>
+    chartHeight - padding - (value / maxDeposits) * innerHeight;
 
-  let pathData = '';
+  let pathData = "";
   weeks.forEach((week, index) => {
     const x = padding + index * stepX;
     const y = getY(week.deposits);
@@ -55,7 +56,9 @@ export const WeeklyTimeline: React.FC<WeeklyTimelineProps> = ({ weekly }) => {
       <CardContent className="p-6">
         <div className="flex items-center gap-2 mb-6">
           <TrendingUp className="size-5 text-slate-600" />
-          <h3 className="text-lg font-semibold text-slate-900">Weekly Deposits</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Weekly Deposits
+          </h3>
         </div>
 
         {/* Chart Container */}
@@ -63,7 +66,7 @@ export const WeeklyTimeline: React.FC<WeeklyTimelineProps> = ({ weekly }) => {
           <svg
             viewBox={`0 0 ${chartWidth} ${chartHeight}`}
             className="w-full h-auto"
-            style={{ maxHeight: '240px' }}
+            style={{ maxHeight: "240px" }}
           >
             {/* Grid lines */}
             {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
@@ -146,18 +149,18 @@ export const WeeklyTimeline: React.FC<WeeklyTimelineProps> = ({ weekly }) => {
                     fontWeight="500"
                   >
                     <tspan x={x} dy="0">
-                      {new Date(week.startISO).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
+                      {new Date(week.startISO).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
                       })}
                     </tspan>
                     <tspan x={x} dy="10">
                       {(() => {
                         const endDate = new Date(week.startISO);
                         endDate.setDate(endDate.getDate() + 6);
-                        return endDate.toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
+                        return endDate.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
                         });
                       })()}
                     </tspan>
@@ -173,14 +176,20 @@ export const WeeklyTimeline: React.FC<WeeklyTimelineProps> = ({ weekly }) => {
           <div className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-full border-2"
-              style={{ backgroundColor: wellnessTheme.colors.teal, borderColor: wellnessTheme.colors.teal }}
+              style={{
+                backgroundColor: wellnessTheme.colors.teal,
+                borderColor: wellnessTheme.colors.teal,
+              }}
             />
             <span className="text-sm text-slate-600">Deposits</span>
           </div>
 
           {Object.entries(statusConfig).map(([status, config]) => (
             <div key={status} className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: config.color }} />
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: config.color }}
+              />
               <span className="text-sm text-slate-600">{config.label}</span>
             </div>
           ))}
@@ -196,12 +205,16 @@ export const WeeklyTimeline: React.FC<WeeklyTimelineProps> = ({ weekly }) => {
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-slate-900">
-              {(weeks.reduce((sum, w) => sum + w.deposits, 0) / weeks.length).toFixed(1)}
+              {(
+                weeks.reduce((sum, w) => sum + w.deposits, 0) / weeks.length
+              ).toFixed(1)}
             </div>
             <div className="text-xs text-slate-500">Avg per week</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-slate-900">{maxDeposits}</div>
+            <div className="text-lg font-bold text-slate-900">
+              {maxDeposits}
+            </div>
             <div className="text-xs text-slate-500">Peak week</div>
           </div>
         </div>

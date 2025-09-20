@@ -1,10 +1,10 @@
 // Initial Clean Estimator - Pure functions for calculating one-time initial clean costs
 // Based on cleanup bucket, dogs, yard size, and competitive Twin Cities pricing
 
-import { getBusinessConfig } from './business-config';
+import { getBusinessConfig } from "./business-config";
 
 export type CleanupBucket = string; // Now configurable
-export type YardSize = 'small' | 'medium' | 'large' | 'xl';
+export type YardSize = "small" | "medium" | "large" | "xl";
 export type DogCount = 1 | 2 | 3 | 4;
 
 // Default configuration - can be overridden by admin (DoodyCalls style)
@@ -12,13 +12,29 @@ const DEFAULT_BUCKET_CONFIG: Record<
   CleanupBucket,
   { multiplier: number; floorCents: number; label: string }
 > = {
-  '7': { multiplier: 1.0, floorCents: 4900, label: 'Today / ≤ 7 days (Well maintained)' },
-  '14': { multiplier: 1.0, floorCents: 4900, label: '≤ 2 weeks (Well maintained)' },
-  '30': { multiplier: 1.0, floorCents: 4900, label: 'Legacy - 15-30 days' }, // For backward compatibility
-  '42': { multiplier: 1.75, floorCents: 6900, label: "2–6 weeks (It's pretty neglected)" },
-  '60': { multiplier: 1.75, floorCents: 6900, label: 'Legacy - 31-60 days' }, // For backward compatibility
-  '90': { multiplier: 1.75, floorCents: 6900, label: 'Legacy - 61-90 days' }, // For backward compatibility
-  '999': { multiplier: 2.5, floorCents: 8900, label: '> 6 weeks (Watch your step!)' },
+  "7": {
+    multiplier: 1.0,
+    floorCents: 4900,
+    label: "Today / ≤ 7 days (Well maintained)",
+  },
+  "14": {
+    multiplier: 1.0,
+    floorCents: 4900,
+    label: "≤ 2 weeks (Well maintained)",
+  },
+  "30": { multiplier: 1.0, floorCents: 4900, label: "Legacy - 15-30 days" }, // For backward compatibility
+  "42": {
+    multiplier: 1.75,
+    floorCents: 6900,
+    label: "2–6 weeks (It's pretty neglected)",
+  },
+  "60": { multiplier: 1.75, floorCents: 6900, label: "Legacy - 31-60 days" }, // For backward compatibility
+  "90": { multiplier: 1.75, floorCents: 6900, label: "Legacy - 61-90 days" }, // For backward compatibility
+  "999": {
+    multiplier: 2.5,
+    floorCents: 8900,
+    label: "> 6 weeks (Watch your step!)",
+  },
 };
 
 // Yard and dog adjustments
@@ -33,7 +49,10 @@ const YARD_DOG_ADJUSTMENTS = {
 };
 
 export interface InitialCleanConfig {
-  buckets: Record<CleanupBucket, { multiplier: number; floorCents: number; label: string }>;
+  buckets: Record<
+    CleanupBucket,
+    { multiplier: number; floorCents: number; label: string }
+  >;
   yardDogAdj: typeof YARD_DOG_ADJUSTMENTS;
 }
 
@@ -73,11 +92,13 @@ export async function calculateInitialClean(
     fencedArea?: boolean;
     other?: string;
   } = {},
-  businessId: string = 'yardura'
+  businessId: string = "yardura",
 ): Promise<InitialCleanEstimate> {
   // Get business config to access configurable buckets
   const businessConfig = await getBusinessConfig(businessId);
-  const bucketConfig = businessConfig.basePricing.initialClean.buckets.find(b => b.bucket === bucket);
+  const bucketConfig = businessConfig.basePricing.initialClean.buckets.find(
+    (b) => b.bucket === bucket,
+  );
 
   if (!bucketConfig) {
     throw new Error(`No bucket configuration found for bucket: ${bucket}`);
@@ -91,9 +112,9 @@ export async function calculateInitialClean(
 
   // Calculate additional areas cost for initial clean (+$5 per extra area)
   const selectedAreas = Object.values(areasToClean).filter(
-    (value) => typeof value === 'boolean' && value
+    (value) => typeof value === "boolean" && value,
   ).length;
-  const hasOtherArea = areasToClean.other && areasToClean.other.trim() !== '';
+  const hasOtherArea = areasToClean.other && areasToClean.other.trim() !== "";
   const totalSelectedAreas = selectedAreas + (hasOtherArea ? 1 : 0);
   const additionalAreas = Math.max(0, totalSelectedAreas - 1); // Subtract 1 for the base area
   const additionalAreaCost = additionalAreas * 500; // $5 per additional area in cents
@@ -102,7 +123,10 @@ export async function calculateInitialClean(
   const totalBaseAmount = bucketApplied + additionalAreaCost;
 
   // Apply floor price
-  const finalAmount = Math.max(Math.round(totalBaseAmount), bucketConfig.floorPriceCents);
+  const finalAmount = Math.max(
+    Math.round(totalBaseAmount),
+    bucketConfig.floorPriceCents,
+  );
 
   return {
     initialCleanCents: finalAmount,
@@ -122,28 +146,30 @@ export async function calculateInitialClean(
 // Map date to cleanup bucket (DoodyCalls style)
 export function mapDateToBucket(cleanupDate: Date): CleanupBucket {
   const now = new Date();
-  const daysDiff = Math.floor((now.getTime() - cleanupDate.getTime()) / (1000 * 60 * 60 * 24));
+  const daysDiff = Math.floor(
+    (now.getTime() - cleanupDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
 
-  if (daysDiff <= 14) return '14'; // < 2 weeks
-  if (daysDiff <= 42) return '42'; // 2-6 weeks
-  return '999'; // > 6 weeks
+  if (daysDiff <= 14) return "14"; // < 2 weeks
+  if (daysDiff <= 42) return "42"; // 2-6 weeks
+  return "999"; // > 6 weeks
 }
 
 // Format price for display
 export function formatInitialCleanPrice(cents: number): string {
-  if (cents === 0) return 'Free';
+  if (cents === 0) return "Free";
   return `$${(cents / 100).toFixed(2)}`;
 }
 
 // Get bucket label
 export function getBucketLabel(
   bucket: CleanupBucket,
-  config: InitialCleanConfig = getDefaultConfig()
+  config: InitialCleanConfig = getDefaultConfig(),
 ): string {
   return config.buckets[bucket].label;
 }
 
 // Validate bucket
 export function isValidBucket(bucket: string): bucket is CleanupBucket {
-  return ['7', '14', '30', '60', '90', '999'].includes(bucket);
+  return ["7", "14", "30", "60", "90", "999"].includes(bucket);
 }

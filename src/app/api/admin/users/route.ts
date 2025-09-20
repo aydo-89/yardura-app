@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
   try {
     // Only allow god mode users
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email || session.user.email !== 'ayden@yardura.com') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!session?.user?.email || session.user.email !== "ayden@yardura.com") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const users = await prisma.user.findMany({
@@ -30,13 +30,16 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error fetching users:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -44,14 +47,19 @@ export async function POST(request: NextRequest) {
   try {
     // Only allow god mode users
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email || session.user.email !== 'ayden@yardura.com') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!session?.user?.email || session.user.email !== "ayden@yardura.com") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { email, name, role = 'CUSTOMER', orgId = 'yardura' } = await request.json();
+    const {
+      email,
+      name,
+      role = "CUSTOMER",
+      orgId = "yardura",
+    } = await request.json();
 
     if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     // Check if user already exists
@@ -60,14 +68,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json({ error: 'User already exists' }, { status: 409 });
+      return NextResponse.json(
+        { error: "User already exists" },
+        { status: 409 },
+      );
     }
 
     // Create the user
     const user = await prisma.user.create({
       data: {
         email,
-        name: name || email.split('@')[0],
+        name: name || email.split("@")[0],
         role,
         orgId,
       },
@@ -83,7 +94,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    console.error('Error creating user:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error creating user:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

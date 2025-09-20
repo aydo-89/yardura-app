@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
-import { prisma } from '@/lib/prisma';
-import crypto from 'crypto';
+import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
+import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,8 +13,8 @@ export async function POST(request: NextRequest) {
 
     if (!email || !leadId) {
       return NextResponse.json(
-        { error: 'Email and leadId are required' },
-        { status: 400 }
+        { error: "Email and leadId are required" },
+        { status: 400 },
       );
     }
 
@@ -26,15 +28,12 @@ export async function POST(request: NextRequest) {
         phone: true,
         address: true,
         city: true,
-        zipCode: true
+        zipCode: true,
       },
     });
 
     if (!lead) {
-      return NextResponse.json(
-        { error: 'Lead not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
     // Check if user already exists
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate magic link token
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Store verification token
@@ -78,15 +77,15 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate magic link URL
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const magicLinkUrl = `${baseUrl}/auth/verify-magic-link?token=${token}&email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl || '/dashboard')}`;
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const magicLinkUrl = `${baseUrl}/auth/verify-magic-link?token=${token}&email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl || "/dashboard")}`;
 
     // Send magic link email
     if (resend) {
       await resend.emails.send({
-        from: 'Yardura <auth@yardura.com>',
+        from: "Yardura <auth@yardura.com>",
         to: email,
-        subject: 'Complete your Yardura account setup',
+        subject: "Complete your Yardura account setup",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border-radius: 10px 10px 0 0;">
@@ -119,14 +118,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Magic link sent successfully',
+      message: "Magic link sent successfully",
       userId,
     });
   } catch (error) {
-    console.error('Error sending magic link:', error);
+    console.error("Error sending magic link:", error);
     return NextResponse.json(
-      { error: 'Failed to send magic link' },
-      { status: 500 }
+      { error: "Failed to send magic link" },
+      { status: 500 },
     );
   }
 }
