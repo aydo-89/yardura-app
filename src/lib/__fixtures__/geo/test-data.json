@@ -1,0 +1,62 @@
+{
+  "minneapolis": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [-93.3291, 44.8904],
+        [-93.3291, 45.0513],
+        [-93.1934, 45.0513],
+        [-93.1934, 44.8904],
+        [-93.3291, 44.8904]
+      ]]
+    },
+    "properties": {
+      "city": "Minneapolis",
+      "state": "Minnesota"
+    }
+  },
+  "sampleZctas": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [[
+            [-93.3, 44.9],
+            [-93.3, 45.0],
+            [-93.2, 45.0],
+            [-93.2, 44.9],
+            [-93.3, 44.9]
+          ]]
+        },
+        "properties": {
+          "ZCTA5CE10": "55401",
+          "city": "Minneapolis",
+          "state": "MN"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [[
+            [-93.4, 44.9],
+            [-93.4, 45.0],
+            [-93.3, 45.0],
+            [-93.3, 44.9],
+            [-93.4, 44.9]
+          ]]
+        },
+        "properties": {
+          "ZCTA5CE10": "55402",
+          "city": "Minneapolis",
+          "state": "MN"
+        }
+      }
+    ]
+  }
+}
+
+

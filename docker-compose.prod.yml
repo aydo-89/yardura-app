@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  yardura-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: yardura-production
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - yardura-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  yardura-proxy:
+    image: node:18-alpine
+    container_name: yardura-proxy
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    working_dir: /app
+    command: npm start
+    volumes:
+      - ./replicate-proxy.js:/app/package.json
+      - ./replicate-proxy.js:/app/index.js
+    networks:
+      - yardura-network
+    depends_on:
+      yardura-app:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    container_name: yardura-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - yardura-network
+    depends_on:
+      - yardura-app
+      - yardura-proxy
+
+networks:
+  yardura-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local

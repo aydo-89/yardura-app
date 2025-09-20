@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # =============================================================================
+  # WEB APPLICATION (Next.js)
+  # =============================================================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+    env_file:
+      - .env.local
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - yardura
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # =============================================================================
+  # POSTGRES DATABASE
+  # =============================================================================
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=yardura_dev
+      - POSTGRES_USER=yardura
+      - POSTGRES_PASSWORD=yardura_password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/pg/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      - yardura
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yardura -d yardura_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # REDIS CACHE & QUEUE
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - yardura
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: redis-server --appendonly yes --requirepass yardura_redis
+
+  # =============================================================================
+  # BACKGROUND WORKER (Sample Scoring)
+  # =============================================================================
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://:yardura_redis@redis:6379
+    env_file:
+      - .env.local
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - yardura
+    restart: unless-stopped
+    command: ["npm", "run", "worker"]
+
+  # =============================================================================
+  # PGADMIN (Database Management - Optional)
+  # =============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@yardura.com
+      - PGADMIN_DEFAULT_PASSWORD=yardura_admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - yardura
+    restart: unless-stopped
+    profiles:
+      - admin
+
+  # =============================================================================
+  # REDIS INSIGHT (Redis Management - Optional)
+  # =============================================================================
+  redis-insight:
+    image: redislabs/redisinsight:latest
+    ports:
+      - "5540:5540"
+    volumes:
+      - redis_insight_data:/db
+    depends_on:
+      - redis
+    networks:
+      - yardura
+    restart: unless-stopped
+    profiles:
+      - admin
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redis_insight_data:
+    driver: local
+
+networks:
+  yardura:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+

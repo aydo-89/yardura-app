@@ -1,0 +1,530 @@
+
+You are a senior full‑stack engineer + solution architect. Build the **Yardura Service OS** end‑to‑end.
+
+# 0) READ THIS FIRST — Analyze Existing Codebase & Schema Before Coding
+You **must** begin by understanding the current app and database. Assume the repo currently contains:
+- Landing site
+- Quote / onboarding flow (production-critical)
+- Basic client portal / dashboard UI with wellness insights
+- Prisma schema (see **Existing Prisma Schema** below; provider=sqlite)
+
+## Required Analysis Tasks (run in PR #0 – no feature changes)
+1. **Project Survey**
+   - Inventory structure: `tree -L 3`, list workspaces, scripts, env usage.
+   - Extract routing map (Next.js App Router), existing API routes, middlewares.
+   - UI audit: landing, quote wizard steps, onboarding pages, portal/dashboard.
+   - Identify shared components, design tokens, and utility hooks.
+2. **Dependency & Config Audit**
+   - Lockfile parse; versions for Next.js, React, Prisma, auth, UI, charts, email, etc.
+   - Lint/format/TS settings; check `tsconfig`, `eslint`, `prettier`, `tailwind.config`.
+3. **Data Layer Audit**
+   - Read **Prisma schema** (below). Generate ERD. Check relations/indices/enum usage.
+   - Confirm current `DATABASE_URL` points to **SQLite**. Snapshot DB size & row counts.
+   - Run `prisma validate`, `prisma generate`, `prisma format`.
+4. **Runtime Behaviors**
+   - Exercise quote→onboarding→portal happy path in dev. Capture invariants:
+     - Quote wizard **must** remain functionally identical (fields, validation, pricing).
+     - Client portal data presentation **must** keep current semantics and visibility rules.
+   - Collect metrics (FCP/LCP, API timings) for baselines.
+5. **Risk Register + Compatibility Plan**
+   - List areas that will be refactored or replaced; define adapters/anti‑corruption layers.
+   - Feature‑flag anything that could break quote/onboarding/portal.
+   - Write a short “compatibility contract” describing I/O models we won’t break.
+
+Commit all findings in `/docs/00_codebase_survey.md` with screenshots and a routing map.
+
+# 1) Canonical Spec
+- Title: “Technical Specifications – Yardura Admin” (PDF provided by user)
+- Treat feature IDs F‑001 … F‑016 as binding requirements.
+- Optimize for: operational efficiency, data integrity, PCI/PII safety, franchise scalability.
+
+# 2) Business Goal (unchanged)
+A full platform for dog‑waste service companies: quoting → onboarding/subscriptions → dispatch/routing → field‑tech PWA → client portal with proofs + wellness → billing/payroll → multi‑tenant franchise → analytics.
+
+# 3) Current State (for context)
+The existing app reportedly includes (keep these stable during migration):
+- NextAuth auth; role‑based access (Admin/Sales Rep/Customer/Tech/Owner)
+- Stripe subscriptions & webhooks
+- Dashboard/analytics with wellness insights (3Cs, trends)
+- Quote/pricing wizard; onboarding flow
+- Email via SMTP/Resend; landing site assets
+- Tailwind/Radix or shadcn‑based UI, Framer Motion animations
+- Prisma ORM with **SQLite** datasource
+
+# 4) Existing Prisma Schema (verbatim)
+```prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User accounts with authentication
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  address       String?
+  city          String?
+  zipCode       String?
+  role          UserRole  @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  stripeCustomerId String?
+
+  // Sales rep specific fields
+  salesRepId    String?   // ID of the sales rep who signed them up
+  commissionRate Float?   // Commission rate for this sales rep
+
+  accounts      Account[]
+  sessions      Session[]
+  dogs          Dog[]
+  serviceVisits ServiceVisit[]
+  dataReadings  DataReading[]
+  referrals     User[]           @relation("SalesRepReferrals")
+  salesRep      User?            @relation("SalesRepReferrals", fields: [salesRepId], references: [id])
+  earnedCommissions Commission[]  @relation("CommissionSalesRep")
+  receivedCommissions Commission[] @relation("CommissionCustomer")
+  orgId         String?
+  org           Org?      @relation(fields: [orgId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Dog profiles
+model Dog {
+  id           String   @id @default(cuid())
+  name         String
+  breed        String?
+  age          Int?
+  weight       Float?
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataReadings DataReading[]
+  orgId        String?
+  org          Org?     @relation(fields: [orgId], references: [id])
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  samples      Sample[]
+}
+
+// Service visits
+model ServiceVisit {
+  id              String   @id @default(cuid())
+  userId          String?
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  status          ServiceStatus @default(SCHEDULED)
+  serviceType     ServiceType
+  yardSize        YardSize
+  dogsServiced    Int
+  accountNumber   String?  // For linking Raspberry Pi data
+  notes           String?
+  deodorize       Boolean  @default(false)
+  litterService   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User?         @relation(fields: [userId], references: [id])
+  dataReadings    DataReading[]
+  commissions     Commission[]
+}
+
+// Data readings from Raspberry Pi
+model DataReading {
+  id             String   @id @default(cuid())
+  userId         String?
+  dogId          String?
+  serviceVisitId String?
+  timestamp      DateTime @default(now())
+  weight         Float?   // Waste weight in grams
+  volume         Float?   // Waste volume in ml
+  color          String?  // Color analysis (RGB values)
+  consistency    String?  // Texture/consistency analysis
+  temperature    Float?   // Temperature reading
+  methaneLevel   Float?   // Methane sensor reading
+  location       String?  // GPS coordinates if mobile
+  deviceId       String   // Raspberry Pi device identifier
+  accountNumber  String?  // For anonymous data collection
+
+  user         User?         @relation(fields: [userId], references: [id])
+  dog          Dog?          @relation(fields: [dogId], references: [id])
+  serviceVisit ServiceVisit? @relation(fields: [serviceVisitId], references: [id])
+}
+
+// Global eco statistics
+model GlobalStats {
+  id                   String   @id @default("global")
+  totalWasteDiverted  Float    @default(0) // in lbs
+  totalMethaneAvoided Float    @default(0) // in ft³
+  totalUsers          Int      @default(0)
+  totalDogs           Int      @default(0)
+  totalServiceVisits  Int      @default(0)
+  updatedAt           DateTime @updatedAt
+}
+
+// Commission tracking for sales reps
+model Commission {
+  id            String   @id @default(cuid())
+  salesRepId    String   // Sales rep who earned the commission
+  customerId    String   // Customer who generated the commission
+  serviceVisitId String  // Service visit that generated commission
+  amount        Float    // Commission amount
+  status        CommissionStatus @default(PENDING)
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salesRep      User         @relation("CommissionSalesRep", fields: [salesRepId], references: [id])
+  customer      User         @relation("CommissionCustomer", fields: [customerId], references: [id])
+  serviceVisit  ServiceVisit @relation(fields: [serviceVisitId], references: [id])
+
+  @@unique([salesRepId, serviceVisitId])
+}
+
+// Enums
+enum UserRole {
+  CUSTOMER
+  SALES_REP
+  ADMIN
+  TECH
+  OWNER
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum ServiceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  REGULAR
+  ONE_TIME
+  SPRING_CLEANUP
+  DEODORIZATION
+}
+
+enum YardSize {
+  SMALL    // < 1/4 acre
+  MEDIUM   // 1/4 - 1/2 acre
+  LARGE    // 1/2 - 1 acre
+  XLARGE   // > 1 acre
+}
+
+// ====================
+// Multi-tenant & Edge → Cloud pipeline models
+// ====================
+
+model Org {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  customers Customer[]
+  devices   Device[]
+  jobs      Job[]
+  dogs      Dog[]
+  samples   Sample[]
+  alerts    Alert[]
+
+  // unique on slug already declared at field level
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Org      @relation(fields: [orgId], references: [id])
+  name         String
+  email        String?
+  phone        String?
+  addressLine1 String
+  city         String
+  state        String
+  zip          String
+  latitude     Float?
+  longitude    Float?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  dogs Dog[]
+  jobs Job[]
+  samples Sample[]
+}
+
+model Job {
+  id            String        @id @default(cuid())
+  orgId         String
+  org           Org           @relation(fields: [orgId], references: [id])
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  frequency     Frequency     @default(WEEKLY)
+  nextVisitAt   DateTime?
+  dayOfWeek     Int?
+  extraAreas    Int           @default(0)
+  deodorizeMode DeodorizeMode @default(NONE)
+  status        JobStatus     @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  samples       Sample[]
+}
+
+enum Frequency {
+  ONE_TIME
+  WEEKLY
+  BI_WEEKLY
+  TWICE_WEEKLY
+}
+
+enum JobStatus {
+  ACTIVE
+  PAUSED
+  CANCELED
+}
+
+enum DeodorizeMode {
+  NONE
+  FIRST_VISIT
+  EACH_VISIT
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id])
+  name        String
+  type        String
+  apiKeyHash  String
+  uniqueId    String   @unique
+  lastSeenAt  DateTime?
+  createdAt   DateTime @default(now())
+  samples     Sample[]
+
+  @@index([orgId])
+}
+
+model Sample {
+  id             String    @id @default(cuid())
+  orgId          String
+  org            Org       @relation(fields: [orgId], references: [id])
+  deviceId       String
+  device         Device    @relation(fields: [deviceId], references: [id])
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  dogId          String?
+  dog            Dog?      @relation(fields: [dogId], references: [id])
+  jobId          String?
+  job            Job?      @relation(fields: [jobId], references: [id])
+  capturedAt     DateTime  @default(now())
+  imageUrl       String?
+  weightG        Float?
+  moistureRaw    Int?
+  temperatureC   Float?
+  gpsLat         Float?
+  gpsLng         Float?
+  notes          String?
+  freshnessScore Float?
+  createdAt      DateTime  @default(now())
+
+  scores SampleScore[]
+  alerts Alert[]
+  groundTruth GroundTruth[]
+
+  @@index([orgId, capturedAt])
+  @@index([customerId, capturedAt])
+  @@index([dogId, capturedAt])
+}
+
+model SampleScore {
+  id               String   @id @default(cuid())
+  sampleId         String
+  sample           Sample   @relation(fields: [sampleId], references: [id])
+  colorLabel       String?
+  consistencyLabel String?
+  contentFlags     String?
+  hydrationHint    String?
+  giCluster        String?
+  confidence       Float?
+  baselineDelta    Json?
+  scoredAt         DateTime @default(now())
+}
+
+model Alert {
+  id           String     @id @default(cuid())
+  orgId        String
+  sampleId     String
+  sample       Sample     @relation(fields: [sampleId], references: [id])
+  level        AlertLevel @default(INFO)
+  kind         String
+  message      String
+  acknowledged Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  org          Org        @relation(fields: [orgId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([sampleId])
+}
+
+enum AlertLevel {
+  INFO
+  WATCH
+  ATTENTION
+}
+
+model EcoStat {
+  id                 String   @id @default(cuid())
+  orgId              String
+  customerId         String?
+  dogId              String?
+  periodMonth        String
+  lbsDiverted        Float
+  methaneAvoidedCuFt Float
+  createdAt          DateTime @default(now())
+
+  @@index([orgId, periodMonth])
+}
+
+model BillingSnapshot {
+  id                   String   @id @default(cuid())
+  orgId                String
+  customerId           String
+  plan                 String
+  pricePerVisitCents   Int
+  visitsPerMonth       Int
+  oneTimeFeeCents      Int
+  discountOneTimeCents Int
+  createdAt            DateTime @default(now())
+
+  @@index([orgId, customerId])
+}
+
+model GroundTruth {
+  id           String   @id @default(cuid())
+  sampleId     String   @unique
+  sample       Sample   @relation(fields: [sampleId], references: [id])
+  dataset      String   // e.g., v0.1
+  split        String   // train|val|test
+  colorLabel   String?
+  consistency  String?
+  contentFlags String?
+  freshness    String?
+  notStool     Boolean  @default(false)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([dataset, split])
+}
+
+```
+
+# 5) Architecture Targets (integrate with existing code)
+- Next.js 15 (App Router) + React 19 + TS strict
+- Tailwind + shadcn/ui + Lucide + Framer Motion
+- next-auth (email + OAuth) with RBAC (Owner, Manager, Dispatcher, Tech, Accountant, Client, Franchise Owner)
+- REST route handlers; workers via BullMQ on Redis
+- Postgres 14+ via Prisma 6.10+ (see Migration below)
+- S3/R2 signed URLs + CDN; Twilio/Resend; Stripe; QuickBooks Online
+- PWA for Field Tech (offline queue + background sync)
+- Vercel + managed DB/Redis; Sentry; Vercel Analytics
+
+# 6) SQLite → Postgres Migration Plan (Do this safely)
+**Goal:** Move from SQLite (current) to Postgres without breaking existing flows.
+
+Steps (feature‑flagged + reversible):
+1. Create a **Postgres** datasource and keep **SQLite** active temporarily.
+   - Add `datasource pg` (Postgres URL) beside `datasource db` (SQLite).
+   - Introduce `shadowDatabaseUrl` for migrations.
+2. Align Prisma models:
+   - Keep model and enum names **unchanged** where possible to avoid breaking app code.
+   - Add missing indices/foreign keys for performance on Postgres.
+3. Generate migration diff for Postgres:
+   - `prisma migrate diff --from-schema-datamodel ./schema.prisma --to-schema-datamodel ./schema.prisma --from-empty --script > ./infra/pg/init.sql`
+   - Review/hand‑tune enum/constraint names.
+4. Data copy:
+   - Export from SQLite → CSV/NDJSON per table; import into Postgres using COPY.
+   - Verify referential integrity and counts; run idempotent backfills.
+5. Switch reads:
+   - Introduce a thin data‑access layer so reads can be toggled per model.
+   - Start with read‑only replicas from Postgres for non‑critical pages (e.g., analytics).
+6. Switch writes (per feature):
+   - Quote/onboarding last; first move non‑critical writes (logs, photos, eco stats).
+7. Cutover & cleanup:
+   - Freeze writes briefly; complete final delta sync; flip feature flags; remove SQLite.
+   - Backups + PITR configured; roll‑back plan documented.
+8. Test suites:
+   - Contract tests for NextAuth, quote wizard, onboarding, billing, portals.
+   - Load tests on routing and portal P95 SLAs.
+
+# 7) Feature Scope & Order
+- F‑001 Quote & Lead Mgmt → **Parity with existing wizard** (no regressions)
+- F‑002 Onboarding & Subscriptions → extend, don’t break current paths
+- F‑003 Dispatch/Routes; F‑004 Tech PWA; F‑005 Client Portal; F‑006 Wellness; F‑007 Billing; F‑008 Payroll; F‑009 Franchise; F‑010 Cross‑Sell; F‑011–F‑016 Integrations & Reporting
+
+# 8) Integration Guardrails
+- Do not rename existing API routes, input names, or response contracts until adapters are in place.
+- Keep current email templates/links working; add new ones under versioned paths.
+- Maintain the current portal’s semantics (visibility rules, required proofs).
+- Add **compatibility adapters** where domain models evolve (e.g., Job vs ServiceVisit).
+
+# 9) Deliverables (plus analysis artifacts)
+- Running app (local via docker compose; prod via Vercel + managed Postgres/Redis)
+- Prisma schema + migrations (SQLite legacy + Postgres final), seed script
+- `/docs/00_codebase_survey.md`, routing map, ERD, risk register, runbook
+- Postman/Bruno collection; Sentry; Analytics
+- Demo tenant + sample data

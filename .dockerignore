@@ -1,0 +1,103 @@
+# =============================================================================
+# YARDURA DOCKER IGNORE
+# Exclude unnecessary files from Docker build context
+# =============================================================================
+
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js build output
+.next
+out
+
+# Environment files (will be mounted as volumes)
+.env*
+!.env.example
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Infrastructure files (not needed in container)
+infra/
+docker-compose*.yml
+Dockerfile*
+
+# Test files
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+lib-cov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary folders
+tmp/
+temp/
+
+# Build artifacts
+dist/
+build/
+
+# Cache directories
+.cache
+.parcel-cache
+
+

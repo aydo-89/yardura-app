@@ -1,0 +1,795 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Postgres datasource for production (added for migration)
+// Commented out for development - uncomment when switching to Postgres
+// datasource pg {
+//   provider = "postgresql"
+//   url      = env("POSTGRES_DATABASE_URL")
+//   shadowDatabaseUrl = env("SHADOW_DATABASE_URL") // Optional: for migrations
+// }
+
+// User accounts with authentication
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  // Password reset fields
+  reset_token         String?
+  reset_token_expires DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  address       String?
+  city          String?
+  zipCode       String?
+  role          UserRole  @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  stripeCustomerId String?
+
+  // Sales rep specific fields
+  salesRepId    String?   // ID of the sales rep who signed them up
+  commissionRate Float?   // Commission rate for this sales rep
+
+  accounts      Account[]
+  sessions      Session[]
+  dogs          Dog[]
+  serviceVisits ServiceVisit[]
+  dataReadings  DataReading[]
+  referrals     User[]           @relation("SalesRepReferrals")
+  salesRep      User?            @relation("SalesRepReferrals", fields: [salesRepId], references: [id])
+  earnedCommissions Commission[]  @relation("CommissionSalesRep")
+  receivedCommissions Commission[] @relation("CommissionCustomer")
+  orgId         String?
+  org           Org?      @relation(fields: [orgId], references: [id])
+  assignedLeads Lead[]   @relation("LeadSalesRep")
+  territoryAssignments TerritoryAssignment[]
+  createdLeads   Lead[]  @relation("LeadCreator")
+  ownedLeads     Lead[]  @relation("LeadOwner")
+  leadActivities LeadActivity[]
+  tripsCreated   Trip[]  @relation("TripCreator")
+  tripsOwned     Trip[]  @relation("TripOwner")
+  prospectImports ProspectImport[] @relation("ProspectImportUploader")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Dog profiles
+model Dog {
+  id           String   @id @default(cuid())
+  name         String
+  breed        String?
+  age          Int?
+  weight       Float?
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataReadings DataReading[]
+  orgId        String?
+  org          Org?     @relation(fields: [orgId], references: [id])
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  samples      Sample[]
+}
+
+// Service visits
+model ServiceVisit {
+  id              String   @id @default(cuid())
+  userId          String?
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  status          ServiceStatus @default(SCHEDULED)
+  serviceType     ServiceType
+  yardSize        YardSize
+  dogsServiced    Int
+  accountNumber   String?  // For linking Raspberry Pi data
+  notes           String?
+  deodorize       Boolean  @default(false)
+  litterService   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User?         @relation(fields: [userId], references: [id])
+  dataReadings    DataReading[]
+  commissions     Commission[]
+}
+
+// Data readings from Raspberry Pi
+model DataReading {
+  id             String   @id @default(cuid())
+  userId         String?
+  dogId          String?
+  serviceVisitId String?
+  timestamp      DateTime @default(now())
+  weight         Float?   // Waste weight in grams
+  volume         Float?   // Waste volume in ml
+  color          String?  // Color analysis (RGB values)
+  consistency    String?  // Texture/consistency analysis
+  temperature    Float?   // Temperature reading
+  methaneLevel   Float?   // Methane sensor reading
+  location       String?  // GPS coordinates if mobile
+  deviceId       String   // Raspberry Pi device identifier
+  accountNumber  String?  // For anonymous data collection
+
+  user         User?         @relation(fields: [userId], references: [id])
+  dog          Dog?          @relation(fields: [dogId], references: [id])
+  serviceVisit ServiceVisit? @relation(fields: [serviceVisitId], references: [id])
+}
+
+// Global eco statistics
+model GlobalStats {
+  id                   String   @id @default("global")
+  totalWasteDiverted  Float    @default(0) // in lbs
+  totalMethaneAvoided Float    @default(0) // in ft³
+  totalUsers          Int      @default(0)
+  totalDogs           Int      @default(0)
+  totalServiceVisits  Int      @default(0)
+  updatedAt           DateTime @updatedAt
+}
+
+// Commission tracking for sales reps
+model Commission {
+  id            String   @id @default(cuid())
+  salesRepId    String   // Sales rep who earned the commission
+  customerId    String   // Customer who generated the commission
+  serviceVisitId String  // Service visit that generated commission
+  amount        Float    // Commission amount
+  status        CommissionStatus @default(PENDING)
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salesRep      User         @relation("CommissionSalesRep", fields: [salesRepId], references: [id])
+  customer      User         @relation("CommissionCustomer", fields: [customerId], references: [id])
+  serviceVisit  ServiceVisit @relation(fields: [serviceVisitId], references: [id])
+
+  @@unique([salesRepId, serviceVisitId])
+}
+
+// Enums
+enum UserRole {
+  CUSTOMER
+  SALES_REP
+  ADMIN
+  TECH
+  OWNER
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum ServiceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  REGULAR
+  ONE_TIME
+  SPRING_CLEANUP
+  DEODORIZATION
+}
+
+enum YardSize {
+  SMALL    // < 1/4 acre
+  MEDIUM   // 1/4 - 1/2 acre
+  LARGE    // 1/2 - 1 acre
+  XLARGE   // > 1 acre
+}
+
+// ====================
+// Multi-tenant & Edge → Cloud pipeline models
+// ====================
+
+model Org {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  customers Customer[]
+  devices   Device[]
+  jobs      Job[]
+  dogs      Dog[]
+  samples   Sample[]
+  alerts    Alert[]
+  leads     Lead[]
+  businessConfig BusinessConfig?
+  territories Territory[]
+  territoryAssignments TerritoryAssignment[]
+  leadActivities LeadActivity[]
+  cadences   Cadence[]
+  cadenceEnrollments LeadCadenceEnrollment[]
+  trips      Trip[]
+  prospectImports ProspectImport[]
+
+  // unique on slug already declared at field level
+}
+
+model BusinessConfig {
+  id        String   @id @default(cuid())
+  orgId     String   @unique
+  org       Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Business metadata
+  businessName String @default("Business")
+
+  // Service area configuration
+  serviceZones Json // Array of service zones with ZIP codes
+
+  // Pricing configuration
+  basePricing Json // Base pricing tiers, frequencies, add-ons
+
+  // Business settings
+  settings Json // Business-specific settings
+
+  // Operational settings
+  operations Json // Operational configuration
+
+  // Communication settings
+  communication Json // Communication preferences
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Org      @relation(fields: [orgId], references: [id])
+  name         String
+  email        String?
+  phone        String?
+  addressLine1 String
+  city         String
+  state        String
+  zip          String
+  latitude     Float?
+  longitude    Float?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  dogs Dog[]
+  jobs Job[]
+  samples Sample[]
+  leads Lead[]
+}
+
+model Job {
+  id            String        @id @default(cuid())
+  orgId         String
+  org           Org           @relation(fields: [orgId], references: [id])
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  frequency     Frequency     @default(WEEKLY)
+  nextVisitAt   DateTime?
+  dayOfWeek     Int?
+  extraAreas    Int           @default(0)
+  deodorizeMode DeodorizeMode @default(NONE)
+  status        JobStatus     @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  samples       Sample[]
+}
+
+enum Frequency {
+  ONE_TIME
+  WEEKLY
+  BI_WEEKLY
+  TWICE_WEEKLY
+}
+
+enum JobStatus {
+  ACTIVE
+  PAUSED
+  CANCELED
+}
+
+enum DeodorizeMode {
+  NONE
+  FIRST_VISIT
+  EACH_VISIT
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id])
+  name        String
+  type        String
+  apiKeyHash  String
+  uniqueId    String   @unique
+  lastSeenAt  DateTime?
+  createdAt   DateTime @default(now())
+  samples     Sample[]
+
+  @@index([orgId])
+}
+
+model Sample {
+  id             String    @id @default(cuid())
+  orgId          String
+  org            Org       @relation(fields: [orgId], references: [id])
+  deviceId       String
+  device         Device    @relation(fields: [deviceId], references: [id])
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  dogId          String?
+  dog            Dog?      @relation(fields: [dogId], references: [id])
+  jobId          String?
+  job            Job?      @relation(fields: [jobId], references: [id])
+  capturedAt     DateTime  @default(now())
+  imageUrl       String?
+  weightG        Float?
+  moistureRaw    Int?
+  temperatureC   Float?
+  gpsLat         Float?
+  gpsLng         Float?
+  notes          String?
+  freshnessScore Float?
+  createdAt      DateTime  @default(now())
+
+  scores SampleScore[]
+  alerts Alert[]
+  groundTruth GroundTruth[]
+
+  @@index([orgId, capturedAt])
+  @@index([customerId, capturedAt])
+  @@index([dogId, capturedAt])
+}
+
+model SampleScore {
+  id               String   @id @default(cuid())
+  sampleId         String
+  sample           Sample   @relation(fields: [sampleId], references: [id])
+  colorLabel       String?
+  consistencyLabel String?
+  contentFlags     String?
+  hydrationHint    String?
+  giCluster        String?
+  confidence       Float?
+  baselineDelta    Json?
+  scoredAt         DateTime @default(now())
+}
+
+model Alert {
+  id           String     @id @default(cuid())
+  orgId        String
+  sampleId     String
+  sample       Sample     @relation(fields: [sampleId], references: [id])
+  level        AlertLevel @default(INFO)
+  kind         String
+  message      String
+  acknowledged Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  org          Org        @relation(fields: [orgId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([sampleId])
+}
+
+enum AlertLevel {
+  INFO
+  WATCH
+  ATTENTION
+}
+
+model EcoStat {
+  id                 String   @id @default(cuid())
+  orgId              String
+  customerId         String?
+  dogId              String?
+  periodMonth        String
+  lbsDiverted        Float
+  methaneAvoidedCuFt Float
+  createdAt          DateTime @default(now())
+
+  @@index([orgId, periodMonth])
+}
+
+model BillingSnapshot {
+  id                   String   @id @default(cuid())
+  orgId                String
+  customerId           String
+  plan                 String
+  pricePerVisitCents   Int
+  visitsPerMonth       Int
+  oneTimeFeeCents      Int
+  discountOneTimeCents Int
+  createdAt            DateTime @default(now())
+
+  @@index([orgId, customerId])
+}
+
+model GroundTruth {
+  id           String   @id @default(cuid())
+  sampleId     String   @unique
+  sample       Sample   @relation(fields: [sampleId], references: [id])
+  dataset      String   // e.g., v0.1
+  split        String   // train|val|test
+  colorLabel   String?
+  consistency  String?
+  contentFlags String?
+  freshness    String?
+  notStool     Boolean  @default(false)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([dataset, split])
+}
+
+// Lead management for quote submissions
+model Lead {
+  id                String   @id @default(cuid())
+  orgId             String
+  org               Org      @relation(fields: [orgId], references: [id])
+
+  // Contact information
+  firstName         String?
+  lastName          String?
+  email             String
+  phone             String?
+
+  // Classification & ownership
+  leadType          String   @default("inbound") // inbound | outbound | partner
+  pipelineStage     String?  // e.g., cold | contacted | scheduled | follow_up
+  territoryId       String?
+  territory         Territory? @relation(fields: [territoryId], references: [id])
+  campaignId        String?
+  createdById       String?
+  createdBy         User?    @relation("LeadCreator", fields: [createdById], references: [id])
+  ownerId           String?
+  owner             User?    @relation("LeadOwner", fields: [ownerId], references: [id])
+  lastActivityAt    DateTime?
+  nextActionAt      DateTime?
+  lastActivityId    String? @unique
+  lastActivity      LeadActivity? @relation("LeadLastActivity", fields: [lastActivityId], references: [id])
+
+  // Service details
+  serviceType       String   @default("residential") // residential | commercial
+  dogs              Int?
+  yardSize          String?  // small | medium | large | xl
+  frequency         String?  // weekly | biweekly | twice-weekly | monthly | onetime
+
+  // Address information
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  latitude          Float?
+  longitude         Float?
+
+  // Business details (for commercial)
+  businessType      String?
+  businessName      String?
+
+  // Add-ons and services
+  deodorize         Boolean  @default(false)
+  deodorizeMode     String?  // first-visit | each-visit | every-other | one-time
+  sprayDeck         Boolean  @default(false)
+  sprayDeckMode     String?  // first-visit | each-visit | every-other | one-time
+  divertMode        String?  // none | takeaway | 25 | 50 | 100
+
+  // Additional areas to clean
+  areasToClean      Json?    // JSON object of areas
+
+  // Cleanup timing
+  lastCleanedBucket String?
+  lastCleanedDate   DateTime?
+  initialClean      Boolean  @default(false)
+  daysSinceLastCleanup Int?
+
+  // Preferences and special requests
+  specialInstructions String?
+  referralSource    String?
+  preferredContactMethod String? // email | phone
+
+  // Wellness insights consent
+  wellnessOptIn     Boolean  @default(false)
+
+  // Pricing information (snapshot at time of quote)
+  estimatedPrice    Float?
+  pricingBreakdown  Json?    // Detailed pricing breakdown
+
+  // Lead status and tracking
+  status            LeadStatus @default(NEW)
+  source            String     @default("website") // website | phone | referral
+  priority          LeadPriority @default(MEDIUM)
+
+  // Conversion tracking
+  convertedAt       DateTime?
+  convertedToCustomerId String?
+
+  // Metadata
+  submittedAt       DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Form protection and analytics
+  protectionScore   Float?
+  ipAddress         String?
+  userAgent         String?
+  recaptchaToken    String?
+
+  // Relations
+  customer          Customer? @relation(fields: [convertedToCustomerId], references: [id])
+  salesRepId        String?
+  salesRep          User?    @relation("LeadSalesRep", fields: [salesRepId], references: [id])
+  activities        LeadActivity[] @relation("LeadActivities")
+  cadenceEnrollments LeadCadenceEnrollment[]
+  trips             TripStop[]
+
+  @@index([orgId])
+  @@index([email])
+  @@index([status])
+  @@index([submittedAt])
+  @@index([zipCode])
+  @@index([leadType])
+  @@index([pipelineStage])
+  @@index([territoryId])
+  @@index([ownerId])
+  @@index([nextActionAt])
+}
+
+model Territory {
+  id             String   @id @default(cuid())
+  orgId          String
+  org            Org      @relation(fields: [orgId], references: [id])
+  name           String
+  slug           String   @unique
+  type           String   // REGION | AREA | MICRO
+  color          String?
+  geometry       Json     // GeoJSON polygon/multipolygon
+  parentId       String?
+  parent         Territory? @relation("TerritoryHierarchy", fields: [parentId], references: [id])
+  children       Territory[] @relation("TerritoryHierarchy")
+  priorityWeight Int       @default(1)
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  assignments    TerritoryAssignment[]
+  leads          Lead[]
+  trips          Trip[]
+
+  @@index([orgId])
+  @@index([parentId])
+}
+
+model TerritoryAssignment {
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Org      @relation(fields: [orgId], references: [id])
+  territoryId  String
+  territory    Territory @relation(fields: [territoryId], references: [id])
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  role         String    // OWNER | CONTRIBUTOR | VIEWER
+  assignedAt   DateTime  @default(now())
+  isPrimary    Boolean   @default(false)
+
+  @@index([orgId])
+  @@index([territoryId])
+  @@index([userId])
+}
+
+model LeadActivity {
+  id            String    @id @default(cuid())
+  leadId        String
+  lead          Lead      @relation("LeadActivities", fields: [leadId], references: [id])
+  leadAsLast    Lead?     @relation("LeadLastActivity")
+  orgId         String
+  org           Org       @relation(fields: [orgId], references: [id])
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id])
+  type          String    // DOOR_KNOCK | CALL | SMS | EMAIL | NOTE | TASK | MEETING
+  channel       String?
+  occurredAt    DateTime  @default(now())
+  result        String?
+  notes         String?
+  location      Json?
+  attachments   Json?
+  durationSecs  Int?
+  followUpAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([leadId, occurredAt])
+  @@index([orgId, occurredAt])
+}
+
+model Cadence {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id])
+  name        String
+  description String?
+  targetStage String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  steps       CadenceStep[]
+  enrollments LeadCadenceEnrollment[]
+
+  @@index([orgId])
+  @@index([orgId, targetStage])
+}
+
+model CadenceStep {
+  id          String   @id @default(cuid())
+  cadenceId   String
+  cadence     Cadence  @relation(fields: [cadenceId], references: [id])
+  order       Int
+  channel     String   // SMS | EMAIL | CALL | TASK | VISIT
+  templateId  String?
+  waitMinutes Int      @default(0)
+  slaMinutes  Int?
+  autoComplete Boolean @default(false)
+  metadata    Json?
+
+  enrollments LeadCadenceEnrollment[] @relation("CadenceCurrentStep")
+
+  @@index([cadenceId, order])
+}
+
+model LeadCadenceEnrollment {
+  id             String   @id @default(cuid())
+  orgId          String
+  org            Org      @relation(fields: [orgId], references: [id])
+  leadId         String
+  lead           Lead     @relation(fields: [leadId], references: [id])
+  cadenceId      String
+  cadence        Cadence  @relation(fields: [cadenceId], references: [id])
+  currentStepId  String?
+  currentStep    CadenceStep? @relation("CadenceCurrentStep", fields: [currentStepId], references: [id])
+  status         String   @default("active")
+  startedAt      DateTime @default(now())
+  lastExecutedAt DateTime?
+  nextRunAt      DateTime?
+  pausedAt       DateTime?
+  cancelledAt    DateTime?
+  completedAt    DateTime?
+
+  @@index([orgId])
+  @@index([leadId])
+  @@index([cadenceId])
+  @@index([status])
+  @@index([nextRunAt])
+}
+
+model Trip {
+  id              String   @id @default(cuid())
+  orgId           String
+  org             Org      @relation(fields: [orgId], references: [id])
+  createdById     String
+  createdBy       User     @relation("TripCreator", fields: [createdById], references: [id])
+  ownerId         String
+  owner           User     @relation("TripOwner", fields: [ownerId], references: [id])
+  territoryId     String?
+  territory       Territory? @relation(fields: [territoryId], references: [id])
+  name            String?
+  optimization    String   @default("fastest")
+  status          String   @default("planned")
+  plannedStart    DateTime?
+  startLocation   Json
+  endLocation     Json?
+  distanceMeters  Int?
+  durationMinutes Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  stops           TripStop[]
+
+  @@index([orgId])
+  @@index([ownerId])
+  @@index([territoryId])
+  @@index([status])
+}
+
+model TripStop {
+  id          String   @id @default(cuid())
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id])
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  order       Int
+  plannedAt   DateTime?
+  arrivalAt   DateTime?
+  completedAt DateTime?
+  status      String   @default("pending")
+  notes       String?
+  address     String?
+  location    Json?
+
+  @@index([tripId, order])
+  @@index([leadId])
+}
+
+model ProspectImport {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id])
+  uploadedById String
+  uploadedBy   User     @relation("ProspectImportUploader", fields: [uploadedById], references: [id])
+  source      String   // CSV | PURCHASED | MANUAL
+  status      String   @default("processing")
+  stats       Json?
+  fileUrl     String
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+
+  @@index([orgId])
+  @@index([status])
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATING
+  WON
+  LOST
+  ARCHIVED
+}
+
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
