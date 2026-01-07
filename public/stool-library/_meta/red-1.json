@@ -1,0 +1,13 @@
+{
+  "id": "red-1",
+  "visual": {
+    "id": "red-1",
+    "shape": "log shape similar to normal",
+    "color": "brown base with visible red streaks",
+    "distinguishingFeature": "clear red streak lines on the surface (representing fresh blood)",
+    "surface": "normal texture but with 2-3 distinct red streaks across it"
+  },
+  "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: log shape similar to normal. Color: brown base with visible red streaks. Key identifying feature: clear red streak lines on the surface (representing fresh blood). Surface/texture: normal texture but with 2-3 distinct red streaks across it. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"red\" stool looks like.",
+  "model": "gemini-3-pro-image-preview",
+  "generatedAt": "2026-01-07T13:20:57.169Z"
+}

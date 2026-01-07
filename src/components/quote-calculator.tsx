@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Calculator, Info } from "lucide-react";
-import { calcInstantQuote, Frequency, YardSize } from "@/lib/pricing";
+import { calcInstantQuote, Frequency, YardSize, visitsPerMonth } from "@/lib/pricing";
 
 export default function QuoteCalculator() {
   const [dogs, setDogs] = useState(1);
@@ -61,6 +61,7 @@ export default function QuoteCalculator() {
             onChange={(e) => setFrequency(e.target.value as Frequency)}
             className="w-full border border-brand-300 rounded-xl p-2 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
+            <option value="daily">Weekdays (Mon–Fri)</option>
             <option value="weekly">Weekly</option>
             <option value="twice-weekly">Twice Weekly</option>
             <option value="bi-weekly">Bi-Weekly</option>
@@ -127,18 +128,10 @@ export default function QuoteCalculator() {
             <div className="text-3xl font-extrabold text-brand-600 mb-2">
               ${estimate}
             </div>
-            {frequency !== "one-time" && (
+            {frequency !== "one-time" && estimate !== null && (
               <div className="text-xs text-slate-500 mb-2">
                 That's only $
-                {(
-                  estimate *
-                  (frequency === "twice-weekly"
-                    ? 2
-                    : frequency === "bi-weekly"
-                      ? 0.5
-                      : 1)
-                ).toFixed(2)}{" "}
-                per month!
+                {(estimate * visitsPerMonth(frequency)).toFixed(2)} per month!
               </div>
             )}
             <div className="text-xs text-slate-600">
@@ -158,7 +151,7 @@ export default function QuoteCalculator() {
           Get Your Custom Quote
         </a>
         <p className="text-xs text-center text-slate-500 mt-2">
-          Or call/text us at (888) 915-YARD for immediate assistance
+          Or call/text us at (877) 417-YARD for immediate assistance
         </p>
       </div>
     </div>

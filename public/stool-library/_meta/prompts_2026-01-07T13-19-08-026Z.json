@@ -1,0 +1,14 @@
+[
+  {
+    "id": "normal-1",
+    "label": "Ideal: firm & easy to pick up",
+    "visual": {
+      "id": "normal-1",
+      "shape": "two or three smooth log-shaped pieces, well-formed, holding shape perfectly",
+      "color": "healthy medium brown",
+      "distinguishingFeature": "clean defined edges, holds together well, looks firm and solid",
+      "surface": "smooth with a subtle healthy sheen"
+    },
+    "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: two or three smooth log-shaped pieces, well-formed, holding shape perfectly. Color: healthy medium brown. Key identifying feature: clean defined edges, holds together well, looks firm and solid. Surface/texture: smooth with a subtle healthy sheen. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"normal\" stool looks like."
+  }
+]

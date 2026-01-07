@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getBusinessConfig } from "@/lib/business-config";
 import { resolveBusinessId } from "@/lib/tenant";
 
+export const runtime = "nodejs";
+
 // Public endpoint to fetch business configuration for client components
 export async function GET(request: NextRequest) {
   try {

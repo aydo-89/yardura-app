@@ -23,6 +23,7 @@ const YARD_MULTIPLIERS = {
 // Base rates from pricing.ts
 const BASE_RATES = {
   weekly: { base1: 20, base2: 24, base3: 28, extraDog: 4 },
+  daily: { base1: 20, base2: 24, base3: 28, extraDog: 4 },
   "twice-weekly": { base1: 32, base2: 38, base3: 44, extraDog: 6 },
   "bi-weekly": { base1: 28, base2: 32, base3: 36, extraDog: 4 },
   "one-time": { base1: 89, base2: 104, base3: 119, extraDog: 15 },
@@ -48,8 +49,15 @@ function calculatePricePerVisit(
   // Apply yard size multiplier
   basePrice *= YARD_MULTIPLIERS[yardSize];
 
+  if (frequency === "twice-weekly") {
+    basePrice = basePrice / 2;
+  } else if (frequency === "daily") {
+    basePrice = basePrice * 0.5;
+  }
+
   // For bi-weekly, this is the per-visit price
   // For twice-weekly, this is per-visit (total weekly divided by 2)
+  // For daily, 0.5 multiplier applies for high-density discount
   // For weekly, this is the weekly price
   // For one-time, this is the one-time price
 
@@ -61,6 +69,7 @@ export function generateStripePrices(): StripePriceConfig[] {
   const configs: StripePriceConfig[] = [];
   const frequencies: Frequency[] = [
     "weekly",
+    "daily",
     "twice-weekly",
     "bi-weekly",
     "one-time",

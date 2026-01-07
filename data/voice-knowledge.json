@@ -1,0 +1,249 @@
+[
+  {
+    "id": "overview",
+    "title": "InsightScoop Overview",
+    "body": "InsightScoop provides tech-enabled pet waste removal with a free pet wellness app.\n- Standard cadence options: Daily (Mon-Fri with optional weekend upgrade for Sat+Sun), Twice-weekly, Weekly, Biweekly, Monthly, or One-time service.\n- Field teams double-bag waste with biodegradable liners, capture proof-of-service photos (including gate re-latch), and log 3C health notes after every visit.\n- Scooping customers receive pro-assisted wellness with consistent auto-captures from our patent-pending capture device; the app works without the device too.\n- Service area focus: Minneapolis metro (South Minneapolis, Richfield, Edina, Bloomington) with nearby suburbs evaluated on request.\n- No long-term contracts; cadence and service pauses are flexible with a quick heads-up.\n- Sales: sales@yardura.com | Urgent field issues: 1-855-927-3872.",
+    "tags": [
+      "overview",
+      "service",
+      "contact"
+    ]
+  },
+  {
+    "id": "wellness-app",
+    "title": "Wellness App (Free + Premium)",
+    "body": "The InsightScoop app is free for pet owners and provides stool capture with AI summaries (what it could mean), hydration score, firmness scale, and a watch/monitor/vet-now indicator. It also includes weekly check-ins, symptom-aware chat with red-flag tips (not a diagnosis), dog profiles, reminders, food and med logs with ingredient scans and a wellness score, a stool library, vet-ready PDF reports, privacy controls, weather safety alerts, parasite risk calendar, and a poop map that shows location trends.\nPremium wellness is $19.99 per month (billed through the app stores on iOS) and adds unlimited scans and chat, long-term trends, early warnings, multi-dog households and family sharing, GPS walk tracking, and a wellness risk score.\nScooping customers get pro-assisted wellness with consistent auto-captures and a pro-verified timeline.",
+    "tags": [
+      "wellness",
+      "app",
+      "premium"
+    ]
+  },
+  {
+    "id": "differentiators",
+    "title": "Why Owners and Properties Choose InsightScoop",
+    "body": "Key differentiators to highlight on calls.\n- Background-checked scoopers with QA-reviewed visits and photo confirmation.\n- Patent-pending capture device for consistent stool imagery and pro-assisted wellness when scooping is active.\n- Free wellness app that turns quick stool captures into easy-to-read insights.\n- Flexible scheduling with no long-term contracts and transparent visit logs.\n- Eco-friendly practices with optional haul-away or compost routing.",
+    "tags": [
+      "differentiators",
+      "value"
+    ]
+  },
+  {
+    "id": "health-insights",
+    "title": "Wellness Insights and Disclaimers",
+    "body": "Wellness monitoring layers onto every service visit or app capture.\n- Scoopers log the 3C rubric (color, consistency, content) and the app adds hydration and firmness scoring.\n- The app provides watch/monitor/vet-now guidance and red-flag tips, but it is informational only and not a diagnosis.\n- Owners can export a one-page PDF report with recent symptoms and stool images for their vet.\n- If asked about medical issues, advise seeing a licensed veterinarian.",
+    "tags": [
+      "insights",
+      "health",
+      "disclaimer"
+    ]
+  },
+  {
+    "id": "services",
+    "title": "Core Service Menu",
+    "body": "Offerings to reference on calls.\n- Weekly scoop: crews walk courtyards, dog runs, and green belts in a perimeter-then-grid pattern, double-bagging waste and relatching gates.\n- Deodorize and sanitize: plant-based enzyme sprays added to the end of every visit when selected (one-time available for kickoff cleans).\n- Waste diversion: choose haul-away or compost routing (we divert as much as partners can accept) with impact reporting.\n- Extra dogs and extra areas (front yard, side yard, dog run, fenced area) adjust per-visit pricing.\n- Technicians carry PPE, liners, sanitizer, and spare gate hardware so service stays tidy and self-sufficient.",
+    "tags": [
+      "services",
+      "operations"
+    ]
+  },
+  {
+    "id": "eco-program",
+    "title": "Eco Practices",
+    "body": "Environmental commitments that matter to communities.\n- Biodegradable liners and sealed bags are standard even when waste remains onsite for municipal pickup.\n- Diversion options offer either haul-away or compost routing through local partners; metrics show pounds diverted and methane avoided.\n- Natural deodorizing avoids harsh chemicals and is safe for turf, synthetic grass, and paws.\n- Impact summaries roll into quarterly business reviews so managers can share sustainability wins with residents.",
+    "tags": [
+      "eco",
+      "diversion",
+      "sustainability"
+    ]
+  },
+  {
+    "id": "pricing",
+    "title": "Pricing Guidance",
+    "body": "How to handle pricing conversations.\n- Community/commercial properties always require a custom proposal; never share specific dollar amounts. Collect site details and offer to loop in sales@yardura.com.\n- Residential inquiries can be priced by running the quote flow: confirm service ZIP, property type, dog count, yard size, last cleanup, areas to service, cadence, and add-ons (deodorizing, waste diversion, extra dogs, extra areas).\n- Premium wellness app subscriptions are billed separately through the app stores on iOS. Scooping service billing is separate.\n- After gathering details, use the quote tools to calculate per-visit and monthly pricing and email the same summary the web quote delivers.",
+    "tags": [
+      "pricing",
+      "plans",
+      "process"
+    ]
+  },
+  {
+    "id": "operations-sla",
+    "title": "Operations and QA",
+    "body": "Service-level expectations to communicate.\n- Visits land inside the agreed window; weather delays trigger proactive rescheduling updates.\n- QA review checks proof-of-service photos, gate re-latch, and notes for accuracy.\n- Quality misses are addressed within 24 hours or the visit is credited.\n- Visit summaries include time on site, bag counts, 3C notes, and photos so customers have documentation.",
+    "tags": [
+      "sla",
+      "operations",
+      "quality"
+    ]
+  },
+  {
+    "id": "faq",
+    "title": "Quick Answers",
+    "body": "High-frequency questions.\n- Service area: Minneapolis, Richfield, Edina, and Bloomington today; nearby suburbs can be evaluated when you submit a quote.\n- App: The wellness app is free to download and works without scooping. Premium adds unlimited scans, multi-dog, trends, and walk tracking.\n- Scoopers: We often assign a consistent scooper for ongoing customers, but coverage may vary to keep service reliable.\n- Contracts: Month-to-month membership; give us a quick heads-up to skip for maintenance or snow closures.\n- Weather: We service in rain and light snow; deep snow or unsafe ice moves to the next available makeup slot.\n- Waste bins: Standard plan uses onsite bins; choose haul-away if you want us to remove waste off property.",
+    "tags": [
+      "faq",
+      "policy"
+    ]
+  },
+  {
+    "id": "quote-flow",
+    "title": "Commercial Quote Flow",
+    "body": "How the quote workflow collects information.\n- Start at getinsightscoop.com/quote, choose Community Service, and confirm the ZIP is inside our coverage.\n- Provide estimated daily dog count, property size (small, medium, large, enterprise), and how long it has been since a professional cleanup.\n- Add notes on pet stations, courtyards, turf type, and preferred visit days so routing can be optimized.\n- Submit contact name, role, email, and phone; we reply within one business day to confirm scope, schedule a walkthrough if needed, and deliver the proposal.\n- Voice assistant: ask the same questions, then run the quote and email the summary so the caller receives what the web flow would send.",
+    "tags": [
+      "quote",
+      "process",
+      "sales"
+    ]
+  },
+  {
+    "id": "contact-escalation",
+    "title": "Escalation Path",
+    "body": "Routing guidance when callers need more help.\n- Sales or detailed pricing questions: gather basics and hand off to sales@yardura.com for follow-up.\n- Operations emergencies (injury, hazardous spill, access issue): warm transfer to 1-855-927-3872.\n- Schedule tweaks: log the request and confirm Operations will update the route; same-day adjustments before 8am are usually possible.",
+    "tags": [
+      "contacts",
+      "escalation",
+      "support"
+    ]
+  },
+  {
+    "id": "objection-too-expensive",
+    "title": "Objection: Too Expensive",
+    "body": "How to handle price concerns.\n- Acknowledge: 'I totally understand wanting to make sure the service fits your budget.'\n- Value framing: Pricing includes proof-of-service photos and wellness insights that can help owners spot issues earlier.\n- Flexibility: Month-to-month with no contract means you can pause anytime for seasonal or budget changes.\n- Compare: Most customers find it costs less than hiring help ad hoc, with far more reliability and documentation.\n- If still hesitant: Offer every-other-week service or a smaller area to reduce cost.",
+    "tags": [
+      "objections",
+      "pricing",
+      "value"
+    ]
+  },
+  {
+    "id": "objection-diy",
+    "title": "Objection: I Can Do It Myself",
+    "body": "Responding to DIY objections.\n- Validate: 'That makes sense. Many customers started out doing it themselves.'\n- Time value: Most folks underestimate the time, especially in winter or after snowmelt.\n- Consistency: We show up on schedule and document every visit, even when life gets busy.\n- Wellness angle: Pro captures and 3C notes can help spot issues earlier.\n- Trial option: Suggest trying one month with no long-term commitment.",
+    "tags": [
+      "objections",
+      "diy",
+      "value"
+    ]
+  },
+  {
+    "id": "objection-just-thinking",
+    "title": "Objection: I'm Just Thinking About It",
+    "body": "When the caller isn't ready to commit.\n- Respect their timing and offer to email the quote.\n- Mention seasonality: spring fills fast, so starting sooner keeps options open.\n- Ask if there is any specific concern you can clarify now.",
+    "tags": [
+      "objections",
+      "timing",
+      "follow-up"
+    ]
+  },
+  {
+    "id": "objection-already-have-service",
+    "title": "Objection: We Already Use Someone",
+    "body": "Responding to existing service providers.\n- Acknowledge and ask if they are fully satisfied.\n- Highlight differentiators: wellness insights, proof-of-service photos, and QA review.\n- No pressure: month-to-month makes switching easy if they ever need a backup.",
+    "tags": [
+      "objections",
+      "competition",
+      "differentiation"
+    ]
+  },
+  {
+    "id": "objection-only-one-dog",
+    "title": "Objection: I Only Have One Small Dog",
+    "body": "Responding to single-dog or small-dog concerns.\n- Validate the smaller mess.\n- Emphasize that pricing scales by dog count and yard size.\n- Suggest every-other-week service to keep costs low if appropriate.\n- Mention wellness insights can still be helpful even for one dog.",
+    "tags": [
+      "objections",
+      "pricing",
+      "small-yards"
+    ]
+  },
+  {
+    "id": "objection-weather-seasonal",
+    "title": "Objection: What About Winter / Weather?",
+    "body": "Addressing seasonal and weather concerns.\n- We service year-round, rain or shine, when conditions are safe.\n- Deep snow or unsafe ice triggers a reschedule at no extra charge.\n- Month-to-month means customers can pause in winter and restart anytime.",
+    "tags": [
+      "objections",
+      "weather",
+      "seasonal",
+      "winter"
+    ]
+  },
+  {
+    "id": "objection-trust-payment",
+    "title": "Objection: Payment / Trust Concerns",
+    "body": "Building trust around payment and access.\n- Payments are processed securely; we do not store full card numbers.\n- Per-visit billing charges after each completed service with photo proof.\n- Month-to-month means cancel anytime with no fees.\n- Transparency: every visit has photos, bag counts, and notes.",
+    "tags": [
+      "objections",
+      "trust",
+      "payment",
+      "security"
+    ]
+  },
+  {
+    "id": "objection-gate-access",
+    "title": "Objection: Gate Access / Security Concerns",
+    "body": "Addressing property access and security worries.\n- Scoop crews are background-checked and insured.\n- We can use gate codes, lockboxes, or open-on-service-day access.\n- Every visit includes a gate re-latch photo for proof.\n- You can update access info anytime.",
+    "tags": [
+      "objections",
+      "security",
+      "access",
+      "gates"
+    ]
+  },
+  {
+    "id": "onboarding-overview",
+    "title": "Full Onboarding Process",
+    "body": "What happens after they agree to sign up.\n1. Collect service details: dogs, yard size, frequency, areas to clean, and add-ons (deodorize, haul-away, compost routing).\n2. Access info: dog temperament, gate codes, special instructions.\n3. Payment setup: secure payment method (monthly or per-visit).\n4. Schedule first visit: preferred start date, day of week, and time window.\n5. Confirmation email with full details and service expectations.",
+    "tags": [
+      "onboarding",
+      "process",
+      "setup"
+    ]
+  },
+  {
+    "id": "add-ons-services",
+    "title": "Service Add-Ons and Options",
+    "body": "Additional services customers can include.\n- Deodorize & Sanitize: plant-based enzyme spray added after visits.\n- Waste diversion: haul-away or compost routing when partners have capacity.\n- Extra dogs and extra areas (front yard, side yard, dog run, fenced area) adjust per-visit pricing.\n- One-time deep clean is recommended if the yard has not been cleaned recently.",
+    "tags": [
+      "add-ons",
+      "services",
+      "options",
+      "pricing",
+      "waste-diversion"
+    ]
+  },
+  {
+    "id": "scheduling-preferences",
+    "title": "Scheduling and Service Windows",
+    "body": "How scheduling works.\n- Service day: choose a preferred day of week. We aim for consistent day-of-week routes.\n- Time windows: morning, afternoon, or flexible depending on availability.\n- First visit: typically 3-7 business days out, depending on route capacity.\n- Changes: adjust service day or frequency with notice; same-day changes before 8am are sometimes possible.\n- Pauses: going on vacation or need to skip? We can pause billing with a quick heads-up.",
+    "tags": [
+      "scheduling",
+      "service",
+      "windows",
+      "flexibility"
+    ]
+  },
+  {
+    "id": "payment-billing",
+    "title": "Payment and Billing Details",
+    "body": "How billing and payment works.\n- Scooping service uses secure card processing. Choose monthly billing (charged in advance) or per-visit billing (charged after each completed visit).\n- Invoices include visit details, photos, and add-ons.\n- Premium wellness app subscriptions are billed separately through the app stores on iOS.\n- Month-to-month means you can cancel anytime with no fees.",
+    "tags": [
+      "payment",
+      "billing",
+      "pricing",
+      "invoicing",
+      "promotions"
+    ]
+  },
+  {
+    "id": "dog-safety-access",
+    "title": "Dog Safety and Access Requirements",
+    "body": "Information we need about dogs and property access.\n- Dog temperament: friendly, fearful, or aggressive? We need to know for safety.\n- Dog location during service: inside, separate area, or loose in yard.\n- Gate/fence type and access method (code, lockbox, open gate).\n- Special instructions: tricky latches, escape risks, areas to avoid, seasonal issues.",
+    "tags": [
+      "dogs",
+      "safety",
+      "access",
+      "gates",
+      "property"
+    ]
+  }
+]

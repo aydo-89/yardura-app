@@ -1,72 +1,77 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./styles/tokens.css";
+import { cookies, headers } from "next/headers";
+import { Suspense } from "react";
 import { Toaster } from "sonner";
+
+import AnalyticsListener from "@/components/analytics/AnalyticsListener";
+import HeaderWrapper from "@/components/layout/HeaderWrapper";
+import Providers from "@/components/providers";
 import ScrollProgress from "@/components/site/ScrollProgress";
 import StructuredData from "@/components/seo/StructuredData";
-import Providers from "@/components/providers";
-import HeaderWrapper from "@/components/layout/HeaderWrapper";
+import { TrackingConsentProvider } from "@/components/tracking/TrackingConsentProvider";
+import TrackingScriptLoader from "@/components/tracking/TrackingScriptLoader";
+import {
+  BRAND,
+  CORE_KEYWORDS,
+  DEFAULT_ICON,
+  DEFAULT_IMAGE,
+  DEFAULT_LOGO,
+  DEFAULT_SERVICE_AREAS,
+  SITE_DOMAIN,
+} from "@/lib/seo/config";
+import { cn } from "@/lib/utils";
+import type { ThemeName } from "@/components/theme/ThemeProvider";
+import { authOptions, safeGetServerSession } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "Yeller by Yardura | Lawngevity through Lawngevity – Twin Cities",
+  metadataBase: new URL(SITE_DOMAIN),
+  title: `${BRAND.name} — Clean yards. Smarter pet wellness insights.`,
   description:
-    "Experience Lawngevity through Lawngevity. Premium dog waste removal service in Minneapolis, Richfield, Edina & Bloomington. Weekly eco-friendly poop scooping with health insights & smart composting for cleaner yards and healthier pets. The world's first pet waste monitoring service.",
-  // Ensure favicon/logo uses Yeller mark
+    "InsightScoop is Minnesota's most advanced dog poop scooping service with AI-powered stool analysis, eco-friendly disposal, and proactive pet wellness alerts.",
   icons: {
-    icon: "/yardura-logo.png",
-    shortcut: "/yardura-logo.png",
-    apple: "/yardura-logo.png",
+    icon: DEFAULT_ICON,
+    shortcut: DEFAULT_ICON,
+    apple: DEFAULT_ICON,
   },
   keywords: [
-    "dog waste removal Minneapolis",
-    "pooper scooper service Twin Cities",
-    "dog poop cleanup Minneapolis",
-    "weekly poop pickup Twin Cities",
-    "dog waste collection service",
-    "pet waste removal Minneapolis",
-    "dog poop scooping service",
-
-    "eco-friendly dog waste removal",
-    "pet waste monitoring Minneapolis",
-    "dog health monitoring Twin Cities",
-    "AI pet waste analysis",
-    "early health alerts dogs",
-    "smart poop monitoring Minneapolis",
-    "dog waste health insights",
-    "pet wellness monitoring service",
-    "dog health tracking",
-    "pet waste analysis Minneapolis",
-    "dog wellness monitoring",
+    ...CORE_KEYWORDS,
+    "InsightScoop Twin Cities",
+    "AI dog waste removal",
+    "pet stool monitoring",
+    "dog poop pickup services Minnesota",
+    "Eagan dog waste removal",
+    "St. Cloud pooper scooper",
   ],
-  authors: [{ name: "Yeller" }],
+  authors: [{ name: BRAND.name }],
   openGraph: {
-    title:
-      "Yeller by Yardura | Lawngevity through Lawngevity – Minneapolis, MN",
+    title: `${BRAND.name} — Clean yards. Smarter pet wellness insights.`,
     description:
-      "Experience Lawngevity through Lawngevity. Clean yard. Health insights. Less landfill. More wag. Serving Minneapolis, Richfield, Edina & Bloomington. The world's first pet waste monitoring service.",
+      "Trusted field techs, AI stool monitoring, and actionable pet wellness reporting for dog parents across Minneapolis, St. Paul, and Central Minnesota.",
     type: "website",
-    url: "https://www.yardura.com",
+    url: SITE_DOMAIN,
     locale: "en_US",
-    siteName: "Yeller",
+    siteName: BRAND.name,
     images: [
       {
         url: "/api/og?type=homepage",
         width: 1200,
         height: 630,
-        alt: "Yeller by Yardura - Clean yard, smarter insights. Tech-enabled dog waste removal with health monitoring.",
+        alt: `${BRAND.name} pet waste removal and AI stool insights`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Yeller by Yardura | Lawngevity through Lawngevity – Minneapolis",
+    title: `${BRAND.name} — Clean yards. Smarter pet wellness insights.`,
     description:
-      "Clean yard. Health insights. Less landfill. More wag. The world's first pet waste monitoring service.",
-    creator: "@yardura",
+      "Weekly poop pickup with AI stool health alerts, eco-friendly disposal, and 3C wellness dashboards for Twin Cities dog parents.",
+    creator: "@insightscoop",
     images: ["/api/og?type=homepage"],
   },
   alternates: {
-    canonical: "https://www.yardura.com",
+    canonical: SITE_DOMAIN,
   },
   robots: {
     index: true,
@@ -80,8 +85,7 @@ export const metadata: Metadata = {
     },
   },
   other: {
-    // Preload LCP image for better performance
-    preload: "/modern_yard.png",
+    preload: DEFAULT_IMAGE,
   },
 };
 
@@ -89,10 +93,10 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  name: "Yeller",
-  image: "https://www.yeller.com/og-image.jpg",
-  url: "https://www.yeller.com",
-  telephone: "+16125819812",
+  name: BRAND.name,
+  image: `${SITE_DOMAIN}/api/og?type=homepage`,
+  url: SITE_DOMAIN,
+  telephone: BRAND.supportPhone,
   address: {
     "@type": "PostalAddress",
     addressLocality: "Minneapolis",
@@ -100,34 +104,46 @@ const jsonLd = {
     postalCode: "55417",
     addressCountry: "US",
   },
-  areaServed: ["South Minneapolis", "Richfield", "Edina", "Bloomington"],
+  areaServed: DEFAULT_SERVICE_AREAS,
   description:
-    "Tech-enabled, eco-friendly dog waste removal with smart health insights.",
+    "InsightScoop blends professional dog poop pickup with AI stool analytics, pet wellness dashboards, and eco-conscious disposal.",
   openingHours: "Mo-Fr 08:00-18:00",
   offers: [
     {
       "@type": "Offer",
-      name: "Weekly Pet Waste Monitoring & Removal",
-      priceRange: "$20-$24",
+      name: "Weekly AI stool-monitored poop pickup",
+      priceRange: "$20-$28",
       description:
-        "Weekly monitoring service with AI-powered health insights and early alerts",
+        "Weekly InsightScoop service with 3C stool analysis, wellness scoring, and text/email recaps.",
     },
     {
       "@type": "Offer",
-      name: "One-Time Clean",
-      priceRange: "$89",
-      description: "Complete yard cleanup with initial health assessment",
+      name: "One-time deep clean + baseline insights",
+      priceRange: "$89-$129",
+      description: "Full-yard reset plus an inaugural InsightScoop health scan and recommendations.",
     },
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const headersList = await headers();
+  const host = headersList.get("host")?.toLowerCase() ?? "";
+  const isYarduraHost = host.includes("yardura.com");
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("yardura-theme")?.value;
+  const initialTheme: ThemeName = themeCookie === "dark" ? "dark" : "light";
+  const session = await safeGetServerSession(authOptions);
+
   return (
-    <html lang="en" className="bg-white">
+    <html
+      lang="en"
+      className={cn(initialTheme === "dark" ? "dark" : "", "h-full")}
+      data-theme={initialTheme}
+    >
       <head>
         {/* Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -137,20 +153,28 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
 
         {/* Preload LCP image for better performance */}
         <link
           rel="preload"
-          href="/yardura-logo.png"
+          href={DEFAULT_LOGO}
           as="image"
           type="image/png"
           fetchPriority="high"
         />
+
       </head>
-      <body className="min-h-screen text-slate-800">
+      <body
+        className={cn(
+          "min-h-screen font-sans antialiased transition-colors",
+          "bg-slate-50 text-graphite",
+          "dark:bg-slate-950 dark:text-slate-50",
+        )}
+        suppressHydrationWarning
+      >
         {/* Skip to main content link */}
         <a
           href="#main-content"
@@ -159,17 +183,23 @@ export default function RootLayout({
           Skip to main content
         </a>
 
-        <Providers>
-          <HeaderWrapper />
-          <ScrollProgress />
-          {children}
-          <Toaster richColors position="top-right" />
-          {/* Removed left-side quick nav and sticky CTA */}
-          <StructuredData />
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-          />
+        <Providers initialTheme={initialTheme} session={session ?? undefined}>
+          <TrackingConsentProvider>
+            <Suspense fallback={null}>
+              <TrackingScriptLoader />
+              <AnalyticsListener />
+            </Suspense>
+            {!isYarduraHost && <HeaderWrapper />}
+            {!isYarduraHost && <ScrollProgress />}
+            {children}
+            <Toaster richColors position="top-right" />
+            {/* Removed left-side quick nav and sticky CTA */}
+            <StructuredData data={{ brandHost: host }} />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+          </TrackingConsentProvider>
         </Providers>
       </body>
     </html>

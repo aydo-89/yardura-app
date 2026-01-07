@@ -1,0 +1,98 @@
+[
+  {
+    "id": "normal-1",
+    "label": "Ideal: firm & easy to pick up",
+    "visual": {
+      "id": "normal-1",
+      "shape": "two or three smooth log-shaped pieces, well-formed, holding shape perfectly",
+      "color": "healthy medium brown",
+      "distinguishingFeature": "clean defined edges, holds together well, looks firm and solid",
+      "surface": "smooth with a subtle healthy sheen"
+    },
+    "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: two or three smooth log-shaped pieces, well-formed, holding shape perfectly. Color: healthy medium brown. Key identifying feature: clean defined edges, holds together well, looks firm and solid. Surface/texture: smooth with a subtle healthy sheen. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"normal\" stool looks like."
+  },
+  {
+    "id": "soft-1",
+    "label": "Soft but formed",
+    "visual": {
+      "id": "soft-1",
+      "shape": "soft mound that is starting to lose its form, edges are rounded and settling",
+      "color": "medium brown",
+      "distinguishingFeature": "softer appearance, edges not crisp, still has some structure but drooping",
+      "surface": "slightly matte, softer looking texture"
+    },
+    "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: soft mound that is starting to lose its form, edges are rounded and settling. Color: medium brown. Key identifying feature: softer appearance, edges not crisp, still has some structure but drooping. Surface/texture: slightly matte, softer looking texture. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"soft\" stool looks like."
+  },
+  {
+    "id": "watery-1",
+    "label": "Watery diarrhea",
+    "visual": {
+      "id": "watery-1",
+      "shape": "flat puddle shape with no defined form, spreading out",
+      "color": "lighter brown, watered-down appearance",
+      "distinguishingFeature": "completely shapeless, flat like a liquid puddle, wavy irregular edges",
+      "surface": "wet/liquid appearance, no solid texture"
+    },
+    "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: flat puddle shape with no defined form, spreading out. Color: lighter brown, watered-down appearance. Key identifying feature: completely shapeless, flat like a liquid puddle, wavy irregular edges. Surface/texture: wet/liquid appearance, no solid texture. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"watery\" stool looks like."
+  },
+  {
+    "id": "dry-1",
+    "label": "Dry or hard pellets",
+    "visual": {
+      "id": "dry-1",
+      "shape": "several small separate pellets or pebbles, not connected",
+      "color": "darker dry brown",
+      "distinguishingFeature": "broken into many small hard pieces instead of logs, gaps between pieces",
+      "surface": "dry cracked appearance, no moisture/sheen"
+    },
+    "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: several small separate pellets or pebbles, not connected. Color: darker dry brown. Key identifying feature: broken into many small hard pieces instead of logs, gaps between pieces. Surface/texture: dry cracked appearance, no moisture/sheen. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"dry\" stool looks like."
+  },
+  {
+    "id": "yellow-1",
+    "label": "Yellow or pale stool",
+    "visual": {
+      "id": "yellow-1",
+      "shape": "similar log shape to normal but wrong color",
+      "color": "pale yellow-tan, noticeably lighter than normal brown",
+      "distinguishingFeature": "unusual pale/yellow color that stands out as different from healthy brown",
+      "surface": "slightly greasy or oily looking sheen"
+    },
+    "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: similar log shape to normal but wrong color. Color: pale yellow-tan, noticeably lighter than normal brown. Key identifying feature: unusual pale/yellow color that stands out as different from healthy brown. Surface/texture: slightly greasy or oily looking sheen. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"yellow\" stool looks like."
+  },
+  {
+    "id": "red-1",
+    "label": "Red streaks",
+    "visual": {
+      "id": "red-1",
+      "shape": "log shape similar to normal",
+      "color": "brown base with visible red streaks",
+      "distinguishingFeature": "clear red streak lines on the surface (representing fresh blood)",
+      "surface": "normal texture but with 2-3 distinct red streaks across it"
+    },
+    "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: log shape similar to normal. Color: brown base with visible red streaks. Key identifying feature: clear red streak lines on the surface (representing fresh blood). Surface/texture: normal texture but with 2-3 distinct red streaks across it. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"red\" stool looks like."
+  },
+  {
+    "id": "black-1",
+    "label": "Black or tarry",
+    "visual": {
+      "id": "black-1",
+      "shape": "log shape but with sticky tar-like quality",
+      "color": "very dark black, much darker than normal brown",
+      "distinguishingFeature": "unusually dark black color, looks sticky/tarry",
+      "surface": "glossy shiny surface like tar or molasses"
+    },
+    "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: log shape but with sticky tar-like quality. Color: very dark black, much darker than normal brown. Key identifying feature: unusually dark black color, looks sticky/tarry. Surface/texture: glossy shiny surface like tar or molasses. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"black\" stool looks like."
+  },
+  {
+    "id": "mucus-1",
+    "label": "Mucus coating",
+    "visual": {
+      "id": "mucus-1",
+      "shape": "log shape with visible coating layer",
+      "color": "brown with translucent whitish coating",
+      "distinguishingFeature": "visible slimy/jelly-like coating wrapped around the outside",
+      "surface": "translucent mucus layer visible on surface, possibly with strand shapes"
+    },
+    "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: log shape with visible coating layer. Color: brown with translucent whitish coating. Key identifying feature: visible slimy/jelly-like coating wrapped around the outside. Surface/texture: translucent mucus layer visible on surface, possibly with strand shapes. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"mucus\" stool looks like."
+  }
+]

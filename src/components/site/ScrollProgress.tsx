@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useSpring } from "framer-motion";
+import { motion, useScroll, useSpring } from "@/lib/scrollmotion";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
 
 export default function ScrollProgress() {

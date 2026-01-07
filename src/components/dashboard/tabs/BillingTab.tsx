@@ -1,642 +1,746 @@
-// Refactor: extracted from legacy DashboardClientNew; removed mock wellness code and duplicates.
-import React from "react";
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CreditCard,
   DollarSign,
   AlertTriangle,
   CheckCircle,
   Download,
-  Sparkles,
-  Heart,
-  Dog as DogIcon,
-  Building,
-  Home,
-  Clock,
-  MapPin,
+  Loader2,
+  ShieldCheck,
+  FileText,
+  X,
+  Plus,
+  ChevronRight,
+  ExternalLink,
 } from "lucide-react";
-import type { User, Dog } from "../types";
+import type { User, ServiceSummary } from "../types";
+import { Button } from "@/components/ui/button";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { signOut } from "next-auth/react";
+import AddCardForm from "@/components/billing/AddCardForm";
 
 interface BillingTabProps {
   user: User;
-  dogs?: Dog[];
+  serviceSummary?: ServiceSummary | null;
 }
 
-export default function BillingTab({ user, dogs = [] }: BillingTabProps) {
-  // Mock data aligned with quote process
-  const serviceDetails = {
-    serviceType: "residential", // 'residential' | 'commercial'
-    frequency: "weekly", // 'weekly' | 'biweekly' | 'twice-weekly' | 'monthly' | 'onetime'
-    dogs: dogs.length || 1,
-    yardSize: "medium", // 'small' | 'medium' | 'large' | 'xl'
-    areasToClean: ["Front Yard", "Back Yard"], // Array of areas
-    zipCode: user.zipCode || "55419",
+interface SubscriptionSummary {
+  id: string;
+  status: string;
+  planName: string | null;
+  amountCents: number | null;
+  currency: string | null;
+  interval: string | null;
+  intervalCount: number | null;
+  nextBillingDate: string | null;
+  cancelAtPeriodEnd: boolean;
+  trialEndsAt: string | null;
+}
+
+interface PaymentMethodSummary {
+  id: string;
+  brand: string | null;
+  last4: string | null;
+  expMonth: number | null;
+  expYear: number | null;
+  type: string;
+  isDefault: boolean;
+}
+
+interface InvoiceSummary {
+  id: string;
+  number: string | null;
+  status: string | null;
+  amountDueCents: number | null;
+  currency: string | null;
+  invoiceDate: string | null;
+  hostedInvoiceUrl: string | null;
+  invoicePdf: string | null;
+}
+
+interface UpcomingInvoiceSummary {
+  amountDueCents: number | null;
+  currency: string | null;
+  dueDate: string | null;
+}
+
+interface BillingOverview {
+  subscriptions: SubscriptionSummary[];
+  paymentMethods: PaymentMethodSummary[];
+  invoices: InvoiceSummary[];
+  upcomingInvoice: UpcomingInvoiceSummary | null;
+}
+
+function formatCurrency(amountCents: number | null | undefined, currency = "usd") {
+  if (typeof amountCents !== "number") return "—";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(amountCents / 100);
+  } catch {
+    return `$${(amountCents / 100).toFixed(2)}`;
+  }
+}
+
+function formatDate(iso?: string | null) {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatFrequency(frequency?: string | null) {
+  if (!frequency) return null;
+  const normalized = frequency.toLowerCase().replace(/_/g, "-").trim();
+  switch (normalized) {
+    case "twice-weekly":
+    case "twice weekly":
+      return "Twice weekly";
+    case "bi-weekly":
+    case "biweekly":
+      return "Every other week";
+    case "weekly":
+      return "Weekly";
+    case "monthly":
+      return "Monthly";
+    default:
+      return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+}
+
+export default function BillingTab({ user, serviceSummary }: BillingTabProps) {
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelFeedback, setCancelFeedback] = useState("");
+  const [cancelModalError, setCancelModalError] = useState<string | null>(null);
+  const [cancellationResult, setCancellationResult] = useState<{
+    success: boolean;
+    message: string;
+    endDate?: string;
+  } | null>(null);
+
+  const [billing, setBilling] = useState<BillingOverview | null>(null);
+  const [billingLoading, setBillingLoading] = useState(true);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [addingPaymentMethod, setAddingPaymentMethod] = useState(false);
+  const [paymentMethodNotice, setPaymentMethodNotice] = useState<string | null>(null);
+  const [paymentMethodError, setPaymentMethodError] = useState<string | null>(null);
+  const [updatingPaymentMethodId, setUpdatingPaymentMethodId] = useState<string | null>(null);
+  const [removingPaymentMethodId, setRemovingPaymentMethodId] = useState<string | null>(null);
+
+  const fetchBillingOverview = useCallback(async () => {
+    setBillingLoading(true);
+    setBillingError(null);
+    try {
+      const response = await fetch("/api/billing/overview", {
+        method: "GET",
+        cache: "no-store",
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.ok === false) {
+        throw new Error(payload.error || "Unable to load billing information");
+      }
+      setBilling(payload.data ?? {
+        subscriptions: [],
+        paymentMethods: [],
+        invoices: [],
+        upcomingInvoice: null,
+      });
+    } catch (error) {
+      console.error("billing.overview", error);
+      setBillingError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't load billing information right now.",
+      );
+    } finally {
+      setBillingLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchBillingOverview();
+  }, [fetchBillingOverview]);
+
+  const activeSubscription = useMemo(() => {
+    if (!billing?.subscriptions?.length) return null;
+    return billing.subscriptions.find((sub) =>
+      ["active", "trialing"].includes(sub.status),
+    ) || billing.subscriptions[0];
+  }, [billing?.subscriptions]);
+
+  const nextBillingDate = useMemo(() => {
+    if (!activeSubscription) return null;
+    const candidates = [
+      billing?.upcomingInvoice?.dueDate,
+      activeSubscription.nextBillingDate,
+      activeSubscription.trialEndsAt,
+    ].filter(Boolean) as string[];
+    if (!candidates.length) return null;
+    const soonest = candidates
+      .map((iso) => new Date(iso))
+      .filter((date) => !Number.isNaN(date.getTime()))
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    return soonest ? soonest.toISOString() : null;
+  }, [activeSubscription, billing?.upcomingInvoice]);
+
+  const cadenceLabel = useMemo(() => formatFrequency(user.serviceFrequency), [user.serviceFrequency]);
+  const rateCurrency = activeSubscription?.currency || "usd";
+  const resolvedBillingPreference = useMemo(() => {
+    if (serviceSummary?.billingPreference) return serviceSummary.billingPreference;
+    if (activeSubscription?.interval === "week") return "weekly";
+    if (activeSubscription?.interval === "month") return "monthly";
+    return null;
+  }, [serviceSummary?.billingPreference, activeSubscription?.interval]);
+  const normalizedFrequency = useMemo(() => {
+    const raw = serviceSummary?.frequency ?? user.serviceFrequency ?? "";
+    return raw.toLowerCase().replace(/_/g, "-").trim();
+  }, [serviceSummary?.frequency, user.serviceFrequency]);
+  const visitsPerWeek = useMemo(() => {
+    switch (normalizedFrequency) {
+      case "weekly":
+        return 1;
+      case "twice-weekly":
+        return 2;
+      case "daily":
+        return serviceSummary?.weekendUpgrade ? 7 : 5;
+      case "bi-weekly":
+      case "biweekly":
+      case "every-other-week":
+        return 0.5;
+      case "monthly":
+        return 0.25;
+      default:
+        return null;
+    }
+  }, [normalizedFrequency, serviceSummary?.weekendUpgrade]);
+  const perVisitCents = serviceSummary?.perVisitCents ?? null;
+  const monthlyCents = serviceSummary?.monthlyCents ?? null;
+  const weeklyCents =
+    perVisitCents && visitsPerWeek != null
+      ? Math.round(perVisitCents * visitsPerWeek)
+      : null;
+  const cadenceRateCents = useMemo(() => {
+    if (resolvedBillingPreference === "monthly") return monthlyCents;
+    if (resolvedBillingPreference === "weekly") return weeklyCents;
+    return null;
+  }, [resolvedBillingPreference, monthlyCents, weeklyCents]);
+  const cadenceRateLabel = useMemo(() => {
+    if (!cadenceRateCents || !resolvedBillingPreference) return null;
+    const cadenceUnit = resolvedBillingPreference === "monthly" ? "month" : "week";
+    return `${formatCurrency(cadenceRateCents, rateCurrency)} / ${cadenceUnit}`;
+  }, [cadenceRateCents, resolvedBillingPreference, rateCurrency]);
+  const perVisitRateLabel = useMemo(() => {
+    if (!perVisitCents) return null;
+    return `${formatCurrency(perVisitCents, rateCurrency)} per visit`;
+  }, [perVisitCents, rateCurrency]);
+  const rateSummaryLabel = useMemo(() => {
+    const parts = [cadenceRateLabel, perVisitRateLabel].filter(Boolean) as string[];
+    return parts.length ? parts.join(" • ") : null;
+  }, [cadenceRateLabel, perVisitRateLabel]);
+
+  const planLabel = useMemo(() => {
+    if (!activeSubscription) return "—";
+    if (cadenceLabel) return `${cadenceLabel} Membership`;
+    if (activeSubscription.planName) return activeSubscription.planName;
+    return "Yardura Service";
+  }, [activeSubscription, cadenceLabel]);
+
+  const defaultPaymentMethod = useMemo(() => {
+    return billing?.paymentMethods?.find((method) => method.isDefault);
+  }, [billing?.paymentMethods]);
+
+  const otherPaymentMethods = useMemo(() => {
+    return billing?.paymentMethods?.filter((method) => !method.isDefault) || [];
+  }, [billing?.paymentMethods]);
+
+  const handleCancelSubscription = async () => {
+    setIsCancelling(true);
+    setCancelModalError(null);
+    try {
+      const response = await fetch("/api/stripe/cancel-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason, feedback: cancelFeedback }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        setCancellationResult({
+          success: true,
+          message: result.message,
+          endDate: result.finalBillingDate,
+        });
+        setShowCancelModal(false);
+        await fetchBillingOverview();
+        setTimeout(() => void signOut({ callbackUrl: "/goodbye" }), 400);
+      } else {
+        setCancellationResult({ success: false, message: result.error || "Failed to cancel" });
+        setCancelModalError(result.error || "Failed to cancel subscription");
+      }
+    } catch {
+      setCancellationResult({ success: false, message: "An error occurred" });
+      setCancelModalError("An error occurred while cancelling");
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
-  // Calculate visits per month based on frequency (52 weeks / 12 months = 4.33 for weekly)
-  const visitsPerMonth =
-    serviceDetails.frequency === "weekly"
-      ? 4.33
-      : serviceDetails.frequency === "twice-weekly"
-        ? 8.67
-        : serviceDetails.frequency === "biweekly"
-          ? 2.17
-          : 4.33;
-
-  const pricingDetails = {
-    basePrice: 24.0, // Based on 1 dog, medium yard, weekly
-    frequency: serviceDetails.frequency,
-    visitsPerMonth: visitsPerMonth,
-    addOns: [
-      { name: "Enhanced Deodorizing", price: 25.0, frequency: "per visit" },
-    ],
-    wellnessActive: true,
-    wellnessPrice: 59.99, // After 90 days free
-    wellnessFreeDays: 90,
-    // Correct calculation: (base per visit + add-ons per visit) × visits per month
-    totalMonthly: Math.round((24.0 + 25.0) * visitsPerMonth * 100) / 100,
-    nextService: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+  const handleManageBillingPortal = async () => {
+    setPortalLoading(true);
+    setPortalError(null);
+    try {
+      const response = await fetch("/api/billing/portal/me", { method: "POST" });
+      const payload = await response.json();
+      if (!response.ok || !payload?.url) throw new Error(payload.error || "Unable to open portal");
+      window.location.href = payload.url;
+    } catch (error) {
+      setPortalError(error instanceof Error ? error.message : "Couldn't open billing portal");
+    } finally {
+      setPortalLoading(false);
+    }
   };
-
-  const paymentMethods = [
-    {
-      id: "1",
-      type: "card",
-      last4: "4242",
-      brand: "Visa",
-      expiryMonth: 12,
-      expiryYear: 2025,
-      isDefault: true,
-    },
-  ];
-
-  const recentInvoices = [
-    {
-      id: "inv_001",
-      date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-      amount: pricingDetails.totalMonthly,
-      status: "paid",
-      description: `${serviceDetails.frequency.charAt(0).toUpperCase() + serviceDetails.frequency.slice(1)} Service (${pricingDetails.visitsPerMonth} visits/month)`,
-      items: [
-        {
-          description: "Base service",
-          amount: pricingDetails.basePrice * pricingDetails.visitsPerMonth,
-        },
-        {
-          description: "Enhanced Deodorizing",
-          amount: 25.0 * pricingDetails.visitsPerMonth,
-        },
-        { description: "Wellness Insights (Free Trial)", amount: 0.0 },
-      ],
-    },
-    {
-      id: "inv_002",
-      date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-      amount: pricingDetails.totalMonthly,
-      status: "paid",
-      description: `${serviceDetails.frequency.charAt(0).toUpperCase() + serviceDetails.frequency.slice(1)} Service (${pricingDetails.visitsPerMonth} visits/month)`,
-      items: [
-        {
-          description: "Base service",
-          amount: pricingDetails.basePrice * pricingDetails.visitsPerMonth,
-        },
-        {
-          description: "Enhanced Deodorizing",
-          amount: 25.0 * pricingDetails.visitsPerMonth,
-        },
-        { description: "Wellness Insights (Free Trial)", amount: 0.0 },
-      ],
-    },
-    {
-      id: "inv_003",
-      date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
-      amount: pricingDetails.totalMonthly,
-      status: "paid",
-      description: `${serviceDetails.frequency.charAt(0).toUpperCase() + serviceDetails.frequency.slice(1)} Service (${pricingDetails.visitsPerMonth} visits/month)`,
-      items: [
-        {
-          description: "Base service",
-          amount: pricingDetails.basePrice * pricingDetails.visitsPerMonth,
-        },
-        {
-          description: "Enhanced Deodorizing",
-          amount: 25.0 * pricingDetails.visitsPerMonth,
-        },
-        { description: "Wellness Insights (Free Trial)", amount: 0.0 },
-      ],
-    },
-  ];
 
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-2xl mb-4">
-          <CreditCard className="size-8 text-blue-600" />
-        </div>
-        <h2 className="text-3xl font-bold text-slate-900 mb-2">
-          Billing & Payments
-        </h2>
-        <p className="text-slate-600 max-w-2xl mx-auto">
-          Manage your subscription, payment methods, and billing history
-        </p>
-      </div>
-
-      {/* Service Details */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900">
-            Service Details
-          </h3>
-          <p className="text-slate-600 text-sm">
-            Your current service configuration
-          </p>
-        </div>
-
-        <div className="p-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                {serviceDetails.serviceType === "residential" ? (
-                  <Home className="size-6 text-green-600" />
-                ) : (
-                  <Building className="size-6 text-green-600" />
-                )}
-              </div>
-              <div className="text-sm text-slate-600">Service Type</div>
-              <div className="font-semibold text-slate-900 capitalize">
-                {serviceDetails.serviceType}
-              </div>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Clock className="size-6 text-blue-600" />
-              </div>
-              <div className="text-sm text-slate-600">Frequency</div>
-              <div className="font-semibold text-slate-900 capitalize">
-                {serviceDetails.frequency}
-              </div>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <DogIcon className="size-6 text-purple-600" />
-              </div>
-              <div className="text-sm text-slate-600">Dogs</div>
-              <div className="font-semibold text-slate-900">
-                {serviceDetails.dogs}
-              </div>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <MapPin className="size-6 text-amber-600" />
-              </div>
-              <div className="text-sm text-slate-600">Property Size</div>
-              <div className="font-semibold text-slate-900 capitalize">
-                {serviceDetails.yardSize}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-slate-200">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-slate-900">
-                Service Areas
+    <div id="billing" className="space-y-8">
+      {/* ====== HERO: Subscription Overview ====== */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-graphite via-graphite-soft to-graphite dark:from-graphite-soft dark:via-graphite dark:to-graphite-soft p-1">
+        <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-graphite via-graphite-soft to-graphite dark:from-[#25292f] dark:via-[#1e2227] dark:to-[#25292f] p-8 md:p-10">
+          {/* Decorative */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-coral/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-mint/8 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+          
+          <div className="relative z-10">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-1.5 mb-6">
+              <CreditCard className="size-4 text-mint" />
+              <span className="text-xs font-semibold tracking-wide text-white uppercase">
+                Your Membership
               </span>
-              <span className="text-sm text-slate-600">
-                {serviceDetails.areasToClean.length} areas
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {serviceDetails.areasToClean.map((area, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-slate-100 text-slate-700 text-xs rounded-full"
-                >
-                  {area}
-                </span>
-              ))}
-            </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-slate-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium text-slate-900">
-                  Next Service
-                </div>
-                <div className="text-sm text-slate-600">
-                  {pricingDetails.nextService.toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </div>
+          {billingLoading ? (
+              <div className="flex items-center gap-3 text-white/70">
+                <Loader2 className="size-5 animate-spin" />
+                <span>Loading billing details...</span>
               </div>
-              <div className="text-right">
-                <div className="text-sm font-medium text-slate-900">
-                  ZIP Code
-                </div>
-                <div className="text-sm text-slate-600">
-                  {serviceDetails.zipCode}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Current Plan Status */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">
-                Current Plan & Pricing
-              </h3>
-              <p className="text-slate-600 text-sm">
-                Your active subscription with detailed breakdown
-              </p>
-            </div>
-            <div className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
-              Active
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6">
-          {/* Base Service Pricing */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <DollarSign className="size-5 text-green-600" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-slate-900">Base Service</h4>
-                  <p className="text-sm text-slate-600">
-                    {serviceDetails.frequency.charAt(0).toUpperCase() +
-                      serviceDetails.frequency.slice(1)}{" "}
-                    service ({pricingDetails.visitsPerMonth} visits/month)
+            ) : activeSubscription ? (
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+                <div className="space-y-4">
+                  <h1 className="text-3xl md:text-4xl font-heading font-bold text-white">
+                    {planLabel}
+                  </h1>
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 text-white text-sm">
+                      <DollarSign className="size-4 text-mint" />
+                      <span className="font-semibold">
+                        {formatCurrency(activeSubscription.amountCents, activeSubscription.currency || undefined)}
+                    </span>
+                      <span className="text-white/60">
+                        / {activeSubscription.interval || "month"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 text-white text-sm">
+                      <ShieldCheck className="size-4 text-mint" />
+                      <span className="capitalize">{activeSubscription.status}</span>
+                    </div>
+                  </div>
+                  <p className="text-white/60 text-sm">
+                    Next billing: {formatDate(nextBillingDate)}
                   </p>
-                </div>
+                  {rateSummaryLabel ? (
+                    <p className="text-white/70 text-sm">
+                      Standard rate: {rateSummaryLabel}
+                    </p>
+                  ) : null}
               </div>
-              <div className="text-right">
-                <div className="text-lg font-bold text-slate-900">
-                  $
-                  {(
-                    pricingDetails.basePrice * pricingDetails.visitsPerMonth
-                  ).toFixed(2)}
-                </div>
-                <div className="text-sm text-slate-600">per month</div>
-              </div>
-            </div>
 
-            {/* Add-ons */}
-            {pricingDetails.addOns.map((addon, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between mb-3 ml-13"
-              >
-                <div>
-                  <div className="font-medium text-slate-900 text-sm">
-                    {addon.name}
-                  </div>
-                  <div className="text-sm text-slate-600">
-                    per visit × {pricingDetails.visitsPerMonth} visits/month
-                  </div>
-                </div>
-                <div className="text-sm font-medium text-slate-900">
-                  +${(addon.price * pricingDetails.visitsPerMonth).toFixed(2)}
-                </div>
-              </div>
-            ))}
-
-            {/* Wellness Insights */}
-            <div className="flex items-center justify-between mb-3 ml-13">
-              <div className="flex items-center gap-2">
-                <Heart className="size-4 text-red-500" />
-                <div>
-                  <div className="font-medium text-slate-900 text-sm">
-                    Wellness Insights
-                  </div>
-                  <div className="text-sm text-slate-600">
-                    {pricingDetails.wellnessFreeDays} days free, then $
-                    {pricingDetails.wellnessPrice.toFixed(2)}/month
-                  </div>
-                </div>
-              </div>
-              <div className="text-sm font-medium text-green-600">FREE</div>
-            </div>
-          </div>
-
-          {/* Total */}
-          <div className="pt-4 border-t border-slate-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-bold text-slate-900">
-                  Total Monthly
-                </div>
-                <div className="text-sm text-slate-600">
-                  Next billing:{" "}
-                  {new Date(
-                    Date.now() + 7 * 24 * 60 * 60 * 1000,
-                  ).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-slate-900">
-                  ${pricingDetails.totalMonthly.toFixed(2)}
-                </div>
-                <div className="text-sm text-slate-600">per month</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3 mt-6 pt-6 border-t border-slate-200">
-            <button className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors text-sm font-medium">
-              Manage Plan
-            </button>
-            <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
-              Add Wellness
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Methods */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">
-                Payment Methods
-              </h3>
-              <p className="text-slate-600 text-sm">
-                Manage your saved payment options
-              </p>
-            </div>
-            <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
-              Add Payment Method
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6">
-          <div className="space-y-4">
-            {paymentMethods.map((method) => (
-              <div
-                key={method.id}
-                className="flex items-center justify-between p-4 border border-slate-200 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-100 rounded-lg">
-                    <CreditCard className="size-5 text-slate-600" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-slate-900">
-                      {method.brand} ****{method.last4}
-                      {method.isDefault && (
-                        <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                          Default
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-slate-600">
-                      Expires {method.expiryMonth}/{method.expiryYear}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button className="px-3 py-1 text-slate-600 hover:text-slate-800 text-sm">
-                    Edit
-                  </button>
-                  {!method.isDefault && (
-                    <button className="px-3 py-1 text-red-600 hover:text-red-800 text-sm">
-                      Remove
-                    </button>
+                <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={handleManageBillingPortal}
+                  disabled={portalLoading}
+                    className="bg-mint hover:bg-mint/90 text-white rounded-xl h-11 px-6 font-semibold shadow-lg"
+                >
+                  {portalLoading ? (
+                      <Loader2 className="size-4 animate-spin mr-2" />
+                  ) : (
+                      <ExternalLink className="size-4 mr-2" />
                   )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Billing History */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">
-                Billing History
-              </h3>
-              <p className="text-slate-600 text-sm">
-                View and download your invoices
-              </p>
-            </div>
-            <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
-              Download All
-            </button>
-          </div>
-        </div>
-
-        <div className="divide-y divide-slate-200">
-          {recentInvoices.map((invoice) => (
-            <div key={invoice.id} className="p-4 hover:bg-slate-50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      invoice.status === "paid"
-                        ? "bg-green-100"
-                        : "bg-yellow-100"
-                    }`}
+                    Manage in Stripe
+                  </Button>
+                  <Button
+                    onClick={() => setShowCancelModal(true)}
+                    variant="outline"
+                    className="border-white/20 bg-white/5 text-white hover:bg-white/10 rounded-xl h-11 px-6 font-semibold"
                   >
-                    {invoice.status === "paid" ? (
-                      <CheckCircle className="size-4 text-green-600" />
-                    ) : (
-                      <AlertTriangle className="size-4 text-yellow-600" />
+                    Cancel Plan
+                </Button>
+              </div>
+            </div>
+          ) : (
+              <div className="text-center py-8">
+                <p className="text-white/70">No active subscription found.</p>
+                <p className="text-white/50 text-sm mt-2">
+                  If you recently signed up, details may still be syncing.
+                </p>
+            </div>
+          )}
+          </div>
+        </div>
+        </section>
+
+      {/* Alerts */}
+      {billingError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{billingError}</AlertDescription>
+        </Alert>
+      )}
+      {portalError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Portal Error</AlertTitle>
+          <AlertDescription>{portalError}</AlertDescription>
+        </Alert>
+      )}
+      {cancellationResult && (
+        <Alert variant={cancellationResult.success ? "default" : "destructive"}>
+          {cancellationResult.success ? <CheckCircle className="size-4 text-mint" /> : <AlertTriangle className="size-4" />}
+          <AlertTitle>{cancellationResult.success ? "Cancellation Confirmed" : "Cancellation Failed"}</AlertTitle>
+          <AlertDescription>{cancellationResult.message}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* ====== Payment Methods ====== */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-heading font-bold text-graphite dark:text-white">Payment Methods</h2>
+              <Button
+                variant={showAddCard ? "ghost" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setPaymentMethodError(null);
+                  setPaymentMethodNotice(null);
+                  setShowAddCard((prev) => !prev);
+                }}
+                disabled={addingPaymentMethod}
+            className="rounded-xl dark:border-white/20 dark:text-white dark:hover:bg-white/10"
+              >
+            {showAddCard ? "Cancel" : (
+              <>
+                <Plus className="size-4 mr-1.5" />
+                Add Card
+              </>
+            )}
+              </Button>
+              </div>
+
+        {/* Notices */}
+        {paymentMethodNotice && (
+          <div className="rounded-xl border border-mint/30 bg-mint/10 px-4 py-3 text-sm text-mint">
+            {paymentMethodNotice}
+            </div>
+        )}
+        {paymentMethodError && (
+          <div className="rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral-ink">
+            {paymentMethodError}
+          </div>
+        )}
+
+        {/* Add Card Form */}
+        {showAddCard && (
+          <div className="rounded-2xl border border-graphite/10 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-5">
+              <AddCardForm
+                onSuccess={async (paymentMethodId) => {
+                  setAddingPaymentMethod(true);
+                  setPaymentMethodError(null);
+                  try {
+                    const response = await fetch("/api/billing/payment-methods", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentMethodId, makeDefault: !defaultPaymentMethod }),
+                    });
+                    const json = await response.json();
+                  if (!response.ok || !json?.ok) throw new Error(json?.error || "Failed to save card");
+                  setPaymentMethodNotice("Card saved successfully!");
+                    setShowAddCard(false);
+                    await fetchBillingOverview();
+                  } catch (err: any) {
+                  setPaymentMethodError(err?.message || "Failed to save card");
+                  } finally {
+                    setAddingPaymentMethod(false);
+                  }
+                }}
+              onCancel={() => !addingPaymentMethod && setShowAddCard(false)}
+                disabled={addingPaymentMethod}
+              />
+            </div>
+        )}
+
+        {/* Cards List */}
+        <div className="rounded-2xl border border-graphite/5 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+          {billingLoading ? (
+            <div className="flex items-center gap-3 p-8 text-graphite/50 dark:text-white/50">
+              <Loader2 className="size-5 animate-spin" />
+              <span>Loading payment methods...</span>
+            </div>
+          ) : billing?.paymentMethods?.length ? (
+            <div className="divide-y divide-graphite/5 dark:divide-white/10">
+              {/* Default Card */}
+              {defaultPaymentMethod && (
+                <div className="p-5 bg-mint/5 dark:bg-mint/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex size-12 items-center justify-center rounded-xl bg-mint/10 text-mint">
+                        <CreditCard className="size-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-graphite dark:text-white">
+                    {defaultPaymentMethod.brand?.toUpperCase() || "Card"} •••• {defaultPaymentMethod.last4}
+                  </p>
+                          <span className="text-xs font-medium text-mint bg-mint/10 px-2 py-0.5 rounded-full">Default</span>
+                        </div>
+                        <p className="text-xs text-graphite/50 dark:text-white/50">
+                    Expires {defaultPaymentMethod.expMonth}/{defaultPaymentMethod.expYear}
+                  </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Other Cards */}
+                    {otherPaymentMethods.map((method) => (
+                <div key={method.id} className="p-5 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-graphite/5 text-graphite/50 dark:bg-white/10 dark:text-white/60">
+                      <CreditCard className="size-5" />
+                    </div>
+                        <div>
+                      <p className="font-medium text-graphite dark:text-white">
+                          {method.brand?.toUpperCase() || "Card"} •••• {method.last4}
+                      </p>
+                      <p className="text-xs text-graphite/50 dark:text-white/50">
+                            Expires {method.expMonth}/{method.expYear}
+                      </p>
+                    </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                      className="rounded-lg text-xs dark:border-white/20 dark:text-white dark:hover:bg-white/10"
+                      disabled={updatingPaymentMethodId === method.id || removingPaymentMethodId === method.id}
+                            onClick={async () => {
+                              setUpdatingPaymentMethodId(method.id);
+                              try {
+                          const res = await fetch(`/api/billing/payment-methods/${method.id}`, {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ action: "set_default" }),
+                                });
+                          const json = await res.json();
+                          if (!res.ok) throw new Error(json?.error);
+                          setPaymentMethodNotice("Default updated");
+                                await fetchBillingOverview();
+                              } catch (err: any) {
+                          setPaymentMethodError(err?.message || "Failed to update");
+                              } finally {
+                                setUpdatingPaymentMethodId(null);
+                              }
+                            }}
+                          >
+                      {updatingPaymentMethodId === method.id ? <Loader2 className="size-3 animate-spin" /> : "Make Default"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                      className="text-coral/80 hover:text-coral text-xs dark:text-coral dark:hover:text-coral dark:hover:bg-coral/10"
+                      disabled={removingPaymentMethodId === method.id}
+                            onClick={async () => {
+                        if (!confirm("Remove this card?")) return;
+                              setRemovingPaymentMethodId(method.id);
+                              try {
+                          const res = await fetch(`/api/billing/payment-methods/${method.id}`, { method: "DELETE" });
+                          const json = await res.json();
+                          if (!res.ok) throw new Error(json?.error);
+                          setPaymentMethodNotice("Card removed");
+                                await fetchBillingOverview();
+                              } catch (err: any) {
+                          setPaymentMethodError(err?.message || "Failed to remove");
+                              } finally {
+                                setRemovingPaymentMethodId(null);
+                              }
+                            }}
+                          >
+                      {removingPaymentMethodId === method.id ? <Loader2 className="size-3 animate-spin" /> : "Remove"}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <div className="mx-auto size-16 rounded-2xl bg-slate-100 dark:bg-white/10 flex items-center justify-center mb-4">
+                <CreditCard className="size-7 text-graphite/30 dark:text-white/30" />
+              </div>
+              <p className="text-graphite/50 dark:text-white/60 text-sm">No payment methods on file.</p>
+              <Button
+                onClick={() => setShowAddCard(true)}
+                className="mt-4 bg-graphite hover:bg-graphite-soft text-white rounded-xl"
+              >
+                <Plus className="size-4 mr-2" />
+                Add Your First Card
+              </Button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ====== Recent Invoices ====== */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-heading font-bold text-graphite dark:text-white">Recent Invoices</h2>
+
+        <div className="rounded-2xl border border-graphite/5 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+        {billingLoading ? (
+            <div className="flex items-center gap-3 p-8 text-graphite/50 dark:text-white/50">
+              <Loader2 className="size-5 animate-spin" />
+              <span>Loading invoices...</span>
+          </div>
+        ) : billing?.invoices?.length ? (
+            <div className="divide-y divide-graphite/5 dark:divide-white/10">
+              {billing.invoices.slice(0, 5).map((invoice) => (
+                <div key={invoice.id} className="flex items-center justify-between p-5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-coral/10 text-coral">
+                      <FileText className="size-5" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-graphite dark:text-white">{invoice.number || invoice.id}</p>
+                      <p className="text-xs text-graphite/50 dark:text-white/50">{formatDate(invoice.invoiceDate)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-semibold text-graphite dark:text-white">
+                        {formatCurrency(invoice.amountDueCents, invoice.currency || undefined)}
+                      </p>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        invoice.status === "paid" ? "bg-mint/10 text-mint" : "bg-coral/10 text-coral"
+                      }`}>
+                        {invoice.status}
+                      </span>
+                    </div>
+                    {invoice.hostedInvoiceUrl && (
+                      <Button variant="ghost" size="sm" className="rounded-lg dark:text-white" asChild>
+                            <a href={invoice.hostedInvoiceUrl} target="_blank" rel="noreferrer">
+                          <Download className="size-4" />
+                            </a>
+                          </Button>
                     )}
                   </div>
-                  <div>
-                    <div className="font-medium text-slate-900">
-                      {invoice.description}
-                    </div>
-                    <div className="text-sm text-slate-600">
-                      {invoice.date.toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </div>
-                    {/* Invoice Items */}
-                    <div className="mt-2 space-y-1">
-                      {invoice.items?.map((item, index) => (
-                        <div
-                          key={index}
-                          className="text-xs text-slate-500 flex justify-between"
-                        >
-                          <span>{item.description}</span>
-                          <span>${item.amount.toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="font-medium text-slate-900">
-                      ${invoice.amount.toFixed(2)}
-                    </div>
-                    <div
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        invoice.status === "paid"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}
-                    >
-                      {invoice.status}
-                    </div>
-                  </div>
-
-                  <button className="p-2 text-slate-600 hover:text-slate-800">
-                    <Download className="size-4" />
-                  </button>
-                </div>
+                      </div>
+                ))}
+          </div>
+        ) : (
+            <div className="p-12 text-center">
+              <div className="mx-auto size-16 rounded-2xl bg-slate-100 dark:bg-white/10 flex items-center justify-center mb-4">
+                <FileText className="size-7 text-graphite/30 dark:text-white/30" />
               </div>
-            </div>
-          ))}
+              <p className="text-graphite/50 dark:text-white/50 text-sm">No invoices yet.</p>
+          </div>
+        )}
         </div>
-      </div>
+      </section>
 
-      {/* Wellness Insights Status */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <Heart className="size-5 text-red-600" />
+      {/* ====== Cancel Modal ====== */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-graphite/80 p-6 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-graphite/5 px-6 py-4">
+              <div>
+                <h3 className="text-lg font-heading font-bold text-graphite">Cancel Subscription</h3>
+                <p className="text-sm text-graphite/50">We're sorry to see you go</p>
+              </div>
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="rounded-full p-2 text-graphite/50 hover:bg-graphite/5"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-graphite mb-2">
+                Why are you cancelling?
+              </label>
+              <select
+                  className="w-full rounded-xl border border-graphite/10 px-4 py-3 text-sm focus:border-coral focus:ring-2 focus:ring-coral/20"
+                value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+              >
+                <option value="">Select a reason</option>
+                  <option value="moving">We're moving</option>
+                <option value="cost">Cost concerns</option>
+                <option value="service-issues">Service issues</option>
+                <option value="seasonal">Seasonal pause</option>
+                <option value="other">Other</option>
+              </select>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Wellness Insights
-                </h3>
-                <p className="text-slate-600 text-sm">
-                  Pet health monitoring subscription
-                </p>
+                <label className="block text-sm font-medium text-graphite mb-2">
+                  Feedback (optional)
+              </label>
+              <textarea
+                  className="w-full rounded-xl border border-graphite/10 px-4 py-3 text-sm focus:border-coral focus:ring-2 focus:ring-coral/20"
+                  rows={3}
+                value={cancelFeedback}
+                  onChange={(e) => setCancelFeedback(e.target.value)}
+                  placeholder="Tell us how we could improve..."
+              />
               </div>
+              {cancelModalError && (
+                <div className="rounded-xl bg-coral/10 border border-coral/20 px-4 py-3 text-sm text-coral-ink">
+                  {cancelModalError}
+                </div>
+              )}
             </div>
-            <div className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
-              Free Trial Active
+            <div className="flex items-center justify-end gap-3 border-t border-graphite/5 px-6 py-4">
+              <Button
+                variant="ghost"
+                onClick={() => setShowCancelModal(false)}
+                className="rounded-xl"
+              >
+                Keep Service
+              </Button>
+              <Button
+                onClick={handleCancelSubscription}
+                disabled={isCancelling}
+                className="bg-coral hover:bg-coral-ink text-white rounded-xl"
+              >
+                {isCancelling && <Loader2 className="size-4 animate-spin mr-2" />}
+                Confirm Cancellation
+              </Button>
             </div>
           </div>
         </div>
-
-        <div className="p-6">
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">
-                {pricingDetails.wellnessFreeDays} days
-              </div>
-              <div className="text-sm text-slate-600">
-                Remaining in free trial
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">
-                ${pricingDetails.wellnessPrice.toFixed(2)}
-              </div>
-              <div className="text-sm text-slate-600">
-                Per month after trial
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <Sparkles className="size-5 text-amber-600 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-amber-800 mb-1">
-                  Wellness Features Included:
-                </p>
-                <ul className="text-sm text-amber-700 space-y-1">
-                  <li>• Stool consistency & color analysis</li>
-                  <li>• Content signals analysis</li>
-                  <li>• Health trend monitoring</li>
-                  <li>• Alerts for concerning changes</li>
-                  <li>• Monthly wellness reports</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 mt-6">
-            <button className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium">
-              View Wellness Dashboard
-            </button>
-            <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
-              Manage Wellness Settings
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Billing Settings */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900">
-            Billing Settings
-          </h3>
-          <p className="text-slate-600 text-sm">
-            Configure your billing preferences
-          </p>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-slate-900">Email invoices</div>
-              <div className="text-sm text-slate-600">
-                Receive invoices via email
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-slate-900">Auto-renewal</div>
-              <div className="text-sm text-slate-600">
-                Automatically renew subscription
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-
-          <div className="pt-4 border-t border-slate-200">
-            <button className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium">
-              Cancel Subscription
-            </button>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

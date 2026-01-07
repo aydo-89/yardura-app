@@ -1,58 +1,59 @@
 :root {
-  /* Brand tokens */
-  --ink: 222 47% 11%;
-  --muted: 215 16% 47%;
-  --accent: 152 63% 34%;
-  --accent-soft: 152 63% 94%;
-  --warning: 38 92% 50%;
-  --panel: 216 20% 95%;
-  --card: 210 20% 98%;
+  --ink: 221 39% 11%; /* Graphite */
+  --ink-soft: 221 24% 18%;
+  --muted: 36 70% 92%; /* Cream */
+  --muted-strong: 40 47% 96%;
+  --accent: 39 100% 65%; /* Gold */
+  --accent-mint: 173 76% 40%; /* Mint */
+  --panel: 36 70% 92%;
+  --card: 40 47% 96%;
 
-  /* Motion tokens */
-  --motion-duration-fast: 120ms;
-  --motion-duration-normal: 180ms;
+  --motion-duration-fast: 140ms;
+  --motion-duration-normal: 220ms;
   --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* Typography scale */
-  --font-size-h1: 36px;
-  --line-height-h1: 44px;
-  --font-size-h2: 30px;
-  --line-height-h2: 38px;
-  --font-size-h3: 24px;
-  --line-height-h3: 32px;
-  --font-size-body: 16px;
-  --line-height-body: 26px;
+  --font-size-h1: 2.5rem;
+  --line-height-h1: 1.15;
+  --font-size-h2: 2rem;
+  --line-height-h2: 1.2;
+  --font-size-h3: 1.5rem;
+  --line-height-h3: 1.25;
+  --font-size-body: 1rem;
+  --line-height-body: 1.5;
 }
 
 @media (min-width: 1280px) {
   :root {
-    --line-height-h1: 42px;
-    --line-height-h2: 36px;
-    --line-height-h3: 30px;
+    --font-size-h1: 3.25rem;
+    --font-size-h2: 2.5rem;
+    --font-size-h3: 1.75rem;
   }
 }
 
-/* Helper utility classes mapping tokens to Tailwind via hsl(var()) */
 .token-ink {
   color: hsl(var(--ink));
 }
+
 .token-muted {
-  color: hsl(var(--muted));
+  color: hsl(var(--ink-soft));
 }
+
 .token-accent {
   color: hsl(var(--accent));
 }
+
 .bg-panel {
   background-color: hsl(var(--panel));
 }
+
 .bg-card {
   background-color: hsl(var(--card));
 }
+
 .border-subtle {
-  border-color: hsl(var(--ink) / 0.08);
+  border-color: hsla(var(--ink) / 0.08);
 }
 
-/* Motion utilities (opt-in, a11y-aware) */
 .motion-fade-in {
   opacity: 0;
   transform: translateY(4px);
@@ -60,18 +61,21 @@
     opacity var(--motion-duration-normal) var(--motion-ease),
     transform var(--motion-duration-normal) var(--motion-ease);
 }
+
 .motion-fade-in.is-visible {
   opacity: 1;
   transform: translateY(0);
 }
+
 .motion-hover-lift {
   transition:
     transform var(--motion-duration-fast) var(--motion-ease),
     box-shadow var(--motion-duration-fast) var(--motion-ease);
 }
+
 .motion-hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 18px 32px rgba(32, 75, 54, 0.18);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -80,6 +84,7 @@
     transform: none;
     opacity: 1;
   }
+
   .motion-hover-lift {
     transition: none;
   }

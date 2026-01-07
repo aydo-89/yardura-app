@@ -1,0 +1,43 @@
+const brand = {
+  coral: '#F3645B',
+  coralInk: '#C43D37',
+  graphite: '#1B1E23',
+  graphiteSoft: '#292D33',
+  mint: '#19B4A3',
+  evergreen: '#204B36',
+  gold: '#FFC24D',
+  slate50: '#F8FAFC',
+  slate100: '#F1F5F9',
+  slate900: '#0B1220',
+  slate950: '#020617',
+};
+
+export default {
+  light: {
+    text: brand.graphite,
+    background: brand.slate50,
+    card: '#FFFFFF',
+    border: '#E2E8F0',
+    muted: '#64748B',
+    tint: brand.coral,
+    cta: brand.coralInk,
+    accent: brand.mint,
+    danger: '#E11D48',
+    tabIconDefault: '#94A3B8',
+    tabIconSelected: brand.coral,
+  },
+  dark: {
+    text: brand.slate50,
+    background: brand.slate900,
+    card: '#0F172A',
+    border: '#1E293B',
+    muted: '#94A3B8',
+    tint: brand.coral,
+    cta: brand.coralInk,
+    accent: brand.coralInk,
+    danger: '#FB7185',
+    tabIconDefault: '#64748B',
+    tabIconSelected: brand.coral,
+  },
+  brand,
+};

@@ -1,0 +1,13 @@
+{
+  "id": "black-1",
+  "visual": {
+    "id": "black-1",
+    "shape": "log shape but with sticky tar-like quality",
+    "color": "very dark black, much darker than normal brown",
+    "distinguishingFeature": "unusually dark black color, looks sticky/tarry",
+    "surface": "glossy shiny surface like tar or molasses"
+  },
+  "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: log shape but with sticky tar-like quality. Color: very dark black, much darker than normal brown. Key identifying feature: unusually dark black color, looks sticky/tarry. Surface/texture: glossy shiny surface like tar or molasses. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"black\" stool looks like.",
+  "model": "gemini-3-pro-image-preview",
+  "generatedAt": "2026-01-07T13:21:10.286Z"
+}

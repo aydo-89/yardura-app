@@ -9,6 +9,7 @@ node_modules/
 # Next.js
 /.next/
 /out/
+/capacitor-dist/
 
 # Production
 /build
@@ -26,6 +27,7 @@ yarn-error.log*
 .env*.local
 .env
 .env.local
+.env.production
 .env.local.backup
 .env.local.backup2
 .env.local.backup3
@@ -115,7 +117,6 @@ dist
 
 # Gatsby files
 .cache/
-public
 
 # Storybook build outputs
 .out
@@ -144,6 +145,8 @@ temp/
 
 # Local development
 .local
+.expo/
+apps/native/.expo/
 
 # Large data files
 *.shp
@@ -153,3 +156,38 @@ temp/
 *.cpg
 *.zip
 data/raw/tl_2020_us_zcta520.*
+
+# Image backup files
+*-original.jpg
+*-backup.jpg
+public/hero-video-*.mp4
+!public/hero-video.mp4
+
+# Android build artifacts
+android/app/build/
+
+certificates.env.production
+.env.bak
+yardura-production.tar.gz
+
+# Archive (local only)
+archive/legacy-capacitor/
+archive/voice-agent/
+archive/etl-data/
+archive/logs/
+archive/backups/
+archive/db/
+archive/scripts/
+archive/tests/
+archive/unused/
+archive/infra-data/
+docs/archive/
+infra/data/
+
+# Backup env files with secrets
+.env.backup
+.env.backup_pre_pooler
+.env.local.bak
+.tmp/
+*.ips
+deploy.sh

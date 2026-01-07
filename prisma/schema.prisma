@@ -7,17 +7,10 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
-
-// Postgres datasource for production (added for migration)
-// Commented out for development - uncomment when switching to Postgres
-// datasource pg {
-//   provider = "postgresql"
-//   url      = env("POSTGRES_DATABASE_URL")
-//   shadowDatabaseUrl = env("SHADOW_DATABASE_URL") // Optional: for migrations
-// }
 
 // User accounts with authentication
 model Account {
@@ -52,43 +45,73 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  phone         String?
-  address       String?
-  city          String?
-  zipCode       String?
-  role          UserRole  @default(CUSTOMER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  name             String?
+  email            String    @unique
+  emailVerified    DateTime?
+  image            String?
+  phone            String?
+  address          String?
+  city             String?
+  zipCode          String?
+  role             UserRole  @default(CUSTOMER)
+  roles            UserRole[] @default([])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   stripeCustomerId String?
+  stripeConnectAccountId String?
+  pushNotificationsEnabled Boolean @default(true)
 
   // Sales rep specific fields
-  salesRepId    String?   // ID of the sales rep who signed them up
-  commissionRate Float?   // Commission rate for this sales rep
+  salesRepId     String? // ID of the sales rep who signed them up
+  commissionRate Float? // Commission rate for this sales rep
 
-  accounts      Account[]
-  sessions      Session[]
-  dogs          Dog[]
-  serviceVisits ServiceVisit[]
-  dataReadings  DataReading[]
-  referrals     User[]           @relation("SalesRepReferrals")
-  salesRep      User?            @relation("SalesRepReferrals", fields: [salesRepId], references: [id])
-  earnedCommissions Commission[]  @relation("CommissionSalesRep")
-  receivedCommissions Commission[] @relation("CommissionCustomer")
-  orgId         String?
-  org           Org?      @relation(fields: [orgId], references: [id])
-  assignedLeads Lead[]   @relation("LeadSalesRep")
-  territoryAssignments TerritoryAssignment[]
-  createdLeads   Lead[]  @relation("LeadCreator")
-  ownedLeads     Lead[]  @relation("LeadOwner")
-  leadActivities LeadActivity[]
-  tripsCreated   Trip[]  @relation("TripCreator")
-  tripsOwned     Trip[]  @relation("TripOwner")
-  prospectImports ProspectImport[] @relation("ProspectImportUploader")
+  customer                    Customer?
+  accounts                    Account[]
+  sessions                    Session[]
+  dogs                        Dog[]
+  serviceVisits               ServiceVisit[]
+  dataReadings                DataReading[]
+  referrals                   User[]                 @relation("SalesRepReferrals")
+  salesRep                    User?                  @relation("SalesRepReferrals", fields: [salesRepId], references: [id])
+  earnedCommissions           Commission[]           @relation("CommissionSalesRep")
+  receivedCommissions         Commission[]           @relation("CommissionCustomer")
+  orgId                       String?
+  org                         Org?                   @relation(fields: [orgId], references: [id])
+  assignedLeads               Lead[]                 @relation("LeadSalesRep")
+  territoryAssignments        TerritoryAssignment[]
+  createdLeads                Lead[]                 @relation("LeadCreator")
+  ownedLeads                  Lead[]                 @relation("LeadOwner")
+  leadActivities              LeadActivity[]
+  tripsCreated                Trip[]                 @relation("TripCreator")
+  tripsOwned                  Trip[]                 @relation("TripOwner")
+  prospectImports             ProspectImport[]       @relation("ProspectImportUploader")
+  assignedServiceVisits       ServiceVisit[]         @relation("AssignedServiceVisits")
+  routes                      Route[]                @relation("RouteTechnician")
+  technicianRouteInstances    RouteInstance[]        @relation("RouteInstanceTechnician")
+  dispatchedRouteInstances    RouteInstance[]        @relation("RouteInstanceDispatcher")
+  technicianRouteStops        RouteStop[]            @relation("RouteStopTechnician")
+  scooperProfile              ScooperProfile?
+  mediaReviews                ServiceVisitMedia[]   @relation("ServiceVisitMediaReviewer")
+  visitReviewsAuthored        ServiceVisitReview[]  @relation("ServiceVisitReviewer")
+  dailyCheckReviews           ScooperDailyCheck[]   @relation("DailyCheckReviewer")
+  dailyCheckSubmissions       ScooperDailyCheck[]   @relation("ScooperDailyCheckOwner")
+  issuedScooperCertifications ScooperCertification[] @relation("ScooperCertificationIssuer")
+  visitOffers                 VisitOffer[]           @relation("VisitOfferOfferedTo")
+  backupServiceVisits         ServiceVisit[]         @relation("BackupServiceVisits")
+  routeShiftAssignments       RouteShift[]           @relation("RouteShiftScooper")
+  createdRouteShifts          RouteShift[]           @relation("RouteShiftCreator")
+  visitPayouts                VisitPayout[]          @relation("VisitPayoutScooper")
+  ledgerEntries               ScooperLedgerEntry[]   @relation("LedgerEntryScooper")
+  recordedLedgerEntries       ScooperLedgerEntry[]   @relation("LedgerEntryRecorder")
+  qaAudits                    ScooperQaAudit[]       @relation("VisitQaAuditor")
+  scooperRewardRedemptions    ScooperRewardRedemption[] @relation("ScooperRewardScooper")
+  scooperRewardEvents         ScooperRewardEvent[]   @relation("ScooperRewardEvents")
+  primaryJobs                 Job[]                  @relation("JobPrimaryScooper")
+  disciplineEventsCreated     ScooperDisciplineEvent[] @relation("DisciplineEventCreator")
+  withdrawalRequests          ScooperWithdrawalRequest[] @relation("ScooperWithdrawalScooper")
+  withdrawalReviews           ScooperWithdrawalRequest[] @relation("ScooperWithdrawalReviewer")
+  pushTokens                  UserPushToken[]
 }
 
 model VerificationToken {
@@ -99,46 +122,132 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model UserPushToken {
+  id         String   @id @default(cuid())
+  userId     String
+  orgId      String?
+  provider   String   @default("EXPO")
+  token      String   @unique
+  platform   String?
+  deviceId   String?
+  appVersion String?
+  lastSeenAt DateTime @default(now())
+  disabledAt DateTime?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Org?  @relation(fields: [orgId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([orgId])
+}
+
 // Dog profiles
 model Dog {
-  id           String   @id @default(cuid())
-  name         String
-  breed        String?
-  age          Int?
-  weight       Float?
-  userId       String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  breed     String?
+  age       Int?
+  weight    Float?
+  allergies String?
+  medications String?
+  dietNotes String?
+  vetName   String?
+  vetPhone  String?
+  vetClinic String?
+  photoUrl  String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   dataReadings DataReading[]
   orgId        String?
-  org          Org?     @relation(fields: [orgId], references: [id])
+  org          Org?          @relation(fields: [orgId], references: [id])
   customerId   String?
-  customer     Customer? @relation(fields: [customerId], references: [id])
+  customer     Customer?     @relation(fields: [customerId], references: [id])
   samples      Sample[]
+  weeklyWellnessReports WeeklyWellnessReport[]
+  wellnessCaptures CustomerWellnessCapture[]
+  wellnessChatLogs CustomerWellnessChatLog[]
+  wellnessMemories CustomerWellnessMemory[]
+  wellnessEmbeddings CustomerWellnessEmbedding[]
+  wellnessDailyCheckIns CustomerWellnessDailyCheckIn[]
+  wellnessReminders CustomerWellnessReminder[]
+  wellnessWalks CustomerWellnessWalk[]
+  foodLogs CustomerFoodLog[]
+  foodProducts CustomerFoodProduct[]
+  foodSchedules CustomerFoodSchedule[]
+  weightEntries DogWeightEntry[]
 }
 
 // Service visits
 model ServiceVisit {
-  id              String   @id @default(cuid())
-  userId          String?
-  scheduledDate   DateTime
-  completedDate   DateTime?
-  status          ServiceStatus @default(SCHEDULED)
-  serviceType     ServiceType
-  yardSize        YardSize
-  dogsServiced    Int
-  accountNumber   String?  // For linking Raspberry Pi data
-  notes           String?
-  deodorize       Boolean  @default(false)
-  litterService   Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                      String        @id @default(cuid())
+  userId                  String?
+  orgId                   String?
+  customerId              String?
+  jobId                   String?
+  assignedToId            String? // Field tech assigned
+  backupAssignedToId      String?
+  scheduledDate           DateTime
+  completedDate           DateTime?
+  actualStart             DateTime?
+  actualEnd               DateTime?
+  status                  ServiceStatus @default(SCHEDULED)
+  serviceType             ServiceType
+  yardSize                YardSize
+  dogsServiced            Int
+  accountNumber           String? // For linking Raspberry Pi data
+  skipReasonId            String?
+  notes                   String?
+  deodorize               Boolean       @default(false)
+  litterService           Boolean       @default(false)
+  autoGenerated           Boolean       @default(false)
+  revenueCents            Int?
+  tileId                  String?
+  routeShiftId            String?
+  requiredCertifications  Json?
+  scheduledEnd            DateTime?
+  metadata                Json?
+  preferredTimeWindow     String?
+  preferredTimeWindowSlug String?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
 
-  user            User?         @relation(fields: [userId], references: [id])
-  dataReadings    DataReading[]
-  commissions     Commission[]
+  user             User?                @relation(fields: [userId], references: [id])
+  customer         Customer?            @relation(fields: [customerId], references: [id])
+  job              Job?                 @relation(fields: [jobId], references: [id])
+  assignedTo       User?                @relation("AssignedServiceVisits", fields: [assignedToId], references: [id])
+  backupAssignedTo User?                @relation("BackupServiceVisits", fields: [backupAssignedToId], references: [id])
+  dataReadings     DataReading[]
+  commissions      Commission[]
+  media            ServiceVisitMedia[]
+  sampleInsights   ServiceVisitSampleInsight[]
+  insights         VisitInsight[]
+  communications   VisitCommunication[]
+  routeStop        RouteStop?
+  tile             ServiceTile?         @relation(fields: [tileId], references: [id])
+  routeShift       RouteShift?          @relation("RouteShiftVisits", fields: [routeShiftId], references: [id])
+  visitOffers      VisitOffer[]
+  visitPayout      VisitPayout?         @relation("ServiceVisitPayout")
+  qaAudit          ScooperQaAudit?      @relation("ServiceVisitQaAudit")
+  review           ServiceVisitReview?
+  rating           ServiceVisitRating?
+  disciplineEvents ScooperDisciplineEvent[]
+  ledgerEntries    ScooperLedgerEntry[]
+  billingEntries   CustomerBillingLedgerEntry[] @relation("ServiceVisitBillingLedger")
+  scooperRewardEvents ScooperRewardEvent[]
+
+  @@index([orgId])
+  @@index([customerId])
+  @@index([assignedToId])
+  @@index([backupAssignedToId])
+  @@index([scheduledDate])
+  @@index([tileId])
+  @@index([routeShiftId])
 }
 
 // Data readings from Raspberry Pi
@@ -148,15 +257,15 @@ model DataReading {
   dogId          String?
   serviceVisitId String?
   timestamp      DateTime @default(now())
-  weight         Float?   // Waste weight in grams
-  volume         Float?   // Waste volume in ml
-  color          String?  // Color analysis (RGB values)
-  consistency    String?  // Texture/consistency analysis
-  temperature    Float?   // Temperature reading
-  methaneLevel   Float?   // Methane sensor reading
-  location       String?  // GPS coordinates if mobile
-  deviceId       String   // Raspberry Pi device identifier
-  accountNumber  String?  // For anonymous data collection
+  weight         Float? // Waste weight in grams
+  volume         Float? // Waste volume in ml
+  color          String? // Color analysis (RGB values)
+  consistency    String? // Texture/consistency analysis
+  temperature    Float? // Temperature reading
+  methaneLevel   Float? // Methane sensor reading
+  location       String? // GPS coordinates if mobile
+  deviceId       String // Raspberry Pi device identifier
+  accountNumber  String? // For anonymous data collection
 
   user         User?         @relation(fields: [userId], references: [id])
   dog          Dog?          @relation(fields: [dogId], references: [id])
@@ -165,7 +274,7 @@ model DataReading {
 
 // Global eco statistics
 model GlobalStats {
-  id                   String   @id @default("global")
+  id                  String   @id @default("global")
   totalWasteDiverted  Float    @default(0) // in lbs
   totalMethaneAvoided Float    @default(0) // in ft³
   totalUsers          Int      @default(0)
@@ -176,19 +285,19 @@ model GlobalStats {
 
 // Commission tracking for sales reps
 model Commission {
-  id            String   @id @default(cuid())
-  salesRepId    String   // Sales rep who earned the commission
-  customerId    String   // Customer who generated the commission
-  serviceVisitId String  // Service visit that generated commission
-  amount        Float    // Commission amount
-  status        CommissionStatus @default(PENDING)
-  paidAt        DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String           @id @default(cuid())
+  salesRepId     String // Sales rep who earned the commission
+  customerId     String // Customer who generated the commission
+  serviceVisitId String // Service visit that generated commission
+  amount         Float // Commission amount
+  status         CommissionStatus @default(PENDING)
+  paidAt         DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  salesRep      User         @relation("CommissionSalesRep", fields: [salesRepId], references: [id])
-  customer      User         @relation("CommissionCustomer", fields: [customerId], references: [id])
-  serviceVisit  ServiceVisit @relation(fields: [serviceVisitId], references: [id])
+  salesRep     User         @relation("CommissionSalesRep", fields: [salesRepId], references: [id])
+  customer     User         @relation("CommissionCustomer", fields: [customerId], references: [id])
+  serviceVisit ServiceVisit @relation(fields: [serviceVisitId], references: [id])
 
   @@unique([salesRepId, serviceVisitId])
 }
@@ -202,6 +311,63 @@ enum UserRole {
   OWNER
 }
 
+enum WellnessTier {
+  FREE
+  PREMIUM
+}
+
+enum WellnessPlanStatus {
+  ACTIVE
+  PAUSED
+  CANCELED
+}
+
+enum WellnessPlanSource {
+  DIRECT
+  SERVICE_PROMO
+  ADMIN
+}
+
+enum WellnessEmbeddingSource {
+  DOG_PROFILE
+  WEEKLY_REPORT
+  OWNER_CAPTURE
+  PRO_CAPTURE
+  FOOD_PRODUCT
+  FOOD_LOG
+  REMINDER
+  CHAT_LOG
+}
+
+enum CustomerEmailReportCadence {
+  WEEKLY
+  MONTHLY
+}
+
+enum WellnessReminderCategory {
+  MEDS
+  VACCINE
+  DEWORMING
+  FLEA_TICK
+  FOOD_TRANSITION
+  VET_VISIT
+  CUSTOM
+}
+
+enum WellnessDailyLevel {
+  LOW
+  NORMAL
+  HIGH
+  UNKNOWN
+}
+
+enum FoodLogType {
+  FOOD
+  TREAT
+  SUPPLEMENT
+  MEDICATION
+}
+
 enum CommissionStatus {
   PENDING
   PAID
@@ -213,6 +379,7 @@ enum ServiceStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  SKIPPED
 }
 
 enum ServiceType {
@@ -223,10 +390,10 @@ enum ServiceType {
 }
 
 enum YardSize {
-  SMALL    // < 1/4 acre
-  MEDIUM   // 1/4 - 1/2 acre
-  LARGE    // 1/2 - 1 acre
-  XLARGE   // > 1 acre
+  SMALL // < 1/4 acre
+  MEDIUM // 1/4 - 1/2 acre
+  LARGE // 1/2 - 1 acre
+  XLARGE // > 1 acre
 }
 
 // ====================
@@ -240,30 +407,69 @@ model Org {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users     User[]
-  customers Customer[]
-  devices   Device[]
-  jobs      Job[]
-  dogs      Dog[]
-  samples   Sample[]
-  alerts    Alert[]
-  leads     Lead[]
-  businessConfig BusinessConfig?
-  territories Territory[]
-  territoryAssignments TerritoryAssignment[]
-  leadActivities LeadActivity[]
-  cadences   Cadence[]
-  cadenceEnrollments LeadCadenceEnrollment[]
-  trips      Trip[]
-  prospectImports ProspectImport[]
+  users                 User[]
+  customers             Customer[]
+  devices               Device[]
+  jobs                  Job[]
+  dogs                  Dog[]
+  samples               Sample[]
+  alerts                Alert[]
+  leads                 Lead[]
+  businessConfig        BusinessConfig?
+  territories           Territory[]
+  territoryAssignments  TerritoryAssignment[]
+  leadActivities        LeadActivity[]
+  cadences              Cadence[]
+  cadenceEnrollments    LeadCadenceEnrollment[]
+  trips                 Trip[]
+  prospectImports       ProspectImport[]
+  serviceTiles          ServiceTile[]
+  tileMetricSnapshots   TileMetricSnapshot[]
+  scooperProfiles       ScooperProfile[]
+  scooperCertifications ScooperCertification[]
+  scooperAvailabilities ScooperAvailability[]
+  scooperDevices        ScooperDevice[]
+  routeShifts           RouteShift[]
+  visitCompSchedules    VisitCompSchedule[]
+  visitPayouts          VisitPayout[]
+  scooperWithdrawalRequests ScooperWithdrawalRequest[] @relation("OrgScooperWithdrawalRequests")
+  visitOffers           VisitOffer[]
+  scooperLedgerEntries  ScooperLedgerEntry[]
+  scooperQaAudits       ScooperQaAudit[]
+  serviceVisitReviews   ServiceVisitReview[]
+  scooperDailyChecks       ScooperDailyCheck[]
+  weeklyWellnessReports    WeeklyWellnessReport[]
+  scooperRewardItems       ScooperRewardItem[]
+  scooperRewardRedemptions ScooperRewardRedemption[]
+  scooperRewardEvents      ScooperRewardEvent[]
+  customerRewardItems       CustomerRewardItem[]
+  customerRewardRedemptions CustomerRewardRedemption[]
+  customerRewardEvents      CustomerRewardEvent[]
+  scooperDisciplineEvents  ScooperDisciplineEvent[]
+  pushTokens               UserPushToken[]
+  serviceVisitRatings      ServiceVisitRating[]
+  customerWellnessPlans    CustomerWellnessPlan[]
+  customerWellnessUsage    CustomerWellnessUsage[]
+  customerWellnessCaptures CustomerWellnessCapture[]
+  customerWellnessDailyCheckIns CustomerWellnessDailyCheckIn[]
+  customerWellnessReminders     CustomerWellnessReminder[]
+  customerWellnessChatLogs      CustomerWellnessChatLog[]
+  customerWellnessMemories      CustomerWellnessMemory[]
+  customerWellnessEmbeddings    CustomerWellnessEmbedding[]
+  customerWellnessWalks         CustomerWellnessWalk[]
+  customerEmailReportPreferences CustomerEmailReportPreference[]
+  customerFoodLogs         CustomerFoodLog[]
+  customerFoodProducts     CustomerFoodProduct[]
+  customerFoodSchedules    CustomerFoodSchedule[]
+  dogWeightEntries         DogWeightEntry[]
 
   // unique on slug already declared at field level
 }
 
 model BusinessConfig {
-  id        String   @id @default(cuid())
-  orgId     String   @unique
-  org       Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String @id @default(cuid())
+  orgId String @unique
+  org   Org    @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   // Business metadata
   businessName String @default("Business")
@@ -283,46 +489,364 @@ model BusinessConfig {
   // Communication settings
   communication Json // Communication preferences
 
+  // Integration settings (optional)
+  integrations Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Customer {
-  id           String   @id @default(cuid())
-  orgId        String
-  org          Org      @relation(fields: [orgId], references: [id])
-  name         String
-  email        String?
-  phone        String?
-  addressLine1 String
-  city         String
-  state        String
-  zip          String
-  latitude     Float?
-  longitude    Float?
-  notes        String?
-  createdAt    DateTime @default(now())
+  id                      String   @id @default(cuid())
+  userId                  String?  @unique
+  user                    User?    @relation(fields: [userId], references: [id])
+  orgId                   String
+  org                     Org      @relation(fields: [orgId], references: [id])
+  name                    String
+  email                   String?
+  phone                   String?
+  addressLine1            String
+  city                    String
+  state                   String
+  zip                     String
+  latitude                Float?
+  longitude               Float?
+  preferredTimeWindow     String?
+  preferredTimeWindowSlug String?
+  notes                   String?
+  shareWellnessNotes      Boolean  @default(true)
+  shareWellnessCaptures   Boolean  @default(true)
+  autoBlurWellnessPhotos  Boolean  @default(true)
+  parasiteRiskNotificationsEnabled Boolean @default(true)
+  parasiteRiskLastNotifiedAt DateTime?
+  createdAt               DateTime @default(now())
 
-  dogs Dog[]
-  jobs Job[]
-  samples Sample[]
-  leads Lead[]
+  dogs          Dog[]
+  dogWeightEntries DogWeightEntry[]
+  jobs          Job[]
+  samples       Sample[]
+  leads         Lead[]
+  serviceVisits ServiceVisit[]
+  visitRatings  ServiceVisitRating[]
+  weeklyWellnessReports WeeklyWellnessReport[]
+  wellnessPlans  CustomerWellnessPlan[]
+  wellnessUsage  CustomerWellnessUsage[]
+  wellnessCaptures CustomerWellnessCapture[]
+  wellnessChatLogs CustomerWellnessChatLog[]
+  wellnessMemories CustomerWellnessMemory[]
+  wellnessEmbeddings CustomerWellnessEmbedding[]
+  wellnessDailyCheckIns CustomerWellnessDailyCheckIn[]
+  wellnessReminders CustomerWellnessReminder[]
+  wellnessWalks CustomerWellnessWalk[]
+  rewardRedemptions CustomerRewardRedemption[]
+  rewardEvents CustomerRewardEvent[]
+  emailReportPreference CustomerEmailReportPreference?
+  foodLogs      CustomerFoodLog[]
+  foodProducts CustomerFoodProduct[]
+  foodSchedules CustomerFoodSchedule[]
+  billingPlans  CustomerBillingPlan[]       @relation("CustomerBillingPlans")
+  billingLedger CustomerBillingLedgerEntry[] @relation("CustomerBillingLedger")
+}
+
+model CustomerWellnessPlan {
+  id                   String             @id @default(cuid())
+  orgId                String
+  customerId           String
+  tier                 WellnessTier       @default(FREE)
+  status               WellnessPlanStatus @default(ACTIVE)
+  source               WellnessPlanSource @default(DIRECT)
+  stripeSubscriptionId String?
+  revenueCatAppUserId  String?
+  revenueCatOriginalAppUserId String?
+  revenueCatEntitlementId String?
+  revenueCatProductId  String?
+  revenueCatStore      String?
+  startedAt            DateTime           @default(now())
+  endsAt               DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([customerId])
+  @@index([status, endsAt])
+  @@index([revenueCatAppUserId])
+}
+
+model CustomerWellnessUsage {
+  id         String   @id @default(cuid())
+  orgId      String
+  customerId String
+  periodKey  String
+  scansCount Int      @default(0)
+  chatsCount Int      @default(0)
+  foodScansCount Int  @default(0)
+  inventoryAddsCount Int @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, periodKey])
+  @@index([orgId])
+}
+
+model CustomerWellnessCapture {
+  id               String              @id @default(cuid())
+  orgId            String
+  customerId       String
+  dogId            String?
+  suspectedDogIds  String[]            @default([])
+  scope            WellnessReportScope @default(HOUSEHOLD)
+  attribution      WellnessAttribution @default(HOUSEHOLD)
+  symptomTags      String[]            @default([])
+  notes            String?
+  gpsLat           Float?
+  gpsLng           Float?
+  gpsAccuracy      Float?
+  capturedAt       DateTime            @default(now())
+  storagePath      String
+  consentToShare   Boolean             @default(true)
+  analysisStatus   MediaAnalysisStatus @default(PENDING)
+  analysisResult   Json?
+  analysisModel    String?
+  analysisConfidence Float?
+  analysisError    String?
+  metadata         Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+  weeklyWellnessReportCaptures WeeklyWellnessReportCapture[]
+
+  @@index([customerId, capturedAt])
+  @@index([orgId, capturedAt])
+  @@index([dogId])
+}
+
+model CustomerWellnessDailyCheckIn {
+  id            String              @id @default(cuid())
+  orgId         String
+  customerId    String
+  dogId         String?
+  suspectedDogIds String[]          @default([])
+  loggedAt      DateTime            @default(now())
+  appetite      WellnessDailyLevel?
+  energy        WellnessDailyLevel?
+  waterIntake   WellnessDailyLevel?
+  stoolFrequency Int?
+  vomiting      Boolean             @default(false)
+  diarrhea      Boolean             @default(false)
+  medsGiven     Boolean             @default(false)
+  medsNotes     String?
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+  weeklyWellnessReportCheckIns WeeklyWellnessReportDailyCheckIn[]
+
+  @@index([customerId, loggedAt])
+  @@index([orgId, loggedAt])
+  @@index([dogId])
+}
+
+model CustomerWellnessReminder {
+  id              String                     @id @default(cuid())
+  orgId           String
+  customerId      String
+  dogId           String?
+  title           String
+  category        WellnessReminderCategory   @default(CUSTOM)
+  notes           String?
+  nextDueAt       DateTime
+  frequencyDays   Int?
+  active          Boolean                    @default(true)
+  lastCompletedAt DateTime?
+  lastNotifiedAt  DateTime?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, nextDueAt])
+  @@index([orgId, nextDueAt])
+  @@index([dogId])
+}
+
+model CustomerWellnessWalk {
+  id              String   @id @default(cuid())
+  orgId           String
+  customerId      String
+  dogId           String?
+  startedAt       DateTime
+  endedAt         DateTime
+  durationSeconds Int
+  distanceMeters  Float
+  path            Json
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, startedAt])
+  @@index([orgId, startedAt])
+  @@index([dogId])
+}
+
+model CustomerFoodLog {
+  id              String      @id @default(cuid())
+  orgId           String
+  customerId      String
+  dogId           String?
+  productId       String?
+  loggedAt        DateTime    @default(now())
+  type            FoodLogType @default(FOOD)
+  brand           String?
+  productName     String?
+  ingredients     String?
+  portion         String?
+  allergenMatches String[]    @default([])
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+  product  CustomerFoodProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, loggedAt])
+  @@index([orgId, loggedAt])
+  @@index([dogId])
+  @@index([productId])
+}
+
+model CustomerFoodProduct {
+  id          String      @id @default(cuid())
+  orgId       String
+  customerId  String
+  dogId       String?
+  type        FoodLogType @default(FOOD)
+  brand       String?
+  productName String?
+  ingredients String?
+  portion     String?
+  notes       String?
+  imagePath   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  org       Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog       Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+  logs      CustomerFoodLog[]
+  schedules CustomerFoodSchedule[]
+
+  @@index([customerId, productName])
+  @@index([orgId, productName])
+  @@index([dogId])
+}
+
+model CustomerFoodSchedule {
+  id              String   @id @default(cuid())
+  orgId           String
+  customerId      String
+  dogId           String?
+  productId       String
+  active          Boolean  @default(true)
+  timesOfDay      String[] @default([])
+  timeZone        String?
+  startsOn        DateTime?
+  endsOn          DateTime?
+  lastGeneratedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+  product  CustomerFoodProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, active])
+  @@index([orgId, active])
+  @@index([dogId])
+  @@index([productId])
+}
+
+model CustomerEmailReportPreference {
+  id             String                     @id @default(cuid())
+  orgId          String
+  customerId     String                     @unique
+  enabled        Boolean                    @default(false)
+  cadence        CustomerEmailReportCadence @default(WEEKLY)
+  sendHour       Int                        @default(8)
+  dayOfWeek      Int                        @default(1)
+  dayOfMonth     Int                        @default(1)
+  timeZone       String?
+  recipients     String[]                   @default([])
+  includeWellness  Boolean                  @default(true)
+  includeScooping  Boolean                  @default(true)
+  includeFood      Boolean                  @default(true)
+  includeWalks     Boolean                  @default(true)
+  includeReminders Boolean                  @default(true)
+  includeChats     Boolean                  @default(true)
+  includePhotos    Boolean                  @default(true)
+  lastSentAt     DateTime?
+  lastPeriodKey  String?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([enabled])
 }
 
 model Job {
-  id            String        @id @default(cuid())
-  orgId         String
-  org           Org           @relation(fields: [orgId], references: [id])
-  customerId    String
-  customer      Customer      @relation(fields: [customerId], references: [id])
-  frequency     Frequency     @default(WEEKLY)
-  nextVisitAt   DateTime?
-  dayOfWeek     Int?
-  extraAreas    Int           @default(0)
-  deodorizeMode DeodorizeMode @default(NONE)
-  status        JobStatus     @default(ACTIVE)
-  createdAt     DateTime      @default(now())
-  samples       Sample[]
+  id                      String         @id @default(cuid())
+  orgId                   String
+  org                     Org            @relation(fields: [orgId], references: [id])
+  customerId              String
+  customer                Customer       @relation(fields: [customerId], references: [id])
+  primaryScooperId         String?
+  primaryScooper           User?          @relation("JobPrimaryScooper", fields: [primaryScooperId], references: [id])
+  frequency               Frequency      @default(WEEKLY)
+  dogCount                Int?
+  nextVisitAt             DateTime?
+  dayOfWeek               Int?
+  tileId                  String?
+  tile                    ServiceTile?   @relation(fields: [tileId], references: [id])
+  perVisitRevenueCents    Int?
+  extraAreas              Int            @default(0)
+  deodorizeMode           DeodorizeMode  @default(NONE)
+  status                  JobStatus      @default(ACTIVE)
+  stripeSubscriptionId    String?
+  cancelledAt             DateTime?
+  cancellationReason      String?
+  subscriptionEndDate     DateTime?
+  preferredTimeWindow     String?
+  preferredTimeWindowSlug String?
+  createdAt               DateTime       @default(now())
+  samples                 Sample[]
+  serviceVisits           ServiceVisit[]
+  disciplineEvents        ScooperDisciplineEvent[]
+  billingPlan             CustomerBillingPlan?      @relation("JobBillingPlan")
+  billingLedgerEntries    CustomerBillingLedgerEntry[] @relation("JobBillingLedger")
+
+  @@index([tileId])
 }
 
 enum Frequency {
@@ -330,6 +854,8 @@ enum Frequency {
   WEEKLY
   BI_WEEKLY
   TWICE_WEEKLY
+  DAILY
+  MONTHLY
 }
 
 enum JobStatus {
@@ -344,17 +870,124 @@ enum DeodorizeMode {
   EACH_VISIT
 }
 
+enum ServiceTileStatus {
+  DRAFT
+  WAITLIST
+  LIVE
+  SUSPENDED
+}
+
+enum ScooperStatus {
+  APPLICANT
+  PENDING_REVIEW
+  CERTIFIED
+  PAUSED
+  DEACTIVATED
+}
+
+enum BackgroundCheckStatus {
+  NOT_SUBMITTED
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum CertificationType {
+  BIN_DROP
+  HAUL_AWAY
+  ECO_DIVERT_25
+  ECO_DIVERT_50
+  ECO_DIVERT_100
+}
+
+enum CertificationStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum AvailabilityWindow {
+  AM
+  PM
+  FULL
+  CUSTOM
+}
+
+enum ScooperDeviceStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum VisitOfferStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REJECTED
+  RECALLED
+}
+
+enum DisciplineEventType {
+  MISSED_VISIT
+  LATE_RELEASE
+  EARLY_RELEASE
+  JOB_RELEASE
+}
+
+enum DisciplineEventSource {
+  SYSTEM
+  ADMIN
+}
+
+enum RouteShiftStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PayoutStatus {
+  PENDING_REVIEW
+  READY
+  RELEASED
+  DISPUTED
+  VOID
+}
+
+enum ScooperWithdrawalStatus {
+  REQUESTED
+  APPROVED
+  PAID
+  REJECTED
+  CANCELLED
+}
+
+enum LedgerEntryType {
+  PAYOUT
+  BONUS
+  PENALTY
+  REIMBURSEMENT
+  ADJUSTMENT
+}
+
+enum QaOutcome {
+  PASS
+  WARN
+  FAIL
+}
+
 model Device {
-  id          String   @id @default(cuid())
-  orgId       String
-  org         Org      @relation(fields: [orgId], references: [id])
-  name        String
-  type        String
-  apiKeyHash  String
-  uniqueId    String   @unique
-  lastSeenAt  DateTime?
-  createdAt   DateTime @default(now())
-  samples     Sample[]
+  id         String    @id @default(cuid())
+  orgId      String
+  org        Org       @relation(fields: [orgId], references: [id])
+  name       String
+  type       String
+  apiKeyHash String
+  uniqueId   String    @unique
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  samples    Sample[]
 
   @@index([orgId])
 }
@@ -382,8 +1015,8 @@ model Sample {
   freshnessScore Float?
   createdAt      DateTime  @default(now())
 
-  scores SampleScore[]
-  alerts Alert[]
+  scores      SampleScore[]
+  alerts      Alert[]
   groundTruth GroundTruth[]
 
   @@index([orgId, capturedAt])
@@ -416,7 +1049,7 @@ model Alert {
   acknowledged Boolean    @default(false)
   createdAt    DateTime   @default(now())
 
-  org          Org        @relation(fields: [orgId], references: [id])
+  org Org @relation(fields: [orgId], references: [id])
 
   @@index([orgId, createdAt])
   @@index([sampleId])
@@ -455,12 +1088,81 @@ model BillingSnapshot {
   @@index([orgId, customerId])
 }
 
+model CustomerBillingPlan {
+  id                     String   @id @default(cuid())
+  orgId                  String
+  jobId                  String   @unique
+  customerId             String
+  stripeCustomerId       String?
+  billingPreference      String
+  stripeScheduleId       String?
+  stripeSubscriptionId   String?
+  trialEndsAt            DateTime?
+  firstChargeAmountCents Int?
+  recurringAmountCents   Int?
+  perVisitAmountCents    Int?
+  pricingSnapshot        Json?
+  metadata               Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  job       Job      @relation("JobBillingPlan", fields: [jobId], references: [id])
+  customer  Customer @relation("CustomerBillingPlans", fields: [customerId], references: [id])
+
+  @@index([orgId])
+  @@index([customerId])
+  @@index([stripeCustomerId])
+  @@index([stripeScheduleId])
+  @@index([stripeSubscriptionId])
+}
+
+enum BillingLedgerEntryType {
+  CHARGE
+  CREDIT
+  ADJUSTMENT
+}
+
+enum BillingLedgerEntryStatus {
+  PENDING
+  APPLIED
+  VOID
+}
+
+model CustomerBillingLedgerEntry {
+  id                 String                    @id @default(cuid())
+  orgId              String
+  jobId              String
+  customerId         String
+  serviceVisitId     String?
+  type               BillingLedgerEntryType
+  status             BillingLedgerEntryStatus @default(PENDING)
+  amountCents        Int
+  description        String?
+  stripeInvoiceId    String?
+  stripeInvoiceItemId String?
+  metadata           Json?
+  createdAt          DateTime                 @default(now())
+  appliedAt          DateTime?
+  voidedAt           DateTime?
+
+  job          Job       @relation("JobBillingLedger", fields: [jobId], references: [id])
+  customer     Customer  @relation("CustomerBillingLedger", fields: [customerId], references: [id])
+  serviceVisit ServiceVisit? @relation("ServiceVisitBillingLedger", fields: [serviceVisitId], references: [id])
+
+  @@index([orgId])
+  @@index([customerId])
+  @@index([jobId])
+  @@index([serviceVisitId])
+  @@index([type, status])
+  @@index([stripeInvoiceId])
+}
+
 model GroundTruth {
   id           String   @id @default(cuid())
   sampleId     String   @unique
   sample       Sample   @relation(fields: [sampleId], references: [id])
-  dataset      String   // e.g., v0.1
-  split        String   // train|val|test
+  dataset      String // e.g., v0.1
+  split        String // train|val|test
   colorLabel   String?
   consistency  String?
   contentFlags String?
@@ -475,103 +1177,104 @@ model GroundTruth {
 
 // Lead management for quote submissions
 model Lead {
-  id                String   @id @default(cuid())
-  orgId             String
-  org               Org      @relation(fields: [orgId], references: [id])
+  id    String @id @default(cuid())
+  orgId String
+  org   Org    @relation(fields: [orgId], references: [id])
 
   // Contact information
-  firstName         String?
-  lastName          String?
-  email             String
-  phone             String?
+  firstName String?
+  lastName  String?
+  email     String
+  phone     String?
 
   // Classification & ownership
-  leadType          String   @default("inbound") // inbound | outbound | partner
-  pipelineStage     String?  // e.g., cold | contacted | scheduled | follow_up
-  territoryId       String?
-  territory         Territory? @relation(fields: [territoryId], references: [id])
-  campaignId        String?
-  createdById       String?
-  createdBy         User?    @relation("LeadCreator", fields: [createdById], references: [id])
-  ownerId           String?
-  owner             User?    @relation("LeadOwner", fields: [ownerId], references: [id])
-  lastActivityAt    DateTime?
-  nextActionAt      DateTime?
-  lastActivityId    String? @unique
-  lastActivity      LeadActivity? @relation("LeadLastActivity", fields: [lastActivityId], references: [id])
+  leadType           String        @default("inbound") // inbound | outbound | partner
+  pipelineStage      String? // e.g., cold | contacted | scheduled | follow_up
+  territoryId        String?
+  territory          Territory?    @relation(fields: [territoryId], references: [id])
+  campaignId         String?
+  createdById        String?
+  createdBy          User?         @relation("LeadCreator", fields: [createdById], references: [id])
+  ownerId            String?
+  owner              User?         @relation("LeadOwner", fields: [ownerId], references: [id])
+  lastActivityAt     DateTime?
+  nextActionAt       DateTime?
+  preferredStartDate DateTime?
+  lastActivityId     String?       @unique
+  lastActivity       LeadActivity? @relation("LeadLastActivity", fields: [lastActivityId], references: [id])
 
   // Service details
-  serviceType       String   @default("residential") // residential | commercial
-  dogs              Int?
-  yardSize          String?  // small | medium | large | xl
-  frequency         String?  // weekly | biweekly | twice-weekly | monthly | onetime
+  serviceType String  @default("residential") // residential | commercial
+  dogs        Int?
+  yardSize    String? // small | medium | large | xl
+  frequency   String? // weekly | biweekly | twice-weekly | monthly | onetime
 
   // Address information
-  address           String?
-  city              String?
-  state             String?
-  zipCode           String?
-  latitude          Float?
-  longitude         Float?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  latitude  Float?
+  longitude Float?
 
   // Business details (for commercial)
-  businessType      String?
-  businessName      String?
+  businessType String?
+  businessName String?
 
   // Add-ons and services
-  deodorize         Boolean  @default(false)
-  deodorizeMode     String?  // first-visit | each-visit | every-other | one-time
-  sprayDeck         Boolean  @default(false)
-  sprayDeckMode     String?  // first-visit | each-visit | every-other | one-time
-  divertMode        String?  // none | takeaway | 25 | 50 | 100
+  deodorize     Boolean @default(false)
+  deodorizeMode String? // first-visit | each-visit | every-other | one-time
+  sprayDeck     Boolean @default(false)
+  sprayDeckMode String? // first-visit | each-visit | every-other | one-time
+  divertMode    String? // none | takeaway | 25 | 50 | 100
 
   // Additional areas to clean
-  areasToClean      Json?    // JSON object of areas
+  areasToClean Json? // JSON object of areas
 
   // Cleanup timing
-  lastCleanedBucket String?
-  lastCleanedDate   DateTime?
-  initialClean      Boolean  @default(false)
+  lastCleanedBucket    String?
+  lastCleanedDate      DateTime?
+  initialClean         Boolean   @default(false)
   daysSinceLastCleanup Int?
 
   // Preferences and special requests
-  specialInstructions String?
-  referralSource    String?
+  specialInstructions    String?
+  referralSource         String?
   preferredContactMethod String? // email | phone
 
   // Wellness insights consent
-  wellnessOptIn     Boolean  @default(false)
+  wellnessOptIn Boolean @default(false)
 
   // Pricing information (snapshot at time of quote)
-  estimatedPrice    Float?
-  pricingBreakdown  Json?    // Detailed pricing breakdown
+  estimatedPrice   Float?
+  pricingBreakdown Json? // Detailed pricing breakdown
 
   // Lead status and tracking
-  status            LeadStatus @default(NEW)
-  source            String     @default("website") // website | phone | referral
-  priority          LeadPriority @default(MEDIUM)
+  status   LeadStatus   @default(NEW)
+  source   String       @default("website") // website | phone | referral
+  priority LeadPriority @default(MEDIUM)
 
   // Conversion tracking
-  convertedAt       DateTime?
+  convertedAt           DateTime?
   convertedToCustomerId String?
 
   // Metadata
-  submittedAt       DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Form protection and analytics
-  protectionScore   Float?
-  ipAddress         String?
-  userAgent         String?
-  recaptchaToken    String?
+  protectionScore Float?
+  ipAddress       String?
+  userAgent       String?
+  recaptchaToken  String?
 
   // Relations
-  customer          Customer? @relation(fields: [convertedToCustomerId], references: [id])
-  salesRepId        String?
-  salesRep          User?    @relation("LeadSalesRep", fields: [salesRepId], references: [id])
-  activities        LeadActivity[] @relation("LeadActivities")
+  customer           Customer?               @relation(fields: [convertedToCustomerId], references: [id])
+  salesRepId         String?
+  salesRep           User?                   @relation("LeadSalesRep", fields: [salesRepId], references: [id])
+  activities         LeadActivity[]          @relation("LeadActivities")
   cadenceEnrollments LeadCadenceEnrollment[]
-  trips             TripStop[]
+  trips              TripStop[]
 
   @@index([orgId])
   @@index([email])
@@ -586,41 +1289,42 @@ model Lead {
 }
 
 model Territory {
-  id             String   @id @default(cuid())
+  id             String      @id @default(cuid())
   orgId          String
-  org            Org      @relation(fields: [orgId], references: [id])
+  org            Org         @relation(fields: [orgId], references: [id])
   name           String
-  slug           String   @unique
-  type           String   // REGION | AREA | MICRO
+  slug           String      @unique
+  type           String // REGION | AREA | MICRO
   color          String?
-  geometry       Json     // GeoJSON polygon/multipolygon
+  geometry       Json // GeoJSON polygon/multipolygon
   parentId       String?
-  parent         Territory? @relation("TerritoryHierarchy", fields: [parentId], references: [id])
+  parent         Territory?  @relation("TerritoryHierarchy", fields: [parentId], references: [id])
   children       Territory[] @relation("TerritoryHierarchy")
-  priorityWeight Int       @default(1)
-  active         Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  priorityWeight Int         @default(1)
+  active         Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  assignments    TerritoryAssignment[]
-  leads          Lead[]
-  trips          Trip[]
+  assignments TerritoryAssignment[]
+  leads       Lead[]
+  trips       Trip[]
+  tiles       ServiceTile[]
 
   @@index([orgId])
   @@index([parentId])
 }
 
 model TerritoryAssignment {
-  id           String   @id @default(cuid())
-  orgId        String
-  org          Org      @relation(fields: [orgId], references: [id])
-  territoryId  String
-  territory    Territory @relation(fields: [territoryId], references: [id])
-  userId       String
-  user         User      @relation(fields: [userId], references: [id])
-  role         String    // OWNER | CONTRIBUTOR | VIEWER
-  assignedAt   DateTime  @default(now())
-  isPrimary    Boolean   @default(false)
+  id          String    @id @default(cuid())
+  orgId       String
+  org         Org       @relation(fields: [orgId], references: [id])
+  territoryId String
+  territory   Territory @relation(fields: [territoryId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  role        String // OWNER | CONTRIBUTOR | VIEWER
+  assignedAt  DateTime  @default(now())
+  isPrimary   Boolean   @default(false)
 
   @@index([orgId])
   @@index([territoryId])
@@ -628,24 +1332,24 @@ model TerritoryAssignment {
 }
 
 model LeadActivity {
-  id            String    @id @default(cuid())
-  leadId        String
-  lead          Lead      @relation("LeadActivities", fields: [leadId], references: [id])
-  leadAsLast    Lead?     @relation("LeadLastActivity")
-  orgId         String
-  org           Org       @relation(fields: [orgId], references: [id])
-  userId        String?
-  user          User?     @relation(fields: [userId], references: [id])
-  type          String    // DOOR_KNOCK | CALL | SMS | EMAIL | NOTE | TASK | MEETING
-  channel       String?
-  occurredAt    DateTime  @default(now())
-  result        String?
-  notes         String?
-  location      Json?
-  attachments   Json?
-  durationSecs  Int?
-  followUpAt    DateTime?
-  createdAt     DateTime  @default(now())
+  id           String    @id @default(cuid())
+  leadId       String
+  lead         Lead      @relation("LeadActivities", fields: [leadId], references: [id])
+  leadAsLast   Lead?     @relation("LeadLastActivity")
+  orgId        String
+  org          Org       @relation(fields: [orgId], references: [id])
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id])
+  type         String // DOOR_KNOCK | CALL | SMS | EMAIL | NOTE | TASK | MEETING
+  channel      String?
+  occurredAt   DateTime  @default(now())
+  result       String?
+  notes        String?
+  location     Json?
+  attachments  Json?
+  durationSecs Int?
+  followUpAt   DateTime?
+  createdAt    DateTime  @default(now())
 
   @@index([leadId, occurredAt])
   @@index([orgId, occurredAt])
@@ -670,16 +1374,16 @@ model Cadence {
 }
 
 model CadenceStep {
-  id          String   @id @default(cuid())
-  cadenceId   String
-  cadence     Cadence  @relation(fields: [cadenceId], references: [id])
-  order       Int
-  channel     String   // SMS | EMAIL | CALL | TASK | VISIT
-  templateId  String?
-  waitMinutes Int      @default(0)
-  slaMinutes  Int?
+  id           String  @id @default(cuid())
+  cadenceId    String
+  cadence      Cadence @relation(fields: [cadenceId], references: [id])
+  order        Int
+  channel      String // SMS | EMAIL | CALL | TASK | VISIT
+  templateId   String?
+  waitMinutes  Int     @default(0)
+  slaMinutes   Int?
   autoComplete Boolean @default(false)
-  metadata    Json?
+  metadata     Json?
 
   enrollments LeadCadenceEnrollment[] @relation("CadenceCurrentStep")
 
@@ -687,17 +1391,17 @@ model CadenceStep {
 }
 
 model LeadCadenceEnrollment {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   orgId          String
-  org            Org      @relation(fields: [orgId], references: [id])
+  org            Org          @relation(fields: [orgId], references: [id])
   leadId         String
-  lead           Lead     @relation(fields: [leadId], references: [id])
+  lead           Lead         @relation(fields: [leadId], references: [id])
   cadenceId      String
-  cadence        Cadence  @relation(fields: [cadenceId], references: [id])
+  cadence        Cadence      @relation(fields: [cadenceId], references: [id])
   currentStepId  String?
   currentStep    CadenceStep? @relation("CadenceCurrentStep", fields: [currentStepId], references: [id])
-  status         String   @default("active")
-  startedAt      DateTime @default(now())
+  status         String       @default("active")
+  startedAt      DateTime     @default(now())
   lastExecutedAt DateTime?
   nextRunAt      DateTime?
   pausedAt       DateTime?
@@ -712,27 +1416,27 @@ model LeadCadenceEnrollment {
 }
 
 model Trip {
-  id              String   @id @default(cuid())
+  id              String     @id @default(cuid())
   orgId           String
-  org             Org      @relation(fields: [orgId], references: [id])
+  org             Org        @relation(fields: [orgId], references: [id])
   createdById     String
-  createdBy       User     @relation("TripCreator", fields: [createdById], references: [id])
+  createdBy       User       @relation("TripCreator", fields: [createdById], references: [id])
   ownerId         String
-  owner           User     @relation("TripOwner", fields: [ownerId], references: [id])
+  owner           User       @relation("TripOwner", fields: [ownerId], references: [id])
   territoryId     String?
   territory       Territory? @relation(fields: [territoryId], references: [id])
   name            String?
-  optimization    String   @default("fastest")
-  status          String   @default("planned")
+  optimization    String     @default("fastest")
+  status          String     @default("planned")
   plannedStart    DateTime?
   startLocation   Json
   endLocation     Json?
   distanceMeters  Int?
   durationMinutes Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
-  stops           TripStop[]
+  stops TripStop[]
 
   @@index([orgId])
   @@index([ownerId])
@@ -741,16 +1445,16 @@ model Trip {
 }
 
 model TripStop {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   tripId      String
-  trip        Trip     @relation(fields: [tripId], references: [id])
+  trip        Trip      @relation(fields: [tripId], references: [id])
   leadId      String?
-  lead        Lead?    @relation(fields: [leadId], references: [id])
+  lead        Lead?     @relation(fields: [leadId], references: [id])
   order       Int
   plannedAt   DateTime?
   arrivalAt   DateTime?
   completedAt DateTime?
-  status      String   @default("pending")
+  status      String    @default("pending")
   notes       String?
   address     String?
   location    Json?
@@ -760,17 +1464,17 @@ model TripStop {
 }
 
 model ProspectImport {
-  id          String   @id @default(cuid())
-  orgId       String
-  org         Org      @relation(fields: [orgId], references: [id])
+  id           String    @id @default(cuid())
+  orgId        String
+  org          Org       @relation(fields: [orgId], references: [id])
   uploadedById String
-  uploadedBy   User     @relation("ProspectImportUploader", fields: [uploadedById], references: [id])
-  source      String   // CSV | PURCHASED | MANUAL
-  status      String   @default("processing")
-  stats       Json?
-  fileUrl     String
-  createdAt   DateTime @default(now())
-  processedAt DateTime?
+  uploadedBy   User      @relation("ProspectImportUploader", fields: [uploadedById], references: [id])
+  source       String // CSV | PURCHASED | MANUAL
+  status       String    @default("processing")
+  stats        Json?
+  fileUrl      String
+  createdAt    DateTime  @default(now())
+  processedAt  DateTime?
 
   @@index([orgId])
   @@index([status])
@@ -792,4 +1496,1319 @@ enum LeadPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+// Skip reason billing behavior
+enum SkipBillingBehavior {
+  NO_CHARGE
+  BILL_STANDARD
+  BILL_PARTIAL
+  BILL_CUSTOM
+}
+
+// Communication channels and status
+enum CommunicationChannel {
+  SMS
+  EMAIL
+  PUSH
+  CALL
+}
+
+enum CommunicationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+// Route stop status
+enum RouteStopStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+// Visit media types
+enum VisitMediaType {
+  ARRIVAL
+  INSIGHTSCOOP
+  PROOF
+  GATE
+  BAG_DROP
+  ISSUE
+  OTHER
+}
+
+// Analysis lifecycle for visit media
+enum MediaAnalysisStatus {
+  NOT_REQUESTED
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  NEEDS_REVIEW
+}
+
+enum VisitInsightSource {
+  MANUAL
+  AUTOMATED
+}
+
+enum WellnessReportScope {
+  HOUSEHOLD
+  DOG
+}
+
+enum WellnessAttribution {
+  HOUSEHOLD
+  OWNER_GUESS
+  OWNER_CONFIRMED
+  DEVICE_CONFIRMED
+}
+
+enum WellnessDiagnosisSource {
+  OWNER_REPORTED
+  VET_CONFIRMED
+}
+
+// ======================================
+// Promo Codes
+// ======================================
+
+model PromoCode {
+  id            String    @id @default(cuid())
+  orgId         String
+  code          String
+  description   String?
+  discountType  String // "percentage" | "fixed"
+  discountValue Float
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  validFrom     DateTime
+  validUntil    DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([orgId, code])
+  @@index([orgId])
+  @@index([code])
+}
+
+// ======================================
+// Skip Reasons for Dispatch
+// ======================================
+
+model SkipReason {
+  id              String              @id @default(cuid())
+  orgId           String
+  code            String
+  label           String
+  description     String?
+  billingBehavior SkipBillingBehavior @default(NO_CHARGE)
+  notifyCustomer  Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([orgId, code])
+  @@index([orgId])
+}
+
+// ======================================
+// Service Visit Media (Photos/Videos)
+// ======================================
+
+model ServiceVisitMedia {
+  id                  String              @id @default(cuid())
+  serviceVisitId      String
+  serviceVisit        ServiceVisit        @relation(fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  orgId               String?
+  technicianId        String?
+  assetType           VisitMediaType
+  storagePath         String
+  thumbnailPath       String?
+  capturedAt          DateTime
+  uploadedAt          DateTime            @default(now())
+  gpsLat              Float?
+  gpsLng              Float?
+  gpsAccuracy         Float?
+  fileHash            String?
+  notes               String?
+  stoolSampleId       String?
+  stoolSampleView     StoolSampleView?
+  analysisStatus      MediaAnalysisStatus @default(NOT_REQUESTED)
+  analysisModel       String?
+  analysisRequestedAt DateTime?
+  analysisCompletedAt DateTime?
+  analysisError       String?
+  analysisConfidence  Float?
+  analysisResult      Json?
+  expiresAt           DateTime?
+  reviewStatus        MediaReviewStatus   @default(PENDING)
+  visibilityState     MediaVisibility     @default(VISIBLE)
+  reviewedAt          DateTime?
+  reviewedById        String?
+  reviewedBy          User?               @relation("ServiceVisitMediaReviewer", fields: [reviewedById], references: [id])
+  moderationNotes     String?
+  insights            VisitInsight[]      @relation("VisitInsightSourceMedia")
+  weeklyWellnessReports WeeklyWellnessReportMedia[]
+
+  @@index([serviceVisitId])
+  @@index([stoolSampleId])
+  @@index([orgId])
+  @@index([analysisStatus])
+  @@index([expiresAt])
+  @@index([reviewStatus])
+  @@index([reviewedById])
+}
+
+// ======================================
+// Service Visit Sample Insights (paired surface + cross-section)
+// ======================================
+
+model ServiceVisitSampleInsight {
+  id                  String              @id @default(cuid())
+  serviceVisitId      String
+  serviceVisit        ServiceVisit        @relation(fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  stoolSampleId       String
+  sourceMediaIds      String[]            @default([])
+  colorIndicator      String
+  consistencyIndicator String
+  contentIndicator    String
+  observations        String?
+  wellnessFlag        Boolean             @default(false)
+  flagReason          String?
+  analysisStatus      MediaAnalysisStatus @default(NOT_REQUESTED)
+  analysisModel       String?
+  analysisRequestedAt DateTime?
+  analysisCompletedAt DateTime?
+  analysisError       String?
+  analysisConfidence  Float?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@unique([serviceVisitId, stoolSampleId])
+  @@index([serviceVisitId])
+  @@index([stoolSampleId])
+  @@index([analysisStatus])
+  @@index([wellnessFlag])
+}
+
+enum StoolSampleView {
+  SURFACE
+  CROSS_SECTION
+}
+
+enum MediaReviewStatus {
+  PENDING
+  APPROVED
+  NEEDS_ACTION
+}
+
+enum MediaVisibility {
+  VISIBLE
+  HIDDEN
+}
+
+model ServiceVisitReview {
+  id             String       @id @default(cuid())
+  serviceVisitId String       @unique
+  serviceVisit   ServiceVisit @relation(fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  orgId          String
+  org            Org          @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  reviewerId     String?
+  reviewer       User?        @relation("ServiceVisitReviewer", fields: [reviewerId], references: [id])
+  status         VisitReviewStatus @default(OPEN)
+  summary        String?
+  issues         Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([orgId])
+  @@index([reviewerId])
+  @@index([status])
+}
+
+model ServiceVisitRating {
+  id             String         @id @default(cuid())
+  serviceVisitId String         @unique
+  serviceVisit   ServiceVisit   @relation(fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  orgId          String
+  org            Org            @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  scooperId      String
+  scooper        ScooperProfile @relation(fields: [scooperId], references: [id], onDelete: Cascade)
+  score          Int
+  comment        String?
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([orgId])
+  @@index([customerId])
+  @@index([scooperId])
+}
+
+enum VisitReviewStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model ScooperDailyCheck {
+  id             String   @id @default(cuid())
+  orgId          String
+  org            Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation("ScooperDailyCheckOwner", fields: [userId], references: [id], onDelete: Cascade)
+  capturedAt     DateTime @default(now())
+  storagePath    String
+  thumbnailPath  String?
+  gpsLat         Float?
+  gpsLng         Float?
+  checklist      Json?
+  metadata       Json?
+  pointsAwarded  Int?
+  streakCount    Int?
+  reviewStatus   DailyCheckReviewStatus @default(PENDING)
+  reviewedAt     DateTime?
+  reviewedById   String?
+  reviewedBy     User?    @relation("DailyCheckReviewer", fields: [reviewedById], references: [id])
+  notes          String?
+  resolutionLog  Json?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([orgId])
+  @@index([userId, capturedAt])
+  @@index([reviewStatus])
+  @@index([expiresAt])
+}
+
+enum DailyCheckReviewStatus {
+  PENDING
+  APPROVED
+  NEEDS_ACTION
+}
+
+enum ScooperRewardRedemptionStatus {
+  PENDING
+  APPROVED
+  FULFILLED
+  REJECTED
+  CANCELLED
+}
+
+enum ScooperRewardEventType {
+  DAILY_CHECK
+  VISIT_COMPLETE
+  SAMPLE_SURFACE
+  SAMPLE_CROSS
+  DETECTION_FLAG
+  VET_CONFIRMED
+}
+
+enum CustomerRewardRedemptionStatus {
+  PENDING
+  APPROVED
+  FULFILLED
+  REJECTED
+  CANCELLED
+}
+
+enum CustomerRewardEventType {
+  WEEKLY_REPORT
+  VISIT_RATING
+}
+
+model ScooperRewardItem {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  slug        String
+  name        String
+  description String?
+  pointsCost  Int
+  category    String?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  redemptions ScooperRewardRedemption[]
+
+  @@index([orgId])
+  @@index([isActive])
+  @@unique([orgId, slug])
+}
+
+model ScooperRewardRedemption {
+  id               String   @id @default(cuid())
+  orgId            String
+  org              Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  scooperId        String
+  scooper          User     @relation("ScooperRewardScooper", fields: [scooperId], references: [id])
+  scooperProfileId String?
+  scooperProfile   ScooperProfile? @relation(fields: [scooperProfileId], references: [id])
+  rewardItemId     String
+  rewardItem       ScooperRewardItem @relation(fields: [rewardItemId], references: [id])
+  status           ScooperRewardRedemptionStatus @default(PENDING)
+  pointsCost       Int
+  notes            String?
+  metadata         Json?
+  requestedAt      DateTime @default(now())
+  approvedAt       DateTime?
+  fulfilledAt      DateTime?
+  cancelledAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([scooperId])
+  @@index([rewardItemId])
+  @@index([status])
+}
+
+model ScooperRewardEvent {
+  id             String   @id @default(cuid())
+  orgId          String
+  org            Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  scooperId      String
+  scooper        User     @relation("ScooperRewardEvents", fields: [scooperId], references: [id], onDelete: Cascade)
+  eventType      ScooperRewardEventType
+  points         Int
+  sourceKey      String
+  serviceVisitId String?
+  serviceVisit   ServiceVisit? @relation(fields: [serviceVisitId], references: [id], onDelete: SetNull)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([scooperId])
+  @@index([eventType])
+  @@index([serviceVisitId])
+  @@unique([orgId, eventType, sourceKey])
+}
+
+model CustomerRewardItem {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  slug        String
+  name        String
+  description String?
+  pointsCost  Int
+  category    String?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  redemptions CustomerRewardRedemption[]
+
+  @@index([orgId])
+  @@index([isActive])
+  @@unique([orgId, slug])
+}
+
+model CustomerRewardRedemption {
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  rewardItemId String
+  rewardItem   CustomerRewardItem @relation(fields: [rewardItemId], references: [id])
+  status       CustomerRewardRedemptionStatus @default(PENDING)
+  pointsCost   Int
+  notes        String?
+  metadata     Json?
+  requestedAt  DateTime @default(now())
+  approvedAt   DateTime?
+  fulfilledAt  DateTime?
+  cancelledAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([customerId])
+  @@index([rewardItemId])
+  @@index([status])
+}
+
+model CustomerRewardEvent {
+  id         String   @id @default(cuid())
+  orgId      String
+  org        Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  eventType  CustomerRewardEventType
+  points     Int
+  sourceKey  String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([customerId])
+  @@index([eventType])
+  @@unique([orgId, eventType, sourceKey])
+}
+
+// ======================================
+// Visit Insights (InsightScoop 3Cs)
+// ======================================
+
+model VisitInsight {
+  id                   String             @id @default(cuid())
+  serviceVisitId       String             @unique
+  serviceVisit         ServiceVisit       @relation(fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  colorIndicator       String
+  consistencyIndicator String
+  contentIndicator     String
+  observations         String?
+  wellnessFlag         Boolean            @default(false)
+  flagReason           String?
+  createdById          String?
+  source               VisitInsightSource @default(MANUAL)
+  sourceMediaId        String?
+  sourceMedia          ServiceVisitMedia? @relation("VisitInsightSourceMedia", fields: [sourceMediaId], references: [id])
+  autoConfidence       Float?
+  analysisModel        String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([wellnessFlag])
+  @@index([source])
+  @@index([sourceMediaId])
+}
+
+// ======================================
+// Weekly Wellness Reports (customer-submitted)
+// ======================================
+
+model WeeklyWellnessReport {
+  id               String   @id @default(cuid())
+  orgId            String
+  customerId       String
+  dogId            String?
+  scope            WellnessReportScope @default(HOUSEHOLD)
+  attribution      WellnessAttribution @default(HOUSEHOLD)
+  suspectedDogIds  String[] @default([])
+  weekStart        DateTime
+  weekEnd          DateTime
+  noIssues         Boolean  @default(false)
+  stoolColors      String[] @default([])
+  stoolConsistency String[] @default([])
+  stoolContents    String[] @default([])
+  symptomTags      String[] @default([])
+  appetite         String?
+  hydration        String?
+  energy           String?
+  stoolFrequency   Int?
+  vomiting         Boolean  @default(false)
+  diarrhea         Boolean  @default(false)
+  medsGiven        Boolean  @default(false)
+  medsNotes        String?
+  behaviorNotes    String?
+  stoolNotes       String?
+  diagnosisLabel   String?
+  diagnosisSource  WellnessDiagnosisSource?
+  diagnosisDate    DateTime?
+  diagnosisNotes   String?
+  consentToShare   Boolean  @default(false)
+  metadata         Json?
+  reportedAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  media    WeeklyWellnessReportMedia[]
+  captures WeeklyWellnessReportCapture[]
+  dailyCheckIns WeeklyWellnessReportDailyCheckIn[]
+
+  @@index([orgId, weekStart])
+  @@index([customerId, weekStart])
+  @@index([customerId, scope, weekStart])
+  @@index([dogId, weekStart])
+}
+
+model WeeklyWellnessReportMedia {
+  reportId  String
+  mediaId   String
+  createdAt DateTime @default(now())
+
+  report WeeklyWellnessReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  media  ServiceVisitMedia    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([reportId, mediaId])
+  @@index([mediaId])
+}
+
+model WeeklyWellnessReportCapture {
+  reportId  String
+  captureId String
+  createdAt DateTime @default(now())
+
+  report  WeeklyWellnessReport  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  capture CustomerWellnessCapture @relation(fields: [captureId], references: [id], onDelete: Cascade)
+
+  @@id([reportId, captureId])
+  @@index([captureId])
+}
+
+model WeeklyWellnessReportDailyCheckIn {
+  reportId  String
+  checkInId String
+  createdAt DateTime @default(now())
+
+  report  WeeklyWellnessReport      @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  checkIn CustomerWellnessDailyCheckIn @relation(fields: [checkInId], references: [id], onDelete: Cascade)
+
+  @@id([reportId, checkInId])
+  @@index([checkInId])
+}
+
+model DogWeightEntry {
+  id         String   @id @default(cuid())
+  orgId      String
+  customerId String
+  dogId      String
+  weightLbs  Float
+  recordedAt DateTime @default(now())
+  source     String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog      @relation(fields: [dogId], references: [id], onDelete: Cascade)
+
+  @@index([dogId, recordedAt])
+  @@index([customerId, recordedAt])
+  @@index([orgId, recordedAt])
+}
+
+model CustomerWellnessChatLog {
+  id           String   @id @default(cuid())
+  orgId        String
+  customerId   String
+  dogId        String?
+  symptoms     String[] @default([])
+  message      String
+  contextNotes String?
+  response     Json
+  riskLevel    String?
+  model        String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, createdAt])
+  @@index([orgId, createdAt])
+  @@index([dogId])
+}
+
+model CustomerWellnessMemory {
+  id            String   @id @default(cuid())
+  orgId         String
+  customerId    String
+  dogId         String?
+  key           String
+  summary       String
+  lastMessageAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+
+  @@unique([customerId, key])
+  @@index([orgId])
+  @@index([dogId])
+}
+
+model CustomerWellnessEmbedding {
+  id          String                  @id @default(cuid())
+  orgId       String
+  customerId  String
+  dogId       String?
+  sourceType  WellnessEmbeddingSource
+  sourceId    String
+  content     String
+  contentHash String
+  embedding   Unsupported("vector(1536)")
+  metadata    Json?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+
+  @@unique([customerId, sourceType, sourceId])
+  @@index([orgId])
+  @@index([customerId])
+  @@index([dogId])
+  @@index([sourceType])
+}
+
+// ======================================
+// Visit Communications (SMS/Email)
+// ======================================
+
+model VisitCommunication {
+  id                  String               @id @default(cuid())
+  serviceVisitId      String
+  serviceVisit        ServiceVisit         @relation(fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  channel             CommunicationChannel
+  templateId          String?
+  messageBody         String
+  mediaUrls           Json? // JSON array of URLs
+  status              CommunicationStatus  @default(PENDING)
+  statusDetail        String?
+  sentBy              String?
+  sentAt              DateTime?
+  deliveryConfirmedAt DateTime?
+  retryCount          Int                  @default(0)
+  createdAt           DateTime             @default(now())
+
+  @@index([serviceVisitId])
+  @@index([status])
+  @@index([sentAt])
+}
+
+// ======================================
+// Routes (for field tech daily routes)
+// ======================================
+
+model Route {
+  id            String      @id @default(cuid())
+  orgId         String
+  date          DateTime
+  scheduledDate DateTime?
+  techId        String?
+  technician    User?       @relation("RouteTechnician", fields: [techId], references: [id])
+  status        String      @default("planned") // planned | active | completed
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  stops         RouteStop[]
+
+  @@index([orgId, date])
+  @@index([techId])
+  @@index([scheduledDate])
+}
+
+model RouteInstance {
+  id                String      @id @default(cuid())
+  orgId             String
+  date              DateTime
+  scheduledDate     DateTime
+  status            String      @default("planned")
+  templateId        String?
+  technicianId      String?
+  technician        User?       @relation("RouteInstanceTechnician", fields: [technicianId], references: [id])
+  dispatcherId      String?
+  dispatcher        User?       @relation("RouteInstanceDispatcher", fields: [dispatcherId], references: [id])
+  optimizationState String?
+  notes             String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  stops             RouteStop[]
+
+  @@index([orgId, date])
+  @@index([scheduledDate])
+  @@index([technicianId])
+}
+
+// Route instance stops (for route optimization)
+// ======================================
+// Route Stops (for field tech routing)
+// ======================================
+
+model RouteStop {
+  id                 String          @id @default(cuid())
+  orgId              String?
+  serviceVisitId     String          @unique
+  serviceVisit       ServiceVisit    @relation(fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  routeId            String?
+  route              Route?          @relation(fields: [routeId], references: [id])
+  routeInstanceId    String?
+  routeInstance      RouteInstance?  @relation(fields: [routeInstanceId], references: [id])
+  technicianId       String?
+  technician         User?           @relation("RouteStopTechnician", fields: [technicianId], references: [id])
+  stopOrder          Int?
+  position           Int?
+  estimatedArrival   DateTime?
+  scheduledArrival   DateTime?
+  scheduledDeparture DateTime?
+  actualArrival      DateTime?
+  actualDeparture    DateTime?
+  status             RouteStopStatus @default(PENDING)
+  notes              String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([orgId])
+  @@index([routeId])
+  @@index([routeInstanceId])
+  @@index([technicianId])
+  @@index([status])
+}
+
+// ======================================
+// Dispatch Events (audit trail)
+// ======================================
+
+model DispatchEvent {
+  id             String   @id @default(cuid())
+  orgId          String
+  serviceVisitId String?
+  routeStopId    String?
+  eventType      String
+  performedBy    String?
+  actorId        String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([orgId])
+  @@index([serviceVisitId])
+  @@index([routeStopId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model DispatchRouteDraft {
+  id                  String   @id @default(cuid())
+  orgId               String
+  scheduledDate       DateTime
+  windowSlug          String?
+  technicianId        String?
+  confidence          Float    @default(0)
+  totalDriveMinutes   Float?
+  totalServiceMinutes Float?
+  metadata            Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([orgId, scheduledDate])
+  @@index([technicianId])
+}
+
+model DispatchDecisionLog {
+  id              String   @id @default(cuid())
+  orgId           String
+  action          String
+  actorId         String?
+  routeDraftId    String?
+  routeInstanceId String?
+  serviceVisitId  String?
+  confidence      Float?
+  reason          String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  @@index([orgId, createdAt])
+  @@index([routeDraftId])
+  @@index([routeInstanceId])
+  @@index([serviceVisitId])
+}
+
+model VisitGeoSnapshot {
+  id             String   @id @default(cuid())
+  orgId          String
+  customerId     String?
+  serviceVisitId String?
+  addressLine1   String?
+  city           String?
+  state          String?
+  zip            String?
+  latitude       Float
+  longitude      Float
+  geohash        String?
+  addressHash    String
+  source         String? // geocode | manual | cached
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([orgId, addressHash])
+  @@index([orgId])
+  @@index([customerId])
+  @@index([serviceVisitId])
+}
+
+// ======================================
+// Service Tiles & Marketplace Routing
+// ======================================
+
+model ServiceTile {
+  id                   String            @id @default(cuid())
+  orgId                String
+  org                  Org               @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  territoryId          String?
+  territory            Territory?        @relation(fields: [territoryId], references: [id])
+  slug                 String
+  name                 String
+  status               ServiceTileStatus @default(DRAFT)
+  goLiveDate           DateTime?
+  minCertifiedScoopers Int               @default(0)
+  minCustomerUnits     Int               @default(0)
+  serviceWindows       Json?
+  coverageRadiusMeters Int?
+  notes                String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  visits         ServiceVisit[]
+  routeShifts    RouteShift[]
+  tileMetrics    TileMetricSnapshot[]
+  visitOffers    VisitOffer[]
+  availabilities ScooperAvailability[]
+  Job            Job[]
+
+  @@unique([orgId, slug])
+  @@index([orgId])
+  @@index([territoryId])
+}
+
+model TileMetricSnapshot {
+  id              String      @id @default(cuid())
+  tileId          String
+  tile            ServiceTile @relation(fields: [tileId], references: [id], onDelete: Cascade)
+  orgId           String
+  org             Org         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  weekOf          DateTime
+  activeScoopers  Int         @default(0)
+  scheduledStops  Int         @default(0)
+  completedStops  Int         @default(0)
+  avgMilesPerStop Float?
+  avgRating       Float?
+  fillRate        Float?
+  churnRate       Float?
+  notes           String?
+  createdAt       DateTime    @default(now())
+
+  @@unique([tileId, weekOf])
+  @@index([orgId, weekOf])
+  @@index([tileId])
+}
+
+// City Waitlist - collect interest for cities without active service
+model CityWaitlist {
+  id         String   @id @default(cuid())
+  email      String
+  phone      String?  // optional for SMS launch notifications
+  placeId    String   // geo.place.place_id from PostGIS
+  cityName   String   // denormalized for easy queries/display
+  state      String   // two-letter state code
+  population Int?     // denormalized from geo.place
+  source     String   @default("city_page") // track signup source
+  ipAddress  String?  // for spam prevention
+  userAgent  String?  // for analytics
+  createdAt  DateTime @default(now())
+  notifiedAt DateTime? // when we notified them of launch
+
+  @@unique([email, placeId]) // one signup per city per email
+  @@index([placeId])
+  @@index([state])
+  @@index([cityName])
+  @@index([createdAt])
+}
+
+// ======================================
+// Scooper Lifecycle
+// ======================================
+
+model ScooperProfile {
+  id                         String                @id @default(cuid())
+  orgId                      String
+  org                        Org                   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId                     String                @unique
+  user                       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status                     ScooperStatus         @default(APPLICANT)
+  backgroundCheckStatus      BackgroundCheckStatus @default(NOT_SUBMITTED)
+  backgroundCheckSubmittedAt DateTime?
+  backgroundCheckCompletedAt DateTime?
+  vehicleVerified            Boolean               @default(false)
+  vehicleDetail              String?
+  insuranceProofUrl          String?
+  trainingCompletedAt        DateTime?
+  ndaAcceptedAt              DateTime?
+  gearKitAcknowledgedAt      DateTime?
+  payoutAutoReleaseEnabled   Boolean               @default(true)
+  notes                      String?
+  metadata                   Json?
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime              @updatedAt
+
+  certifications             ScooperCertification[]
+  availabilities             ScooperAvailability[]
+  devices                    ScooperDevice[]
+  routeShifts                RouteShift[]
+  visitPayouts               VisitPayout[]
+  routePlans                 ScooperRoutePlan[]
+  scooperRewardRedemptions   ScooperRewardRedemption[]
+  visitRatings               ServiceVisitRating[]
+  disciplineEvents           ScooperDisciplineEvent[]
+
+  @@index([orgId])
+}
+
+model ScooperDisciplineEvent {
+  id             String                 @id @default(cuid())
+  orgId          String
+  org            Org                    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  scooperId      String
+  scooper        ScooperProfile         @relation(fields: [scooperId], references: [id], onDelete: Cascade)
+  type           DisciplineEventType
+  source         DisciplineEventSource  @default(SYSTEM)
+  reason         String?
+  serviceVisitId String?
+  serviceVisit   ServiceVisit?          @relation(fields: [serviceVisitId], references: [id], onDelete: SetNull)
+  jobId          String?
+  job            Job?                   @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  createdById    String?
+  createdBy      User?                  @relation("DisciplineEventCreator", fields: [createdById], references: [id])
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([scooperId, createdAt])
+  @@index([orgId, createdAt])
+  @@index([type, createdAt])
+}
+
+model ScooperRoutePlan {
+  id          String          @id @default(cuid())
+  scooperId   String
+  scooper     ScooperProfile  @relation(fields: [scooperId], references: [id], onDelete: Cascade)
+  dateKey     DateTime?
+  signature   String          @unique
+  payload     Json
+  summary     Json?
+  startLat    Float?
+  startLng    Float?
+  endLat      Float?
+  endLng      Float?
+  creditsUsed Int             @default(0)
+  expiresAt   DateTime?
+  googleRequestHash String?
+  validatedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([scooperId, dateKey])
+  @@index([googleRequestHash])
+}
+
+model ScooperCertification {
+  id          String              @id @default(cuid())
+  orgId       String
+  org         Org                 @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  scooperId   String
+  scooper     ScooperProfile      @relation(fields: [scooperId], references: [id], onDelete: Cascade)
+  type        CertificationType
+  status      CertificationStatus @default(PENDING)
+  issuedAt    DateTime?
+  expiresAt   DateTime?
+  issuedById  String?
+  issuedBy    User?               @relation("ScooperCertificationIssuer", fields: [issuedById], references: [id])
+  evidenceUrl String?
+  notes       String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([scooperId, type])
+  @@index([orgId])
+  @@index([issuedById])
+}
+
+model ScooperAvailability {
+  id            String             @id @default(cuid())
+  orgId         String
+  org           Org                @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  scooperId     String
+  scooper       ScooperProfile     @relation(fields: [scooperId], references: [id], onDelete: Cascade)
+  tileId        String?
+  tile          ServiceTile?       @relation(fields: [tileId], references: [id])
+  weekday       Int
+  window        AvailabilityWindow @default(FULL)
+  maxStops      Int?
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+  notes         String?
+  metadata      Json?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([orgId])
+  @@index([scooperId])
+  @@index([tileId])
+  @@index([weekday])
+}
+
+model ScooperDevice {
+  id           String              @id @default(cuid())
+  orgId        String
+  org          Org                 @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  scooperId    String
+  scooper      ScooperProfile      @relation(fields: [scooperId], references: [id], onDelete: Cascade)
+  deviceId     String
+  platform     String?
+  bluetoothMac String?
+  status       ScooperDeviceStatus @default(ACTIVE)
+  registeredAt DateTime            @default(now())
+  lastSeenAt   DateTime?
+  metadata     Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([orgId, deviceId])
+  @@index([orgId])
+  @@index([scooperId])
+}
+
+// ======================================
+// Marketplace Routing Artifacts
+// ======================================
+
+model RouteShift {
+  id                String             @id @default(cuid())
+  orgId             String
+  org               Org                @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  tileId            String?
+  tile              ServiceTile?       @relation(fields: [tileId], references: [id])
+  serviceDate       DateTime
+  scheduledWindow   AvailabilityWindow
+  status            RouteShiftStatus   @default(PLANNED)
+  scooperProfileId  String?
+  scooperProfile    ScooperProfile?    @relation(fields: [scooperProfileId], references: [id])
+  scooperId         String?
+  scooper           User?              @relation("RouteShiftScooper", fields: [scooperId], references: [id])
+  backupForShiftId  String?
+  backupForShift    RouteShift?        @relation("RouteShiftBackup", fields: [backupForShiftId], references: [id])
+  backupShifts      RouteShift[]       @relation("RouteShiftBackup")
+  primary           Boolean            @default(false)
+  plannedStops      Int                @default(0)
+  completedStops    Int                @default(0)
+  plannedMiles      Float?
+  actualMiles       Float?
+  primaryVisitCount Int                @default(0)
+  createdById       String?
+  createdBy         User?              @relation("RouteShiftCreator", fields: [createdById], references: [id])
+  activatedAt       DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  notes             String?
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  serviceVisits ServiceVisit[] @relation("RouteShiftVisits")
+  visitOffers   VisitOffer[]
+  visitPayouts  VisitPayout[]
+
+  @@index([orgId, serviceDate])
+  @@index([tileId])
+  @@index([scooperId])
+  @@index([status])
+}
+
+model VisitOffer {
+  id               String           @id @default(cuid())
+  orgId            String
+  org              Org              @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  serviceVisitId   String
+  serviceVisit     ServiceVisit     @relation(fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  tileId           String?
+  tile             ServiceTile?     @relation(fields: [tileId], references: [id])
+  routeShiftId     String?
+  routeShift       RouteShift?      @relation(fields: [routeShiftId], references: [id])
+  offeredToId      String?
+  offeredTo        User?            @relation("VisitOfferOfferedTo", fields: [offeredToId], references: [id])
+  status           VisitOfferStatus @default(PENDING)
+  priority         Int              @default(0)
+  dispatchStrategy String?
+  expiresAt        DateTime?
+  respondedAt      DateTime?
+  acceptedAt       DateTime?
+  cancelledAt      DateTime?
+  metadata         Json?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([orgId])
+  @@index([serviceVisitId])
+  @@index([tileId])
+  @@index([offeredToId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+// ======================================
+// Compensation & Payouts
+// ======================================
+
+model VisitCompSchedule {
+  id                     String       @id @default(cuid())
+  orgId                  String
+  org                    Org          @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  frequency              Frequency
+  serviceType            ServiceType?
+  baseRateCents          Int
+  binDropBonusCents      Int          @default(0)
+  haulAwayBonusCents     Int          @default(0)
+  ecoDiversionBonusCents Int          @default(0)
+  addonRates             Json?
+  certificationMatrix    Json?
+  effectiveFrom          DateTime
+  effectiveTo            DateTime?
+  isDefault              Boolean      @default(false)
+  notes                  String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  visitPayouts VisitPayout[]
+
+  @@index([orgId])
+  @@index([frequency])
+  @@index([effectiveFrom])
+}
+
+model VisitPayout {
+  id                 String             @id @default(cuid())
+  orgId              String
+  org                Org                @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  serviceVisitId     String             @unique
+  serviceVisit       ServiceVisit       @relation("ServiceVisitPayout", fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  scooperId          String
+  scooper            User               @relation("VisitPayoutScooper", fields: [scooperId], references: [id])
+  scooperProfileId   String?
+  scooperProfile     ScooperProfile?    @relation(fields: [scooperProfileId], references: [id])
+  routeShiftId       String?
+  routeShift         RouteShift?        @relation(fields: [routeShiftId], references: [id])
+  compScheduleId     String?
+  compSchedule       VisitCompSchedule? @relation(fields: [compScheduleId], references: [id])
+  status             PayoutStatus       @default(PENDING_REVIEW)
+  baseAmountCents    Int                @default(0)
+  bonusAmountCents   Int                @default(0)
+  mileageAmountCents Int                @default(0)
+  ppeAmountCents     Int                @default(0)
+  tipsAmountCents    Int                @default(0)
+  adjustmentsCents   Int                @default(0)
+  totalAmountCents   Int                @default(0)
+  milesDriven        Float?
+  minutesOnSite      Int?
+  qaAuditId          String?            @unique
+  qaAudit            ScooperQaAudit?    @relation("PayoutQaAudit", fields: [qaAuditId], references: [id])
+  generatedAt        DateTime           @default(now())
+  readyAt            DateTime?
+  releasedAt         DateTime?
+  stripeTransferId   String?
+  withdrawalRequestId String?
+  withdrawalRequest   ScooperWithdrawalRequest? @relation(fields: [withdrawalRequestId], references: [id])
+  clearedAt          DateTime?
+  cancelledAt        DateTime?
+  notes              String?
+  metadata           Json?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  ledgerEntries ScooperLedgerEntry[]
+
+  @@index([orgId])
+  @@index([scooperId])
+  @@index([status])
+  @@index([readyAt])
+  @@index([releasedAt])
+  @@index([withdrawalRequestId])
+}
+
+model ScooperWithdrawalRequest {
+  id            String                  @id @default(cuid())
+  orgId         String
+  org           Org                     @relation("OrgScooperWithdrawalRequests", fields: [orgId], references: [id], onDelete: Cascade)
+  scooperId     String
+  scooper       User                    @relation("ScooperWithdrawalScooper", fields: [scooperId], references: [id])
+  amountCents   Int
+  status        ScooperWithdrawalStatus @default(REQUESTED)
+  requestedAt   DateTime                @default(now())
+  reviewedAt    DateTime?
+  reviewedById  String?
+  reviewedBy    User?                   @relation("ScooperWithdrawalReviewer", fields: [reviewedById], references: [id])
+  paidAt        DateTime?
+  stripeTransferId String?
+  metadata      Json?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  payouts VisitPayout[]
+
+  @@index([orgId])
+  @@index([scooperId])
+  @@index([status])
+}
+
+model ScooperLedgerEntry {
+  id            String          @id @default(cuid())
+  orgId         String
+  org           Org             @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  scooperId     String
+  scooper       User            @relation("LedgerEntryScooper", fields: [scooperId], references: [id])
+  payoutId      String?
+  payout        VisitPayout?    @relation(fields: [payoutId], references: [id])
+  sourceVisitId String?
+  serviceVisit  ServiceVisit?   @relation(fields: [sourceVisitId], references: [id])
+  type          LedgerEntryType
+  amountCents   Int
+  notes         String?
+  metadata      Json?
+  recordedById  String?
+  recordedBy    User?           @relation("LedgerEntryRecorder", fields: [recordedById], references: [id])
+  recordedAt    DateTime        @default(now())
+  clearedAt     DateTime?
+
+  @@index([orgId])
+  @@index([scooperId])
+  @@index([payoutId])
+  @@index([type])
+}
+
+model ScooperQaAudit {
+  id             String       @id @default(cuid())
+  orgId          String
+  org            Org          @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  serviceVisitId String       @unique
+  serviceVisit   ServiceVisit @relation("ServiceVisitQaAudit", fields: [serviceVisitId], references: [id], onDelete: Cascade)
+  auditorId      String?
+  auditor        User?        @relation("VisitQaAuditor", fields: [auditorId], references: [id])
+  outcome        QaOutcome    @default(PASS)
+  score          Int?
+  issues         Json?
+  resolution     String?
+  resolvedAt     DateTime?
+  notes          String?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  payout VisitPayout? @relation("PayoutQaAudit")
+
+  @@index([orgId])
+  @@index([auditorId])
+  @@index([outcome])
 }

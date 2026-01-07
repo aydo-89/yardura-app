@@ -1,13 +1,43 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { StyleSpecification } from "maplibre-gl";
 import MapLibreMap from "./MapLibreMap";
-import * as turf from "@turf/turf";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MapPin, CheckCircle, X, Plus, Minus } from "lucide-react";
-import maplibregl from "maplibre-gl";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NumberSlider } from "@/components/ui/number-slider";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Loader2,
+  MapPin,
+  Plus,
+  Minus,
+  Layers,
+  X,
+  Search,
+  Wand2,
+  ChevronDown,
+  Minimize2,
+  Maximize2,
+} from "lucide-react";
+import type { ServiceTileStatus } from "@prisma/client";
+import { cn } from "@/lib/utils";
 
 export interface ZIPSearchResult {
   searchCriteria: {
@@ -20,6 +50,8 @@ export interface ZIPSearchResult {
   map?: {
     place: GeoJSON.Feature;
     includedZctas: GeoJSON.FeatureCollection;
+    county?: GeoJSON.Feature | null;
+    countyCities?: GeoJSON.FeatureCollection | null;
   };
   coverageStats: {
     placeAreaSqm: number;
@@ -28,8 +60,8 @@ export interface ZIPSearchResult {
     coveragePercent: number;
   };
   zipsWithoutGeometry?: string[];
-  zipsByCity?: { [cityName: string]: string[] };
-  suburbanCities?: { [cityName: string]: string[] };
+  zipsByCity?: Record<string, string[]>;
+  suburbanCities?: Record<string, string[]>;
 }
 
 export interface ServiceAreaData {
@@ -47,7 +79,22 @@ export interface ServiceAreaData {
   };
 }
 
+interface MapLocationOption {
+  id: string;
+  label: string;
+  city: string;
+  state: string;
+  type: "city" | "county";
+  zipCount: number;
+}
+
+interface MapStateOption {
+  code: string;
+  name: string;
+}
+
 interface SearchedCity {
+  id: string;
   city: string;
   state: string;
   searchType: "city" | "county";
@@ -57,1678 +104,927 @@ interface SearchedCity {
 interface ZIPSearchMapProps {
   searchResult: ZIPSearchResult | null;
   serviceAreaData: ServiceAreaData | null;
-  zipStatuses: {
-    [zip: string]: "available" | "added" | "adding" | "removing" | "error";
-  };
+  zipStatuses: Record<string, "available" | "added" | "adding" | "removing" | "error">;
   searchedCities: SearchedCity[];
+  activeSavedSearchId?: string | null;
+  zipMetadata?: Record<string, unknown>;
+  selectedTile?: unknown;
+  allServiceAreas?: unknown[];
   onZipToggle: (zip: string, action: "add" | "remove") => void;
   onBulkAdd: (zips: string[]) => void;
   onClearAll: () => void;
   onClearSearchedCities: () => void;
-  onSuburbanCitySearch?: (cityName: string, state: string) => void;
+  onLoadSavedSearch?: (saved: SearchedCity) => void;
+  onDeleteSavedSearch?: (id: string) => void;
+  onFocusZip?: (zip: string) => void;
+  tileCount: number;
+  onTileCountChange: (value: number) => void;
+  canGenerateTiles: boolean;
+  onGenerateTiles: () => void;
+  isGeneratingTiles: boolean;
+  generationMode: "cluster" | "perZip";
+  onGenerationModeChange: (mode: "cluster" | "perZip") => void;
+  availableZipCount: number;
+  placeDetailsLoading: boolean;
   loading?: boolean;
   showMaps?: boolean;
+  mapStyle?: string | StyleSpecification;
+  mapStyleId?: string;
+  mapStyleMode?: string;
+  mapStyleOptions?: Array<{ value: string; label: string }>;
+  onMapStyleModeChange?: (mode: string) => void;
+  onOpenMobileMapActions?: () => void;
+  draftTiles?: unknown[];
+  selectedDraftTileId?: string | null;
+  placeGeometry?: GeoJSON.Feature | null;
+  placeZipFeatures?: GeoJSON.FeatureCollection | null;
+  mapId?: string;
+  showTileLabels?: boolean;
+  onToggleTileLabels?: (value: boolean) => void;
+  showMunicipalityLabels?: boolean;
+  onToggleMunicipalityLabels?: (value: boolean) => void;
+  municipalityToggleLabel?: string;
+  showZipLabels?: boolean;
+  onToggleZipLabels?: (value: boolean) => void;
+  showPopulation?: boolean;
+  onTogglePopulation?: (value: boolean) => void;
+  searchMode: "city" | "county";
+  onSearchModeChange: (mode: "city" | "county") => void;
+  stateOptions: MapStateOption[];
+  stateFilter: string;
+  onStateFilterChange: (state: string) => void;
+  locationQuery: string;
+  onLocationQueryChange: (value: string) => void | Promise<void>;
+  onLocationInputFocus: () => void;
+  locationOptions: MapLocationOption[];
+  showLocationOptions: boolean;
+  onSelectLocation: (option: MapLocationOption) => void;
+  onClearLocation: () => void;
+  selectedLocationLabel: string | null;
+  selectedLocationType: "city" | "county" | null;
+  isSearching: boolean;
+  suggestionsLoading: boolean;
+  onSearchLocation: () => void | Promise<void>;
+  selectedLocation?: MapLocationOption | null;
+  title?: string;
+  description?: string;
+  headerActions?: ReactNode;
+  className?: string;
+  mapContainerClassName?: string;
 }
+
+const STATUS_LABELS: Array<{ value: ServiceTileStatus; label: string; color: string }> = [
+  { value: "LIVE", label: "Live", color: "bg-emerald-500" },
+  { value: "WAITLIST", label: "Waitlist", color: "bg-amber-400" },
+  { value: "DRAFT", label: "Draft", color: "bg-slate-400" },
+  { value: "SUSPENDED", label: "Paused", color: "bg-red-500" },
+];
 
 const ZIPSearchMap = ({
   searchResult,
   serviceAreaData,
   zipStatuses,
   searchedCities,
+  activeSavedSearchId,
   onZipToggle,
   onBulkAdd,
   onClearAll,
   onClearSearchedCities,
-  onSuburbanCitySearch,
+  onLoadSavedSearch,
+  onDeleteSavedSearch,
+  onFocusZip,
+  tileCount,
+  onTileCountChange,
+  canGenerateTiles,
+  onGenerateTiles,
+  isGeneratingTiles,
+  generationMode,
+  onGenerationModeChange,
+  availableZipCount,
+  placeDetailsLoading,
   loading = false,
   showMaps = true,
+  mapStyle,
+  mapStyleId,
+  mapStyleMode = "auto",
+  mapStyleOptions,
+  onMapStyleModeChange,
+  onOpenMobileMapActions,
+  mapId = "tile-studio-map",
+  showTileLabels = true,
+  onToggleTileLabels,
+  showMunicipalityLabels = true,
+  onToggleMunicipalityLabels,
+  municipalityToggleLabel = "City labels",
+  showZipLabels = false,
+  onToggleZipLabels,
+  showPopulation = false,
+  onTogglePopulation,
+  searchMode,
+  onSearchModeChange,
+  stateOptions,
+  stateFilter,
+  onStateFilterChange,
+  locationQuery,
+  onLocationQueryChange,
+  onLocationInputFocus,
+  locationOptions,
+  showLocationOptions,
+  onSelectLocation,
+  onClearLocation,
+  selectedLocationLabel,
+  selectedLocationType,
+  isSearching,
+  suggestionsLoading,
+  onSearchLocation,
+  selectedLocation,
+  title,
+  description,
+  headerActions,
+  className,
+  mapContainerClassName,
 }: ZIPSearchMapProps) => {
-  const [selectedZip, setSelectedZip] = useState<string | null>(null);
-  const [addedCities, setAddedCities] = useState<Set<string>>(new Set());
-  const [mapReady, setMapReady] = useState(false);
-
-  // Layer registry to track map layers and avoid private API access
-  const layerRegistry = useRef<
-    Map<
-      string,
-      {
-        added: boolean;
-        eventsBound: boolean;
-        featureCollection: GeoJSON.FeatureCollection | null;
-        visible: boolean;
-      }
-    >
-  >(new Map());
-
-  // Function to toggle city layer visibility
-  const toggleCityVisibility = useCallback(
-    (cityKey: string, visible: boolean) => {
-      const mapInstance = (window as any).maplibre_search;
-      if (!mapInstance?.map) return;
-
-      const placeLayerId = `place-boundary-${cityKey}`;
-      const zctaLayerId = `zcta-polygons-${cityKey}`;
-
-      [placeLayerId, zctaLayerId].forEach((layerId) => {
-        const layerInfo = layerRegistry.current.get(layerId);
-        if (layerInfo?.added) {
-          try {
-            // Use setLayoutProperty to toggle visibility
-            mapInstance.map.setLayoutProperty(
-              layerId,
-              "visibility",
-              visible ? "visible" : "none",
-            );
-            mapInstance.map.setLayoutProperty(
-              `${layerId}-stroke`,
-              "visibility",
-              visible ? "visible" : "none",
-            );
-
-            // Update registry
-            layerRegistry.current.set(layerId, {
-              ...layerInfo,
-              visible,
-            });
-          } catch (error) {
-            console.warn(
-              `Failed to toggle visibility for layer ${layerId}:`,
-              error,
-            );
-          }
-        }
-      });
-    },
-    [],
-  );
-
-  // Update ZIP colors when statuses change
-  const updateZipColors = useCallback(() => {
-    if (!searchResult?.map?.includedZctas) return;
-
-    const mapInstance = (window as any).maplibre_search;
-    if (!mapInstance || !mapInstance.map || !mapInstance.map.loaded()) return;
-
-    console.log("Updating ZIP colors based on status changes");
-
-    try {
-      // Update all registered ZCTA layers using the layer registry
-      layerRegistry.current.forEach((layerInfo: any, layerId: string) => {
-        if (
-          layerInfo.added &&
-          layerInfo.featureCollection &&
-          layerId.startsWith("zcta-polygons-")
-        ) {
-          try {
-            // Update features with current ZIP statuses
-            const updatedFeatures = layerInfo.featureCollection.features.map(
-              (feature: any) => ({
-                ...feature,
-                properties: {
-                  ...feature.properties,
-                  status: zipStatuses[feature.properties?.zip] || "available",
-                },
-              }),
-            );
-
-            const updatedCollection: GeoJSON.FeatureCollection = {
-              type: "FeatureCollection",
-              features: updatedFeatures,
-            };
-
-            // Use the map instance's addGeoJsonLayer method to update
-            // This avoids accessing private source internals
-            mapInstance.addGeoJsonLayer({
-              id: layerId,
-              data: updatedCollection,
-              fillColor: [
-                "case",
-                ["boolean", ["feature-state", "hover"], false],
-                [
-                  "match",
-                  ["get", "status"],
-                  "added",
-                  "#dc2626",
-                  "adding",
-                  "#84cc16",
-                  "removing",
-                  "#f59e0b",
-                  "error",
-                  "#ef4444",
-                  "#22c55e",
-                ],
-                [
-                  "match",
-                  ["get", "status"],
-                  "added",
-                  "#22c55e",
-                  "adding",
-                  "#84cc16",
-                  "removing",
-                  "#f59e0b",
-                  "error",
-                  "#ef4444",
-                  "#e5e7eb",
-                ],
-              ],
-              fillOpacity: [
-                "case",
-                ["boolean", ["feature-state", "hover"], false],
-                0.8,
-                [
-                  "match",
-                  ["get", "status"],
-                  "added",
-                  0.6,
-                  "adding",
-                  0.4,
-                  "removing",
-                  0.4,
-                  "error",
-                  0.4,
-                  0.3,
-                ],
-              ],
-              strokeColor: [
-                "case",
-                ["boolean", ["feature-state", "hover"], false],
-                [
-                  "match",
-                  ["get", "status"],
-                  "added",
-                  "#b91c1c",
-                  "adding",
-                  "#65a30d",
-                  "removing",
-                  "#d97706",
-                  "error",
-                  "#dc2626",
-                  "#16a34a",
-                ],
-                [
-                  "match",
-                  ["get", "status"],
-                  "added",
-                  "#16a34a",
-                  "adding",
-                  "#65a30d",
-                  "removing",
-                  "#d97706",
-                  "error",
-                  "#dc2626",
-                  "#9ca3af",
-                ],
-              ],
-              strokeWidth: [
-                "case",
-                ["boolean", ["feature-state", "hover"], false],
-                3,
-                2,
-              ],
-              strokeOpacity: 0.8,
-            });
-
-            // Update the registry with new feature collection
-            layerRegistry.current.set(layerId, {
-              ...layerInfo,
-              featureCollection: updatedCollection,
-            });
-          } catch (layerError) {
-            console.warn(`Failed to update layer ${layerId}:`, layerError);
-          }
-        }
-      });
-
-      console.log("Updated ZIP colors successfully");
-    } catch (error) {
-      console.error("Failed to update ZIP colors:", error);
-    }
-  }, [searchResult, zipStatuses]);
-
-  // Handle ZIP polygon clicks on the search map (works for all cities)
-  const handleSearchMapClick = useCallback(
-    (e: maplibregl.MapMouseEvent) => {
-      const mapInstance = (window as any).maplibre_search;
-      if (!mapInstance?.map) return;
-
-      // Query all ZCTA layers (for cumulative searches)
-      const layers = mapInstance.map.getStyle().layers || [];
-      const zctaLayers = layers
-        .filter(
-          (layer: any) => layer.id && layer.id.startsWith("zcta-polygons-"),
-        )
-        .map((layer: any) => layer.id);
-
-      const features = mapInstance.map.queryRenderedFeatures(e.point, {
-        layers: zctaLayers,
-      });
-
-      if (features && features.length > 0) {
-        const zip = features[0].properties?.zip;
-        if (zip) {
-          setSelectedZip(zip);
-          const status = zipStatuses[zip] || "available";
-
-          console.log("Clicked on ZIP:", zip);
-          console.log("Current status from state:", status);
-
-          if (status === "available") {
-            console.log(`Adding ZIP ${zip}`);
-            onZipToggle(zip, "add");
-            // Force color update after a short delay
-            setTimeout(() => {
-              console.log(`Updating colors after adding ZIP ${zip}`);
-              updateZipColors();
-            }, 500);
-          } else if (status === "added") {
-            console.log(`Removing ZIP ${zip}`);
-            onZipToggle(zip, "remove");
-            // Force color update after a short delay
-            setTimeout(() => {
-              console.log(`Updating colors after removing ZIP ${zip}`);
-              updateZipColors();
-            }, 500);
-          } else {
-            console.log(
-              `ZIP ${zip} not clickable - status: ${status}, available statuses:`,
-              Object.keys(zipStatuses),
-            );
-          }
-        }
-      }
-    },
-    [zipStatuses, onZipToggle, updateZipColors],
-  );
-
-  // Handle hover effects for ZIP polygons
-  const setupHoverEffects = useCallback(() => {
-    const mapInstance = (window as any).maplibre_search;
-    if (
-      !mapInstance?.map ||
-      !mapInstance.map.loaded() ||
-      !mapInstance.map.isStyleLoaded()
-    )
-      return;
-
-    const map = mapInstance.map;
-    let hoveredZipId: string | number | null = null;
-    let hoveredSource: string | null = null;
-
-    // Mouse enter handler
-    const onMouseEnter = (e: any) => {
-      if (e.features && e.features.length > 0) {
-        const feature = e.features[0];
-        const zip = feature.properties?.zip;
-        const status = feature.properties?.status;
-
-        // Clear previous hover state
-        if (hoveredZipId !== null && hoveredSource !== null) {
-          try {
-            map.setFeatureState(
-              { source: hoveredSource, id: hoveredZipId },
-              { hover: false },
-            );
-          } catch (e) {
-            // Ignore if feature doesn't exist
-          }
-        }
-
-        hoveredZipId = feature.id;
-        hoveredSource = feature.layer.source;
-
-        try {
-          map.setFeatureState(
-            { source: hoveredSource, id: hoveredZipId },
-            { hover: true },
-          );
-        } catch (e) {
-          console.warn(`Failed to set hover state for ZIP ${zip}:`, e);
-        }
-
-        // Change cursor based on status
-        if (status === "available" || status === "added") {
-          map.getCanvas().style.cursor = "pointer";
-        } else {
-          map.getCanvas().style.cursor = "not-allowed";
-        }
-      }
-    };
-
-    // Mouse leave handler
-    const onMouseLeave = () => {
-      if (hoveredZipId !== null && hoveredSource !== null) {
-        try {
-          map.setFeatureState(
-            { source: hoveredSource, id: hoveredZipId },
-            { hover: false },
-          );
-        } catch (e) {
-          // Ignore if feature doesn't exist
-        }
-      }
-      hoveredZipId = null;
-      hoveredSource = null;
-      map.getCanvas().style.cursor = "";
-    };
-
-    // Get all ZCTA layer IDs
-    const layers = map.getStyle().layers || [];
-    const zctaLayers = layers
-      .filter((layer: any) => layer.id && layer.id.startsWith("zcta-polygons-"))
-      .map((layer: any) => layer.id);
-
-    console.log(
-      `Setting up hover effects for ${zctaLayers.length} ZCTA layers:`,
-      zctaLayers,
-    );
-
-    // Remove existing event handlers first to avoid duplicates
-    zctaLayers.forEach((layerId: string) => {
-      try {
-        map.off("mouseenter", layerId, onMouseEnter);
-        map.off("mouseleave", layerId, onMouseLeave);
-      } catch (e) {
-        // Layer might not exist
-      }
-    });
-
-    // Add hover effects to all ZCTA layers
-    zctaLayers.forEach((layerId: string) => {
-      try {
-        map.on("mouseenter", layerId, onMouseEnter);
-        map.on("mouseleave", layerId, onMouseLeave);
-        console.log(`Added hover effects to layer: ${layerId}`);
-      } catch (e) {
-        console.warn(`Failed to add hover effects to layer ${layerId}:`, e);
-      }
-    });
-
-    // Return cleanup function
-    return () => {
-      zctaLayers.forEach((layerId: string) => {
-        try {
-          map.off("mouseenter", layerId, onMouseEnter);
-          map.off("mouseleave", layerId, onMouseLeave);
-        } catch (e) {
-          // Layer might not exist anymore
-        }
-      });
-    };
-  }, []);
-
-  // Function to initialize layers (can be called with retry)
-  const initializeLayers = useCallback(() => {
-    if (!searchResult?.map || !searchResult.map.includedZctas) {
-      console.log("No search result data for layer initialization");
-      return;
-    }
-
-    console.log("Initializing map layers with search result:", {
-      placeType: searchResult.map.place?.geometry?.type,
-      zctaCount: searchResult.map.includedZctas?.features?.length,
-    });
-
-    const mapInstance = (window as any).maplibre_search;
-    if (!mapInstance) {
-      console.log("Map instance not ready, retrying...");
-      // Retry after a short delay
-      setTimeout(() => {
-        initializeLayers();
-      }, 100);
-      return;
-    }
-
-    console.log("Map instance found, proceeding with layer addition");
-
-    // Generate unique layer IDs for this search to make it cumulative
-    const searchId =
-      `${searchResult.searchCriteria.city}-${searchResult.searchCriteria.state}`
-        .toLowerCase()
-        .replace(/\s+/g, "-");
-    const placeLayerId = `place-boundary-${searchId}`;
-
-    try {
-      console.log("Adding place boundary layer:", placeLayerId);
-      mapInstance.addGeoJsonLayer({
-        id: placeLayerId,
-        data: searchResult.map.place,
-        fillColor: "#3b82f6",
-        fillOpacity: 0.1,
-        strokeColor: "#2563eb",
-        strokeWidth: 3,
-        strokeOpacity: 1,
-      });
-
-      // Register place boundary layer in registry
-      layerRegistry.current.set(placeLayerId, {
-        added: true,
-        eventsBound: false,
-        featureCollection: null, // Not a feature collection
-        visible: true,
-      });
-
-      console.log("Place boundary layer added successfully");
-    } catch (error) {
-      console.error("Failed to add place boundary:", error);
-      // Retry after a short delay
-      setTimeout(() => {
-        initializeLayers();
-      }, 200);
-      return;
-    }
-
-    try {
-      console.log("Adding ZIP polygon layers...");
-      console.log(
-        "ZCTA features count:",
-        searchResult.map.includedZctas.features.length,
-      );
-
-      // Add ZIP polygons with status-based coloring
-      const zctaFeatures = searchResult.map.includedZctas.features.map(
-        (feature) => ({
-          ...feature,
-          properties: {
-            ...feature.properties,
-            status: zipStatuses[feature.properties?.zip] || "available",
-          },
-        }),
-      );
-
-      const zctaCollection: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features: zctaFeatures,
-      };
-
-      console.log(
-        "Adding ZCTA collection with",
-        zctaFeatures.length,
-        "features",
-      );
-
-      const zctaLayerId = `zcta-polygons-${searchId}`;
-
-      mapInstance.addGeoJsonLayer({
-        id: zctaLayerId,
-        data: zctaCollection,
-        fillColor: [
-          "case",
-          ["boolean", ["feature-state", "hover"], false],
-          [
-            "match",
-            ["get", "status"],
-            "added",
-            "#dc2626", // Red hover for added (to remove)
-            "adding",
-            "#84cc16", // Same for adding
-            "removing",
-            "#f59e0b", // Same for removing
-            "error",
-            "#ef4444", // Same for error
-            "#22c55e", // Green hover for available (to add)
-          ],
-          [
-            "match",
-            ["get", "status"],
-            "added",
-            "#22c55e", // Green for added
-            "adding",
-            "#84cc16", // Light green for adding
-            "removing",
-            "#f59e0b", // Orange for removing
-            "error",
-            "#ef4444", // Red for error
-            "#e5e7eb", // Light gray for available
-          ],
-        ],
-        fillOpacity: [
-          "case",
-          ["boolean", ["feature-state", "hover"], false],
-          0.8, // Higher opacity on hover
-          [
-            "match",
-            ["get", "status"],
-            "added",
-            0.6,
-            "adding",
-            0.4,
-            "removing",
-            0.4,
-            "error",
-            0.4,
-            0.3, // Default for available
-          ],
-        ],
-        strokeColor: [
-          "case",
-          ["boolean", ["feature-state", "hover"], false],
-          [
-            "match",
-            ["get", "status"],
-            "added",
-            "#b91c1c", // Darker red hover for added
-            "adding",
-            "#65a30d", // Same for adding
-            "removing",
-            "#d97706", // Same for removing
-            "error",
-            "#dc2626", // Same for error
-            "#16a34a", // Darker green hover for available
-          ],
-          [
-            "match",
-            ["get", "status"],
-            "added",
-            "#16a34a",
-            "adding",
-            "#65a30d",
-            "removing",
-            "#d97706",
-            "error",
-            "#dc2626",
-            "#9ca3af", // Gray for available
-          ],
-        ],
-        strokeWidth: [
-          "case",
-          ["boolean", ["feature-state", "hover"], false],
-          3, // Thicker stroke on hover
-          2,
-        ],
-        strokeOpacity: 0.8,
-      });
-
-      // Register ZCTA layer in registry
-      layerRegistry.current.set(zctaLayerId, {
-        added: true,
-        eventsBound: false,
-        featureCollection: zctaCollection,
-        visible: true,
-      });
-
-      console.log("ZIP polygon layers added successfully");
-
-      // Set up hover effects for all layers (including the new one)
-      setTimeout(() => setupHoverEffects(), 200);
-
-      // Fit to place boundary with some padding (only for new searches)
-      console.log("Fitting map to place boundary...");
-
-      // Force map to center on the place with appropriate zoom
-      try {
-        const centroid = turf.centroid(searchResult.map.place);
-        const [lng, lat] = centroid.geometry.coordinates;
-        console.log(`Centering map on: [${lng}, ${lat}]`);
-
-        mapInstance.setCenter([lng, lat]);
-        mapInstance.setZoom(11); // City-level zoom
-
-        // Then fit to data with padding
-        setTimeout(() => {
-          if (searchResult.map?.place) {
-            mapInstance.fitToData(searchResult.map.place);
-            console.log("Map fitted to data");
-          }
-        }, 100);
-      } catch (fitError) {
-        console.error("Failed to fit map to data:", fitError);
-      }
-    } catch (error) {
-      console.error("Failed to add ZIP polygons:", error);
-      // Retry after a short delay
-      setTimeout(() => {
-        initializeLayers();
-      }, 300);
-      return;
-    }
-  }, [searchResult, zipStatuses]);
-
-  // Track if layers have been initialized to prevent flickering
-  const [layersInitialized, setLayersInitialized] = useState(false);
-
-  // Update colors when ZIP statuses change (debounced to prevent flickering)
-  useEffect(() => {
-    if (!mapReady) return;
-
-    const timeoutId = setTimeout(() => {
-      console.log("ZIP statuses changed, updating map colors");
-      updateZipColors();
-    }, 100); // Small delay to debounce rapid changes
-
-    return () => clearTimeout(timeoutId);
-  }, [zipStatuses, mapReady, updateZipColors]);
-
-  // Restore all searched cities on mount to maintain map persistence
-  useEffect(() => {
-    console.log("Restoration effect triggered:", {
-      mapReady,
-      searchedCitiesLength: searchedCities?.length,
-      addedCitiesSize: addedCities.size,
-    });
-
-    if (!mapReady || !searchedCities || searchedCities.length === 0) {
-      console.log("Skipping restoration - conditions not met");
-      return;
-    }
-
-    const mapInstance = (window as any).maplibre_search;
-    if (
-      !mapInstance ||
-      !mapInstance.map ||
-      !mapInstance.map.loaded() ||
-      !mapInstance.map.isStyleLoaded()
-    ) {
-      console.log("Map not ready for restoration, retrying in 500ms...");
-      // Retry when map is ready
-      const retryTimeout = setTimeout(() => {
-        // Force re-check of map readiness
-        const newMapInstance = (window as any).maplibre_search;
-        if (
-          newMapInstance &&
-          newMapInstance.map &&
-          newMapInstance.map.loaded() &&
-          newMapInstance.map.isStyleLoaded()
-        ) {
-          setMapReady(true); // This will trigger the effect again
-        }
-      }, 500);
-      return () => clearTimeout(retryTimeout);
-    }
-
-    console.log(
-      `Map ready - restoring ${searchedCities.length} searched cities:`,
-      searchedCities.map((c) => `${c.city}, ${c.state}`),
-    );
-
-    // Restore all searched cities to the map
-    searchedCities.forEach((cityData) => {
-      const cityKey = `${cityData.city}-${cityData.state}`;
-
-      // Skip if already added
-      if (addedCities.has(cityKey)) return;
-
-      console.log(`Restoring city: ${cityData.city}, ${cityData.state}`);
-
-      // Add the city layers to the map
-      if (
-        cityData.searchResult?.map?.place &&
-        cityData.searchResult?.map?.includedZctas
-      ) {
-        const searchId = `${cityData.city}-${cityData.state}`
-          .toLowerCase()
-          .replace(/\s+/g, "-");
-        const placeLayerId = `place-boundary-${searchId}`;
-        const zctaLayerId = `zcta-polygons-${searchId}`;
-
-        try {
-          // Add place boundary
-          mapInstance.addGeoJsonLayer({
-            id: placeLayerId,
-            data: cityData.searchResult.map.place,
-            fillColor: "#3b82f6",
-            fillOpacity: 0.1,
-            strokeColor: "#2563eb",
-            strokeWidth: 3,
-            strokeOpacity: 1,
-          });
-
-          // Add ZIP polygons with current status
-          const zctaFeatures =
-            cityData.searchResult.map.includedZctas.features.map((feature) => ({
-              ...feature,
-              properties: {
-                ...feature.properties,
-                status: zipStatuses[feature.properties?.zip] || "available",
-                searchId,
-              },
-            }));
-
-          const zctaCollection: GeoJSON.FeatureCollection = {
-            type: "FeatureCollection",
-            features: zctaFeatures,
-          };
-
-          mapInstance.addGeoJsonLayer({
-            id: zctaLayerId,
-            data: zctaCollection,
-            fillColor: [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              [
-                "match",
-                ["get", "status"],
-                "added",
-                "#dc2626", // Red hover for added (to remove)
-                "adding",
-                "#84cc16", // Same for adding
-                "removing",
-                "#f59e0b", // Same for removing
-                "error",
-                "#ef4444", // Same for error
-                "#22c55e", // Green hover for available (to add)
-              ],
-              [
-                "match",
-                ["get", "status"],
-                "added",
-                "#22c55e", // Green for added
-                "adding",
-                "#84cc16", // Light green for adding
-                "removing",
-                "#f59e0b", // Orange for removing
-                "error",
-                "#ef4444", // Red for error
-                "#e5e7eb", // Light gray for available
-              ],
-            ],
-            fillOpacity: [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              0.8, // Higher opacity on hover
-              [
-                "match",
-                ["get", "status"],
-                "added",
-                0.6,
-                "adding",
-                0.4,
-                "removing",
-                0.4,
-                "error",
-                0.4,
-                0.3,
-              ],
-            ],
-            strokeColor: [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              [
-                "match",
-                ["get", "status"],
-                "added",
-                "#b91c1c", // Darker red hover for added
-                "adding",
-                "#65a30d", // Same for adding
-                "removing",
-                "#d97706", // Same for removing
-                "error",
-                "#dc2626", // Same for error
-                "#16a34a", // Darker green hover for available
-              ],
-              [
-                "match",
-                ["get", "status"],
-                "added",
-                "#16a34a",
-                "adding",
-                "#65a30d",
-                "removing",
-                "#d97706",
-                "error",
-                "#dc2626",
-                "#9ca3af",
-              ],
-            ],
-            strokeWidth: [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              3, // Thicker stroke on hover
-              2,
-            ],
-            strokeOpacity: 0.8,
-          });
-
-          // Mark as added
-          setAddedCities((prev) => new Set(prev).add(cityKey));
-
-          console.log(
-            `Restored layers for ${cityData.city}, ${cityData.state}`,
-          );
-        } catch (error) {
-          console.warn(
-            `Failed to restore layers for ${cityData.city}, ${cityData.state}:`,
-            error,
-          );
-        }
-      }
-    });
-    // After restoration, ensure colors reflect current statuses and set up hover effects
-    setTimeout(() => {
-      updateZipColors();
-      setupHoverEffects();
-    }, 300);
-  }, [
-    searchedCities,
-    addedCities,
-    zipStatuses,
-    mapReady,
-    updateZipColors,
-    setupHoverEffects,
-  ]);
-
-  // Update search map layers when search result changes (cumulative)
-  useEffect(() => {
-    if (!searchResult?.map) return;
-
-    // Check if this city has already been added to prevent duplicates
-    const cityKey = `${searchResult.searchCriteria.city}-${searchResult.searchCriteria.state}`;
-    if (addedCities.has(cityKey)) {
-      console.log(
-        `City ${cityKey} already added, skipping layer initialization`,
-      );
-      return;
-    }
-
-    console.log("New search result, adding layers cumulatively for:", cityKey);
-
-    // Wait for map to be fully ready before initializing layers
-    const checkAndInitialize = () => {
-      const mapInstance = (window as any).maplibre_search;
-      if (
-        mapInstance &&
-        mapInstance.map &&
-        mapInstance.map.loaded() &&
-        mapInstance.map.isStyleLoaded()
-      ) {
-        console.log("Map is fully ready, initializing layers now");
-        initializeLayers();
-        setLayersInitialized(true);
-
-        // Mark this city as added
-        setAddedCities((prev) => new Set(prev).add(cityKey));
-      } else {
-        setTimeout(checkAndInitialize, 500); // Longer delay to reduce spam
-      }
-    };
-
-    checkAndInitialize();
-  }, [
-    searchResult?.searchCriteria?.city,
-    searchResult?.searchCriteria?.state,
-    addedCities,
-  ]); // Only when search criteria changes
-
-  // Don't reset layers when search result changes - allow multiple cities
-  // Only reset when explicitly clearing or when no search results
-  useEffect(() => {
-    if (!searchResult) {
-      setLayersInitialized(false);
-    }
+  const coveragePercentDisplay = useMemo(() => {
+    const raw = searchResult?.coverageStats.coveragePercent;
+    if (raw === null || raw === undefined) return "–";
+    return `${Number(raw).toFixed(1)}%`;
   }, [searchResult]);
 
-  // Track if service area layers have been initialized
-  const [serviceLayersInitialized, setServiceLayersInitialized] =
-    useState(false);
+  const availableZips = searchResult?.zips ?? [];
+  const hasResult = Boolean(searchResult);
+  const computedTitle = title
+    ?? selectedLocationLabel
+    ?? (hasResult
+      ? `${searchResult!.searchCriteria.city}, ${searchResult!.searchCriteria.state}`
+      : "Tile Coverage Workspace");
+  const computedDescription = description ??
+    (hasResult
+      ? searchResult!.message
+      : "Visualize draft tiles, published coverage, and ZIP assignments.");
 
-  // Update service area map when data changes
+  const plannedTileGenerationCount = generationMode === "perZip"
+    ? availableZipCount
+    : tileCount;
+
+  const [zipListExpanded, setZipListExpanded] = useState(false);
+  const [layerPanelCollapsed, setLayerPanelCollapsed] = useState(false);
+  const [showAllZips, setShowAllZips] = useState(false);
+
   useEffect(() => {
-    if (!serviceAreaData?.combined) return;
+    setZipListExpanded(false);
+  }, [searchResult]);
 
-    const updateServiceMap = () => {
-      const mapInstance = (window as any).maplibre_service;
-      if (
-        !mapInstance ||
-        !mapInstance.map ||
-        !mapInstance.map.loaded() ||
-        !mapInstance.map.isStyleLoaded()
-      ) {
-        setTimeout(updateServiceMap, 200);
-        return;
-      }
-
-      console.log(
-        "Updating service area map with",
-        serviceAreaData.combined.features.length,
-        "features",
-      );
-
-      // Clear existing layers
-      try {
-        mapInstance.removeLayer("service-areas");
-      } catch (e) {
-        // Layer doesn't exist yet
-      }
-
-      if (serviceAreaData.combined.features.length === 0) {
-        console.log("No service areas to display");
-        return;
-      }
-
-      // Add combined service areas with better styling
-      mapInstance.addGeoJsonLayer({
-        id: "service-areas",
-        data: serviceAreaData.combined,
-        fillColor: "#22c55e",
-        fillOpacity: 0.5,
-        strokeColor: "#16a34a",
-        strokeWidth: 2,
-        strokeOpacity: 1.0,
-      });
-
-      // Fit to all service areas
-      try {
-        mapInstance.fitToData(serviceAreaData.combined);
-        console.log("Service area map fitted to data");
-        setServiceLayersInitialized(true);
-      } catch (fitError) {
-        console.error("Failed to fit service area map:", fitError);
-      }
-    };
-
-    if (!serviceLayersInitialized) {
-      updateServiceMap();
-    }
-  }, [serviceAreaData, serviceLayersInitialized]);
-
-  // Reset service layers when data changes significantly
-  useEffect(() => {
-    setServiceLayersInitialized(false);
-  }, [serviceAreaData?.stats?.totalZips]);
-
-  const handleBulkAdd = () => {
-    if (!searchResult?.zips) return;
-    const availableZips = searchResult.zips.filter(
-      (zip) => zipStatuses[zip] === "available",
-    );
-    if (availableZips.length > 0) {
-      onBulkAdd(availableZips);
-    }
-  };
-
-  const getZipBadgeVariant = (zip: string) => {
-    const status = zipStatuses[zip];
-    if (status === "added") return "default";
-    if (status === "error") return "destructive";
-    if (status === "removing") return "outline";
-    return "secondary";
-  };
-
-  const getZipDisplayText = (zip: string) => {
-    const status = zipStatuses[zip];
-    if (status === "adding") return `${zip} (Adding...)`;
-    if (status === "added") return `${zip} ✓`;
-    if (status === "removing") return `${zip} (Removing...)`;
-    if (status === "error") return `${zip} ✗`;
-    return zip;
-  };
-
-  // Handle suburban ZIP toggle with auto-search for city boundaries
-  const handleSuburbanZipToggle = async (
-    zip: string,
-    cityName: string,
-    action: "add" | "remove",
-  ) => {
-    if (action === "add") {
-      // First auto-search for the suburban city's boundaries if not already searched
-      if (
-        onSuburbanCitySearch &&
-        !searchedCities.some(
-          (city) =>
-            city.city.toLowerCase() === cityName.toLowerCase() &&
-            city.state === searchResult?.searchCriteria.state,
-        )
-      ) {
-        console.log(
-          `🔍 Auto-searching for suburban city FIRST: ${cityName}, ${searchResult?.searchCriteria.state}`,
-        );
-
-        try {
-          await onSuburbanCitySearch(
-            cityName,
-            searchResult?.searchCriteria.state || "",
-          );
-          console.log(`✅ Suburban city search completed for ${cityName}`);
-
-          // Longer delay to ensure city boundaries are fully loaded and rendered
-          setTimeout(() => {
-            console.log(
-              `➕ Now adding ZIP ${zip} to ${cityName} after city boundaries loaded`,
-            );
-            onZipToggle(zip, "add");
-          }, 2000);
-        } catch (error) {
-          console.error(
-            `❌ Failed to search suburban city ${cityName}:`,
-            error,
-          );
-          // Fallback: just add the ZIP without city boundaries
-          onZipToggle(zip, "add");
-        }
-      } else {
-        // City already searched, just add the ZIP
-        console.log(
-          `City ${cityName} already searched, adding ZIP ${zip} directly`,
-        );
-        onZipToggle(zip, "add");
-      }
-    } else {
-      onZipToggle(zip, "remove");
-    }
-  };
-
-  // Handle reverse ZIP lookup to find actual cities for ZIPs without map data
-  const handleReverseZipLookup = async (zips: string[]) => {
-    console.log(
-      `Starting reverse lookup for ${zips.length} ZIPs to find their actual cities`,
-    );
-
-    for (const zip of zips.slice(0, 5)) {
-      // Limit to first 5 to avoid API spam
-      try {
-        const zipUrl = `https://api.zippopotam.us/us/${zip}`;
-        const response = await fetch(zipUrl);
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.places && data.places.length > 0) {
-            const actualCity = data.places[0]["place name"];
-            const actualState = data["state abbreviation"];
-
-            console.log(`ZIP ${zip} belongs to ${actualCity}, ${actualState}`);
-
-            // If it's a different city than the current search, auto-search for it
-            if (
-              actualCity.toLowerCase() !==
-                searchResult?.searchCriteria.city.toLowerCase() &&
-              onSuburbanCitySearch &&
-              !searchedCities.some(
-                (city) =>
-                  city.city.toLowerCase() === actualCity.toLowerCase() &&
-                  city.state === actualState,
-              )
-            ) {
-              console.log(
-                `Auto-searching for ZIP's actual city: ${actualCity}, ${actualState}`,
-              );
-              await onSuburbanCitySearch(actualCity, actualState);
-            }
-          }
-        }
-
-        // Small delay between API calls
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      } catch (error) {
-        console.warn(`Failed reverse lookup for ZIP ${zip}:`, error);
-      }
-    }
-  };
+  const hasZipResults = availableZips.length > 0;
+  const statusBadges = useMemo(() => {
+    return STATUS_LABELS.map((item) => (
+      <span
+        key={item.value}
+        className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
+      >
+        <span className={`inline-flex h-3 w-3 rounded-full ${item.color}`} />
+        {item.label}
+      </span>
+    ));
+  }, []);
 
   return (
     <div className="space-y-6">
-      {/* Search Map and Controls */}
-      <div className="space-y-6">
-        {/* Enhanced Search Map */}
-        <Card className="overflow-hidden bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-xl rounded-3xl">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/60">
-            <CardTitle className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl">
-                <MapPin className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="flex items-center gap-3 flex-1">
-                <div>
-                  <div className="text-xl font-bold text-slate-900">
-                    {searchResult
-                      ? `${searchResult.searchCriteria.city}, ${searchResult.searchCriteria.state}`
-                      : "ZIP Code Search Map"}
-                  </div>
-                  {searchResult && (
-                    <div className="text-sm text-slate-600 font-medium">
-                      {searchResult.count} ZIP codes found •{" "}
-                      {searchResult.coverageStats.coveragePercent}% coverage
-                    </div>
-                  )}
-                </div>
-                {searchResult && (
-                  <Button
-                    onClick={() => {
-                      const cityKey =
-                        `${searchResult.searchCriteria.city}-${searchResult.searchCriteria.state}`
-                          .toLowerCase()
-                          .replace(/\s+/g, "-");
-                      const isVisible =
-                        layerRegistry.current.get(`place-boundary-${cityKey}`)
-                          ?.visible ?? true;
-                      toggleCityVisibility(cityKey, !isVisible);
-                    }}
-                    size="sm"
-                    variant="outline"
-                    className="rounded-xl border-2 hover:border-brand-300 hover:bg-brand-50 transition-all duration-200"
-                  >
-                    {(layerRegistry.current.get(
-                      `place-boundary-${searchResult.searchCriteria.city.toLowerCase().replace(/\s+/g, "-")}-${searchResult.searchCriteria.state.toLowerCase()}`,
-                    )?.visible ?? true)
-                      ? "Hide Layer"
-                      : "Show Layer"}
-                  </Button>
-                )}
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {/* Enhanced Map Legend */}
-            <div className="p-6 bg-slate-50/50 border-b border-slate-200/60">
-              <div className="flex flex-wrap gap-6 text-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 border-3 border-blue-600 bg-blue-100/50 rounded-lg"></div>
-                  <span className="font-medium text-slate-700">
-                    City Boundary
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-lg bg-slate-200 border-2 border-slate-400"></div>
-                  <span className="font-medium text-slate-700">
-                    Available ZIPs
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-lg bg-green-500 border-2 border-green-600"></div>
-                  <span className="font-medium text-slate-700">Added ZIPs</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-lg bg-orange-400 border-2 border-orange-500"></div>
-                  <span className="font-medium text-slate-700">Processing</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative bg-slate-100 rounded-2xl overflow-hidden">
-              <MapLibreMap
-                id="search"
-                center={
-                  searchResult?.map?.place
-                    ? (() => {
-                        try {
-                          const centroid = turf.centroid(
-                            searchResult.map.place,
-                          );
-                          return [
-                            centroid.geometry.coordinates[0],
-                            centroid.geometry.coordinates[1],
-                          ];
-                        } catch (e) {
-                          return [-98.5795, 39.8283]; // US center fallback
-                        }
-                      })()
-                    : [-98.5795, 39.8283]
-                }
-                zoom={searchResult?.map?.place ? 11 : 4}
-                onClick={handleSearchMapClick}
-                onLoad={() => setMapReady(true)}
-                className="w-full h-[500px] rounded-2xl"
-              />
-              {loading && (
-                <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-2xl">
-                  <div className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl shadow-xl">
-                    <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
-                    <span className="text-sm font-medium text-slate-700">
-                      Loading ZIP data...
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Map controls overlay */}
-              {searchResult && (
-                <div className="absolute top-4 right-4 flex flex-col gap-2">
-                  <Button
-                    onClick={() => {
-                      const cityKey =
-                        `${searchResult.searchCriteria.city}-${searchResult.searchCriteria.state}`
-                          .toLowerCase()
-                          .replace(/\s+/g, "-");
-                      const isVisible =
-                        layerRegistry.current.get(`place-boundary-${cityKey}`)
-                          ?.visible ?? true;
-                      toggleCityVisibility(cityKey, !isVisible);
-                    }}
-                    size="sm"
-                    variant="secondary"
-                    className="bg-white/90 backdrop-blur-sm border border-white/60 shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 rounded-xl"
-                  >
-                    {(layerRegistry.current.get(
-                      `place-boundary-${searchResult.searchCriteria.city.toLowerCase().replace(/\s+/g, "-")}-${searchResult.searchCriteria.state.toLowerCase()}`,
-                    )?.visible ?? true)
-                      ? "👁️ Hide"
-                      : "👁️‍🗨️ Show"}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Enhanced ZIP List */}
-        {searchResult && searchResult.zips.length > 0 && (
-          <Card className="bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-xl rounded-3xl overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/60">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl">
-                    <span className="text-lg font-bold text-green-600">
-                      {searchResult.count}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-xl font-bold text-slate-900">
-                      ZIP Codes for {searchResult.searchCriteria.city},{" "}
-                      {searchResult.searchCriteria.state}
-                    </div>
-                    <div className="text-sm text-slate-600 font-medium">
-                      {
-                        searchResult.zips.filter(
-                          (zip) => zipStatuses[zip] === "added",
-                        ).length
-                      }{" "}
-                      added •{" "}
-                      {
-                        searchResult.zips.filter(
-                          (zip) => zipStatuses[zip] === "available",
-                        ).length
-                      }{" "}
-                      available
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleBulkAdd}
-                  disabled={
-                    loading ||
-                    !searchResult.zips.some(
-                      (zip) => zipStatuses[zip] === "available",
-                    )
-                  }
-                  className="bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add All Available
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="flex flex-wrap gap-3">
-                {searchResult.zips.map((zip) => (
-                  <Badge
-                    key={zip}
-                    variant={getZipBadgeVariant(zip)}
-                    className={`cursor-pointer transition-all duration-200 px-4 py-2 rounded-2xl font-semibold text-sm border-2 ${
-                      zipStatuses[zip] === "available"
-                        ? "hover:bg-green-100 hover:text-green-800 hover:border-green-300 hover:scale-105 bg-slate-100 text-slate-700 border-slate-300"
-                        : zipStatuses[zip] === "added"
-                          ? "hover:bg-red-100 hover:text-red-800 hover:border-red-300 hover:scale-105 bg-green-100 text-green-800 border-green-300"
-                          : zipStatuses[zip] === "adding" ||
-                              zipStatuses[zip] === "removing"
-                            ? "animate-pulse bg-orange-100 text-orange-800 border-orange-300"
-                            : zipStatuses[zip] === "error"
-                              ? "cursor-not-allowed bg-red-100 text-red-800 border-red-300"
-                              : "bg-slate-100 text-slate-700 border-slate-300"
-                    }`}
-                    onClick={() => {
-                      const status = zipStatuses[zip];
-                      if (status === "available") {
-                        onZipToggle(zip, "add");
-                      } else if (status === "added") {
-                        onZipToggle(zip, "remove");
-                      }
-                    }}
-                    title={
-                      zipStatuses[zip] === "available"
-                        ? "Click to add this ZIP code"
-                        : zipStatuses[zip] === "added"
-                          ? "Click to remove this ZIP code"
-                          : zipStatuses[zip] === "adding"
-                            ? "Adding ZIP code..."
-                            : zipStatuses[zip] === "removing"
-                              ? "Removing ZIP code..."
-                              : zipStatuses[zip] === "error"
-                                ? "Failed to process - try again"
-                                : "ZIP code"
-                    }
-                  >
-                    {zipStatuses[zip] === "adding" ||
-                    zipStatuses[zip] === "removing" ? (
-                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                    ) : zipStatuses[zip] === "added" ? (
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                    ) : zipStatuses[zip] === "available" ? (
-                      <Plus className="w-3 h-3 mr-1" />
-                    ) : null}
-                    {getZipDisplayText(zip)}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      <Card
+        className={cn(
+          "overflow-hidden border border-slate-200/70 bg-white/98 shadow-lg backdrop-blur-sm dark:border-slate-800/70 dark:bg-slate-950/85",
+          className,
         )}
-
-        {/* ZIPs Without Map Data */}
-        {searchResult?.zipsWithoutGeometry &&
-          searchResult.zipsWithoutGeometry.length > 0 && (
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div>
-                    <span>
-                      ZIPs Without Map Data for{" "}
-                      {searchResult.searchCriteria.city},{" "}
-                      {searchResult.searchCriteria.state}
-                    </span>
+      >
+        <CardHeader className="flex flex-col gap-4 border-b border-slate-200/60 bg-white/80 dark:border-slate-800/60 dark:bg-slate-950/60">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-blue-300 text-blue-700 dark:from-blue-900/50 dark:to-blue-800/50 dark:text-blue-200">
+                <MapPin className="h-5 w-5" />
+              </span>
+              <div className="space-y-1">
+                <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
+                  {computedTitle}
+                </CardTitle>
+                {computedDescription ? (
+                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
+                    {computedDescription}
+                  </CardDescription>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {headerActions}
+              {mapStyleOptions?.length && onMapStyleModeChange ? (
+                <>
+                  <Select value={mapStyleMode} onValueChange={onMapStyleModeChange}>
+                    <SelectTrigger className="h-10 w-[160px] rounded-xl border-slate-300 bg-white text-sm font-medium shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                      <SelectValue placeholder="Map style" />
+                    </SelectTrigger>
+                    <SelectContent className="w-[200px]">
+                      {mapStyleOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!headerActions ? (
                     <Button
-                      onClick={() =>
-                        handleReverseZipLookup(
-                          searchResult.zipsWithoutGeometry || [],
-                        )
-                      }
+                      variant="outline"
+                      className="hidden rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 sm:inline-flex"
                       size="sm"
-                      variant="ghost"
-                      className="ml-2 text-xs"
+                      onClick={onOpenMobileMapActions}
                     >
-                      🔍 Find Cities
+                      <Layers className="mr-2 h-4 w-4" /> Map actions
+                    </Button>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          {hasResult ? (
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+              <Badge variant="secondary" className="rounded-full border border-slate-200/80 dark:border-slate-700">
+                {availableZips.length.toLocaleString()} ZIPs
+              </Badge>
+              <span>Coverage: {coveragePercentDisplay}</span>
+              <span>Place area: {Math.round(searchResult!.coverageStats.placeAreaSqm).toLocaleString()} m²</span>
+              <span>Clipped area: {Math.round(searchResult!.coverageStats.clipsAreaSqm).toLocaleString()} m²</span>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">{statusBadges}</div>
+        </CardHeader>
+
+        <CardContent className="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className={cn(
+            "relative min-h-[520px] overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:border-slate-800/70 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950",
+            mapContainerClassName,
+          )}>
+            <MapLibreMap
+              id={mapId}
+              className="h-full w-full"
+              style={mapStyle}
+              styleKey={mapStyleId}
+            />
+            {isGeneratingTiles ? (
+              <div className="pointer-events-none absolute inset-0 flex items-end justify-end p-4">
+                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/90 px-4 py-2 text-xs font-semibold text-white shadow-lg">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Generating draft tiles…
+                </span>
+              </div>
+            ) : null}
+            <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-col gap-3">
+              <div
+                className={cn(
+                  "pointer-events-auto rounded-xl border border-slate-200/80 bg-white/95 shadow-md transition-all dark:border-slate-700 dark:bg-slate-900/90",
+                  layerPanelCollapsed ? "w-auto p-2" : "w-60 p-3",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-200",
+                    layerPanelCollapsed ? "mb-0" : "mb-2",
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <Layers className="h-4 w-4" />
+                    {!layerPanelCollapsed ? <span>Layers</span> : null}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setLayerPanelCollapsed((prev) => !prev)}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-200"
+                    aria-label={layerPanelCollapsed ? "Expand layer controls" : "Collapse layer controls"}
+                  >
+                    {layerPanelCollapsed ? (
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <Minimize2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
+                {!layerPanelCollapsed ? (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => onToggleTileLabels?.(!showTileLabels)}
+                      disabled={!onToggleTileLabels}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition",
+                        showTileLabels
+                          ? "border-emerald-500/60 bg-emerald-50 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-200",
+                        !onToggleTileLabels && "opacity-60",
+                      )}
+                    >
+                      <span>Tile names</span>
+                      <span
+                        className={cn(
+                          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                          showTileLabels ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                            showTileLabels ? "translate-x-5" : "translate-x-1",
+                          )}
+                        />
+                      </span>
+                    </button>
+
+                    {onToggleMunicipalityLabels ? (
+                      <button
+                        type="button"
+                        onClick={() => onToggleMunicipalityLabels(!showMunicipalityLabels)}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition",
+                          showMunicipalityLabels
+                            ? "border-emerald-500/60 bg-emerald-50 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover-border-emerald-400 dark:hover:text-emerald-200",
+                        )}
+                      >
+                        <span>{municipalityToggleLabel}</span>
+                        <span
+                          className={cn(
+                            "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                            showMunicipalityLabels
+                              ? "bg-emerald-500"
+                              : "bg-slate-300 dark:bg-slate-600",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                              showMunicipalityLabels ? "translate-x-5" : "translate-x-1",
+                            )}
+                          />
+                        </span>
+                      </button>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => onToggleZipLabels?.(!showZipLabels)}
+                      disabled={!onToggleZipLabels}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition",
+                        showZipLabels
+                          ? "border-emerald-500/60 bg-emerald-50 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+                          : "border-slate-200 bg-white text-slate-600 hover-border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover-border-emerald-400 dark:hover:text-emerald-200",
+                        !onToggleZipLabels && "opacity-60",
+                      )}
+                    >
+                      <span>ZIP codes</span>
+                      <span
+                        className={cn(
+                          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                          showZipLabels ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                            showZipLabels ? "translate-x-5" : "translate-x-1",
+                          )}
+                        />
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onTogglePopulation?.(!showPopulation)}
+                      disabled={!onTogglePopulation}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition",
+                        showPopulation
+                          ? "border-emerald-500/60 bg-emerald-50 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+                          : "border-slate-200 bg-white text-slate-600 hover-border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover-border-emerald-400 dark:hover:text-emerald-200",
+                        !onTogglePopulation && "opacity-60",
+                      )}
+                    >
+                      <span>Population</span>
+                      <span
+                        className={cn(
+                          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                          showPopulation ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                            showPopulation ? "translate-x-5" : "translate-x-1",
+                          )}
+                        />
+                      </span>
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
+              {!layerPanelCollapsed ? (
+                <div className="pointer-events-auto w-60 rounded-xl border border-slate-200/80 bg-white/95 p-3 text-xs shadow-sm dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300">
+                  <div className="mb-2 font-semibold text-slate-700 dark:text-slate-200">
+                    Map legend
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-indigo-500" />
+                      <span>Draft tile</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-emerald-500" />
+                      <span>Live tile</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-amber-400" />
+                      <span>Waitlist tile</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-rose-500" />
+                      <span>Paused tile</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-slate-400" />
+                      <span>ZIP coverage</span>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center px-4 pb-4">
+              <div
+                className={cn(
+                  "pointer-events-auto w-full max-w-[min(960px,100%)] overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-xl transition-all dark:border-slate-700 dark:bg-slate-900/90",
+                  zipListExpanded
+                    ? "backdrop-blur-md"
+                    : "backdrop-blur-sm",
+                )}
+              >
+                <div className="flex items-center justify-between px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setZipListExpanded((prev) => !prev)}
+                    aria-expanded={zipListExpanded}
+                    className="flex items-center gap-2 text-left text-sm font-semibold text-slate-800 transition hover:text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:text-slate-200"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform",
+                        zipListExpanded ? "rotate-0" : "-rotate-90",
+                      )}
+                    />
+                    <span>ZIP codes found</span>
+                    {!zipListExpanded && hasZipResults ? (
+                      <span className="text-xs font-normal uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                        Expand to review assignments
+                      </span>
+                    ) : null}
+                  </button>
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-slate-300 text-xs dark:border-slate-600"
+                  >
+                    {availableZips.length.toLocaleString()}
+                  </Badge>
+                </div>
+
+                {zipListExpanded ? (
+                  <>
+                    <div className="border-t border-slate-200/60 dark:border-slate-700/60">
+                      <div className="max-h-[160px] overflow-y-auto px-4 py-3">
+                        {availableZips.length === 0 ? (
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Search for a {searchMode === "county" ? "county" : "city"} to load ZIPs.
+                          </p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {(zipListExpanded && showAllZips
+                              ? availableZips
+                              : availableZips.slice(0, 12)
+                            ).map((zip) => (
+                              <button
+                                key={zip}
+                                type="button"
+                                onClick={() => onFocusZip?.(zip)}
+                                className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-white/90 px-3 py-1.5 text-xs shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-slate-700 dark:bg-slate-900/70 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30"
+                                title={`Zoom to ZIP ${zip} on map`}
+                              >
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                                >
+                                  {zip}
+                                </Badge>
+                                <MapPin className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {zipListExpanded && availableZips.length > 12 ? (
+                        <div className="border-t border-slate-200/60 px-4 py-2 text-right text-xs dark:border-slate-700/60">
+                          <button
+                            type="button"
+                            onClick={() => setShowAllZips((prev) => !prev)}
+                            className="rounded-full px-3 py-1 text-emerald-600 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+                          >
+                            {showAllZips ? "Show fewer" : `Show all ${availableZips.length.toLocaleString()}`}
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {serviceAreaData ? (
+                      <div className="grid grid-cols-2 gap-3 border-t border-slate-200/60 px-4 py-3 text-xs text-slate-600 dark:border-slate-700/60 dark:text-slate-300">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                            Tiles
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            {serviceAreaData.stats.totalGroups.toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                            Covered ZIPs
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            {serviceAreaData.stats.totalZips.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+            </div>
+            {loading ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm dark:bg-slate-900/70">
+                <div className="flex flex-col items-center gap-2 rounded-xl bg-white px-6 py-4 shadow-md dark:bg-slate-900">
+                  <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                    Loading coverage data…
+                  </span>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex h-full flex-col gap-4">
+            <div className="rounded-xl border border-slate-200/80 bg-white/95 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    Search markets
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Find a city or county to preview coverage and queue tiles.
+                  </p>
+                </div>
+                {selectedLocationLabel ? (
+                  <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
+                    {selectedLocationLabel}
+                  </Badge>
+                ) : null}
+              </div>
+
+              <div className="mt-3 inline-flex rounded-xl bg-slate-100 p-1 text-xs font-semibold text-slate-600 dark:bg-slate-800/60 dark:text-slate-200">
+                <button
+                  type="button"
+                  className={cn(
+                    "flex-1 rounded-lg px-3 py-1 transition",
+                    searchMode === "city"
+                      ? "bg-white shadow-sm dark:bg-slate-900/80"
+                      : "opacity-70 hover:opacity-100",
+                  )}
+                  onClick={() => onSearchModeChange("city")}
+                >
+                  City
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex-1 rounded-lg px-3 py-1 transition",
+                    searchMode === "county"
+                      ? "bg-white shadow-sm dark:bg-slate-900/80"
+                      : "opacity-70 hover:opacity-100",
+                  )}
+                  onClick={() => onSearchModeChange("county")}
+                >
+                  County
+                </button>
+              </div>
+
+              <div className="mt-4 grid gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <Label className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      {searchMode === "county" ? "County" : "City"}
+                    </Label>
+                    <div className="relative mt-1" data-autocomplete>
+                      <Input
+                        value={locationQuery}
+                        onChange={(event) => onLocationQueryChange(event.target.value)}
+                        onFocus={onLocationInputFocus}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            if (selectedLocation) {
+                              void onSearchLocation();
+                            }
+                          }
+                        }}
+                        placeholder={
+                          searchMode === "county"
+                            ? "e.g., Maricopa County"
+                            : "e.g., Dallas, TX"
+                        }
+                        className="h-11 rounded-xl"
+                      />
+                      {showLocationOptions ? (
+                        <div className="absolute top-full left-0 right-0 z-20 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200/80 bg-white/95 shadow-xl dark:border-slate-700 dark:bg-slate-900/90">
+                          {suggestionsLoading ? (
+                            <div className="flex items-center gap-2 px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+                              <Loader2 className="h-4 w-4 animate-spin text-emerald-500" /> Searching…
+                            </div>
+                          ) : null}
+                          {!suggestionsLoading && locationOptions.length === 0 ? (
+                            <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+                              {locationQuery.trim().length < 2
+                                ? "Type at least two characters to search."
+                                : "No matching markets yet."}
+                            </div>
+                          ) : null}
+                          {locationOptions.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:hover:bg-slate-800/70"
+                              onClick={() => onSelectLocation(option)}
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium text-slate-900 dark:text-white">
+                                  {option.label}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                  <span className="capitalize">{option.type}</span>
+                                </div>
+                              </div>
+                              <MapPin className="ml-4 h-4 w-4 text-slate-400" />
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="sm:w-[140px]">
+                    <Label className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      State
+                    </Label>
+                    <Select value={stateFilter} onValueChange={onStateFilterChange}>
+                      <SelectTrigger className="mt-1 h-11 w-full rounded-xl border-slate-200 dark:border-slate-700">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        <SelectItem value="ALL">All states</SelectItem>
+                        {stateOptions.map((state) => (
+                          <SelectItem key={state.code} value={state.code}>
+                            {state.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {selectedLocationLabel ? (
+                      <span>
+                        Ready to search {selectedLocationType === "county" ? "county" : "city"} coverage.
+                      </span>
+                    ) : (
+                      <span>Choose a location to preview ZIP coverage.</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-xl text-xs text-slate-500 hover:text-rose-500"
+                      onClick={onClearLocation}
+                    >
+                      Clear
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="rounded-xl bg-emerald-500 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-400"
+                      onClick={() => void onSearchLocation()}
+                      disabled={!selectedLocation || isSearching}
+                    >
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching…
+                        </>
+                      ) : (
+                        <>
+                          <Search className="mr-2 h-4 w-4" /> Search
+                        </>
+                      )}
                     </Button>
                   </div>
-                  {(() => {
-                    const availableZips =
-                      searchResult.zipsWithoutGeometry?.filter(
-                        (zip) => zipStatuses[zip] !== "added",
-                      ) || [];
-                    const addedZips =
-                      searchResult.zipsWithoutGeometry?.filter(
-                        (zip) => zipStatuses[zip] === "added",
-                      ) || [];
-                    const hasAvailable = availableZips.length > 0;
-                    const hasAdded = addedZips.length > 0;
+                </div>
+              </div>
 
-                    if (hasAdded && !hasAvailable) {
-                      // All are added - show Remove All
-                      return (
-                        <Button
-                          onClick={async () => {
-                            console.log(
-                              `Removing all ${addedZips.length} ZIPs without map data`,
-                            );
-
-                            // Remove all ZIPs with a small delay between each
-                            for (let i = 0; i < addedZips.length; i++) {
-                              const zip = addedZips[i];
-                              console.log(
-                                `Removing ZIP ${zip} (${i + 1}/${addedZips.length})`,
-                              );
-                              onZipToggle(zip, "remove");
-                              // Small delay between removes
-                              if (i < addedZips.length - 1) {
-                                await new Promise((resolve) =>
-                                  setTimeout(resolve, 200),
-                                );
-                              }
-                            }
-                          }}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Remove All ({addedZips.length})
-                        </Button>
-                      );
-                    } else if (hasAvailable) {
-                      // Some available - show Add All
-                      return (
-                        <Button
-                          onClick={async () => {
-                            if (availableZips.length > 0) {
-                              console.log(
-                                `Adding all ${availableZips.length} ZIPs without map data`,
-                              );
-
-                              // Add all ZIPs with a small delay between each
-                              for (let i = 0; i < availableZips.length; i++) {
-                                const zip = availableZips[i];
-                                console.log(
-                                  `Adding ZIP ${zip} (${i + 1}/${availableZips.length})`,
-                                );
-                                onZipToggle(zip, "add");
-                                // Small delay between adds
-                                if (i < availableZips.length - 1) {
-                                  await new Promise((resolve) =>
-                                    setTimeout(resolve, 200),
-                                  );
-                                }
-                              }
-                            }
-                          }}
-                          disabled={!hasAvailable}
-                          size="sm"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add All ({availableZips.length})
-                        </Button>
-                      );
-                    }
-                    return null;
-                  })()}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  These ZIPs are associated with the current search but lack
-                  polygon data. Add/remove manually.
-                </p>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                {searchResult.zipsWithoutGeometry.map((zip) => (
-                  <Badge
-                    key={zip}
-                    variant={
-                      zipStatuses[zip] === "added" ? "default" : "outline"
-                    }
-                    className="cursor-pointer"
-                    onClick={() =>
-                      onZipToggle(
-                        zip,
-                        zipStatuses[zip] === "added" ? "remove" : "add",
-                      )
-                    }
-                  >
-                    {zip}
-                    {zipStatuses[zip] === "added" && (
-                      <CheckCircle className="ml-1 h-3 w-3" />
-                    )}
+              {selectedLocation ? (
+                <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
+                  <Badge variant="outline" className="capitalize">
+                    {selectedLocation.type}
                   </Badge>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+                  <span>
+                    Approx. {selectedLocation.zipCount.toLocaleString()} ZIPs in selection
+                  </span>
+                </div>
+              ) : null}
+            </div>
 
-        {searchResult?.suburbanCities &&
-          Object.keys(searchResult.suburbanCities).length > 0 && (
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>Associated Cities & Suburbs</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  ZIPs from nearby cities found in your search. Adding these
-                  will automatically search for their map boundaries.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(searchResult.suburbanCities)
-                  .sort(([cityA], [cityB]) => cityA.localeCompare(cityB))
-                  .map(([cityName, cityZips]) => (
-                    <div
-                      key={cityName}
-                      className="border border-gray-200 rounded-lg p-3 bg-gray-50"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <h4 className="font-semibold text-gray-900">
-                              {cityName}
-                            </h4>
-                            <span className="text-xs text-gray-500">
-                              {cityZips.length} ZIP codes
-                            </span>
-                          </div>
-                          <Button
-                            onClick={() => {
-                              const cityKey = `${cityName.toLowerCase().replace(/\s+/g, "-")}`;
-                              const isVisible =
-                                layerRegistry.current.get(
-                                  `place-boundary-${cityKey}`,
-                                )?.visible ?? true;
-                              toggleCityVisibility(cityKey, !isVisible);
-                            }}
-                            size="sm"
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {(layerRegistry.current.get(
-                              `place-boundary-${cityName.toLowerCase().replace(/\s+/g, "-")}`,
-                            )?.visible ?? true)
-                              ? "Hide"
-                              : "Show"}
-                          </Button>
-                        </div>
-                        {(() => {
-                          const availableZips = cityZips.filter(
-                            (zip) => zipStatuses[zip] !== "added",
-                          );
-                          const addedZips = cityZips.filter(
-                            (zip) => zipStatuses[zip] === "added",
-                          );
-                          const hasAvailable = availableZips.length > 0;
-                          const hasAdded = addedZips.length > 0;
+            <div className="mt-4 space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 text-xs text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    Generate draft tiles
+                  </p>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                    City selection required
+                  </p>
+                </div>
+                <Badge variant="secondary" className="capitalize">
+                  {selectedLocationType ?? " - "}
+                </Badge>
+              </div>
 
-                          if (hasAdded && !hasAvailable) {
-                            // All are added - show Remove All
-                            return (
-                              <Button
-                                onClick={async () => {
-                                  console.log(
-                                    `Removing all ${addedZips.length} ZIPs from ${cityName}`,
-                                  );
-
-                                  // Remove all ZIPs with a small delay between each
-                                  for (let i = 0; i < addedZips.length; i++) {
-                                    const zip = addedZips[i];
-                                    console.log(
-                                      `Removing ZIP ${zip} (${i + 1}/${addedZips.length})`,
-                                    );
-                                    onZipToggle(zip, "remove");
-                                    // Small delay between removes
-                                    if (i < addedZips.length - 1) {
-                                      await new Promise((resolve) =>
-                                        setTimeout(resolve, 200),
-                                      );
-                                    }
-                                  }
-                                }}
-                                size="sm"
-                                variant="destructive"
-                              >
-                                <X className="w-3 h-3 mr-1" />
-                                Remove All ({addedZips.length})
-                              </Button>
-                            );
-                          } else if (hasAvailable) {
-                            // Some available - show Add All
-                            return (
-                              <Button
-                                onClick={async () => {
-                                  if (availableZips.length > 0) {
-                                    console.log(
-                                      `Adding all ${availableZips.length} ZIPs from ${cityName}`,
-                                    );
-
-                                    // First search for the city if not already searched
-                                    if (
-                                      onSuburbanCitySearch &&
-                                      !searchedCities.some(
-                                        (city) =>
-                                          city.city.toLowerCase() ===
-                                            cityName.toLowerCase() &&
-                                          city.state ===
-                                            searchResult?.searchCriteria.state,
-                                      )
-                                    ) {
-                                      console.log(
-                                        `Auto-searching for ${cityName} before adding all ZIPs`,
-                                      );
-                                      try {
-                                        await onSuburbanCitySearch(
-                                          cityName,
-                                          searchResult?.searchCriteria.state ||
-                                            "",
-                                        );
-                                        // Wait for city to load
-                                        await new Promise((resolve) =>
-                                          setTimeout(resolve, 1500),
-                                        );
-                                      } catch (error) {
-                                        console.error(
-                                          `Failed to search ${cityName}:`,
-                                          error,
-                                        );
-                                      }
-                                    }
-
-                                    // Then add all ZIPs with a small delay between each
-                                    for (
-                                      let i = 0;
-                                      i < availableZips.length;
-                                      i++
-                                    ) {
-                                      const zip = availableZips[i];
-                                      console.log(
-                                        `Adding ZIP ${zip} (${i + 1}/${availableZips.length})`,
-                                      );
-                                      onZipToggle(zip, "add");
-                                      // Small delay between adds to prevent overwhelming the system
-                                      if (i < availableZips.length - 1) {
-                                        await new Promise((resolve) =>
-                                          setTimeout(resolve, 200),
-                                        );
-                                      }
-                                    }
-                                  }
-                                }}
-                                disabled={!hasAvailable}
-                                size="sm"
-                                variant="outline"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add All ({availableZips.length})
-                              </Button>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {cityZips.map((zip) => (
-                          <Badge
-                            key={zip}
-                            variant={
-                              zipStatuses[zip] === "added"
-                                ? "default"
-                                : "outline"
-                            }
-                            className="cursor-pointer"
-                            onClick={() =>
-                              handleSuburbanZipToggle(
-                                zip,
-                                cityName,
-                                zipStatuses[zip] === "added" ? "remove" : "add",
-                              )
-                            }
-                          >
-                            {zip}
-                            {zipStatuses[zip] === "added" && (
-                              <CheckCircle className="ml-1 h-3 w-3" />
-                            )}
-                          </Badge>
-                        ))}
+              <div className="space-y-2">
+                <RadioGroup
+                  value={generationMode}
+                  onValueChange={(value) => onGenerationModeChange(value as "cluster" | "perZip")}
+                  className="grid gap-2"
+                >
+                  <label
+                    htmlFor="map-generation-mode-cluster"
+                    className={cn(
+                      "flex cursor-pointer flex-col gap-1 rounded-lg border px-3 py-2 text-left transition",
+                      generationMode === "cluster"
+                        ? "border-emerald-500/70 bg-white text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/10 dark:text-emerald-200"
+                        : "border-slate-200/80 bg-white/90 text-slate-600 hover:border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-200",
+                    )}
+                  >
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem id="map-generation-mode-cluster" value="cluster" className="mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold">Smart clusters</p>
+                        <p className="text-[11px] opacity-80">
+                          Split the city into {tileCount} balanced tile{tileCount === 1 ? "" : "s"}.
+                        </p>
                       </div>
                     </div>
-                  ))}
-              </CardContent>
-            </Card>
-          )}
-      </div>
+                  </label>
+                  <label
+                    htmlFor="map-generation-mode-per-zip"
+                    className={cn(
+                      "flex cursor-pointer flex-col gap-1 rounded-lg border px-3 py-2 text-left transition",
+                      generationMode === "perZip"
+                        ? "border-emerald-500/70 bg-white text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/10 dark:text-emerald-200"
+                        : "border-slate-200/80 bg-white/90 text-slate-600 hover:border-emerald-300 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-200",
+                      availableZipCount === 0 && "opacity-60 hover:border-slate-200/80 hover:text-slate-600 dark:hover:border-slate-700 dark:hover:text-slate-300",
+                    )}
+                  >
+                    <div className="flex items-start gap-2">
+                      <RadioGroupItem
+                        id="map-generation-mode-per-zip"
+                        value="perZip"
+                        disabled={availableZipCount === 0}
+                        className="mt-0.5"
+                      />
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold">One per ZIP</p>
+                        <p className="text-[11px] opacity-80">
+                          {availableZipCount > 0
+                            ? `Creates ${availableZipCount.toLocaleString()} tile${availableZipCount === 1 ? "" : "s"}.`
+                            : "Run a search to load ZIPs for this option."}
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
+
+              {generationMode === "cluster" ? (
+                <NumberSlider
+                  min={1}
+                  max={24}
+                  step={1}
+                  value={tileCount}
+                  onChange={onTileCountChange}
+                  disabled={!canGenerateTiles || isGeneratingTiles || loading}
+                />
+              ) : (
+                <div className="rounded-lg border border-emerald-200/70 bg-emerald-50/80 px-3 py-2 text-[11px] text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  Generates one draft per ZIP ({availableZipCount.toLocaleString()} total).
+                </div>
+              )}
+
+              <Button
+                className="h-9 w-full rounded-xl bg-emerald-500 text-sm font-semibold text-white hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+                onClick={onGenerateTiles}
+                disabled={
+                  !canGenerateTiles ||
+                  isGeneratingTiles ||
+                  loading ||
+                  plannedTileGenerationCount === 0
+                }
+              >
+                {isGeneratingTiles || placeDetailsLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-4 w-4" /> Generate {plannedTileGenerationCount.toLocaleString()} tile
+                    {plannedTileGenerationCount === 1 ? "" : "s"}
+                  </>
+                )}
+              </Button>
+
+              {!canGenerateTiles ? (
+                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                  Select a city to enable the generator
+                </p>
+              ) : null}
+            </div>
+
+
+            {searchedCities.length ? (
+              <div
+                id="saved-searches"
+                className="rounded-xl border border-slate-200/80 bg-white/95 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80"
+              >
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    Saved searches
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-slate-500 hover:text-rose-500"
+                    onClick={onClearSearchedCities}
+                  >
+                    <X className="mr-1 h-4 w-4" /> Clear
+                  </Button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {searchedCities.map((city) => {
+                    const isActive = activeSavedSearchId === city.id;
+                    return (
+                      <div key={city.id} className="flex items-center gap-1">
+                        <Button
+                          variant={isActive ? "default" : "outline"}
+                          size="sm"
+                          className={cn(
+                            "rounded-full border-slate-200 text-xs font-medium transition focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-slate-700",
+                            isActive
+                              ? "bg-emerald-500 text-white hover:bg-emerald-400 dark:bg-emerald-500"
+                              : "bg-white/80 text-slate-600 hover:border-emerald-300 hover:text-emerald-600 dark:bg-slate-900/70 dark:text-slate-300",
+                          )}
+                          onClick={() => onLoadSavedSearch?.(city)}
+                        >
+                          <MapPin className="mr-1 h-3.5 w-3.5" /> {city.city}, {city.state}
+                        </Button>
+                        {onDeleteSavedSearch ? (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onDeleteSavedSearch(city.id);
+                            }}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-transparent text-slate-400 transition hover:text-rose-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 dark:text-slate-500 dark:hover:text-rose-300"
+                            aria-label={`Delete saved search ${city.city}, ${city.state}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

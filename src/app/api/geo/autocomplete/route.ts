@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { query } from "@/lib/geo/postgis";
 
-// Google Places API configuration (using existing Maps API key)
+// Google Places API configuration (optional fallback)
 const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-// Path to real ZIP code data
-const ZIP_DATA_PATH = join(process.cwd(), "src", "lib", "zip-city-data.csv");
 
 interface LocationOption {
   id: string;
@@ -17,180 +13,143 @@ interface LocationOption {
   zipCount: number;
 }
 
-let locationCache: LocationOption[] | null = null;
-
-// Common city name fixes for truncated CSV data (Minnesota focus)
-const CITY_NAME_FIXES: { [truncated: string]: string } = {
-  "inver grove heig": "Inver Grove Heights",
-  mendota: "Mendota Heights",
-  "white bear": "White Bear Lake",
-  "saint louis park": "St. Louis Park",
-  "saint paul": "St. Paul",
-  "saint anthony": "St. Anthony",
-  "new brighton": "New Brighton",
-  "brooklyn park": "Brooklyn Park",
-  "brooklyn center": "Brooklyn Center",
-  "coon rapids": "Coon Rapids",
-  "columbia heights": "Columbia Heights",
-  "little canada": "Little Canada",
-  "north saint paul": "North St. Paul",
-  "apple valley": "Apple Valley",
-  "prior lake": "Prior Lake",
-  "eden prairie": "Eden Prairie",
-  "maple grove": "Maple Grove",
-  "spring lake park": "Spring Lake Park",
-  "ham lake": "Ham Lake",
-  "lino lakes": "Lino Lakes",
-  "circle pines": "Circle Pines",
+type PlaceRow = {
+  place_id: string;
+  name: string;
+  state: string;
 };
 
-// Helper function for proper capitalization with common fixes
-function properCapitalize(text: string): string {
-  const normalized = text.toLowerCase().trim();
+const AUTOCOMPLETE_CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
+const autocompleteCache = new Map<
+  string,
+  { timestamp: number; options: LocationOption[] }
+>();
 
-  // Check for known fixes first
-  if (CITY_NAME_FIXES[normalized]) {
-    return CITY_NAME_FIXES[normalized];
-  }
-
-  // Default capitalization
-  return text
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+function normalizeState(value: string | null | undefined): string {
+  if (!value) return "";
+  return value.trim().toUpperCase();
 }
 
-function loadLocationOptions(): LocationOption[] {
-  if (locationCache) {
-    return locationCache;
+function buildCacheKey(queryText: string, state: string | null, limit: number) {
+  return `${state ?? "ALL"}|${queryText.toLowerCase()}|${limit}`;
+}
+
+function formatOption(row: PlaceRow): LocationOption {
+  const state = normalizeState(row.state);
+  return {
+    id: `place-${row.place_id}`,
+    label: `${row.name}, ${state}`,
+    city: row.name,
+    state,
+    type: "city",
+    zipCount: 0, // ZIP count removed for performance
+  };
+}
+
+async function fetchPlaces(
+  queryText: string,
+  limit: number,
+  stateFilter: string | null,
+): Promise<LocationOption[]> {
+  const trimmed = queryText.trim();
+  if (trimmed.length < 2) {
+    return [];
   }
 
-  console.log("Loading location options for autocomplete...");
-  const csvData = readFileSync(ZIP_DATA_PATH, "utf-8");
-  const lines = csvData.split("\n").slice(1); // Skip header
+  const params: unknown[] = [];
+  let whereClause = "";
 
-  const cityZipCounts = new Map<string, number>();
+  const parts = trimmed
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
 
-  // Count ZIP codes per city only
-  for (const line of lines) {
-    if (!line.trim()) continue;
+  const cityPart = parts[0] ?? trimmed;
+  const queryStatePart = parts.length > 1 ? normalizeState(parts[parts.length - 1]) : null;
+  const effectiveState = stateFilter || (queryStatePart && queryStatePart.length <= 2 ? queryStatePart : null);
 
-    const [stateFips, stateName, stateAbbr, zipcode, county, city] =
-      line.split(",");
-
-    if (zipcode && stateAbbr && city) {
-      const cityKey = `${city.toLowerCase().trim()},${stateAbbr.trim()}`;
-      cityZipCounts.set(cityKey, (cityZipCounts.get(cityKey) || 0) + 1);
-    }
+  if (effectiveState) {
+    params.push(effectiveState);
+    whereClause += ` AND p.state = $${params.length}`;
   }
 
-  const options: LocationOption[] = [];
-
-  // Add city options only
-  for (const [key, zipCount] of cityZipCounts.entries()) {
-    const [city, state] = key.split(",");
-    if (zipCount >= 1) {
-      // Only include cities with ZIP codes
-      options.push({
-        id: `city-${key}`,
-        label: `${properCapitalize(city)}, ${state}`,
-        city: properCapitalize(city),
-        state: state,
-        type: "city",
-        zipCount,
-      });
-    }
+  if (cityPart) {
+    const sanitizedCity = cityPart.replace(/[%_]+/g, "");
+    params.push(`${sanitizedCity}%`);
+    const placeholder = `$${params.length}`;
+    whereClause += ` AND p.name ILIKE ${placeholder}`;
   }
 
-  // Sort by ZIP count (descending) then by name
-  options.sort((a, b) => {
-    if (b.zipCount !== a.zipCount) {
-      return b.zipCount - a.zipCount;
-    }
-    return a.label.localeCompare(b.label);
-  });
+  params.push(limit);
+  const limitPlaceholder = `$${params.length}`;
 
-  locationCache = options;
-  console.log(
-    `Loaded ${options.length} city options (${cityZipCounts.size} cities)`,
-  );
+  const sql = `
+    SELECT place_id, name, state
+    FROM geo.place p
+    WHERE TRUE ${whereClause}
+    ORDER BY p.name ASC
+    LIMIT ${limitPlaceholder};
+  `;
 
-  return options;
+  const { rows } = await query<PlaceRow>(sql, params);
+  return rows.map(formatOption);
 }
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const query = searchParams.get("q")?.toLowerCase() || "";
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const rawQuery = searchParams.get("q") ?? "";
+    const limitParam = Number.parseInt(searchParams.get("limit") ?? "20", 10);
+    const stateParam = normalizeState(searchParams.get("state"));
+    const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(50, limitParam) : 20;
+    const stateFilter = stateParam && stateParam !== "ALL" ? stateParam : null;
 
-    // Always use Google Places for queries when available (don't mix with CSV)
-    if (query && query.length >= 2 && GOOGLE_PLACES_API_KEY) {
+    const normalizedQuery = rawQuery.trim();
+    const cacheKey = buildCacheKey(normalizedQuery, stateFilter, limit);
+    const cached = autocompleteCache.get(cacheKey);
+    const now = Date.now();
+
+    if (cached && now - cached.timestamp < AUTOCOMPLETE_CACHE_TTL_MS) {
+      return NextResponse.json({ options: cached.options });
+    }
+
+    let places: LocationOption[] = [];
+    if (normalizedQuery.length >= 2) {
+      places = await fetchPlaces(normalizedQuery, limit, stateFilter);
+    }
+
+    if (places.length === 0 && normalizedQuery.length >= 2 && GOOGLE_PLACES_API_KEY) {
       try {
-        const placesUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=(cities)&components=country:us&key=${GOOGLE_PLACES_API_KEY}`;
-
-        const response = await fetch(placesUrl);
+        const placesUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(normalizedQuery)}&types=(cities)&components=country:us&key=${GOOGLE_PLACES_API_KEY}`;
+        const response = await fetch(placesUrl, { cache: "force-cache" });
         if (response.ok) {
           const data = await response.json();
-
-          if (data.predictions && data.predictions.length > 0) {
-            const googleOptions: LocationOption[] = data.predictions
-              .filter((prediction: any) => {
-                // Only include US cities
-                return prediction.terms && prediction.terms.length >= 2;
-              })
+          if (Array.isArray(data.predictions) && data.predictions.length > 0) {
+            places = data.predictions
+              .filter((prediction: any) => prediction.terms && prediction.terms.length >= 2)
               .slice(0, limit)
-              .map((prediction: any, index: number) => {
+              .map((prediction: any) => {
                 const terms = prediction.terms;
                 const cityName = terms[0].value;
-                const stateName = terms[terms.length - 2].value; // Second to last is usually state
-
+                const stateName = normalizeState(terms[terms.length - 2]?.value ?? "");
                 return {
                   id: `google-${prediction.place_id}`,
                   label: `${cityName}, ${stateName}`,
                   city: cityName,
                   state: stateName,
                   type: "city" as const,
-                  zipCount: 0, // Will be determined after search
-                };
+                  zipCount: 0,
+                } satisfies LocationOption;
               });
-
-            console.log(
-              `Google Places returned ${googleOptions.length} options for "${query}"`,
-            );
-            return NextResponse.json({ options: googleOptions });
           }
         }
       } catch (placesError) {
-        console.warn(
-          "Google Places API failed, falling back to CSV:",
-          placesError,
-        );
+        console.warn("Google Places fallback failed", placesError);
       }
     }
 
-    // Fallback to CSV-based options with name fixes
-    const allOptions = loadLocationOptions();
-
-    if (!query) {
-      // Return top options by ZIP count
-      return NextResponse.json({
-        options: allOptions.slice(0, limit),
-      });
-    }
-
-    // Filter options based on query
-    const filtered = allOptions.filter(
-      (option) =>
-        option.label.toLowerCase().includes(query) ||
-        option.city.toLowerCase().includes(query) ||
-        option.state.toLowerCase().includes(query),
-    );
-
-    return NextResponse.json({
-      options: filtered.slice(0, limit),
-    });
+    autocompleteCache.set(cacheKey, { timestamp: now, options: places });
+    return NextResponse.json({ options: places });
   } catch (error) {
     console.error("Autocomplete error:", error);
     return NextResponse.json({ error: "Autocomplete failed" }, { status: 500 });

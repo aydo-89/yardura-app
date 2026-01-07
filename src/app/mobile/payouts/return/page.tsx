@@ -1,0 +1,29 @@
+"use client";
+
+export default function MobilePayoutReturnPage() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-900 px-6 py-16 text-white">
+      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/70 p-8 text-center shadow-2xl shadow-black/40">
+        <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
+          Payout setup
+        </p>
+        <h1 className="mt-4 text-2xl font-semibold text-white">
+          You are all set
+        </h1>
+        <p className="mt-3 text-sm text-slate-300">
+          Return to the InsightScoop app to finish verifying your payout method
+          and track release status.
+        </p>
+        <a
+          href="insightscoop://"
+          className="mt-6 inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400"
+        >
+          Open the app
+        </a>
+        <p className="mt-4 text-xs text-slate-400">
+          If the button does not work, reopen the app from your home screen.
+        </p>
+      </div>
+    </main>
+  );
+}

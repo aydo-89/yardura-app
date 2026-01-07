@@ -21,7 +21,7 @@ infra/
 │   ├── migrate.js        # Main migration orchestrator
 │   ├── export-sqlite.js  # SQLite data export script
 │   └── import-postgres.js # Postgres data import script
-├── data/                 # Exported data files (generated)
+├── data/                 # Exported data files (generated, gitignored)
 └── README.md            # This file
 ```
 

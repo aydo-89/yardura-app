@@ -2,12 +2,17 @@
 export interface QuoteData {
   // Service area validation
   zipCode?: string;
+  zipValidated?: boolean;
+  tileSlug?: string;
+  tileStatus?: string;
+  tileActivationEligible?: boolean;
   serviceType?: "residential" | "commercial";
 
   // Basic service details
   dogs?: number;
   yardSize?: "small" | "medium" | "large" | "xl";
-  frequency?: "weekly" | "biweekly" | "twice-weekly" | "monthly" | "one-time";
+  frequency?: "weekly" | "biweekly" | "twice-weekly" | "daily" | "monthly" | "one-time";
+  weekendUpgrade?: boolean;
 
   // Property info
   propertyType?: "residential" | "commercial"; // Legacy field, use serviceType instead
@@ -28,14 +33,18 @@ export interface QuoteData {
   // Add-ons and services
   addOns?: {
     deodorize?: boolean;
-    deodorizeMode?: "first-visit" | "each-visit" | "every-other" | "one-time";
+    deodorizeMode?: "first-visit" | "each-visit" | "every-other" | "one-time" | "onetime";
     sprayDeck?: boolean;
-    sprayDeckMode?: "first-visit" | "each-visit" | "every-other" | "one-time";
-    divertMode?: "none" | "takeaway" | "25" | "50" | "100";
+    sprayDeckMode?: "first-visit" | "each-visit" | "every-other" | "one-time" | "onetime";
+    divertMode?: "none" | "takeaway" | "compost";
   };
 
   // Additional service areas (legacy property)
-  areasToClean?: Record<string, boolean>;
+  areasToClean?: Record<string, boolean | string>;
+
+  deepCleanAssessment?: {
+    daysSinceLastCleanup?: number;
+  };
 
   // Cleanup timing
   lastCleanedBucket?: string;
@@ -60,8 +69,15 @@ export interface QuoteData {
   referralSource?: string;
   preferredContactMethod?: "email" | "phone";
   preferredContactMethods?: string[]; // For multiple selections
-  smsConsent?: boolean;
   howDidYouHear?: string;
+  salesRepId?: string;
+  salesRepName?: string;
+
+  consent?: {
+    stoolPhotosOptIn?: boolean;
+    terms?: boolean;
+    marketingOptIn?: boolean;
+  };
 
   // Commercial details
   commercialNotes?: string;
@@ -91,6 +107,50 @@ export interface PricingData {
   totalPrice?: number;
   requiresCustomQuote?: boolean;
   commercialMessage?: string;
+  perVisit?: number | string;
+  monthly?: number | string;
+  oneTime?: number | string;
+  initialClean?: number | string;
+  initialCleanDiscount?: number | string;
+  discountedInitialClean?: number | string;
+  amountDueToday?: number | string | null;
+  firstMonthCents?: number | string | null;
+  firstMonthVisits?: number | string | null;
+  visitsPerMonth?: number | string;
+  fullMonthlyAmount?: number | string;
+  firstVisitAddOns?: Record<string, string | number>;
+  recurringAddOns?: Record<string, string | number>;
+  firstVisitTotal?: number | string;
+  firstVisitTotalCents?: number;
+  initialCleanBucket?: string;
+  breakdown?: any;
+  zoneMultiplier?: number;
+  weekendUpgrade?: boolean;
+  weekendSurchargeCents?: number | null;
+  weekendVisitsPerMonth?: number | null;
+  trialWeek?: {
+    initialCleanCents: number;
+    followUpVisitCount: number;
+    followUpVisitsCents: number;
+    addOnCents: number;
+    totalValueCents: number;
+    creditsCents: {
+      initialClean: number;
+      followUpVisits: number;
+      addOns: number;
+      total: number;
+    };
+    netDueCents?: number;
+    trialLengthDays?: number;
+  } | null;
+  postTrial?: {
+    recurringPerVisitCents: number;
+    recurringMonthlyCents: number;
+    firstInvoiceAddOnsCents: number;
+    firstInvoiceAddOns?: Record<string, number>;
+    premiumOnboardingCents?: number;
+    activationDelayDays?: number;
+  } | null;
 }
 
 export interface QuoteStep {
@@ -118,6 +178,7 @@ export interface StepProps {
   _estimatedPrice?: PricingData;
   estimatedPrice?: PricingData;
   onNext?: () => void;
+  orgId?: string;
 }
 
 // Trust signals for the quote process

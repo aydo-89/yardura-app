@@ -59,6 +59,30 @@ services:
       retries: 5
 
   # =============================================================================
+  # POSTGIS (Spatial Data Warehouse)
+  # =============================================================================
+  postgis:
+    image: postgis/postgis:16-3.4
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=yardura_geo
+      - POSTGRES_USER=yardura
+      - POSTGRES_PASSWORD=yardura_geo_password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ./infra/postgis/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      - yardura
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yardura -d yardura_geo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
   # REDIS CACHE & QUEUE
   # =============================================================================
   redis:
@@ -141,6 +165,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  postgis_data:
     driver: local
   redis_data:
     driver: local

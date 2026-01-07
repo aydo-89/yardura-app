@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
+import { sortRoles, type AppUserRole } from "@/lib/auth/roles";
 
 export async function POST(
   request: NextRequest,
@@ -21,7 +21,7 @@ export async function POST(
     // Prevent demoting the god mode user
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true },
+      select: { email: true, role: true, roles: true },
     });
 
     if (!user) {
@@ -35,15 +35,23 @@ export async function POST(
       );
     }
 
-    // Update user to customer role
+    const currentRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
+    const filteredRoles = currentRoles.filter((role) => role !== "ADMIN");
+    const nextRoles = (filteredRoles.length > 0
+      ? sortRoles(filteredRoles as AppUserRole[])
+      : ["CUSTOMER"]) as UserRole[];
+    const primaryRole = (nextRoles[0] ?? "CUSTOMER") as UserRole;
+
+    // Update user to remove admin role
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role: "CUSTOMER" },
+      data: { role: primaryRole, roles: nextRoles },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
+        roles: true,
         orgId: true,
       },
     });

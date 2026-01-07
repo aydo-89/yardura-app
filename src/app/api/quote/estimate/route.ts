@@ -14,6 +14,7 @@ import {
   mapDateToBucket,
   type CleanupBucket,
 } from "@/lib/initialCleanEstimator";
+import { calculateCompletePricing } from "@/lib/pricing-client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
       addOns,
       lastCleanedBucket,
       lastCleanedDate,
+      weekendUpgrade,
     } = body;
 
     // Validate inputs
@@ -43,6 +45,9 @@ export async function POST(request: NextRequest) {
       "weekly",
       "biweekly",
       "twice-weekly",
+      "daily",
+      "monthly",
+      "onetime",
     ];
 
     if (!validDogs.includes(dogs)) {
@@ -63,20 +68,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Invalid frequency. Must be weekly, biweekly, or twice-weekly.",
+            "Invalid frequency. Must be daily, weekly, biweekly, twice-weekly, monthly, or onetime.",
         },
         { status: 400 },
       );
     }
-
-    // Calculate pricing
-    const perVisitCents = estimatePerVisitCents(dogs, yardSize, frequency);
-    const monthlyVisits = visitsPerMonth(frequency);
-    const projectedMonthly = projectedMonthlyCents(
-      perVisitCents,
-      frequency,
-      addOns || {},
-    );
 
     // Handle cleanup bucket/date for initial clean calculation
     let cleanupBucket: CleanupBucket = "7"; // Default to well maintained
@@ -87,30 +83,32 @@ export async function POST(request: NextRequest) {
       cleanupBucket = mapDateToBucket(cleanupDate);
     }
 
-    // Calculate initial clean using new estimator
-    const initialCleanEstimate = await calculateInitialClean(
-      estimateBasePerVisitCents(dogs, yardSize),
-      cleanupBucket,
+    // Use comprehensive pricing calculator that properly handles add-ons
+    const completePricing = await calculateCompletePricing({
       dogs,
       yardSize,
-      {}, // areasToClean
-    );
+      frequency,
+      addons: addOns,
+      lastCleanedBucket: cleanupBucket,
+      areasToClean: body.areasToClean || {},
+      weekendUpgrade,
+    });
 
     // Determine if initial clean should be auto-recommended (for buckets with significant backlog)
     const initialCleanAuto = ["60", "90", "999"].includes(cleanupBucket);
 
     const response = {
-      perVisitCents,
-      visitsPerMonth: monthlyVisits,
-      projectedMonthlyCents: projectedMonthly,
-      initialCleanCents: initialCleanEstimate.initialCleanCents,
+      perVisitCents: completePricing.perVisitCents,
+      visitsPerMonth: completePricing.visitsPerMonth,
+      projectedMonthlyCents: completePricing.monthlyCents,
+      initialCleanCents: completePricing.initialCleanCents,
       initialCleanBucket: cleanupBucket,
       initialCleanAuto,
-      breakdown: {
-        ...getPricingBreakdown(dogs, yardSize, frequency, addOns || {})
-          .breakdown,
-        initialCleanBreakdown: initialCleanEstimate.breakdown,
-      },
+      breakdown: completePricing.breakdown,
+      recurringAddOns: completePricing.recurringAddOns,
+      firstVisitAddOns: completePricing.firstVisitAddOns,
+      weekendUpgrade: completePricing.weekendUpgrade,
+      weekendSurchargeCents: completePricing.weekendSurchargeCents,
     };
 
     return NextResponse.json(response);
@@ -138,7 +136,7 @@ export async function GET() {
   return NextResponse.json({
     perVisitCents,
     visitsPerMonth: visitsPerMonth("weekly"),
-    projectedMonthlyCents: projectedMonthlyCents(perVisitCents, "weekly", {}),
+    projectedMonthlyCents: projectedMonthlyCents(perVisitCents, "weekly"),
     initialCleanCents: initialCleanEstimate.initialCleanCents,
     initialCleanBucket: "7",
     initialCleanAuto: false,

@@ -14,7 +14,14 @@ export const ContactInfoSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Enter a valid email address"),
-  phone: z.string().min(10, "Enter a valid phone number"),
+  phone: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((value) => {
+      if (!value) return true;
+      return value.replace(/\D/g, "").length >= 10;
+    }, "Enter a valid phone number"),
 });
 
 // Property Details Step
@@ -39,7 +46,7 @@ export const PropertyDetailsSchema = z.object({
 // Service Frequency Step (residential only)
 export const ServiceFrequencySchema = z.object({
   frequency: z
-    .enum(["weekly", "bi-weekly", "twice-weekly", "monthly", "one-time"])
+    .enum(["weekly", "biweekly", "twice-weekly", "daily", "monthly", "onetime"])
     .refine((val) => val, {
       message: "Please select a service frequency",
     }),
@@ -51,28 +58,85 @@ export const CustomizationSchema = z.object({
     .object({
       deodorize: z.boolean().optional(),
       deodorizeMode: z
-        .enum(["first-visit", "each-visit", "every-other", "one-time"])
+        .enum(["first-visit", "each-visit", "one-time"])
         .optional(),
       sprayDeck: z.boolean().optional(),
       sprayDeckMode: z
         .enum(["first-visit", "each-visit", "every-other", "one-time"])
         .optional(),
-      divertMode: z.enum(["none", "takeaway", "25", "50", "100"]).optional(),
+      divertMode: z.enum(["none", "takeaway", "compost"]).optional(),
       litter: z.boolean().optional(),
     })
     .optional(),
   wellnessOptIn: z.boolean().optional(),
 });
 
-// Commercial Contact Step
-export const CommercialContactSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Enter a valid email address"),
-  phone: z.string().min(10, "Enter a valid phone number"),
-  businessName: z.string().min(1, "Business name is required"),
-  businessType: z.string().min(1, "Select a business type"),
+// Community Contact Step
+export const CommunityContactSchema = z.object({
+  contact: z.object({
+    name: z.string().min(1, "Contact name is required"),
+    email: z.string().email("Enter a valid email address"),
+    phone: z.string().min(10, "Enter a valid phone number"),
+    title: z.string().optional(),
+  }),
+  commercialNotes: z.string().optional(),
 });
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateContactReview(data: any): ValidationResult {
+  const errors: Record<string, string[]> = {};
+
+  const pushError = (key: string, message: string) => {
+    if (!errors[key]) {
+      errors[key] = [];
+    }
+    errors[key].push(message);
+  };
+
+  const address = typeof data.address === "string" ? data.address.trim() : "";
+  if (!address) {
+    pushError("address", "Please enter your complete service address");
+  }
+
+  const contactName = data.contact?.name?.trim?.();
+  if (!contactName) {
+    pushError("contact.name", "Please enter your full name");
+  }
+
+  const contactEmail = data.contact?.email?.trim?.();
+  if (!contactEmail) {
+    pushError("contact.email", "Please enter your email address");
+  } else if (!emailRegex.test(contactEmail)) {
+    pushError("contact.email", "Please enter a valid email address");
+  }
+
+  const contactPhoneDigits = (data.contact?.phone || "").replace(/\D/g, "");
+  if (contactPhoneDigits && contactPhoneDigits.length < 10) {
+    pushError("contact.phone", "Please enter a valid phone number");
+  }
+
+  if (data.consent?.terms !== true) {
+    pushError(
+      "consent.terms",
+      "Please confirm you agree to the Privacy Policy",
+    );
+  }
+
+  const isValid = Object.keys(errors).length === 0;
+  const issues = Object.fromEntries(
+    Object.entries(errors).map(([key, value]) => [key, [...value]]),
+  );
+  const firstInvalidKey = Object.keys(errors)[0];
+
+  return {
+    valid: isValid,
+    errors,
+    issues,
+    firstInvalidKey,
+    firstError: firstInvalidKey ? errors[firstInvalidKey][0] : undefined,
+  };
+}
 
 // Step validation result type
 export type ValidationResult = {
@@ -104,9 +168,11 @@ export function validateStep(stepId: string, data: any): ValidationResult {
       case "customization":
         schema = CustomizationSchema;
         break;
-      case "commercial-contact":
-        schema = CommercialContactSchema;
+      case "community-contact":
+        schema = CommunityContactSchema;
         break;
+      case "contact-review":
+        return validateContactReview(data);
       default:
         return { valid: true, errors: {}, issues: {} };
     }
@@ -211,6 +277,7 @@ export function validateField(
             "weekly",
             "bi-weekly",
             "twice-weekly",
+            "daily",
             "monthly",
             "one-time",
           ]);
@@ -218,19 +285,13 @@ export function validateField(
           return { valid: true };
         }
         break;
-      case "commercial-contact":
-        if (fieldName === "firstName") {
-          schema = z.string().min(1, "First name is required");
-        } else if (fieldName === "lastName") {
-          schema = z.string().min(1, "Last name is required");
-        } else if (fieldName === "email") {
+      case "community-contact":
+        if (fieldName === "contact.name") {
+          schema = z.string().min(1, "Contact name is required");
+        } else if (fieldName === "contact.email") {
           schema = z.string().email("Enter a valid email address");
-        } else if (fieldName === "phone") {
+        } else if (fieldName === "contact.phone") {
           schema = z.string().min(10, "Enter a valid phone number");
-        } else if (fieldName === "businessName") {
-          schema = z.string().min(1, "Business name is required");
-        } else if (fieldName === "businessType") {
-          schema = z.string().min(1, "Select a business type");
         } else {
           return { valid: true };
         }

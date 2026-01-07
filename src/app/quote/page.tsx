@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import QuoteWizard from "@/components/quote/QuoteWizard";
+import QuoteLoading from "./loading";
 import type { Metadata } from "next";
 
 export const metadata = {
@@ -18,7 +19,7 @@ export const metadata = {
     description:
       "Instant quotes for eco-friendly dog waste removal. Serving Minneapolis, Richfield, Edina & Bloomington.",
     type: "website",
-    url: "https://www.yardura.com/quote",
+    url: "https://www.getinsightscoop.com/quote",
     images: [
       {
         url: "/api/og?type=quote",
@@ -36,25 +37,33 @@ export const metadata = {
     images: ["/api/og?type=quote"],
   },
   alternates: {
-    canonical: "https://www.yardura.com/quote",
+    canonical: "https://www.getinsightscoop.com/quote",
   },
 };
 
 export default async function QuotePage({
   searchParams,
 }: {
-  searchParams: Promise<{ businessId?: string }>;
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
   const params = await searchParams;
-  // Server-side redirect if no businessId
+  // Server-side redirect if no businessId, but preserve all other params
   if (!params.businessId) {
-    redirect("/quote?businessId=yardura");
+    const searchParamsObj = new URLSearchParams();
+    searchParamsObj.set("businessId", "yardura");
+    
+    // Preserve all existing params
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParamsObj.set(key, value);
+      }
+    });
+    
+    redirect(`/quote?${searchParamsObj.toString()}`);
   }
 
   return (
-    <Suspense
-      fallback={<div className="text-center py-8">Loading quote system...</div>}
-    >
+    <Suspense fallback={<QuoteLoading />}>
       <QuoteWizard />
     </Suspense>
   );

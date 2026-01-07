@@ -11,6 +11,8 @@
 
 import { prisma } from "@/lib/prisma";
 
+import defaultBusinessConfig from "../../config/default-business-config.json";
+
 export interface ServiceZoneConfig {
   zoneId: string;
   name: string;
@@ -27,7 +29,7 @@ export interface PricingTier {
 }
 
 export interface FrequencyPricing {
-  frequency: "weekly" | "twice-weekly" | "bi-weekly" | "monthly" | "one-time";
+  frequency: "weekly" | "twice-weekly" | "daily" | "bi-weekly" | "monthly" | "one-time";
   multiplier: number;
   visitsPerMonth: number;
 }
@@ -72,6 +74,20 @@ export interface InitialCleanPricing {
   buckets: InitialCleanBucket[]; // Configurable cleanup buckets
 }
 
+export interface QuickBooksSettings {
+  enabled: boolean;
+  realmId?: string | null;
+  clientId?: string | null;
+  clientSecret?: string | null;
+  refreshToken?: string | null;
+  lastSyncAt?: string | null;
+  needsReconnect?: boolean;
+}
+
+export interface IntegrationSettings {
+  quickbooks?: QuickBooksSettings;
+}
+
 export interface BusinessConfig {
   businessId: string;
   businessName: string;
@@ -105,6 +121,12 @@ export interface BusinessConfig {
     maximumDogsPerVisit: number;
     requiresPhotoVerification: boolean;
     allowsSameDayService: boolean;
+    autoAssignTechnicians?: boolean;
+    offerRefreshMinutes?: number;
+    offerDirectHoldMinutes?: number;
+    offerAutoAssignLeadHours?: number;
+    ratingCreditCents?: number;
+    ratingCareCredits?: number;
   };
 
   // Communication Settings
@@ -114,210 +136,87 @@ export interface BusinessConfig {
     portalAccessEnabled: boolean;
     marketingEmailsEnabled: boolean;
   };
+
+  // Optional integrations (Stripe remains core; QuickBooks optional)
+  integrations?: IntegrationSettings;
 }
 
 // Default configuration for Yardura (can be overridden)
-export const DEFAULT_YARDURA_CONFIG: BusinessConfig = {
-  businessId: "yardura",
-  businessName: "Yardura",
+export const DEFAULT_YARDURA_CONFIG =
+  defaultBusinessConfig as BusinessConfig;
 
-  serviceZones: [
-    {
-      zoneId: "zone-urban-core",
-      name: "Urban Core",
-      baseMultiplier: 1.2,
-      description: "High-demand urban area",
-      serviceable: true,
-      zipCodes: [],
-    },
-    {
-      zoneId: "zone-suburban",
-      name: "Suburban",
-      baseMultiplier: 1.0,
-      description: "Standard suburban area",
-      serviceable: true,
-      zipCodes: [],
-    },
-    {
-      zoneId: "zone-rural",
-      name: "Rural",
-      baseMultiplier: 0.95,
-      description: "Rural area with extended travel time",
-      serviceable: true,
-      zipCodes: [],
-    },
-  ],
+let prismaUnavailable = false;
 
-  basePricing: {
-    tiers: [
-      { dogCount: 1, basePriceCents: 2500 }, // $25 for 1 dog
-      { dogCount: 2, basePriceCents: 3000 }, // $30 for 2 dogs
-      { dogCount: 3, basePriceCents: 3500 }, // $35 for 3 dogs
-      { dogCount: 4, basePriceCents: 4000, extraDogPriceCents: 500 }, // $40 for 4+ dogs, $5 each additional
-    ],
-    frequencies: [
-      { frequency: "weekly", multiplier: 1.0, visitsPerMonth: 4.33 },
-      { frequency: "twice-weekly", multiplier: 1.8, visitsPerMonth: 8.67 },
-      { frequency: "bi-weekly", multiplier: 0.5, visitsPerMonth: 2.17 },
-      { frequency: "monthly", multiplier: 1.5, visitsPerMonth: 1 },
-      { frequency: "one-time", multiplier: 1.0, visitsPerMonth: 1 },
-    ],
-    yardSizes: [
-      {
-        size: "small",
-        multiplier: 0.8,
-        description: "< 1/4 acre",
-        enabled: true,
-      },
-      {
-        size: "medium",
-        multiplier: 1.0,
-        description: "1/4 - 1/2 acre",
-        enabled: true,
-      },
-      {
-        size: "large",
-        multiplier: 1.2,
-        description: "1/2 - 1 acre",
-        enabled: true,
-      },
-      {
-        size: "xlarge",
-        multiplier: 1.4,
-        description: "> 1 acre",
-        enabled: true,
-      },
-    ],
-    areaPricing: {
-      enabled: true,
-      baseAreas: 1, // First area free
-      extraAreaCostCents: 500, // $5 per additional area for one-time
-      recurringExtraAreaCostCents: 300, // $3 per additional area for recurring
-    },
-    initialClean: {
-      enabled: true,
-      multiplier: 2.7222, // Matches the original 1.25 * 2.1778 calculation
-      floorPriceCents: 4900, // $49 minimum
-      useDaysSinceLastClean: true,
-      buckets: [
-        {
-          bucket: "7",
-          multiplier: 1.0,
-          floorPriceCents: 4900,
-          label: "Today / ≤ 7 days (Well maintained)",
-        },
-        {
-          bucket: "14",
-          multiplier: 1.0,
-          floorPriceCents: 4900,
-          label: "≤ 2 weeks (Well maintained)",
-        },
-        {
-          bucket: "42",
-          multiplier: 1.75,
-          floorPriceCents: 6900,
-          label: "2–6 weeks (It's pretty neglected)",
-        },
-        {
-          bucket: "999",
-          multiplier: 2.5,
-          floorPriceCents: 8900,
-          label: "> 6 weeks (Watch your step!)",
-        },
-      ],
-    },
-    addOns: [
-      {
-        id: "deodorize",
-        name: "Enhanced Deodorizing",
-        priceCents: 2500,
-        description: "Premium odor-neutralizing treatment",
-        available: true,
-        billingMode: "each-visit" as const,
-        required: false,
-      },
-      {
-        id: "spray-deck",
-        name: "Spray Deck/Patio",
-        priceCents: 1750,
-        description: "Pressure wash and clean outdoor surfaces",
-        available: true,
-        billingMode: "each-visit" as const,
-        required: false,
-      },
-      {
-        id: "divert-takeaway",
-        name: "Take Away Waste (100% Diversion)",
-        priceCents: 200,
-        description:
-          "Remove 100% of waste, 100% diverted from landfills to compost",
-        available: true,
-        billingMode: "each-visit" as const,
-        required: false,
-      },
-      {
-        id: "divert-25",
-        name: "Waste Diversion (25% Compost)",
-        priceCents: 150,
-        description: "25% of waste diverted to compost facilities",
-        available: true,
-        billingMode: "each-visit" as const,
-        required: false,
-      },
-      {
-        id: "divert-50",
-        name: "Waste Diversion (50% Compost)",
-        priceCents: 100,
-        description: "50% of waste diverted to compost facilities",
-        available: true,
-        billingMode: "each-visit" as const,
-        required: false,
-      },
-      {
-        id: "divert-100",
-        name: "Waste Diversion (100% Compost)",
-        priceCents: 250,
-        description:
-          "100% of waste diverted to compost facilities (no landfill)",
-        available: true,
-        billingMode: "each-visit" as const,
-        required: false,
-      },
-      {
-        id: "litter",
-        name: "Cat Litter Cleanup",
-        priceCents: 800,
-        description: "Clean up cat litter from outdoor areas",
-        available: true,
-        billingMode: "each-visit" as const,
-        required: false,
-      },
-    ],
-  },
+const FALLBACK_QUICKBOOKS_SETTINGS: QuickBooksSettings = {
+  enabled: false,
+  realmId: null,
+  clientId: null,
+  clientSecret: null,
+  refreshToken: null,
+  lastSyncAt: null,
+  needsReconnect: false,
+};
 
-  settings: {
-    defaultZoneMultiplier: 1.0,
-    minimumServiceFeeCents: 2000, // $20 minimum
-    rushFeeCents: 1500, // $15 rush fee
-    commercialPricingMultiplier: 2.0, // 2x pricing for commercial
-    weekendSurchargeCents: 1000, // $10 weekend surcharge
-  },
-
-  operations: {
-    maxServiceRadiusMiles: 50,
-    minimumAdvanceBookingHours: 24,
-    maximumDogsPerVisit: 8,
-    requiresPhotoVerification: true,
-    allowsSameDayService: false,
-  },
-
-  communication: {
-    welcomeEmailEnabled: true,
-    smsNotificationsEnabled: true,
-    portalAccessEnabled: true,
-    marketingEmailsEnabled: false,
+const DEFAULT_INTEGRATIONS: IntegrationSettings = {
+  quickbooks: {
+    ...FALLBACK_QUICKBOOKS_SETTINGS,
+    ...(DEFAULT_YARDURA_CONFIG.integrations?.quickbooks ?? {}),
   },
 };
+
+type CachedBusinessConfig = {
+  config: BusinessConfig;
+  timestamp: number;
+};
+
+const BUSINESS_CONFIG_CACHE = new Map<string, CachedBusinessConfig>();
+const BUSINESS_CONFIG_TTL_MS = 5 * 60 * 1000; // 5 minutes
+let hasLoggedPrismaError = false;
+
+const logPrismaFallback = (errorMessage: string) => {
+  if (hasLoggedPrismaError) return;
+  console.warn(
+    "[business-config] Falling back to default configuration:",
+    errorMessage,
+  );
+  hasLoggedPrismaError = true;
+};
+
+function normalizeQuickBooksSettings(raw: unknown): QuickBooksSettings {
+  const defaults = DEFAULT_INTEGRATIONS.quickbooks ?? FALLBACK_QUICKBOOKS_SETTINGS;
+  if (!raw || typeof raw !== "object") {
+    return { ...defaults };
+  }
+
+  const value = raw as Record<string, unknown>;
+  return {
+    enabled: Boolean(
+      value.enabled ?? defaults.enabled ?? FALLBACK_QUICKBOOKS_SETTINGS.enabled,
+    ),
+    realmId:
+      typeof value.realmId === "string"
+        ? value.realmId
+        : defaults.realmId ?? FALLBACK_QUICKBOOKS_SETTINGS.realmId ?? null,
+    clientId:
+      typeof value.clientId === "string"
+        ? value.clientId
+        : defaults.clientId ?? FALLBACK_QUICKBOOKS_SETTINGS.clientId ?? null,
+    clientSecret:
+      typeof value.clientSecret === "string"
+        ? value.clientSecret
+        : defaults.clientSecret ?? FALLBACK_QUICKBOOKS_SETTINGS.clientSecret ?? null,
+    refreshToken:
+      typeof value.refreshToken === "string"
+        ? value.refreshToken
+        : defaults.refreshToken ?? FALLBACK_QUICKBOOKS_SETTINGS.refreshToken ?? null,
+    lastSyncAt:
+      typeof value.lastSyncAt === "string" ? value.lastSyncAt : defaults.lastSyncAt ?? null,
+    needsReconnect:
+      typeof value.needsReconnect === "boolean"
+        ? value.needsReconnect
+        : defaults.needsReconnect ?? FALLBACK_QUICKBOOKS_SETTINGS.needsReconnect ?? false,
+  };
+}
 
 /**
  * Get business configuration from database
@@ -325,6 +224,22 @@ export const DEFAULT_YARDURA_CONFIG: BusinessConfig = {
 export async function getBusinessConfig(
   businessId: string = "yardura",
 ): Promise<BusinessConfig> {
+  const cacheKey = businessId || "yardura";
+  const cached = BUSINESS_CONFIG_CACHE.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < BUSINESS_CONFIG_TTL_MS) {
+    return cached.config;
+  }
+
+  if (prismaUnavailable) {
+    return cached?.config ?? DEFAULT_YARDURA_CONFIG;
+  }
+
+  if (!process.env.DATABASE_URL) {
+    prismaUnavailable = true;
+    logPrismaFallback("DATABASE_URL is not set");
+    return cached?.config ?? DEFAULT_YARDURA_CONFIG;
+  }
+
   try {
     // Try to load BusinessConfig directly (avoids Org include typing issues)
     const org = await prisma.org.findUnique({ where: { id: businessId } });
@@ -340,13 +255,26 @@ export async function getBusinessConfig(
         : DEFAULT_YARDURA_CONFIG.serviceZones;
 
       const rawBasePricing = (bc.basePricing as any) || {};
+      const defaultFrequencies = DEFAULT_YARDURA_CONFIG.basePricing.frequencies;
+      const mergedFrequenciesMap = new Map<string, FrequencyPricing>();
+      defaultFrequencies.forEach((freq) => {
+        mergedFrequenciesMap.set(freq.frequency, { ...freq });
+      });
+      if (Array.isArray(rawBasePricing.frequencies)) {
+        rawBasePricing.frequencies.forEach((freq: FrequencyPricing) => {
+          mergedFrequenciesMap.set(freq.frequency, {
+            ...(mergedFrequenciesMap.get(freq.frequency) || {}),
+            ...freq,
+          } as FrequencyPricing);
+        });
+      }
+      const mergedFrequencies = Array.from(mergedFrequenciesMap.values());
+
       const basePricing = {
         tiers: Array.isArray(rawBasePricing.tiers)
           ? rawBasePricing.tiers
           : DEFAULT_YARDURA_CONFIG.basePricing.tiers,
-        frequencies: Array.isArray(rawBasePricing.frequencies)
-          ? rawBasePricing.frequencies
-          : DEFAULT_YARDURA_CONFIG.basePricing.frequencies,
+        frequencies: mergedFrequencies,
         yardSizes: Array.isArray(rawBasePricing.yardSizes)
           ? rawBasePricing.yardSizes
           : DEFAULT_YARDURA_CONFIG.basePricing.yardSizes,
@@ -393,7 +321,22 @@ export async function getBusinessConfig(
             }
           : DEFAULT_YARDURA_CONFIG.communication;
 
-      return {
+      const integrations = (() => {
+        if (bc.integrations && typeof bc.integrations === "object") {
+          const rawIntegrations = bc.integrations as Record<string, unknown>;
+          return {
+            quickbooks: normalizeQuickBooksSettings(
+              rawIntegrations.quickbooks,
+            ),
+          } satisfies IntegrationSettings;
+        }
+
+        return {
+          quickbooks: normalizeQuickBooksSettings(null),
+        } satisfies IntegrationSettings;
+      })();
+
+      const result: BusinessConfig = {
         businessId,
         businessName: bc.businessName || org?.name || "Business",
         serviceZones,
@@ -401,14 +344,37 @@ export async function getBusinessConfig(
         settings,
         operations,
         communication,
+        integrations,
       };
+
+      BUSINESS_CONFIG_CACHE.set(cacheKey, {
+        config: result,
+        timestamp: Date.now(),
+      });
+
+      return result;
     }
   } catch (error) {
-    console.error("Error loading business config from database:", error);
+    prismaUnavailable = true;
+    const message =
+      error instanceof Error ? error.message : "Unknown Prisma error";
+    logPrismaFallback(message);
   }
 
-  // Fall back to default configuration
-  return DEFAULT_YARDURA_CONFIG;
+  const fallbackBase = cached?.config ?? DEFAULT_YARDURA_CONFIG;
+  const fallback: BusinessConfig = {
+    ...fallbackBase,
+    integrations: {
+      quickbooks: normalizeQuickBooksSettings(
+        fallbackBase.integrations?.quickbooks,
+      ),
+    },
+  };
+  BUSINESS_CONFIG_CACHE.set(cacheKey, {
+    config: fallback,
+    timestamp: Date.now(),
+  });
+  return fallback;
 }
 
 /**
@@ -417,6 +383,11 @@ export async function getBusinessConfig(
 export async function registerBusinessConfig(
   config: BusinessConfig,
 ): Promise<void> {
+  if (prismaUnavailable || !process.env.DATABASE_URL) {
+    logPrismaFallback("Database unavailable—skipping registerBusinessConfig");
+    return;
+  }
+
   try {
     // Ensure Org record exists first
     await prisma.org.upsert({
@@ -442,6 +413,7 @@ export async function registerBusinessConfig(
         settings: config.settings,
         operations: config.operations,
         communication: config.communication,
+        integrations: config.integrations ?? DEFAULT_INTEGRATIONS,
         updatedAt: new Date(),
       },
       create: {
@@ -452,11 +424,19 @@ export async function registerBusinessConfig(
         settings: config.settings,
         operations: config.operations,
         communication: config.communication,
+        integrations: config.integrations ?? DEFAULT_INTEGRATIONS,
       },
     });
+
+    BUSINESS_CONFIG_CACHE.delete(config.businessId);
   } catch (error) {
     console.error("Error saving business config to database:", error);
-    throw error;
+    prismaUnavailable = true;
+    logPrismaFallback(
+      error instanceof Error ? error.message : "Unknown Prisma error",
+    );
+    // In offline/dev environments we allow the app to continue with defaults
+    return;
   }
 }
 
@@ -467,16 +447,37 @@ export async function updateBusinessConfig(
   businessId: string,
   updates: Partial<BusinessConfig>,
 ): Promise<void> {
+  if (prismaUnavailable || !process.env.DATABASE_URL) {
+    logPrismaFallback("Database unavailable—skipping updateBusinessConfig");
+    return;
+  }
+
   try {
     const existing = await getBusinessConfig(businessId);
 
     if (existing) {
-      const updatedConfig = { ...existing, ...updates };
+      const updatedIntegrations = normalizeQuickBooksSettings({
+        ...(existing.integrations?.quickbooks ?? {}),
+        ...(updates.integrations?.quickbooks ?? {}),
+      });
+
+      const updatedConfig: BusinessConfig = {
+        ...existing,
+        ...updates,
+        integrations: {
+          quickbooks: updatedIntegrations,
+        },
+      };
+
       await registerBusinessConfig(updatedConfig);
     }
   } catch (error) {
     console.error("Error updating business config in database:", error);
-    throw error;
+    prismaUnavailable = true;
+    logPrismaFallback(
+      error instanceof Error ? error.message : "Unknown Prisma error",
+    );
+    return;
   }
 }
 
@@ -537,6 +538,10 @@ export async function isZipServiceable(
 
 /**
  * Get zone information for a ZIP code
+ * 
+ * Uses a two-tier approach:
+ * 1. First checks static zone configuration for explicit ZIP assignments
+ * 2. Falls back to density-based classification using Census ZCTA data
  */
 export async function getZoneForZip(
   zipCode: string,
@@ -545,10 +550,25 @@ export async function getZoneForZip(
   const zones = await getServiceZones(businessId);
   const cleanZip = zipCode.replace(/\s+/g, "").toUpperCase();
 
+  // First: Check static zone configuration
   for (const zone of zones) {
     if (zone.zipCodes.includes(cleanZip)) {
       return zone;
     }
+  }
+
+  // Second: Fall back to density-based classification
+  try {
+    const { classifyZipByDensity, toServiceZoneConfig } = await import("./zone-classification");
+    const classification = await classifyZipByDensity(cleanZip);
+    
+    if (classification) {
+      console.log(`[getZoneForZip] ZIP ${cleanZip} classified as ${classification.zoneName} via density (${classification.populationDensity?.toLocaleString()} people/sq mi)`);
+      return toServiceZoneConfig(classification);
+    }
+  } catch (error) {
+    // PostGIS may not be available in all environments (e.g., edge runtime)
+    console.warn(`[getZoneForZip] Density classification unavailable for ZIP ${cleanZip}:`, error);
   }
 
   return null;
@@ -679,4 +699,20 @@ export function validateBusinessConfig(config: BusinessConfig): {
     valid: errors.length === 0,
     errors,
   };
+}
+
+export async function getQuickBooksSettings(
+  businessId: string = "yardura",
+): Promise<QuickBooksSettings> {
+  const config = await getBusinessConfig(businessId);
+  return config.integrations?.quickbooks
+    ? normalizeQuickBooksSettings(config.integrations.quickbooks)
+    : normalizeQuickBooksSettings(null);
+}
+
+export async function isQuickBooksEnabled(
+  businessId: string = "yardura",
+): Promise<boolean> {
+  const settings = await getQuickBooksSettings(businessId);
+  return Boolean(settings.enabled);
 }

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Info } from "lucide-react";
 import { useWellnessData } from "./hooks/useWellnessData";
 import { WellnessHeader } from "./components/WellnessHeader";
@@ -131,46 +131,33 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
   const weekRollupData = convertWeeklyToWeekRollup(wellnessData.weekly);
 
   return (
-    <div
-      className="space-y-6 relative"
-      style={{
-        backgroundColor: wellnessTheme.slate50,
-      }}
-    >
-      {/* Wellness Header - Always visible */}
+    <div id="wellness" className="relative space-y-6">
       <WellnessHeader
         wellnessData={wellnessData}
         onExport={handleExport}
         onNavigateToSection={handleNavigateToSection}
       />
 
-      {/* Weekly Timeline - Compact overview */}
-      <WeeklyTimeline weekly={wellnessData.weekly} />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr),minmax(0,1fr)]">
+        <WeeklyTimeline weekly={wellnessData.weekly} />
+        <KeyInsights weeks={wellnessData.weekly} avgWellness4w={85} />
+      </div>
 
-      {/* Detailed Week-by-Week Analysis */}
-      <Card
-        style={{
-          backgroundColor: wellnessTheme.slate50,
-          boxShadow: wellnessTheme.cardShadow,
-          borderRadius: wellnessTheme.radiusLg,
-        }}
-      >
+      <Card className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base font-heading font-semibold text-slate-900 dark:text-white">
+            Week-by-week details
+          </CardTitle>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Scroll through the past eight weeks to spot patterns and notes.
+          </p>
+        </CardHeader>
         <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-6">
-            Detailed Week-by-Week Analysis
-          </h3>
           <WeeklyDetailsGrid weeks={weekRollupData} />
         </CardContent>
       </Card>
 
-      {/* Key Insights - Health status summaries */}
-      <KeyInsights
-        weeks={wellnessData.weekly}
-        avgWellness4w={85} // Simplified for now
-      />
-
-      {/* Four-column layout for detailed analysis */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Color Analysis */}
         <div id="color-analysis">
           {(() => {
@@ -278,42 +265,21 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
         </div>
       </div>
 
-      {/* Important Disclaimer - Always at the bottom */}
-      <Card
-        className="bg-blue-50 border-blue-200"
-        style={{
-          borderRadius: wellnessTheme.radiusLg,
-          boxShadow: wellnessTheme.cardShadow,
-        }}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <Info className="size-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-blue-800">
-              <div className="font-semibold mb-2">
-                Important Medical Disclaimer
-              </div>
-              <div className="space-y-1 text-blue-700">
-                <div>
-                  • This waste monitoring system is{" "}
-                  <strong>
-                    not a substitute for professional veterinary care
-                  </strong>
-                </div>
-                <div>
-                  • Waste quality scores and alerts are monitoring tools only -
-                  they do not constitute medical diagnosis
-                </div>
-                <div>
-                  • Always consult your veterinarian for any health concerns or
-                  changes in your pet's waste patterns
-                </div>
-                <div>
-                  • Regular veterinary check-ups are essential for your pet's
-                  overall health and wellness
-                </div>
-              </div>
+      <Card className="border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 shadow-sm">
+        <CardContent className="flex items-start gap-3 p-5 text-sm text-slate-600 dark:text-slate-400">
+          <Info className="size-5 text-coral mt-0.5 flex-shrink-0" />
+          <div>
+            <div className="font-heading font-semibold text-slate-900 dark:text-white mb-2">
+              Important medical reminder
             </div>
+            <ul className="space-y-1">
+              <li>
+                • InsightScoop monitoring is <strong className="text-slate-900 dark:text-white">not a substitute for veterinary care</strong>.
+              </li>
+              <li>• Scores and alerts flag patterns for you to share with your vet - they aren't a diagnosis.</li>
+              <li>• Contact your veterinarian if concerning signals persist or escalate.</li>
+              <li>• Keep up with regular checkups to stay ahead of emerging health issues.</li>
+            </ul>
           </div>
         </CardContent>
       </Card>
@@ -322,7 +288,8 @@ export const WellnessTab: React.FC<WellnessTabProps> = ({
       {showOverlay && (
         <ComingSoonOverlay
           onJoinWaitlist={handleJoinWaitlist}
-          closable={false}
+          closable
+          onClose={() => setShowOverlay(false)}
         />
       )}
     </div>

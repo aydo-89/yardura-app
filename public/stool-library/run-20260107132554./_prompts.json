@@ -1,0 +1,34 @@
+{
+  "timestamp": "20260107132554.",
+  "model": "gemini-3-pro-image-preview",
+  "aspect": "1:1",
+  "resolution": "1K",
+  "prompts": [
+    {
+      "id": "watery-1",
+      "label": "Watery diarrhea",
+      "visual": {
+        "id": "watery-1",
+        "shape": "formless liquid splatter, puddle with irregular edges, may have some small chunks",
+        "color": "brown liquid, may be lighter brown due to water content",
+        "distinguishingFeature": "completely liquid, no solid form, spreads out like spilled liquid",
+        "surface": "wet puddle appearance, uneven edges, may have bubbles or separate liquid pools",
+        "realLifeNote": "Like brown water or thin gravy spilled on the ground - no solid form at all"
+      },
+      "prompt": "Create a clean semi-realistic illustration, medical education style, simplified but accurate shapes of dog stool for a veterinary education app. Use realistic natural earth tones, true-to-life colors. Background: plain solid light neutral gray (#F0F0F0) background, no textures or patterns. Rendering: soft shading with realistic form, gentle shadow underneath for grounding. Camera angle: slightly elevated 3/4 view, as if looking down at the ground. SHAPE: formless liquid splatter, puddle with irregular edges, may have some small chunks. COLOR: brown liquid, may be lighter brown due to water content. KEY IDENTIFYING FEATURE: completely liquid, no solid form, spreads out like spilled liquid. SURFACE/TEXTURE: wet puddle appearance, uneven edges, may have bubbles or separate liquid pools. REAL LIFE REFERENCE: Like brown water or thin gravy spilled on the ground - no solid form at all. Do NOT include: text or labels, cartoon faces or expressions, flies or insects, smell lines or stink marks, grass or outdoor environment, overly gross or disgusting details. This must look realistic enough that a pet owner can compare it to their dog's actual stool. The image should clearly show the distinguishing characteristics so owners know what to look for."
+    },
+    {
+      "id": "yellow-1",
+      "label": "Pale, gray, or clay-colored",
+      "visual": {
+        "id": "yellow-1",
+        "shape": "log shape similar to normal stool",
+        "color": "pale grayish-tan or clay-colored with slight yellow tint, noticeably lighter than healthy brown",
+        "distinguishingFeature": "abnormally pale color - gray, tan, or clay-like instead of normal brown",
+        "surface": "may appear slightly greasy or fatty looking",
+        "realLifeNote": "Like wet clay or putty color - grayish-tan, clearly not the normal brown color"
+      },
+      "prompt": "Create a clean semi-realistic illustration, medical education style, simplified but accurate shapes of dog stool for a veterinary education app. Use realistic natural earth tones, true-to-life colors. Background: plain solid light neutral gray (#F0F0F0) background, no textures or patterns. Rendering: soft shading with realistic form, gentle shadow underneath for grounding. Camera angle: slightly elevated 3/4 view, as if looking down at the ground. SHAPE: log shape similar to normal stool. COLOR: pale grayish-tan or clay-colored with slight yellow tint, noticeably lighter than healthy brown. KEY IDENTIFYING FEATURE: abnormally pale color - gray, tan, or clay-like instead of normal brown. SURFACE/TEXTURE: may appear slightly greasy or fatty looking. REAL LIFE REFERENCE: Like wet clay or putty color - grayish-tan, clearly not the normal brown color. Do NOT include: text or labels, cartoon faces or expressions, flies or insects, smell lines or stink marks, grass or outdoor environment, overly gross or disgusting details. This must look realistic enough that a pet owner can compare it to their dog's actual stool. The image should clearly show the distinguishing characteristics so owners know what to look for."
+    }
+  ]
+}

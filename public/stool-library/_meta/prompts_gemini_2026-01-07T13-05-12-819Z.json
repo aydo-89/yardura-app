@@ -1,0 +1,50 @@
+[
+  {
+    "id": "normal-1",
+    "label": "Ideal: firm & easy to pick up",
+    "prompt": "friendly animated-style illustration, clean minimal infographic, rounded soft shapes, pastel palette with subtle gradients, high readability, simple composition, no text, no captions, no watermark, no logo, kid-friendly medical infographic vibe, NOT gross, NOT photorealistic. A small abstract “sample” icon made of smooth rounded shapes, color theme brown, firmness scale 4/7. Three smooth brown rounded forms with a gentle highlight, tiny sparkle, subtle green check icon, calm background.",
+    "model": "gemini-3-pro-image-preview"
+  },
+  {
+    "id": "soft-1",
+    "label": "Soft but formed",
+    "prompt": "friendly animated-style illustration, clean minimal infographic, rounded soft shapes, pastel palette with subtle gradients, high readability, simple composition, no text, no captions, no watermark, no logo, kid-friendly medical infographic vibe, NOT gross, NOT photorealistic. A small abstract “sample” icon made of smooth rounded shapes, color theme brown, firmness scale 5/7. Softer rounded mound shapes with slightly softened edges, small “watch” badge icon, calm background.",
+    "model": "gemini-3-pro-image-preview"
+  },
+  {
+    "id": "watery-1",
+    "label": "Watery diarrhea",
+    "prompt": "friendly animated-style illustration, clean minimal infographic, rounded soft shapes, pastel palette with subtle gradients, high readability, simple composition, no text, no captions, no watermark, no logo, kid-friendly medical infographic vibe, NOT gross, NOT photorealistic. A small abstract “sample” icon made of smooth rounded shapes, color theme brown, firmness scale 7/7. Abstract flowing wave-like shapes with a few droplets, small amber caution badge, calm background.",
+    "model": "gemini-3-pro-image-preview"
+  },
+  {
+    "id": "dry-1",
+    "label": "Dry or hard pellets",
+    "prompt": "friendly animated-style illustration, clean minimal infographic, rounded soft shapes, pastel palette with subtle gradients, high readability, simple composition, no text, no captions, no watermark, no logo, kid-friendly medical infographic vibe, NOT gross, NOT photorealistic. A small abstract “sample” icon made of smooth rounded shapes, color theme brown, firmness scale 1/7. Small pebble-like rounded pellets, subtle “hydrate” droplet icon, calm background.",
+    "model": "gemini-3-pro-image-preview"
+  },
+  {
+    "id": "yellow-1",
+    "label": "Yellow or pale stool",
+    "prompt": "friendly animated-style illustration, clean minimal infographic, rounded soft shapes, pastel palette with subtle gradients, high readability, simple composition, no text, no captions, no watermark, no logo, kid-friendly medical infographic vibe, NOT gross, NOT photorealistic. A small abstract “sample” icon made of smooth rounded shapes, color theme yellow, firmness scale 4/7. Pale yellow rounded forms with a soft sheen, small “monitor” badge icon, calm background.",
+    "model": "gemini-3-pro-image-preview"
+  },
+  {
+    "id": "red-1",
+    "label": "Red streaks",
+    "prompt": "friendly animated-style illustration, clean minimal infographic, rounded soft shapes, pastel palette with subtle gradients, high readability, simple composition, no text, no captions, no watermark, no logo, kid-friendly medical infographic vibe, NOT gross, NOT photorealistic. A small abstract “sample” icon made of smooth rounded shapes, color theme red, firmness scale 4/7. Brown rounded form with a thin red accent line (non-graphic), clear “vet” warning badge icon, calm background.",
+    "model": "gemini-3-pro-image-preview"
+  },
+  {
+    "id": "black-1",
+    "label": "Black or tarry",
+    "prompt": "friendly animated-style illustration, clean minimal infographic, rounded soft shapes, pastel palette with subtle gradients, high readability, simple composition, no text, no captions, no watermark, no logo, kid-friendly medical infographic vibe, NOT gross, NOT photorealistic. A small abstract “sample” icon made of smooth rounded shapes, color theme black, firmness scale 3/7. Dark charcoal rounded form with glossy highlight, clear “vet” warning badge icon, calm background.",
+    "model": "gemini-3-pro-image-preview"
+  },
+  {
+    "id": "mucus-1",
+    "label": "Mucus coating",
+    "prompt": "friendly animated-style illustration, clean minimal infographic, rounded soft shapes, pastel palette with subtle gradients, high readability, simple composition, no text, no captions, no watermark, no logo, kid-friendly medical infographic vibe, NOT gross, NOT photorealistic. A small abstract “sample” icon made of smooth rounded shapes, color theme brown, firmness scale 5/7. Brown rounded form with a translucent swirl overlay (non-graphic), small “monitor” badge icon, calm background.",
+    "model": "gemini-3-pro-image-preview"
+  }
+]

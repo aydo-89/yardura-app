@@ -1,0 +1,216 @@
+{
+  "businessId": "yardura",
+  "businessName": "Yardura",
+  "serviceZones": [
+    {
+      "zoneId": "zone-urban-core",
+      "name": "Urban Core",
+      "baseMultiplier": 1.2,
+      "description": "High-demand urban area",
+      "serviceable": true,
+      "zipCodes": ["55401", "55402", "55403", "55405"]
+    },
+    {
+      "zoneId": "zone-suburban",
+      "name": "Suburban",
+      "baseMultiplier": 1.0,
+      "description": "Standard suburban area",
+      "serviceable": true,
+      "zipCodes": ["55416", "55417", "55419", "55423", "55431", "55337"]
+    },
+    {
+      "zoneId": "zone-rural",
+      "name": "Rural",
+      "baseMultiplier": 0.95,
+      "description": "Rural area with extended travel time",
+      "serviceable": true,
+      "zipCodes": ["55044", "55057", "55309"]
+    }
+  ],
+  "basePricing": {
+    "tiers": [
+      {
+        "dogCount": 1,
+        "basePriceCents": 2000,
+        "extraDogPriceCents": 0
+      },
+      {
+        "dogCount": 2,
+        "basePriceCents": 2400,
+        "extraDogPriceCents": 0
+      },
+      {
+        "dogCount": 3,
+        "basePriceCents": 2800,
+        "extraDogPriceCents": 0
+      },
+      {
+        "dogCount": 4,
+        "basePriceCents": 3200,
+        "extraDogPriceCents": 500
+      }
+    ],
+    "frequencies": [
+      {
+        "frequency": "weekly",
+        "multiplier": 1.0,
+        "visitsPerMonth": 4.33
+      },
+      {
+        "frequency": "daily",
+        "multiplier": 0.5,
+        "visitsPerMonth": 21.67
+      },
+      {
+        "frequency": "twice-weekly",
+        "multiplier": 0.75,
+        "visitsPerMonth": 8.67
+      },
+      {
+        "frequency": "bi-weekly",
+        "multiplier": 1.25,
+        "visitsPerMonth": 2.17
+      },
+      {
+        "frequency": "monthly",
+        "multiplier": 1.5,
+        "visitsPerMonth": 1
+      },
+      {
+        "frequency": "one-time",
+        "multiplier": 1.0,
+        "visitsPerMonth": 1
+      }
+    ],
+    "yardSizes": [
+      {
+        "size": "small",
+        "multiplier": 0.8,
+        "description": "< 1/4 acre",
+        "enabled": true
+      },
+      {
+        "size": "medium",
+        "multiplier": 1.0,
+        "description": "1/4 - 1/2 acre",
+        "enabled": true
+      },
+      {
+        "size": "large",
+        "multiplier": 1.2,
+        "description": "1/2 - 1 acre",
+        "enabled": true
+      },
+      {
+        "size": "xlarge",
+        "multiplier": 1.4,
+        "description": "> 1 acre",
+        "enabled": true
+      }
+    ],
+    "areaPricing": {
+      "baseAreas": 1,
+      "extraAreaCostCents": 500,
+      "recurringExtraAreaCostCents": 300,
+      "enabled": true
+    },
+    "initialClean": {
+      "enabled": true,
+      "multiplier": 1.0,
+      "floorPriceCents": 4900,
+      "useDaysSinceLastClean": true,
+      "buckets": [
+        {
+          "bucket": "7",
+          "multiplier": 1.0,
+          "floorPriceCents": 4900,
+          "label": "Today / ≤ 7 days (Well maintained)"
+        },
+        {
+          "bucket": "14",
+          "multiplier": 1.0,
+          "floorPriceCents": 4900,
+          "label": "≤ 2 weeks (Well maintained)"
+        },
+        {
+          "bucket": "42",
+          "multiplier": 1.0,
+          "floorPriceCents": 6900,
+          "label": "2–6 weeks (It's pretty neglected)"
+        },
+        {
+          "bucket": "999",
+          "multiplier": 1.0,
+          "floorPriceCents": 8900,
+          "label": "> 6 weeks (Watch your step!)"
+        }
+      ]
+    },
+    "addOns": [
+      {
+        "id": "deodorize",
+        "name": "Enhanced Deodorizing",
+        "priceCents": 500,
+        "description": "Premium odor-neutralizing treatment",
+        "available": true,
+        "billingMode": "each-visit",
+        "required": false
+      },
+      {
+        "id": "divert-takeaway",
+        "name": "Take Away Waste",
+        "priceCents": 500,
+        "description": "Remove waste off-site each visit",
+        "available": true,
+        "billingMode": "each-visit",
+        "required": false
+      },
+      {
+        "id": "divert-compost",
+        "name": "Compost Routing",
+        "priceCents": 1000,
+        "description": "Haul away sealed waste with compost routing whenever capacity allows; dashboard impact tracking included",
+        "available": true,
+        "billingMode": "each-visit",
+        "required": false
+      }
+    ]
+  },
+  "settings": {
+    "defaultZoneMultiplier": 1.0,
+    "minimumServiceFeeCents": 2000,
+    "rushFeeCents": 1500,
+    "commercialPricingMultiplier": 2.0,
+    "weekendSurchargeCents": 1000
+  },
+  "operations": {
+    "maxServiceRadiusMiles": 50,
+    "minimumAdvanceBookingHours": 24,
+    "maximumDogsPerVisit": 8,
+    "requiresPhotoVerification": true,
+    "allowsSameDayService": false,
+    "autoAssignTechnicians": false,
+    "offerRefreshMinutes": 30,
+    "offerDirectHoldMinutes": 30,
+    "offerAutoAssignLeadHours": 6,
+    "ratingCreditCents": 500,
+    "ratingCareCredits": 5
+  },
+  "communication": {
+    "welcomeEmailEnabled": true,
+    "smsNotificationsEnabled": true,
+    "portalAccessEnabled": true,
+    "marketingEmailsEnabled": false
+  },
+  "integrations": {
+    "quickbooks": {
+      "enabled": false,
+      "realmId": null,
+      "clientId": null,
+      "clientSecret": null,
+      "refreshToken": null,
+      "lastSyncAt": null,
+      "needsReconnect": false
+    }
+  }
+}

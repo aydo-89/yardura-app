@@ -1,262 +1,152 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useMemo } from "react";
+import { motion } from "@/lib/framermotion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Star } from "lucide-react";
-import { getPremiumOnboardingOptions } from "@/lib/priceEstimator";
 import { StepProps } from "@/types/quote";
+import { getPremiumOnboardingOptions } from "@/lib/priceEstimator";
+import { cn } from "@/lib/utils";
+import { quoteSubtleTextClass, quoteSurfaceClass, withQuotePanel, quoteMutedBadgeClass, quoteHeadingClass } from "../quoteStyles";
+import { CheckCircle, Sparkles, MapPin, Video } from "lucide-react";
 
-export const StepOnboarding: React.FC<StepProps> = ({
-  quoteData,
-  updateQuoteData,
-  _errors,
-  _estimatedPrice,
-  onNext,
-}) => {
-  const onboardingOptions = getPremiumOnboardingOptions();
+const onboardingCardBase =
+  "flex h-full flex-col rounded-2xl border-2 p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-coral/40";
+const onboardingCardSelected =
+  "border-[rgba(20,92,69,0.45)] bg-[rgba(20,92,69,0.08)] text-brand-ink shadow-[0_18px_40px_rgba(243,100,91,0.32)] dark:border-brand-coral/60 dark:bg-brand-coral/15/85 dark:text-cream-vanilla";
+const onboardingCardIdle =
+  "border-brand-coral/15 bg-cream-vanilla/60 text-brand-ink hover:border-brand-coral/35 hover:bg-cream-vanilla/80 dark:border-brand-coral/35 dark:bg-evergreen-800/80 dark:text-cream-vanilla hover:dark:border-brand-coral/45";
 
-  // Separate DNA vs microbiome services (both coming soon)
-  const dnaServices = onboardingOptions.filter(
-    (option) => option.value === "premium-dna",
-  );
+const packages = [
+  {
+    value: "none",
+    title: "Fast-track onboarding",
+    price: "Included",
+    description: "We schedule your first visit immediately, share prep instructions, and start sending wellness recaps after every scoop.",
+    bullets: [
+      "Automated scheduling & reminders",
+      "Before/after photos on every visit",
+      "Instant wellness recap texts",
+    ],
+    icon: MapPin,
+  },
+  {
+    value: "essential",
+    title: "Concierge onboarding",
+    price: "$99",
+    description: "Jump on a video consult with our concierge team, lock ideal service windows, and get a senior scooper the first week.",
+    bullets: [
+      "Live video walkthrough before launch",
+      "Senior scooper assigned for week one",
+      "Personalized prep plan + gated access coaching",
+    ],
+    icon: Video,
+  },
+];
 
-  const microbiomeServices = onboardingOptions.filter(
-    (option) => option.value === "wellness-microbiome",
-  );
+export const StepOnboarding: React.FC<StepProps> = ({ quoteData, updateQuoteData }) => {
+  const upcoming = useMemo(() => getPremiumOnboardingOptions(), []);
 
   return (
-    <div className="space-y-6">
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-blue-50/20 to-purple-50/20 min-h-[600px]">
-        <CardHeader className="pb-6">
-          <CardTitle className="flex items-center gap-3 text-2xl">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-              <Star className="size-6 text-white" />
-            </div>
-            Wellness & Health Insights
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-24 md:pb-28">
+      <Card className={withQuotePanel("space-y-6 text-brand-ink dark:text-cream-vanilla")}>
+        <CardHeader className="space-y-2">
+          <CardTitle className="flex items-center gap-2 font-serif text-base font-normal md:text-lg text-brand-ink dark:text-cream-vanilla">
+            <span className="inline-flex size-9 items-center justify-center rounded-2xl bg-brand-coral/15 text-brand-coral dark:bg-brand-coral/20 dark:text-cream-vanilla">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            Choose your onboarding experience
           </CardTitle>
-          <p className="text-muted-foreground text-lg">
-            All subscriptions include FREE basic wellness insights. Add premium
-            testing options below.
+          <p className={cn("text-sm leading-relaxed", quoteSubtleTextClass)}>
+            Fast-track is on the house. Upgrade to concierge if you want a video walkthrough, senior scooper, and bespoke launch coaching.
           </p>
         </CardHeader>
-        <CardContent className="space-y-8">
-          {/* Free Basic Insights Notice */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 shadow-sm"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <svg
-                  className="w-4 h-4 text-white"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-blue-800 mb-2">
-                  ✅ Basic Wellness Insights Included FREE
-                </p>
-                <p className="text-blue-700 leading-relaxed">
-                  All subscriptions automatically include non-diagnostic health
-                  trend monitoring, 3C's tracking (Color, Consistency, Content),
-                  and basic wellness insights - no additional cost required.
-                </p>
-              </div>
-            </div>
-          </motion.div>
 
-          {/* Premium Add-on Options */}
-          <div className="text-center mb-6">
-            <p className="text-muted-foreground text-base">
-              Optional premium testing for advanced health insights
-            </p>
+        <CardContent className="space-y-8">
+          <div className="grid gap-4 md:grid-cols-2">
+            {packages.map((pkg) => {
+              const Icon = pkg.icon;
+              const selected = quoteData.premiumOnboarding === pkg.value || (!quoteData.premiumOnboarding && pkg.value === "none");
+
+              return (
+              <motion.button
+                  key={pkg.value}
+                  type="button"
+                  whileHover={{ scale: 1.01, y: -2 }}
+                  whileTap={{ scale: 0.99, y: 0 }}
+                  onClick={() => updateQuoteData({ premiumOnboarding: pkg.value })}
+                  className={cn(
+                    onboardingCardBase,
+                    selected ? onboardingCardSelected : onboardingCardIdle,
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="inline-flex items-center justify-center rounded-2xl bg-brand-coral/10 p-3 text-brand-coral dark:bg-brand-coral/20 dark:text-cream-vanilla">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-serif text-lg font-normal md:text-xl">{pkg.title}</h3>
+                          <p className={quoteSubtleTextClass}>{pkg.description}</p>
+                        </div>
+                        <span className={cn(quoteMutedBadgeClass, "bg-brand-coral/10 text-brand-coral dark:bg-brand-coral/20 dark:text-cream-vanilla")}>{pkg.price}</span>
+                      </div>
+                    </div>
+                    {selected ? (
+                      <span className="inline-flex size-7 items-center justify-center rounded-full bg-brand-coral/10 text-brand-coral dark:bg-brand-coral/20 dark:text-cream-vanilla">
+                        <CheckCircle className="h-4 w-4" />
+                      </span>
+                    ) : null}
+                  </div>
+                  <ul className="mt-4 space-y-2 text-sm">
+                    {pkg.bullets.map((bullet) => (
+                      <li key={bullet} className="flex items-start gap-2">
+                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-brand-coral dark:bg-emerald-400" />
+                        <span className={quoteSubtleTextClass}>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.button>
+              );
+            })}
           </div>
 
-          <RadioGroup
-            value={quoteData.premiumOnboarding || "none"}
-            onValueChange={(value) =>
-              updateQuoteData({ premiumOnboarding: value })
-            }
-            className="space-y-8"
-          >
-            {/* DNA Testing Services */}
-            {dnaServices.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="space-y-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"></div>
-                  <Label className="text-xl font-semibold text-blue-800">
-                    Genetic Health Testing
-                  </Label>
-                </div>
-                <div className="grid gap-4">
-                  {dnaServices.map((option) => (
-                    <motion.div
-                      key={option.value}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className={`flex items-start space-x-4 p-6 border-2 rounded-xl transition-all duration-300 bg-gradient-to-r from-gray-50/50 to-blue-50/30 border-gray-200 ${option.disabled ? "opacity-60 cursor-not-allowed" : "hover:bg-blue-50/70 hover:border-blue-400 hover:shadow-lg cursor-pointer"}`}
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={option.value}
-                        className="mt-2"
-                        disabled={option.disabled}
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <Label
-                            htmlFor={option.value}
-                            className={`font-semibold text-lg ${option.disabled ? "cursor-not-allowed text-gray-500" : "cursor-pointer text-blue-900"}`}
-                          >
-                            {option.label}
-                          </Label>
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                              Coming Soon
-                            </div>
-                          </div>
-                        </div>
-                        <p
-                          className={`text-sm leading-relaxed ${option.disabled ? "text-gray-500" : "text-blue-700"}`}
-                        >
-                          {option.description}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
+          {upcoming.length > 0 ? (
+            <div className={cn(
+              quoteSurfaceClass,
+              "space-y-4 border border-brand-coral/25 bg-brand-coral/8 p-4 text-brand-ink dark:border-brand-coral/35 dark:bg-brand-coral/20/80 dark:text-cream-vanilla",
             )}
-
-            {/* Microbiome Services */}
-            {microbiomeServices.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="space-y-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 bg-gradient-to-r from-green-400 to-teal-500 rounded-full"></div>
-                  <Label className="text-xl font-semibold text-teal-800">
-                    Gut Health Analysis
-                  </Label>
-                </div>
-                <div className="grid gap-4">
-                  {microbiomeServices.map((option) => (
-                    <motion.div
-                      key={option.value}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className={`flex items-start space-x-4 p-6 border-2 rounded-xl transition-all duration-300 bg-gradient-to-r from-gray-50/50 to-teal-50/30 border-gray-200 ${option.disabled ? "opacity-60 cursor-not-allowed" : "hover:bg-teal-50/70 hover:border-teal-400 hover:shadow-lg cursor-pointer"}`}
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={option.value}
-                        className="mt-2"
-                        disabled={option.disabled}
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <Label
-                            htmlFor={option.value}
-                            className={`font-semibold text-lg ${option.disabled ? "cursor-not-allowed text-gray-500" : "cursor-pointer text-teal-900"}`}
-                          >
-                            {option.label}
-                          </Label>
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                              Coming Soon
-                            </div>
-                          </div>
-                        </div>
-                        <p
-                          className={`text-sm leading-relaxed ${option.disabled ? "text-gray-500" : "text-teal-700"}`}
-                        >
-                          {option.description}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </RadioGroup>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-6 shadow-sm"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <svg
-                  className="w-4 h-4 text-white"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-brand-coral dark:text-cream-vanilla" />
+                <p className="text-sm font-semibold">Coming soon</p>
               </div>
-              <div>
-                <p className="text-lg font-semibold text-amber-800 mb-2">
-                  Coming Soon Features
-                </p>
-                <p className="text-amber-700 leading-relaxed">
-                  These premium health testing options will be available soon.
-                  You'll be notified when they launch, and we'll help you get
-                  started with your pet's health journey.
-                </p>
+              <p className={quoteSubtleTextClass}>
+                Reserve early access to advanced onboarding perks launching later this year.
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                {upcoming.map((option) => (
+                  <motion.div
+                    key={option.value}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(
+                      quoteSurfaceClass,
+                      "space-y-3 border-2 border-dashed border-brand-coral/35 bg-brand-coral/8 p-4 text-brand-ink dark:border-brand-coral/35 dark:bg-brand-coral/20/60 dark:text-cream-vanilla",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-semibold md:text-base">{option.label}</h3>
+                        <p className={quoteSubtleTextClass}>{option.description}</p>
+                      </div>
+                      <span className={cn(quoteMutedBadgeClass, "bg-white/20 text-white dark:bg-brand-coral/20 dark:text-cream-vanilla")}>Waitlist</span>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
-          </motion.div>
-
-          {/* Service Summary */}
-          {quoteData.premiumOnboarding &&
-            quoteData.premiumOnboarding !== "none" && (
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="bg-gradient-to-r from-accent/15 to-accent-soft/25 rounded-2xl p-8 border-2 border-accent/30 shadow-lg"
-              >
-                <div className="text-sm text-muted-foreground mb-2">
-                  Welcome Package Investment
-                </div>
-                <div className="text-3xl font-bold text-accent mb-1">
-                  $
-                  {(
-                    (onboardingOptions.find(
-                      (opt) => opt.value === quoteData.premiumOnboarding,
-                    )?.price || 0) / 100
-                  ).toFixed(2)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Ships after your first visit
-                </div>
-              </motion.div>
-            )}
+          ) : null}
         </CardContent>
       </Card>
     </div>

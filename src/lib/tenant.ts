@@ -1,7 +1,5 @@
 import { NextRequest } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "./prisma";
 
 // Resolve business/org ID from the request using multiple strategies
 // Priority: explicit query param -> header -> subdomain/custom domain mapping -> default

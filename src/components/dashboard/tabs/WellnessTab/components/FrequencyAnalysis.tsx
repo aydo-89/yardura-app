@@ -59,20 +59,14 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
 
   return (
     <Disclosure title="Frequency Analysis" defaultOpen={true}>
-      <Card
-        style={{
-          backgroundColor: wellnessTheme.slate50,
-          boxShadow: wellnessTheme.cardShadow,
-          borderRadius: wellnessTheme.radiusLg,
-        }}
-      >
+      <Card className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <TrendingUp className="size-5 text-slate-600" />
+          <CardTitle className="text-lg flex items-center gap-2 text-slate-900 dark:text-white">
+            <TrendingUp className="size-5 text-slate-600 dark:text-slate-400" />
             Deposit Frequency {dogCount > 1 && `(Per Dog)`}
           </CardTitle>
           {dogCount > 1 && (
-            <div className="text-sm text-slate-600 mt-1">
+            <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
               Based on {dogCount} dog{dogCount !== 1 ? "s" : ""} in household
             </div>
           )}
@@ -82,30 +76,30 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
             {/* Main stats - Average and Range */}
             <div className="space-y-3">
               <div
-                className="flex justify-between items-center p-3 bg-white rounded-lg border"
+                className="flex justify-between items-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
                 title={`Average bowel movements per dog per week: ${avgDepositsPerDogPerWeek.toFixed(1)}`}
               >
-                <span className="text-sm text-slate-600">Weekly Average</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">Weekly Average</span>
                 <div className="text-right">
-                  <span className="text-sm font-bold text-sky-600">
+                  <span className="text-sm font-bold text-sky-600 dark:text-sky-400">
                     {avgDepositsPerDogPerWeek.toFixed(1)}/week
                   </span>
-                  <span className="text-xs text-slate-500 block">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 block">
                     ({avgDepositsPerDogPerDay.toFixed(1)}/day)
                   </span>
                 </div>
               </div>
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg border">
+              <div className="flex justify-between items-center p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                 <div className="flex flex-col">
-                  <span className="text-sm text-slate-600">Daily Range</span>
-                  <span className="text-xs text-slate-500">Per dog</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Daily Range</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Per dog</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-bold text-sky-600">
+                  <span className="text-sm font-bold text-sky-600 dark:text-sky-400">
                     {minDepositsPerDogPerDay.toFixed(1)}-
                     {maxDepositsPerDogPerDay.toFixed(1)}/day
                   </span>
-                  <span className="text-xs text-slate-500 block">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 block">
                     ({minDepositsPerDogPerWeek.toFixed(1)}-
                     {maxDepositsPerDogPerWeek.toFixed(1)}
                     /week)
@@ -116,10 +110,10 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
 
             {/* Beautiful frequency visualization like insights.tsx */}
             <div className="space-y-3">
-              <div className="text-xs text-slate-600 text-center font-medium">
+              <div className="text-xs text-slate-600 dark:text-slate-400 text-center font-medium">
                 Weekly Pattern
               </div>
-              <div className="bg-white rounded-lg border p-4">
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
                 <div className="flex items-end justify-center gap-2 h-12 mb-2">
                   {weeklyData.slice(-7).map((week, i) => {
                     const depositsPerDog = week.deposits / dogCount;
@@ -132,14 +126,14 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
                     return (
                       <div
                         key={i}
-                        className="w-3 bg-sky-400 rounded-sm transition-all duration-300 hover:bg-sky-500"
+                        className="w-3 bg-sky-400 dark:bg-sky-500 rounded-sm transition-all duration-300 hover:bg-sky-500 dark:hover:bg-sky-400"
                         style={{ height: `${Math.max(heightPercent, 8)}%` }}
                         title={`${depositsPerDog.toFixed(1)} deposits per dog`}
                       />
                     );
                   })}
                 </div>
-                <div className="text-center text-xs text-slate-500">
+                <div className="text-center text-xs text-slate-500 dark:text-slate-400">
                   Week over week pattern (per dog)
                 </div>
               </div>
@@ -149,16 +143,16 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
             <div
               className={`p-4 rounded-lg border ${
                 avgDepositsPerDogPerWeek >= 10 && avgDepositsPerDogPerWeek <= 18
-                  ? "bg-green-50 border-green-200"
-                  : "bg-yellow-50 border-yellow-200"
+                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                  : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
               }`}
             >
               <div
                 className={`text-sm font-medium mb-2 ${
                   avgDepositsPerDogPerWeek >= 10 &&
                   avgDepositsPerDogPerWeek <= 18
-                    ? "text-green-800"
-                    : "text-yellow-800"
+                    ? "text-green-800 dark:text-green-300"
+                    : "text-yellow-800 dark:text-yellow-300"
                 }`}
               >
                 Frequency Assessment
@@ -167,8 +161,8 @@ export const FrequencyAnalysis: React.FC<FrequencyAnalysisProps> = ({
                 className={`text-sm ${
                   avgDepositsPerDogPerWeek >= 10 &&
                   avgDepositsPerDogPerWeek <= 18
-                    ? "text-green-700"
-                    : "text-yellow-700"
+                    ? "text-green-700 dark:text-green-400"
+                    : "text-yellow-700 dark:text-yellow-400"
                 }`}
               >
                 {getFrequencyDescription(avgDepositsPerDogPerWeek)}

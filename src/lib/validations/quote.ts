@@ -20,7 +20,7 @@ export const yardSizeSchema = z.enum(["small", "medium", "large", "xl"], {
 });
 
 export const frequencySchema = z.enum(
-  ["weekly", "biweekly", "twice-weekly", "monthly", "one-time"],
+  ["weekly", "biweekly", "twice-weekly", "daily", "monthly", "one-time"],
   {
     message: "Please select a service frequency",
   },

@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
         email,
         name: name || email.split("@")[0],
         role,
+        roles: [role],
         orgId,
         accounts: {
           create: {

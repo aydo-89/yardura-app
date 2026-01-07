@@ -19,7 +19,8 @@ export default function AuthRedirect({
 }: AuthRedirectProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const params = searchParams ?? new URLSearchParams();
+  const callbackUrl = params.get("callbackUrl") || "/dashboard";
 
   useEffect(() => {
     // Auto-redirect after a short delay

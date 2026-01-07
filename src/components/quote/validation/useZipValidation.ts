@@ -1,10 +1,14 @@
-import { useState, useMemo, useCallback } from "react";
-import { track } from "@/lib/analytics";
 
-export type ZipValidationStatus = "idle" | "validating" | "valid" | "invalid";
+
+import { useState, useMemo, useCallback } from 'react';
+import { track } from '@/lib/analytics';
+import type { ZipEligibilityResult } from '@/lib/zip-eligibility';
+
+export type ZipValidationStatus = 'idle' | 'validating' | 'valid' | 'invalid';
 
 interface ZipValidationResult {
   status: ZipValidationStatus;
+  lastResult: ZipEligibilityResult | null;
   validate: (zip: string) => Promise<boolean>;
   reset: () => void;
 }
@@ -12,7 +16,7 @@ interface ZipValidationResult {
 // Debounce utility
 function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number,
+  wait: number
 ): (...args: Parameters<T>) => Promise<ReturnType<T>> {
   let timeout: NodeJS.Timeout;
 
@@ -25,58 +29,85 @@ function debounce<T extends (...args: any[]) => any>(
 }
 
 export function useZipValidation(): ZipValidationResult {
-  const [status, setStatus] = useState<ZipValidationStatus>("idle");
+  const [status, setStatus] = useState<ZipValidationStatus>('idle');
+  const [lastResult, setLastResult] = useState<ZipEligibilityResult | null>(null);
 
   const validateZip = useCallback(async (zip: string): Promise<boolean> => {
     if (!zip || zip.length !== 5 || !/^\d{5}$/.test(zip)) {
+      setLastResult(null);
       return false;
     }
 
     try {
       // Call existing ZIP validation API
-      const response = await fetch("/api/zip-eligibility", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/zip-eligibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ zip }),
       });
 
-      const result = await response.json();
+      const result: ZipEligibilityResult = await response.json();
       const isValid = result.eligible === true;
 
-      track("zip_validated", { zip, result: isValid ? "ok" : "fail" });
+      setLastResult(result);
+
+      track('zip_validated', {
+        zip,
+        result: isValid ? 'ok' : 'fail',
+        tileSlug: result.tile?.slug ?? null,
+        tileStatus: result.tile?.status ?? null,
+      });
 
       return isValid;
     } catch (error) {
-      console.error("ZIP validation error:", error);
-      track("zip_validated", { zip, result: "fail" });
+      console.error('ZIP validation error:', error);
+      setLastResult(null);
+      track('zip_validated', { zip, result: 'fail' });
       return false;
     }
   }, []);
 
   const debouncedValidate = useMemo(
     () => debounce(validateZip, 400),
-    [validateZip],
+    [validateZip]
   );
 
-  const validate = useCallback(
-    async (zip: string): Promise<boolean> => {
-      setStatus("validating");
+  const validate = useCallback(async (zip: string): Promise<boolean> => {
+    setStatus('validating');
 
-      try {
-        const isValid = await debouncedValidate(zip);
-        setStatus(isValid ? "valid" : "invalid");
-        return isValid;
-      } catch (error) {
-        setStatus("invalid");
-        return false;
-      }
-    },
-    [debouncedValidate],
-  );
+    try {
+      const isValid = await debouncedValidate(zip);
+      setStatus(isValid ? 'valid' : 'invalid');
+      return isValid;
+    } catch (error) {
+      setStatus('invalid');
+      return false;
+    }
+  }, [debouncedValidate]);
 
   const reset = useCallback(() => {
-    setStatus("idle");
+    setStatus('idle');
+    setLastResult(null);
   }, []);
 
-  return { status, validate, reset };
+  return { status, lastResult, validate, reset };
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

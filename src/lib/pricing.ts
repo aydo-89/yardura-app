@@ -1,4 +1,4 @@
-export type Frequency = "weekly" | "twice-weekly" | "bi-weekly" | "one-time";
+export type Frequency = "weekly" | "twice-weekly" | "daily" | "bi-weekly" | "one-time";
 
 // Yard size categories for pricing
 export type YardSize = "small" | "medium" | "large" | "xlarge";
@@ -15,6 +15,7 @@ export const YARD_SIZE_MULTIPLIERS = {
 
 export const BASE_RATES = {
   weekly: { base1: 20, base2: 24, base3: 28, extraDog: 4, visitMultiplier: 1 },
+  daily: { base1: 20, base2: 24, base3: 28, extraDog: 4, visitMultiplier: 1 },
   "twice-weekly": {
     base1: 32,
     base2: 38,
@@ -76,6 +77,8 @@ export function calcPerVisitEstimate(
     perVisit = tier; // one visit per week
   else if (frequency === "twice-weekly")
     perVisit = tier / 2; // weekly total divided by two visits
+  else if (frequency === "daily")
+    perVisit = tier * 0.5; // configured .5 multiplier for high-frequency service
   else if (frequency === "bi-weekly")
     perVisit = tier; // price charged per visit
   else perVisit = 0; // handled by calcOneTimeEstimate
@@ -83,7 +86,7 @@ export function calcPerVisitEstimate(
   // Apply yard size multiplier
   perVisit *= YARD_SIZE_MULTIPLIERS[yardSize];
 
-  if (addOns.deodorize) perVisit += 10;
+  if (addOns.deodorize) perVisit += 5;
   if (addOns.litter && frequency !== "one-time") perVisit += 5;
 
   return Math.round(perVisit * 100) / 100;
@@ -115,7 +118,7 @@ export function calcOneTimeEstimate(
   }
 
   const basePrice = tier * YARD_SIZE_MULTIPLIERS[yardSize];
-  return Math.round((basePrice + (addOns.deodorize ? 10 : 0)) * 100) / 100;
+  return Math.round((basePrice + (addOns.deodorize ? 5 : 0)) * 100) / 100;
 }
 
 // New function for instant quote calculation
@@ -179,12 +182,30 @@ export function calcInstantQuoteWithZone(
   }
 }
 
+export function visitsPerMonth(frequency: Frequency): number {
+  switch (frequency) {
+    case "daily":
+      return Math.round(((5 * 52) / 12) * 100) / 100;
+    case "twice-weekly":
+      return Math.round(((2 * 52) / 12) * 100) / 100;
+    case "weekly":
+      return Math.round(((1 * 52) / 12) * 100) / 100;
+    case "bi-weekly":
+      return Math.round(((0.5 * 52) / 12) * 100) / 100;
+    case "one-time":
+      return 1;
+    default:
+      return 1;
+  }
+}
+
 // Import the configurable pricing system
 import {
   calculatePricing,
   validatePricingInput,
   meetsMinimumRequirements,
 } from "./configurable-pricing";
+import type { PricingCalculationInput } from "./configurable-pricing";
 
 // Helper function to get zone multiplier from ZIP code
 export async function getZoneMultiplierFromZip(
@@ -225,6 +246,10 @@ export async function calculatePricingWithConfig(
   addOns: { deodorize: boolean; litter: boolean },
   zoneMultiplier: ZoneMultiplier = 1.0,
   businessId: string = "yardura",
+  options?: {
+    areasToClean?: PricingCalculationInput["areasToClean"];
+    weekendUpgrade?: boolean;
+  },
 ) {
   const input = {
     dogs,
@@ -232,12 +257,15 @@ export async function calculatePricingWithConfig(
     frequency: frequency as
       | "weekly"
       | "twice-weekly"
+      | "daily"
       | "bi-weekly"
       | "monthly"
       | "one-time",
     addOns,
     zoneMultiplier,
     businessId,
+    areasToClean: options?.areasToClean,
+    weekendUpgrade: options?.weekendUpgrade,
   };
 
   // Validate input
@@ -360,11 +388,13 @@ function legacyCalculatePrice(input: any) {
       ? 4.33
       : input.frequency === "twice-weekly"
         ? 8.67
-        : input.frequency === "bi-weekly"
-          ? 2.17
-          : input.frequency === "monthly"
-            ? 1
-            : 1;
+        : input.frequency === "daily"
+          ? 21.67
+          : input.frequency === "bi-weekly"
+            ? 2.17
+            : input.frequency === "monthly"
+              ? 1
+              : 1;
   const monthlyCents = Math.round(perVisitCents * visitsPerMonthValue);
 
   // Calculate one-time pricing

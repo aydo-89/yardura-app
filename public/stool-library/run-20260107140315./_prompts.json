@@ -1,0 +1,21 @@
+{
+  "timestamp": "20260107140315.",
+  "model": "gemini-3-pro-image-preview",
+  "aspect": "1:1",
+  "resolution": "1K",
+  "prompts": [
+    {
+      "id": "watery-2",
+      "label": "Liquid diarrhea",
+      "visual": {
+        "id": "watery-2",
+        "shape": "flat spreading mess with visible small chunks and bits suspended in liquid, not a clean puddle",
+        "color": "murky opaque brown, not translucent - more like muddy water with suspended particles",
+        "distinguishingFeature": "mostly liquid but with visible small solid bits and chunks floating in it, uneven murky texture",
+        "surface": "wet but murky and opaque, has visible specks and small lumps of solid matter throughout",
+        "realLifeNote": "Like muddy water with debris in it - liquid but cloudy/murky with visible bits, not a clean puddle"
+      },
+      "prompt": "Create a clean semi-realistic illustration, medical education style of dog stool for a veterinary education app. IMPORTANT: Use organic irregular shapes with natural lumpy edges, slight bulges, tapered ends. NOT perfect geometric cylinders or sharp clean edges. Real stool has uneven natural form like soft clay that was squeezed out. Use realistic natural earth tones, true-to-life colors. Background: plain solid light neutral gray (#F0F0F0) background, no textures or patterns. Rendering: soft shading with realistic form, gentle shadow underneath for grounding. Camera angle: slightly elevated 3/4 view, as if looking down at the ground. SHAPE: flat spreading mess with visible small chunks and bits suspended in liquid, not a clean puddle. COLOR: murky opaque brown, not translucent - more like muddy water with suspended particles. KEY IDENTIFYING FEATURE: mostly liquid but with visible small solid bits and chunks floating in it, uneven murky texture. SURFACE/TEXTURE: wet but murky and opaque, has visible specks and small lumps of solid matter throughout. REAL LIFE REFERENCE: Like muddy water with debris in it - liquid but cloudy/murky with visible bits, not a clean puddle. Do NOT include: text or labels, cartoon faces or expressions, flies or insects, smell lines or stink marks, grass or outdoor environment, overly gross or disgusting details, perfect geometric shapes, sharp clean cylinder edges, machine-cut or manufactured looking shapes. This must look realistic enough that a pet owner can compare it to their dog's actual stool. The image should clearly show the distinguishing characteristics so owners know what to look for. Remember: ORGANIC irregular shapes like squeezed-out soft material, NOT perfect geometric cylinders."
+    }
+  ]
+}

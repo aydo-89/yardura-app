@@ -1,0 +1,26 @@
+{
+  "exportDate": "2026-01-03T20:57:54.014Z",
+  "results": {
+    "User": 1000,
+    "Account": 1000,
+    "Session": 0,
+    "VerificationToken": 0,
+    "Dog": 1000,
+    "ServiceVisit": 0,
+    "DataReading": 0,
+    "GlobalStats": 0,
+    "Commission": 0,
+    "Org": 1000,
+    "Customer": 0,
+    "Job": 1000,
+    "Device": 0,
+    "Sample": 0,
+    "SampleScore": 0,
+    "Alert": 0,
+    "EcoStat": 0,
+    "BillingSnapshot": 0,
+    "GroundTruth": 0
+  },
+  "totalTables": 19,
+  "successfulExports": 5
+}

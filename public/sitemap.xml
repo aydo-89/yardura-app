@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- Homepage -->
+  <url>
+    <loc>https://www.getinsightscoop.com/</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://www.getinsightscoop.com/modern_yard.png</image:loc>
+      <image:title>InsightScoop wellness for dogs</image:title>
+      <image:caption>Dog wellness insights and trends from your daily routine</image:caption>
+    </image:image>
+  </url>
+
+  <!-- Wellness Landing -->
+  <url>
+    <loc>https://www.getinsightscoop.com/wellness</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- Quote Page -->
+  <url>
+    <loc>https://www.getinsightscoop.com/quote</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Facts Page -->
+  <url>
+    <loc>https://www.getinsightscoop.com/facts</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Insights Index -->
+  <url>
+    <loc>https://www.getinsightscoop.com/insights</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Cornerstone Articles -->
+  <url>
+    <loc>https://www.getinsightscoop.com/insights/dog-poop-color-health</loc>
+    <lastmod>2026-01-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Success Page (don't include - handled by robots.txt) -->
+
+</urlset>

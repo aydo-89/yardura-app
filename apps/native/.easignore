@@ -1,0 +1,85 @@
+# Dependencies (installed by EAS)
+node_modules/
+
+# Exclude native build directories (EAS will generate these)
+/android/
+/ios/
+.expo/
+
+# Exclude large build artifacts in node_modules
+node_modules/**/android/
+node_modules/**/ios/
+node_modules/**/.cxx/
+node_modules/**/build/
+node_modules/**/*.so
+node_modules/**/*.o
+node_modules/**/*.a
+node_modules/**/*.dylib
+node_modules/**/*.dll
+
+# Exclude React Native build artifacts
+node_modules/react-native/android/
+node_modules/react-native/ios/
+node_modules/react-native-reanimated/android/
+node_modules/react-native-reanimated/ios/
+node_modules/react-native-worklets/android/
+node_modules/react-native-worklets/ios/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+._*
+
+# Git
+.git/
+
+# Environment files (EAS uses eas.json env vars)
+.env
+.env.local
+.env.*.local
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.test.js
+**/*.test.jsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Temporary files
+*.log
+*.tmp
+.cache/
+
+# Large data files
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+*.geojson
+*.shp
+*.pack
+*.apk
+
+# Android specific
+android/local.properties
+android/app/debug.keystore
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

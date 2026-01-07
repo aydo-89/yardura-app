@@ -25,7 +25,7 @@ export type {
 export interface PricingCalculationInput {
   dogs: number;
   yardSize: "small" | "medium" | "large" | "xlarge";
-  frequency: "weekly" | "twice-weekly" | "bi-weekly" | "monthly" | "one-time";
+  frequency: "weekly" | "twice-weekly" | "daily" | "bi-weekly" | "monthly" | "one-time";
   addOns?: {
     deodorize?:
       | boolean
@@ -35,9 +35,7 @@ export interface PricingCalculationInput {
       | boolean
       | { mode: "first-visit" | "each-visit" | "every-other" | "onetime" };
     "divert-takeaway"?: boolean;
-    "divert-25"?: boolean;
-    "divert-50"?: boolean;
-    "divert-100"?: boolean;
+    "divert-compost"?: boolean;
     [key: string]: boolean | { mode: string } | undefined;
   };
   areasToClean?: {
@@ -50,12 +48,80 @@ export interface PricingCalculationInput {
   };
   zoneMultiplier?: number;
   businessId?: string;
+  weekendUpgrade?: boolean;
+}
+
+const REQUIRED_ADDON_FALLBACKS: Record<string, AddOnConfig> = {
+  "divert-takeaway": {
+    id: "divert-takeaway",
+    name: "Take Away Waste",
+    priceCents: 500,
+    description: "Remove waste off-site each visit",
+    available: true,
+    billingMode: "each-visit",
+    required: false,
+  },
+  "divert-compost": {
+    id: "divert-compost",
+    name: "Compost Routing",
+    priceCents: 1000,
+    description: "Route waste through compost partners when capacity allows",
+    available: true,
+    billingMode: "each-visit",
+    required: false,
+  },
+};
+
+export function ensureRequiredAddOns(config: BusinessConfig): BusinessConfig {
+  const existingAddOns = [...(config.basePricing.addOns || [])];
+
+  const ensureAddOn = (id: string) => {
+    const fallback = REQUIRED_ADDON_FALLBACKS[id];
+    const existingIndex = existingAddOns.findIndex((addon) => addon.id === id);
+    const existing = existingIndex >= 0 ? existingAddOns[existingIndex] : null;
+
+    const patched: AddOnConfig = {
+      ...(fallback || {}),
+      ...(existing || {}),
+    } as AddOnConfig;
+
+    const priceIsValid =
+      typeof patched.priceCents === "number" && patched.priceCents > 0;
+    if (!priceIsValid) {
+      patched.priceCents = fallback.priceCents;
+    }
+
+    if (!patched.billingMode) {
+      patched.billingMode = fallback.billingMode;
+    }
+
+    if (typeof patched.available !== "boolean") {
+      patched.available = fallback.available;
+    }
+
+    if (existingIndex >= 0) {
+      existingAddOns[existingIndex] = patched;
+    } else {
+      existingAddOns.push(patched);
+    }
+  };
+
+  Object.keys(REQUIRED_ADDON_FALLBACKS).forEach(ensureAddOn);
+
+  return {
+    ...config,
+    basePricing: {
+      ...config.basePricing,
+      addOns: existingAddOns,
+    },
+  };
 }
 
 export interface PricingResult {
   perVisitCents: number;
   monthlyCents: number;
   oneTimeCents: number;
+  initialClean: number; // Cost of first visit (may be higher than perVisit due to accumulation)
   visitsPerMonth: number;
   breakdown: {
     basePrice: number;
@@ -70,6 +136,8 @@ export interface PricingResult {
     name: string;
     priceCents: number;
   }>;
+  weekendUpgrade?: boolean;
+  weekendSurchargeCents?: number;
 }
 
 /**
@@ -79,7 +147,7 @@ export async function calculatePricing(
   input: PricingCalculationInput,
 ): Promise<PricingResult> {
   const businessId = input.businessId || "yardura";
-  const config = await getBusinessConfig(businessId);
+  const config = ensureRequiredAddOns(await getBusinessConfig(businessId));
 
   // Find the appropriate pricing tier based on dog count
   const tier = findPricingTier(input.dogs, config);
@@ -186,14 +254,26 @@ export async function calculatePricing(
   });
 
   // Calculate monthly costs (only for recurring services)
-  const visitsPerMonth = frequencyConfig.visitsPerMonth;
+  const weekendSurchargeCents = input.weekendUpgrade
+    ? config.settings?.weekendSurchargeCents ?? 0
+    : 0;
+  if (weekendSurchargeCents > 0) {
+    addOnsBreakdown.push({ name: "weekend-coverage", priceCents: weekendSurchargeCents });
+  }
+  const visitsPerMonth =
+    input.frequency === "daily" && input.weekendUpgrade
+      ? Math.round(frequencyConfig.visitsPerMonth * (7 / 5) * 100) / 100
+      : frequencyConfig.visitsPerMonth;
   const monthlyCents =
-    input.frequency === "one-time" ? 0 : perVisitCents * visitsPerMonth;
+    input.frequency === "one-time"
+      ? 0
+      : perVisitCents * visitsPerMonth + weekendSurchargeCents;
 
   return {
     perVisitCents,
     monthlyCents,
     oneTimeCents,
+    initialClean: oneTimeCents, // Cost of first visit (may be higher than perVisit due to accumulation)
     visitsPerMonth,
     breakdown: {
       basePrice: basePriceCents,
@@ -209,6 +289,8 @@ export async function calculatePricing(
           : yardAndZoneMultiplier * frequencyMultiplier,
     },
     addOnsBreakdown,
+    weekendUpgrade: Boolean(input.weekendUpgrade),
+    weekendSurchargeCents,
   };
 }
 

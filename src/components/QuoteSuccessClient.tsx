@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/framermotion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -285,7 +285,7 @@ export default function QuoteSuccessClient() {
                   <Phone className="size-5 text-accent" />
                   <div>
                     <p className="text-sm font-medium">Call Us</p>
-                    <p className="text-xs text-muted">(888) 915-YARD</p>
+                    <p className="text-xs text-muted">(877) 417-YARD</p>
                   </div>
                 </div>
 
@@ -357,8 +357,8 @@ export default function QuoteSuccessClient() {
                           Contact Commercial Team
                         </Button>
                       </Link>
-                      <Link href="tel:+18889159273">
-                        <Button variant="outline">Call (888) 915-YARD</Button>
+                      <Link href="tel:+18774179273">
+                        <Button variant="outline">Call (877) 417-YARD</Button>
                       </Link>
                     </>
                   ) : (

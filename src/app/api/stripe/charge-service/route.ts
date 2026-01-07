@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
-import { db } from "@/lib/database";
+import { Prisma, ServiceStatus } from "@prisma/client";
+
 import { safeGetServerSession } from "@/lib/auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createVisitChargeEntry } from "@/lib/billing/ledger";
+
+import type { BillingPreference } from "@/lib/billing/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,8 +34,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the service visit
-    const visit = await db.getServiceVisit(visitId);
+    const visit = await prisma.serviceVisit.findUnique({
+      where: { id: visitId },
+      include: {
+        job: {
+          select: {
+            id: true,
+            orgId: true,
+            customerId: true,
+            perVisitRevenueCents: true,
+            billingPlan: {
+              select: {
+                billingPreference: true,
+                perVisitAmountCents: true,
+                metadata: true,
+              },
+            },
+            frequency: true,
+          },
+        },
+      },
+    });
     if (!visit) {
       return NextResponse.json(
         { error: "Service visit not found" },
@@ -40,145 +62,109 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (visit.status === "completed") {
+    if (visit.status === ServiceStatus.COMPLETED) {
       return NextResponse.json(
         { error: "Service visit already completed and charged" },
         { status: 400 },
       );
     }
 
-    // Get customer details
-    const customer = await db.getCustomer(visit.customerId);
-    if (!customer) {
+    const customerId = visit.customerId ?? visit.job?.customerId;
+    const orgId = visit.orgId ?? visit.job?.orgId;
+    const jobId = visit.job?.id ?? null;
+
+    if (!customerId || !orgId || !jobId) {
       return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
+        { error: "Visit is not linked to an active job" },
+        { status: 422 },
       );
     }
 
-    // Create payment intent for the service charge
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(visit.amount * 100), // Convert to cents
-      currency: "usd",
-      customer: customer.stripeCustomerId,
-      payment_method_types: ["card"],
-      off_session: true, // Charge without customer present
-      confirm: true, // Automatically confirm the payment
-      metadata: {
-        visit_id: visit.id,
-        customer_id: customer.id,
-        service_date: visit.scheduledDate.toISOString(),
-        service_type: "yardura_dog_waste_removal",
-      },
-      description: `Yardura service - ${customer.frequency} visit for ${customer.dogs} dog${customer.dogs > 1 ? "s" : ""}`,
-    });
-
-    // Update the service visit as completed
-    await db.updateServiceVisit(visit.id, {
-      status: "completed",
-      completedDate: new Date(),
-      stripePaymentIntentId: paymentIntent.id,
-      notes,
-    });
-
-    // Create commission record if customer has a sales rep
-    if (customer.salesRepId) {
-      const salesRep = await prisma.user.findUnique({
-        where: { id: customer.salesRepId },
-        select: { commissionRate: true },
-      });
-
-      if (salesRep?.commissionRate) {
-        const commissionAmount = visit.amount * salesRep.commissionRate;
-
-        await prisma.commission.create({
-          data: {
-            salesRepId: customer.salesRepId,
-            customerId: customer.id,
-            serviceVisitId: visit.id,
-            amount: commissionAmount,
-            status: "PENDING",
-          },
-        });
+    const amountCents = (() => {
+      if (typeof visit.revenueCents === "number" && visit.revenueCents > 0) {
+        return visit.revenueCents;
       }
-    }
+      const planAmount = visit.job?.billingPlan?.perVisitAmountCents ?? null;
+      if (planAmount && planAmount > 0) {
+        return planAmount;
+      }
+      const jobAmount = visit.job?.perVisitRevenueCents ?? null;
+      if (jobAmount && jobAmount > 0) {
+        return jobAmount;
+      }
+      return null;
+    })();
 
-    // If this is the first completed service, activate the customer
-    if (customer.status === "pending") {
-      await db.updateCustomer(customer.id, { status: "active" });
-    }
-
-    // Schedule next service visit if recurring
-    if (customer.frequency !== "one-time") {
-      const nextVisitDate = calculateNextServiceDate(
-        customer.serviceDay,
-        visit.scheduledDate,
+    if (!amountCents) {
+      return NextResponse.json(
+        { error: "Unable to determine visit revenue" },
+        { status: 422 },
       );
-
-      await db.createServiceVisit({
-        customerId: customer.id,
-        scheduledDate: nextVisitDate,
-        status: "scheduled",
-        amount: visit.amount, // Same amount for recurring services
-      });
     }
+
+    const preference: BillingPreference = (() => {
+      const raw = visit.job?.billingPlan?.billingPreference;
+      if (!raw) return "per-visit";
+      return raw as BillingPreference;
+    })();
+
+    const completionTimestamp = new Date();
+    const appendedNotes = notes
+      ? [visit.notes?.trim(), `Admin completion: ${notes}`]
+          .filter(Boolean)
+          .join("\n\n")
+      : visit.notes ?? null;
+
+    await prisma.serviceVisit.update({
+      where: { id: visit.id },
+      data: {
+        status: ServiceStatus.COMPLETED,
+        completedDate: completionTimestamp,
+        actualEnd: completionTimestamp,
+        actualStart: visit.actualStart ?? completionTimestamp,
+        notes: appendedNotes,
+      },
+    });
+
+    const planMetadata = (() => {
+      const raw = visit.job?.billingPlan?.metadata ?? null;
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        return null;
+      }
+      return raw as Record<string, unknown>;
+    })();
+
+    const weekendUpgrade = Boolean(
+      planMetadata &&
+        typeof planMetadata.serviceOptions === "object" &&
+        !Array.isArray(planMetadata.serviceOptions) &&
+        (planMetadata.serviceOptions as Record<string, unknown>).weekendUpgrade,
+    );
+
+    await createVisitChargeEntry({
+      orgId,
+      jobId,
+      customerId,
+      serviceVisitId: visit.id,
+      amountCents,
+      billingPreference: preference,
+      serviceFrequency: visit.job?.frequency ?? null,
+      weekendUpgrade,
+    });
 
     return NextResponse.json({
       success: true,
-      paymentIntentId: paymentIntent.id,
-      amount: visit.amount,
-      nextVisitDate:
-        customer.frequency !== "one-time"
-          ? calculateNextServiceDate(customer.serviceDay, visit.scheduledDate)
-          : null,
+      visitId: visit.id,
+      amountCents,
+      billingPreference: preference,
+      completedAt: completionTimestamp.toISOString(),
     });
   } catch (error: any) {
     console.error("Service charge error:", error);
-
-    // Handle specific Stripe errors
-    if (error.type === "StripeCardError") {
-      return NextResponse.json(
-        {
-          error: "Payment failed",
-          details: error.message,
-          code: error.code,
-        },
-        { status: 402 },
-      );
-    }
 
     return NextResponse.json(
       { error: "Failed to process service charge" },
       { status: 500 },
     );
   }
-}
-
-// Helper function to calculate next service date
-function calculateNextServiceDate(
-  serviceDay: string,
-  lastServiceDate: Date,
-): Date {
-  const days = [
-    "sunday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-  ];
-  const targetDayIndex = days.indexOf(serviceDay.toLowerCase());
-
-  const nextDate = new Date(lastServiceDate);
-  nextDate.setDate(lastServiceDate.getDate() + 7); // Add one week
-
-  // Adjust to the correct day of the week
-  const currentDayIndex = nextDate.getDay();
-  const dayDifference = targetDayIndex - currentDayIndex;
-
-  nextDate.setDate(nextDate.getDate() + dayDifference);
-  nextDate.setHours(9, 0, 0, 0); // 9 AM
-
-  return nextDate;
 }

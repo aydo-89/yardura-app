@@ -1,4 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
+
+import { HENNEPIN_TILE_SEEDS } from "./seed-data/hennepinTiles";
 
 const prisma = new PrismaClient();
 
@@ -195,6 +197,41 @@ async function seedOutbound(orgId: string, salesRepId: string) {
   }
 }
 
+async function seedServiceTiles(orgId: string) {
+  await Promise.all(
+    HENNEPIN_TILE_SEEDS.map((tile) =>
+      prisma.serviceTile.upsert({
+        where: {
+          orgId_slug: {
+            orgId,
+            slug: tile.slug,
+          },
+        },
+        update: {
+          name: tile.name,
+          status: tile.status,
+          minCertifiedScoopers: tile.minCertifiedScoopers,
+          minCustomerUnits: tile.minCustomerUnits,
+          coverageRadiusMeters: tile.coverageRadiusMeters ?? null,
+          serviceWindows: tile.serviceWindows as unknown as Prisma.InputJsonValue,
+          notes: tile.notes ?? null,
+        },
+        create: {
+          orgId,
+          slug: tile.slug,
+          name: tile.name,
+          status: tile.status,
+          minCertifiedScoopers: tile.minCertifiedScoopers,
+          minCustomerUnits: tile.minCustomerUnits,
+          coverageRadiusMeters: tile.coverageRadiusMeters ?? null,
+          serviceWindows: tile.serviceWindows as unknown as Prisma.InputJsonValue,
+          notes: tile.notes ?? null,
+        },
+      }),
+    ),
+  );
+}
+
 async function main() {
   const org = await prisma.org.findFirst();
   const salesRep = await prisma.user.findFirst({
@@ -202,6 +239,7 @@ async function main() {
   });
 
   if (org && salesRep) {
+    await seedServiceTiles(org.id);
     await seedOutbound(org.id, salesRep.id);
   } else {
     console.warn("Skipping outbound seed (missing org or sales rep)");

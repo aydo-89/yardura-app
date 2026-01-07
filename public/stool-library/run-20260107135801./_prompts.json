@@ -1,0 +1,21 @@
+{
+  "timestamp": "20260107135801.",
+  "model": "gemini-3-pro-image-preview",
+  "aspect": "1:1",
+  "resolution": "1K",
+  "prompts": [
+    {
+      "id": "red-1",
+      "label": "Red streaks",
+      "visual": {
+        "id": "red-1",
+        "shape": "organic log shape with natural lumpy irregular edges, NOT a perfect cylinder",
+        "color": "chocolate brown base with subtle red-tinged areas or thin red marks",
+        "distinguishingFeature": "thin streaks or small spots of fresh red blood on the surface - subtle but noticeable, realistic looking",
+        "surface": "organic brown texture with a few areas where red is visible - natural blood marks, not cartoon stripes",
+        "realLifeNote": "Normal organic-shaped brown stool with thin realistic blood marks - subtle red, natural irregular form"
+      },
+      "prompt": "Create a clean semi-realistic illustration, medical education style of dog stool for a veterinary education app. IMPORTANT: Use organic irregular shapes with natural lumpy edges, slight bulges, tapered ends. NOT perfect geometric cylinders or sharp clean edges. Real stool has uneven natural form like soft clay that was squeezed out. Use realistic natural earth tones, true-to-life colors. Background: plain solid light neutral gray (#F0F0F0) background, no textures or patterns. Rendering: soft shading with realistic form, gentle shadow underneath for grounding. Camera angle: slightly elevated 3/4 view, as if looking down at the ground. SHAPE: organic log shape with natural lumpy irregular edges, NOT a perfect cylinder. COLOR: chocolate brown base with subtle red-tinged areas or thin red marks. KEY IDENTIFYING FEATURE: thin streaks or small spots of fresh red blood on the surface - subtle but noticeable, realistic looking. SURFACE/TEXTURE: organic brown texture with a few areas where red is visible - natural blood marks, not cartoon stripes. REAL LIFE REFERENCE: Normal organic-shaped brown stool with thin realistic blood marks - subtle red, natural irregular form. Do NOT include: text or labels, cartoon faces or expressions, flies or insects, smell lines or stink marks, grass or outdoor environment, overly gross or disgusting details, perfect geometric shapes, sharp clean cylinder edges, machine-cut or manufactured looking shapes. This must look realistic enough that a pet owner can compare it to their dog's actual stool. The image should clearly show the distinguishing characteristics so owners know what to look for. Remember: ORGANIC irregular shapes like squeezed-out soft material, NOT perfect geometric cylinders."
+    }
+  ]
+}

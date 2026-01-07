@@ -7,34 +7,50 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Settings,
-  MapPin,
-  DollarSign,
   BarChart3,
-  Users,
-  Building,
-  Sparkles,
+  ClipboardList,
+  Compass,
+  Eye,
+  DollarSign,
+  HandCoins,
+  Layers,
+  LucideIcon,
+  Mail,
+  MapPin,
+  PlayCircle,
+  Settings,
   Shield,
-  FileText,
+  Tag,
+  UserPlus,
+  Users,
 } from "lucide-react";
+import {
+  ADMIN_PORTAL_ROLES,
+  extractUserRole,
+  getDefaultRedirectForRole,
+} from "@/lib/auth/roles";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "loading") return; // Still loading
-
-    const userRole = (session as any)?.userRole;
-    const isAdmin =
-      userRole === "ADMIN" ||
-      userRole === "OWNER" ||
-      userRole === "TECH" ||
-      userRole === "SALES_REP";
-
-    if (!session || !isAdmin) {
-      router.push("/dashboard");
+    // Wait for session to fully load before checking
+    if (status === "loading") return;
+    
+    // Only redirect if we're SURE there's no session (not authenticated after loading)
+    if (status === "unauthenticated") {
+      router.replace("/signin?callbackUrl=/admin");
       return;
+    }
+
+    // If authenticated, check role
+    if (status === "authenticated" && session?.user) {
+      const role = extractUserRole(session);
+      if (!role || !ADMIN_PORTAL_ROLES.includes(role)) {
+        router.replace(getDefaultRedirectForRole(role));
+        return;
+      }
     }
   }, [session, status, router]);
 
@@ -47,291 +63,380 @@ export default function AdminDashboard() {
   }
   const isGodModeUser = session?.user?.email === "ayden@yardura.com";
 
-  const adminTools = [
+  const quickActions: Array<{
+    href: string;
+    label: string;
+    description: string;
+    icon: LucideIcon;
+  }> = [
     {
-      title: "Lead Management",
-      description: "View and manage customer leads from quote submissions",
-      icon: FileText,
-      href: "/admin/leads",
-      color: "text-green-600",
-    },
-    {
-      title: "Outbound Pipeline",
-      description: "Track canvassing territories, cadences, and Trips",
-      icon: Sparkles,
-      href: "/admin/leads/outbound",
-      color: "text-cyan-600",
-    },
-    {
-      title: "Trips & Routes",
-      description: "Plan canvassing loops and review saved trip logs",
+      href: "/admin/dispatch/routes",
+      label: "Plan today's routes",
+      description: "Drag, drop, and optimize the field queue",
       icon: MapPin,
-      href: "/admin/leads/trips",
-      color: "text-emerald-600",
     },
     {
-      title: "Pricing Management",
-      description: "Configure pricing tiers, frequencies, and zone multipliers",
-      icon: DollarSign,
-      href: "/admin/pricing",
-      color: "text-purple-600",
-    },
-    {
-      title: "ZIP Code Management",
-      description: "Search for ZIP codes by city and manage service areas",
-      icon: MapPin,
-      href: "/admin/zip-search",
-      color: "text-green-600",
-    },
-    {
-      title: "Analytics Dashboard",
-      description: "View business analytics and performance metrics",
-      icon: BarChart3,
-      href: "/admin/analytics",
-      color: "text-red-600",
-    },
-    {
-      title: "User Management",
-      description: "Create accounts for new business partners",
+      href: "/admin/customers",
+      label: "Find a customer",
+      description: "Search profiles, review jobs, and manage visits",
       icon: Users,
-      href: "/admin/users",
-      color: "text-indigo-600",
     },
-    // God Mode - only for owner
-    ...(isGodModeUser
-      ? [
-          {
-            title: "God Mode",
-            description: "Ultimate system control - Owner access only",
-            icon: Shield,
-            href: "/admin/god-mode",
-            color: "text-yellow-600",
-          },
-        ]
-      : []),
+    {
+      href: "/admin/customers/new",
+      label: "Add a customer",
+      description: "Create a profile without going through checkout",
+      icon: UserPlus,
+    },
+    {
+      href: "/admin/promo-codes",
+      label: "Launch a promo",
+      description: "Set up incentives in minutes",
+      icon: Tag,
+    },
+  ];
+
+  const navigationSections: Array<{
+    title: string;
+    description: string;
+    items: Array<{
+      title: string;
+      href: string;
+      description: string;
+      icon: LucideIcon;
+      badge?: string;
+    }>;
+  }> = [
+    {
+      title: "Run operations",
+      description: "Dispatch, fulfillment, and frontline controls.",
+      items: [
+        {
+          title: "Dispatch board",
+          href: "/admin/dispatch/routes",
+          description: "Build technician routes, assign visits, and monitor progress.",
+          icon: Compass,
+          badge: "Live",
+        },
+        {
+          title: "Field ops QA",
+          href: "/admin/field-ops",
+          description: "Approve daily check-ins, review visit media, and document coaching notes.",
+          icon: Eye,
+          badge: "New",
+        },
+        {
+          title: "Payout approvals",
+          href: "/admin/field-ops/payouts",
+          description: "Review withdrawal requests and release earned scooper payouts.",
+          icon: HandCoins,
+        },
+        {
+          title: "Scooper discipline",
+          href: "/admin/marketplace/handoffs",
+          description: "Review missed visits, late releases, and recurring job drops.",
+          icon: ClipboardList,
+        },
+        {
+          title: "Scooper availability",
+          href: "/admin/marketplace/availability",
+          description: "Edit day-by-day coverage without wiping a scooper’s entire schedule.",
+          icon: Settings,
+        },
+        {
+          title: "Tile readiness",
+          href: "/admin/marketplace/tiles",
+          description: "Track MVD thresholds, map coverage, and override waitlist gates.",
+          icon: Layers,
+        },
+        {
+          title: "Customer records",
+          href: "/admin/customers",
+          description: "Search customers, open job details, and manage billing.",
+          icon: Users,
+        },
+        {
+          title: "Skip reason catalog",
+          href: "/admin/dispatch/skip-reasons",
+          description: "Tune how weather and safety skips affect billing.",
+          icon: Shield,
+        },
+        {
+          title: "Tile Studio",
+          href: "/admin/marketplace/tiles/studio",
+          description: "Generate service tiles, assign ZIP coverage, and publish updates.",
+          icon: MapPin,
+        },
+      ],
+    },
+    {
+      title: "Grow demand",
+      description: "Marketing, sales, and lifecycle levers.",
+      items: [
+        {
+          title: "Lead management",
+          href: "/admin/leads",
+          description: "Review inbound interest and nurture warm handoffs.",
+          icon: ClipboardList,
+        },
+        {
+          title: "Cadence builder",
+          href: "/admin/leads/cadences",
+          description: "Automate follow-ups, drop campaigns, and door hangers.",
+          icon: PlayCircle,
+        },
+        {
+          title: "Canvassing & door knocking",
+          href: "/admin/leads/outbound",
+          description: "Map routes, log door knocks, and capture field intel.",
+          icon: MapPin,
+        },
+      ],
+    },
+    {
+      title: "Steer the business",
+      description: "Financial, people, and insight programs.",
+      items: [
+        {
+          title: "Pricing architecture",
+          href: "/admin/pricing",
+          description: "Adjust hero plans, add-ons, and intro offers.",
+          icon: DollarSign,
+        },
+        {
+          title: "Analytics & KPIs",
+          href: "/admin/analytics",
+          description: "Monitor conversion, retention, and ops throughput.",
+          icon: BarChart3,
+        },
+        {
+          title: "Integrations hub",
+          href: "/admin/integrations",
+          description: "Manage QuickBooks and upcoming partner integrations.",
+          icon: Settings,
+        },
+        {
+          title: "Team directory",
+          href: "/admin/users",
+          description: "Invite partners, dispatchers, and technicians.",
+          icon: Users,
+        },
+        ...(isGodModeUser
+          ? [
+              {
+                title: "God mode",
+                href: "/admin/god-mode",
+                description: "Deep configuration reserved for owners.",
+                icon: Shield,
+                badge: "Owner",
+              },
+            ]
+          : []),
+      ],
+    },
+  ];
+
+  const statusStrip: Array<{ label: string; value: string; tone: "ok" | "info" }> = [
+    { label: "Dispatch availability", value: "Healthy", tone: "ok" },
+    { label: "Billing & Stripe", value: "Synchronized", tone: "ok" },
+    { label: "Customer messaging", value: "Online", tone: "info" },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-brand-50/20">
-      <div className="container mx-auto p-6 pt-20">
-        {/* Enhanced header with modern styling */}
-        <div className="mb-12">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-brand-600 to-brand-700 rounded-3xl shadow-xl">
-              <Settings className="size-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-                Yardura Service OS
-              </h1>
-              <p className="text-lg text-slate-600 font-medium">
-                Business Operations & Management Platform
-              </p>
-              <p className="text-sm text-slate-500 mt-1">
-                Separate from customer-facing services • Admin access required
-              </p>
-            </div>
-          </div>
-
-          {/* Status indicators */}
-          <div className="flex flex-wrap gap-3">
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-green-800">
-                System Online
-              </span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-sm font-medium text-blue-800">
-                All Services Active
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Enhanced admin tools grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-12">
-          {adminTools.map((tool, index) => (
-            <Card
-              key={tool.href}
-              className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-slate-200/60 hover:border-brand-300/60 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] rounded-3xl"
-            >
-              {/* Gradient overlay on hover */}
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-50/0 to-brand-100/0 group-hover:from-brand-50/50 group-hover:to-brand-100/30 transition-all duration-300"></div>
-
-              <CardHeader className="relative z-10">
-                <CardTitle className="flex items-center gap-4">
+    <div className="admin-surface min-h-screen">
+      <header className="relative isolate overflow-hidden border-b border-slate-200 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
+        <div className="absolute right-16 top-14 h-32 w-32 rounded-full bg-brand-mint/25 blur-3xl" />
+        <div className="absolute left-1/2 top-0 h-40 w-[24rem] -translate-x-1/2 bg-brand-coral/15 blur-3xl" />
+        <div className="container mx-auto px-6 pb-12 pt-20">
+          <div className="flex flex-wrap items-start justify-between gap-8">
+            <div className="space-y-4 max-w-2xl">
+              <div className="flex items-center gap-3 admin-kicker">
+                <Settings className="h-4 w-4" />
+                <span>Operations control center</span>
+              </div>
+              <div className="space-y-2">
+                <h1 className="admin-title">
+                  Yardura Service OS
+                </h1>
+                <p className="admin-subtitle">
+                  A single pane for dispatch, growth, and customer orchestration.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {statusStrip.map((status) => (
                   <div
-                    className={`p-4 rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-110 ${
-                      index % 6 === 0
-                        ? "bg-gradient-to-br from-blue-100 to-blue-200 text-blue-600"
-                        : index % 6 === 1
-                          ? "bg-gradient-to-br from-green-100 to-green-200 text-green-600"
-                          : index % 6 === 2
-                            ? "bg-gradient-to-br from-purple-100 to-purple-200 text-purple-600"
-                            : index % 6 === 3
-                              ? "bg-gradient-to-br from-orange-100 to-orange-200 text-orange-600"
-                              : index % 6 === 4
-                                ? "bg-gradient-to-br from-red-100 to-red-200 text-red-600"
-                                : "bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-600"
+                    key={status.label}
+                    className={`flex items-center gap-3 rounded-full border px-4 py-2 text-sm transition ${
+                      status.tone === "ok"
+                        ? "border-brand-mint/40 bg-brand-mint/15 text-brand-mint"
+                        : "border-brand-coral/30 bg-brand-coral/10 text-brand-coral"
                     }`}
                   >
-                    <tool.icon className="h-7 w-7" />
+                    <span className="font-medium">{status.value}</span>
+                    <span className="hidden text-xs text-slate-600 sm:inline dark:text-slate-200/70">
+                      {status.label}
+                    </span>
                   </div>
-                  <div>
-                    <div className="text-xl font-bold text-slate-900">
-                      {tool.title}
+                ))}
+              </div>
+            </div>
+            <div className="w-full max-w-md admin-card rounded-3xl p-5 backdrop-blur-sm">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
+                Today's priorities
+              </h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {quickActions.map((action) => (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className="group flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white/90 p-3 transition hover:border-brand-mint/40 hover:bg-brand-mint/10 dark:border-white/10 dark:bg-white/5 dark:hover:border-brand-mint/40 dark:hover:bg-brand-mint/10"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-mint/15 text-brand-mint shadow-sm dark:bg-brand-mint/20 dark:text-brand-mint">
+                      <action.icon className="h-4 w-4" />
                     </div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <p className="text-slate-600 mb-6 leading-relaxed">
-                  {tool.description}
+                    <div className="space-y-0.5 leading-tight">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {action.label}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-200/70">
+                        {action.description}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto space-y-12 px-6 pb-24 pt-12">
+        {navigationSections.map((section) => (
+          <section key={section.title} className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  {section.title}
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-300">
+                  {section.description}
                 </p>
-                <Link href={tool.href}>
-                  <Button className="w-full bg-gradient-to-r from-slate-900 to-slate-800 hover:from-brand-600 hover:to-brand-700 text-white font-semibold py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                    Access Tool
-                    <span className="ml-2">→</span>
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Enhanced Quick Actions section */}
-        <div className="bg-white/60 backdrop-blur-sm border border-slate-200/60 rounded-3xl p-8 shadow-xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-brand-100 to-brand-200 rounded-2xl">
-              <Sparkles className="size-6 text-brand-600" />
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">
-                Quick Actions
-              </h2>
-              <p className="text-slate-600">Common tasks and shortcuts</p>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {section.items.map((item) => (
+                <Card
+                  key={item.href}
+                  className="group admin-card flex h-full flex-col justify-between transition hover:-translate-y-1 hover:border-brand-mint/50 hover:shadow-xl"
+                >
+                  <CardHeader className="flex flex-row items-start gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-mint/15 text-brand-mint transition group-hover:bg-brand-mint/25 dark:bg-brand-mint/20 dark:text-brand-mint">
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {item.title}
+                      </CardTitle>
+                      <p className="text-sm text-slate-500 dark:text-slate-300">
+                        {item.description}
+                      </p>
+                    </div>
+                    {item.badge ? (
+                      <span className="ml-auto rounded-full bg-brand-coral/10 px-3 py-1 text-xs font-semibold text-brand-coral dark:bg-brand-coral/20 dark:text-brand-coral">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </CardHeader>
+                  <CardContent className="mt-auto">
+                    <Link href={item.href}>
+                      <Button
+                        variant="ghost"
+                        className="group/btn w-full justify-between rounded-xl border border-slate-200/70 bg-white/90 text-slate-700 transition hover:border-brand-mint/40 hover:bg-brand-mint/10 hover:text-brand-mint dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-brand-mint/40 dark:hover:bg-brand-mint/15 dark:hover:text-brand-mint"
+                      >
+                        Open workspace
+                        <span className="transition group-hover/btn:translate-x-1">→</span>
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </div>
+          </section>
+        ))}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link href="/admin/zip-search">
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-3 p-4 h-auto rounded-2xl border-2 hover:border-brand-300 hover:bg-brand-50 transition-all duration-200 group"
+        <section className="grid gap-4 lg:grid-cols-4">
+          <Card className="admin-card">
+            <CardHeader>
+              <CardTitle className="text-lg text-slate-900 dark:text-white">Communication playbooks</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+              <p>
+                Align the 3C field reporting, SMS nudges, and customer portal notifications.
+              </p>
+              <Link
+                href="/admin/leads/cadences"
+                className="inline-flex items-center gap-2 text-brand-coral hover:text-brand-coral/80 dark:text-brand-mint dark:hover:text-brand-mint/80"
               >
-                <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors duration-200">
-                  <MapPin className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-slate-900">
-                    Add ZIP Codes
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    Expand service areas
-                  </div>
-                </div>
-              </Button>
-            </Link>
+                Review macros
+                <Mail className="h-4 w-4" />
+              </Link>
+            </CardContent>
+          </Card>
 
-            <Link href="/admin/pricing">
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-3 p-4 h-auto rounded-2xl border-2 hover:border-brand-300 hover:bg-brand-50 transition-all duration-200 group"
+          <Card className="admin-card">
+            <CardHeader>
+              <CardTitle className="text-lg text-slate-900 dark:text-white">Financial guardrails</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+              <p>
+                Pricing, surcharges, and first-visit logic stay consistent across territories.
+              </p>
+              <Link
+                href="/admin/pricing"
+                className="inline-flex items-center gap-2 text-brand-coral hover:text-brand-coral/80 dark:text-brand-mint dark:hover:text-brand-mint/80"
               >
-                <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors duration-200">
-                  <DollarSign className="h-5 w-5 text-purple-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-slate-900">
-                    Update Pricing
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    Adjust rates & tiers
-                  </div>
-                </div>
-              </Button>
-            </Link>
+                Adjust pricing
+                <DollarSign className="h-4 w-4" />
+              </Link>
+            </CardContent>
+          </Card>
 
-            <Link href="/admin/zip-search">
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-3 p-4 h-auto rounded-2xl border-2 hover:border-brand-300 hover:bg-brand-50 transition-all duration-200 group"
+          <Card className="admin-card">
+            <CardHeader>
+              <CardTitle className="text-lg text-slate-900 dark:text-white">Canvassing & door knocking</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+              <p>
+                Give field reps a live map to drop pins, log encounters, and sync territory notes.
+              </p>
+              <Link
+                href="/admin/leads/outbound"
+                className="inline-flex items-center gap-2 text-brand-coral hover:text-brand-coral/80 dark:text-brand-mint dark:hover:text-brand-mint/80"
               >
-                <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors duration-200">
-                  <MapPin className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-slate-900">
-                    Manage ZIP Codes
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    Add/remove service areas
-                  </div>
-                </div>
-              </Button>
-            </Link>
-          </div>
-        </div>
+                Open canvassing hub
+                <MapPin className="h-4 w-4" />
+              </Link>
+            </CardContent>
+          </Card>
 
-        {/* Enhanced System Status */}
-        <div className="bg-white/60 backdrop-blur-sm border border-slate-200/60 rounded-3xl p-8 shadow-xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl">
-              <Shield className="size-6 text-green-600" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">
-                System Status
-              </h2>
-              <p className="text-slate-600">All systems operational</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-4 bg-white/80 rounded-2xl border border-slate-200">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="font-medium text-slate-900">
-                  Business Configuration
-                </span>
-              </div>
-              <span className="text-green-600 font-bold">Active</span>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-white/80 rounded-2xl border border-slate-200">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="font-medium text-slate-900">
-                  ZIP Eligibility System
-                </span>
-              </div>
-              <span className="text-green-600 font-bold">Active</span>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-white/80 rounded-2xl border border-slate-200">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="font-medium text-slate-900">
-                  Pricing Engine
-                </span>
-              </div>
-              <span className="text-green-600 font-bold">Active</span>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-white/80 rounded-2xl border border-slate-200">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="font-medium text-slate-900">
-                  Multi-tenant Support
-                </span>
-              </div>
-              <span className="text-blue-600 font-bold">Ready</span>
-            </div>
-          </div>
-        </div>
-      </div>
+          <Card className="admin-card">
+            <CardHeader>
+              <CardTitle className="text-lg text-slate-900 dark:text-white">Team enablement</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+              <p>
+                Keep the roster current so technicians, dispatch, and sales have the right access.
+              </p>
+              <Link
+                href="/admin/users"
+                className="inline-flex items-center gap-2 text-brand-coral hover:text-brand-coral/80 dark:text-brand-mint dark:hover:text-brand-mint/80"
+              >
+                Manage users
+                <Users className="h-4 w-4" />
+              </Link>
+            </CardContent>
+          </Card>
+        </section>
+      </main>
     </div>
   );
 }

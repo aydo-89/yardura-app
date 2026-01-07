@@ -1,21 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/database-access";
-import { getEmailConfig } from "@/lib/env";
+import { prisma } from "@/lib/prisma";
+import { getEmailConfig, getSiteUrl } from "@/lib/env";
+import { buildPasswordResetEmail } from "@/lib/email/templates";
 import crypto from "crypto";
+import { normalizeEmailOrThrow } from "@/lib/auth/email-normalizer";
 
-const prisma = getDb();
 
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    let normalizedEmail: string;
+    try {
+      normalizedEmail = normalizeEmailOrThrow(email);
+    } catch {
+      return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
     }
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+    // Find user by email (case insensitive)
+    const user = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: normalizedEmail,
+          mode: "insensitive",
+        },
+      },
       include: { accounts: true },
     });
 
@@ -27,16 +36,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Find the credentials account (password-based auth)
-    const credentialsAccount = user.accounts.find(
+    // Find or create the credentials account (password-based auth)
+    let credentialsAccount = user.accounts.find(
       (account) => account.provider === "credentials",
     );
 
+    // If user doesn't have a credentials account yet (signed up with magic link),
+    // create one now so they can set a password
     if (!credentialsAccount) {
-      // User doesn't have a password account (e.g., only OAuth)
-      return NextResponse.json({
-        message:
-          "If an account with this email exists, we have sent a password reset link.",
+      credentialsAccount = await prisma.account.create({
+        data: {
+          userId: user.id,
+          type: "credentials",
+          provider: "credentials",
+          providerAccountId: user.id,
+          access_token: "", // Will be set when they reset password
+        },
       });
     }
 
@@ -55,10 +70,10 @@ export async function POST(request: NextRequest) {
 
     // Send reset email
     const emailConfig = getEmailConfig();
-    const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
+    const resetUrl = `${getSiteUrl()}/reset-password?token=${resetToken}`;
 
     const emailSent = await sendPasswordResetEmail(
-      email,
+      user.email,
       user.name || "User",
       resetUrl,
       emailConfig,
@@ -88,81 +103,8 @@ async function sendPasswordResetEmail(
   resetUrl: string,
   emailConfig: any,
 ): Promise<boolean> {
-  const subject = "Reset your Yardura password";
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Reset your Yardura password</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #10b981; margin: 0; font-size: 28px;">Yardura</h1>
-        <p style="color: #666; margin: 5px 0;">Clean yards. Smart insights.</p>
-      </div>
-
-      <div style="background: #f8f9fa; padding: 30px; border-radius: 8px; margin-bottom: 30px;">
-        <h2 style="color: #333; margin-top: 0; margin-bottom: 20px;">Reset your password</h2>
-
-        <p style="margin-bottom: 20px;">Hi ${name},</p>
-
-        <p style="margin-bottom: 20px;">
-          We received a request to reset your password for your Yardura account.
-          Click the button below to create a new password:
-        </p>
-
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetUrl}"
-             style="background-color: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-            Reset Password
-          </a>
-        </div>
-
-        <p style="margin-bottom: 20px; font-size: 14px; color: #666;">
-          This link will expire in 24 hours for security reasons.
-        </p>
-
-        <p style="margin-bottom: 20px; font-size: 14px; color: #666;">
-          If you didn't request this password reset, please ignore this email.
-          Your password will remain unchanged.
-        </p>
-      </div>
-
-      <div style="text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px;">
-        <p>This email was sent to ${to}</p>
-        <p>If you're having trouble clicking the button, copy and paste this URL into your browser:</p>
-        <p style="word-break: break-all; color: #666;">${resetUrl}</p>
-      </div>
-
-      <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #999;">
-        <p>© 2024 Yardura. All rights reserved.</p>
-        <p>1234 Main Street, Minneapolis, MN 55401</p>
-      </div>
-    </body>
-    </html>
-  `;
-
-  const textContent = `
-    Reset your Yardura password
-
-    Hi ${name},
-
-    We received a request to reset your password for your Yardura account.
-
-    Click this link to create a new password:
-    ${resetUrl}
-
-    This link will expire in 24 hours for security reasons.
-
-    If you didn't request this password reset, please ignore this email.
-    Your password will remain unchanged.
-
-    --
-    Yardura Support
-    support@yardura.com
-  `;
+  const subject = "Reset your InsightScoop password";
+  const { html: htmlContent, text: textContent } = buildPasswordResetEmail(name || null, resetUrl);
 
   try {
     if (emailConfig.provider === "smtp" && emailConfig.smtp) {
@@ -178,32 +120,43 @@ async function sendPasswordResetEmail(
         text: textContent,
       });
     } else if (emailConfig.provider === "resend" && emailConfig.resendApiKey) {
-      // Send via Resend
-      const { Resend } = await import("resend");
-      const resend = new Resend(emailConfig.resendApiKey);
-
-      // In development, if using a non-verified domain, use Resend's onboarding sender to ensure delivery
-      const fromAddress =
-        process.env.NODE_ENV === "development" &&
-        /@yardura\.com$/i.test(emailConfig.from)
-          ? "Yardura <onboarding@resend.dev>"
-          : emailConfig.from;
-
-      const result = await resend.emails.send({
-        from: fromAddress,
-        to,
-        subject,
-        html: htmlContent,
-        text: textContent,
+      // Send via Resend - use fetch like the magic link does (more reliable)
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${emailConfig.resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: emailConfig.from,
+          to: [to],
+          subject,
+          html: htmlContent,
+          text: textContent,
+        }),
       });
 
-      // Basic logging for diagnostics
-      if ((result as any)?.error) {
-        console.error("Resend send error:", (result as any).error);
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result?.error) {
+        console.error("Resend send error:", result?.error || response.status);
+        
+        // In development, log the reset URL so testing can continue
+        if (process.env.NODE_ENV === "development") {
+          console.log("\n" + "=".repeat(60));
+          console.log("⚠️  RESEND SEND FAILED - DEV MODE FALLBACK");
+          console.log("=".repeat(60));
+          console.log("To:", to);
+          console.log("Reset URL:", resetUrl);
+          console.log("=".repeat(60) + "\n");
+          return true;
+        }
+        
         throw new Error("Resend send failed");
       }
-      if ((result as any)?.data?.id) {
-        console.log("Resend email id:", (result as any).data.id);
+      
+      if (result?.id) {
+        console.log("Resend email id:", result.id);
       }
     } else {
       // Development: log to console

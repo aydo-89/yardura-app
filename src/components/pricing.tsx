@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { motion } from "@/lib/framermotion";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,14 +10,24 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, Star, ArrowRight } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import { track } from "@/lib/analytics";
+import { brandColors, withAlpha } from "@/shared/brand";
 import {
-  estimatePerVisitCents,
-  projectedMonthlyCents,
+  calculateCompletePricing,
   formatPrice,
   getFrequencyDisplayName,
   type Frequency,
   type DogCount,
-} from "@/lib/priceEstimator";
+} from "@/lib/pricing-client";
+import { useTheme } from "./theme/ThemeProvider";
+
+const FREQUENCY_ACCENTS: Record<Frequency, string> = {
+  weekly: brandColors.mint,
+  biweekly: brandColors.gold,
+  "twice-weekly": brandColors.coral,
+  daily: brandColors.sunset,
+  monthly: brandColors.gold,
+  onetime: brandColors.coralInk,
+};
 
 interface PricingCardProps {
   title: string;
@@ -24,7 +36,6 @@ interface PricingCardProps {
   frequency: Frequency;
   yardSize: "small" | "medium" | "large" | "xl";
   popular?: boolean;
-  color?: "emerald" | "teal" | "cyan" | "green";
   selectedFrequency?: Frequency;
   addOns?: {
     deodorize?: boolean;
@@ -39,35 +50,66 @@ function PricingCard({
   frequency,
   yardSize,
   popular = false,
-  color = "green",
   selectedFrequency = "weekly",
   addOns = {},
 }: PricingCardProps) {
-  const perVisitCents = estimatePerVisitCents(dogs, yardSize, frequency);
-  const monthlyCents = projectedMonthlyCents(perVisitCents, frequency, addOns);
+  const [perVisitCents, setPerVisitCents] = useState(0);
+  const [monthlyCents, setMonthlyCents] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get enhanced color variations for more visual distinction
-  const getColorClasses = (color: string, popular: boolean) => {
-    const baseClasses = "relative overflow-visible interactive-hover";
-    const popularClasses = popular ? "card-elevated scale-105" : "card-modern";
-
-    switch (color) {
-      case "emerald":
-        return `${baseClasses} ${popularClasses} ${popular ? "border-emerald-400/60 shadow-emerald-100/60 bg-gradient-to-br from-emerald-50/20 to-emerald-100/10" : "border-emerald-300/50 bg-gradient-to-br from-emerald-50/10 to-emerald-100/5"}`;
-      case "green":
-        return `${baseClasses} ${popularClasses} ${popular ? "border-green-500/60 shadow-green-100/60 bg-gradient-to-br from-green-50/20 to-green-100/10" : "border-green-400/50 bg-gradient-to-br from-green-50/10 to-green-100/5"}`;
-      case "teal":
-        return `${baseClasses} ${popularClasses} ${popular ? "border-teal-400/60 shadow-teal-100/60 bg-gradient-to-br from-teal-50/20 to-teal-100/10" : "border-teal-300/50 bg-gradient-to-br from-teal-50/10 to-teal-100/5"}`;
-      default:
-        return `${baseClasses} ${popularClasses} ${popular ? "border-slate-400/60 shadow-slate-100/60 bg-gradient-to-br from-slate-50/20 to-slate-100/10" : "border-slate-300/50 bg-gradient-to-br from-slate-50/10 to-slate-100/5"}`;
+  useEffect(() => {
+    async function loadPricing() {
+      setIsLoading(true);
+      try {
+        const pricing = await calculateCompletePricing({
+          dogs,
+          yardSize,
+          frequency,
+          addons: {
+            deodorize: addOns.deodorize,
+            // Note: For pricing display, we don't know the mode, so default to each-visit
+            deodorizeMode: addOns.deodorize ? "each-visit" : undefined,
+          },
+        });
+        setPerVisitCents(pricing.perVisitCents);
+        setMonthlyCents(pricing.monthlyCents);
+      } catch (error) {
+        console.error('Error loading pricing:', error);
+        // Fallback to basic calculation
+        const fallbackPerVisit = dogs * 20 * 100; // Rough estimate
+        setPerVisitCents(fallbackPerVisit);
+        setMonthlyCents(fallbackPerVisit * 4); // Weekly estimate
+      } finally {
+        setIsLoading(false);
+      }
     }
-  };
+
+    loadPricing();
+  }, [dogs, yardSize, frequency, addOns]);
+
+  const accentColor = FREQUENCY_ACCENTS[frequency] ?? brandColors.evergreen;
 
   return (
-    <Card className={getColorClasses(color, popular)}>
+    <Card
+      className="relative rounded-[32px] border border-white/15 bg-white/5 text-white shadow-[0_28px_60px_rgba(3,7,6,0.55)] transition-all duration-300 backdrop-blur"
+      style={{
+        borderColor: withAlpha(accentColor, popular ? 0.6 : 0.38),
+        boxShadow: popular
+          ? `0 32px 68px ${withAlpha(accentColor, 0.35)}`
+          : `0 24px 58px ${withAlpha(accentColor, 0.2)}`,
+        transform: popular ? "translateY(-4px)" : undefined,
+      }}
+    >
       {popular && (
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
-          <Badge className="bg-gradient-to-br from-green-700 to-green-600 text-white px-4 py-2 shadow-2xl font-bold border-2 border-white/80 backdrop-blur-sm">
+          <Badge
+            className="px-4 py-2 shadow-2xl font-bold backdrop-blur rounded-full"
+            style={{
+              backgroundColor: withAlpha(accentColor, 0.22),
+              borderColor: withAlpha(accentColor, 0.4),
+              color: brandColors.coralInk,
+            }}
+          >
             <Star className="size-4 mr-1 fill-current" />
             Most Popular
           </Badge>
@@ -75,33 +117,41 @@ function PricingCard({
       )}
 
       <CardHeader className="text-center pb-6">
-        <CardTitle className="text-2xl font-bold text-slate-900">
+        <CardTitle className="text-2xl font-bold text-white">
           {title}
         </CardTitle>
-        <p className="text-slate-600 text-sm leading-relaxed">{description}</p>
+        <p className="text-white/70 text-sm leading-relaxed">{description}</p>
       </CardHeader>
 
       <CardContent className="space-y-6">
         <div className="text-center">
-          <div className="text-gradient text-4xl font-black mb-1">
-            {formatPrice(perVisitCents)}
+          <div
+            className="text-4xl font-black mb-1"
+            style={{ color: frequency === "weekly" ? brandColors.mint : accentColor }}
+          >
+            {isLoading ? (
+              <div className="animate-pulse bg-slate-200 h-8 w-16 rounded mx-auto"></div>
+            ) : (
+              formatPrice(perVisitCents)
+            )}
           </div>
-          <div className="text-sm text-slate-600 font-medium">per visit</div>
+          <div className="text-sm text-white/70 font-medium">per visit</div>
         </div>
 
-        <div
-          className={`text-center text-sm text-slate-600 rounded-xl p-3 border ${
-            color === "emerald"
-              ? "bg-emerald-50/70 border-emerald-200/50"
-              : color === "green"
-                ? "bg-green-50/70 border-green-200/50"
-                : color === "teal"
-                  ? "bg-teal-50/70 border-teal-200/50"
-                  : "bg-slate-50/70 border-slate-200/50"
-          }`}
-        >
-          <div className="font-semibold text-slate-900">
-            {formatPrice(monthlyCents)}/month
+          <div
+            className="text-center text-sm rounded-xl p-3 border"
+            style={{
+              backgroundColor: withAlpha(frequency === "weekly" ? brandColors.mint : accentColor, 0.14),
+              borderColor: withAlpha(frequency === "weekly" ? brandColors.mint : accentColor, 0.3),
+              color: frequency === "weekly" ? brandColors.mint : accentColor,
+            }}
+          >
+          <div className="font-semibold text-white">
+            {isLoading ? (
+              <div className="animate-pulse bg-slate-200 h-4 w-20 rounded mx-auto"></div>
+            ) : (
+              `${formatPrice(monthlyCents)}/month`
+            )}
           </div>
           <div className="text-xs font-medium">
             ({getFrequencyDisplayName(frequency)} service)
@@ -109,40 +159,75 @@ function PricingCard({
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50/50 transition-colors duration-200">
-            <CheckCircle className="size-5 text-green-600 flex-shrink-0" />
-            <span className="text-sm text-slate-700 font-medium">
+          <div
+            className="flex items-center gap-3 p-2 rounded-lg transition-colors duration-200"
+            style={{ backgroundColor: withAlpha(accentColor, 0.08) }}
+          >
+            <CheckCircle className="size-5 flex-shrink-0" style={{ color: accentColor }} />
+            <span className="text-sm text-white/75 font-medium">
               {dogs} dog{dogs > 1 ? "s" : ""} included
             </span>
           </div>
 
-          <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50/50 transition-colors duration-200">
-            <CheckCircle className="size-5 text-green-600 flex-shrink-0" />
-            <span className="text-sm text-slate-700 font-medium">
-              Health insights included
+          <div
+            className="flex items-center gap-3 p-2 rounded-lg transition-colors duration-200"
+            style={{ backgroundColor: withAlpha(accentColor, 0.08) }}
+          >
+            <CheckCircle className="size-5 flex-shrink-0" style={{ color: accentColor }} />
+            <span className="text-sm text-white/75 font-medium">
+              Visit recap link + gate photo included
+            </span>
+          </div>
+          <div
+            className="flex items-center gap-3 p-2 rounded-lg transition-colors duration-200"
+            style={{ backgroundColor: withAlpha(accentColor, 0.08) }}
+          >
+            <CheckCircle className="size-5 flex-shrink-0" style={{ color: accentColor }} />
+            <span className="text-sm text-white/75 font-medium">
+              Stool health notes included
+            </span>
+          </div>
+          <div
+            className="flex items-center gap-3 p-2 rounded-lg transition-colors duration-200"
+            style={{ backgroundColor: withAlpha(accentColor, 0.08) }}
+          >
+            <CheckCircle className="size-5 flex-shrink-0" style={{ color: accentColor }} />
+            <span className="text-sm text-white/75 font-medium">
+              Cancel or pause anytime
             </span>
           </div>
           {addOns.deodorize && (
-            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-teal-700-soft/30 transition-colors duration-200">
-              <CheckCircle className="size-5 text-green-600 flex-shrink-0" />
-              <span className="text-sm text-slate-700 font-medium">
-                Deodorize & Sanitize (+$5)
+            <div
+              className="flex items-center gap-3 p-2 rounded-lg transition-colors duration-200"
+              style={{ backgroundColor: withAlpha(accentColor, 0.08) }}
+            >
+              <CheckCircle className="size-5 flex-shrink-0" style={{ color: accentColor }} />
+              <span className="text-sm text-white/75 font-medium">
+                Deodorize & Sanitize
               </span>
             </div>
           )}
           {addOns.litter && (
-            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-teal-700-soft/30 transition-colors duration-200">
-              <CheckCircle className="size-5 text-green-600 flex-shrink-0" />
-              <span className="text-sm text-slate-700 font-medium">
-                Litter Box Service (+$5)
+            <div
+              className="flex items-center gap-3 p-2 rounded-lg transition-colors duration-200"
+              style={{ backgroundColor: withAlpha(accentColor, 0.08) }}
+            >
+              <CheckCircle className="size-5 flex-shrink-0" style={{ color: accentColor }} />
+              <span className="text-sm text-white/75 font-medium">
+                Litter Box Service
               </span>
             </div>
           )}
         </div>
 
         <Button
-          className={`w-full ${popular ? "btn-cta-primary" : "btn-cta-secondary"} interactive-press`}
-          variant={popular ? "default" : "outline"}
+          size="lg"
+          variant="ghost"
+          className={`w-full rounded-xl transition-all duration-300 ${
+            popular
+              ? "btn-cta-primary"
+              : "border border-white/25 bg-white/10 text-white hover:bg-white/18"
+          }`}
           asChild
         >
           <a
@@ -157,7 +242,7 @@ function PricingCard({
               })
             }
           >
-            Get Started
+            Get my quote
             <ArrowRight className="size-4 ml-2" />
           </a>
         </Button>
@@ -167,26 +252,93 @@ function PricingCard({
 }
 
 export default function Pricing() {
-  const [selectedFrequency, setSelectedFrequency] =
-    useState<Frequency>("weekly");
+  const [selectedFrequency, setSelectedFrequency] = useState<Frequency>("weekly");
+  const frequencyAccent = FREQUENCY_ACCENTS[selectedFrequency] ?? brandColors.evergreen;
+  const { theme } = useTheme();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const backgroundSrc = useMemo(() => {
+    const mode = theme === "dark" ? "dark" : "light";
+    const base =
+      mode === "dark"
+        ? { desktop: "/hero_backgrounds/arlo_coral_right_dark.jpeg", mobile: "/hero_backgrounds/arlo_coral_right_dark.jpeg" }
+        : { desktop: "/hero_backgrounds/arlo_coral_right_light.jpeg", mobile: "/hero_backgrounds/arlo_coral_right_light.jpeg" };
+    return isMobile ? base.mobile : base.desktop;
+  }, [theme, isMobile]);
+
+  const overlayStyle = useMemo(() => {
+    if (theme === "dark") {
+      return "linear-gradient(155deg, rgba(8,16,12,0.62) 0%, rgba(10,20,14,0.54) 50%, rgba(12,24,16,0.46) 100%)";
+    }
+    return "linear-gradient(155deg, rgba(7,11,8,0.3) 0%, rgba(8,16,12,0.28) 50%, rgba(10,18,12,0.26) 100%)";
+  }, [theme]);
+
+  const backgroundColor = theme === "dark" ? "#050b08" : "#f8f5ee";
 
   return (
-    <section id="pricing" className="section-modern gradient-section-cool">
-      <div className="container">
+    <section
+      id="pricing"
+      className="landing-section section-modern relative overflow-hidden"
+      style={{ backgroundColor }}
+    >
+      <div className="absolute inset-0">
+        <Image
+          src={backgroundSrc}
+          alt="Pet parent reviewing InsightScoop pricing options"
+          fill
+          loading="eager"
+          className="object-cover"
+          sizes="100vw"
+          style={{ objectPosition: "55% center" }}
+        />
+        <motion.div
+          className="absolute inset-0"
+          style={{ background: overlayStyle }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ amount: 0.2 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+        />
+      </div>
+
+      <motion.div
+        className="pointer-events-none absolute inset-x-0 -top-12 h-16 z-[1]"
+        initial={{ opacity: 0, y: -28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-12%" }}
+        transition={{ duration: 0.68, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="w-full h-full bg-gradient-to-b from-[rgba(var(--vanilla-rgb-commas),0.9)] via-[rgba(var(--mint-rgb-commas),0.38)] to-transparent" />
+      </motion.div>
+      <motion.div
+        className="pointer-events-none absolute inset-x-0 -bottom-12 h-16 z-[1]"
+        initial={{ opacity: 0, y: 26 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-12%" }}
+        transition={{ duration: 0.68, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+      >
+        <div className="w-full h-full bg-gradient-to-t from-[rgba(var(--vanilla-rgb-commas),0.82)] via-[rgba(var(--gold-rgb-commas),0.3)] to-transparent" />
+      </motion.div>
+
+      <div className="container relative z-10 py-20 text-white">
         <div className="text-center mb-16">
           <Reveal>
-            <div className="relative">
-              <h2 className="text-5xl md:text-6xl font-black text-slate-900 mb-6 tracking-tight">
-                Simple{" "}
-                <span className="relative">
-                  Pricing
-                  <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-cyan-700 via-cyan-600 to-white rounded-full"></div>
-                </span>
-              </h2>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-white/80">
+              <CheckCircle className="size-4 text-brand-mint" />
+              No contracts • No surprises
             </div>
-            <p className="text-responsive-lg text-slate-600 max-w-3xl mx-auto leading-relaxed text-balance">
-              No hidden fees. Health insights included. Premium eco diversion
-              options available. Billed monthly for completed visits only.
+            <h2 className="mt-6 text-5xl font-serif leading-tight md:text-6xl">
+              Simple pricing. Premium service.
+            </h2>
+            <p className="mt-4 text-lg text-white/85 max-w-3xl mx-auto text-balance">
+              Pricing is based on dogs, yard size, and cadence. Every plan includes consistent scooping plus a recap link with stool health notes. A dashboard view is coming in 2026.
             </p>
           </Reveal>
         </div>
@@ -196,46 +348,93 @@ export default function Pricing() {
           <div className="flex flex-col items-center justify-center mb-12 space-y-6">
             <Tabs
               value={selectedFrequency}
-              onValueChange={(value) =>
-                setSelectedFrequency(value as Frequency)
-              }
+              onValueChange={(value) => setSelectedFrequency(value as Frequency)}
             >
-              <TabsList className="flex w-full max-w-lg bg-slate-100/80 backdrop-blur-sm p-4 rounded-2xl border border-slate-200/40 shadow-card gap-1">
+              <TabsList className="flex w-full max-w-3xl bg-[rgba(12,24,18,0.78)] p-2 rounded-2xl border border-white/20 shadow-[0_18px_40px_rgba(3,7,6,0.5)] gap-1">
+                <TabsTrigger
+                  value="daily"
+                  className="flex-1 rounded-xl py-2 px-4 text-xs font-medium transition-all duration-200 border border-transparent data-[state=active]:border-white/25 data-[state=active]:bg-white/12 data-[state=active]:text-white data-[state=inactive]:text-white/65 data-[state=inactive]:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[rgba(255,194,77,0.35)] focus:ring-offset-0"
+                >
+                  Daily (Mon–Fri)
+                </TabsTrigger>
+                <TabsTrigger
+                  value="twice-weekly"
+                  className="flex-1 rounded-xl py-2 px-4 text-xs font-medium transition-all duration-200 border border-transparent data-[state=active]:border-white/25 data-[state=active]:bg-white/12 data-[state=active]:text-white data-[state=inactive]:text-white/65 data-[state=inactive]:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[rgba(255,194,77,0.35)] focus:ring-offset-0"
+                >
+                  2x Weekly
+                </TabsTrigger>
                 <TabsTrigger
                   value="weekly"
-                  className="flex-1 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-md data-[state=active]:font-bold text-slate-700 hover:text-slate-900 data-[state=inactive]:hover:bg-emerald-50/50 data-[state=inactive]:hover:text-emerald-700 focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 focus:outline-none font-medium transition-all duration-300 rounded-xl py-2 px-4 text-xs"
+                  className="flex-1 rounded-xl py-2 px-4 text-xs font-medium transition-all duration-200 border border-transparent data-[state=active]:border-white/25 data-[state=active]:bg-white/12 data-[state=active]:text-white data-[state=inactive]:text-white/65 data-[state=inactive]:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[rgba(255,194,77,0.35)] focus:ring-offset-0"
                 >
                   Weekly
                 </TabsTrigger>
                 <TabsTrigger
                   value="biweekly"
-                  className="flex-1 data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-md data-[state=active]:font-bold text-slate-700 hover:text-slate-900 data-[state=inactive]:hover:bg-teal-50/50 data-[state=inactive]:hover:text-teal-700 focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 focus:outline-none font-medium transition-all duration-300 rounded-xl py-2 px-4 text-xs"
+                  className="flex-1 rounded-xl py-2 px-4 text-xs font-medium transition-all duration-200 border border-transparent data-[state=active]:border-white/25 data-[state=active]:bg-white/12 data-[state=active]:text-white data-[state=inactive]:text-white/65 data-[state=inactive]:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[rgba(255,194,77,0.35)] focus:ring-offset-0"
                 >
                   Every 2 Weeks
                 </TabsTrigger>
                 <TabsTrigger
-                  value="twice-weekly"
-                  className="flex-1 data-[state=active]:bg-cyan-50 data-[state=active]:text-cyan-700 data-[state=active]:shadow-md data-[state=active]:font-bold text-slate-700 hover:text-slate-900 data-[state=inactive]:hover:bg-cyan-50/50 data-[state=inactive]:hover:text-cyan-700 focus:ring-2 focus:ring-cyan-600 focus:ring-offset-2 focus:outline-none font-medium transition-all duration-300 rounded-xl py-2 px-4 text-xs"
+                  value="monthly"
+                  className="flex-1 rounded-xl py-2 px-4 text-xs font-medium transition-all duration-200 border border-transparent data-[state=active]:border-white/25 data-[state=active]:bg-white/12 data-[state=active]:text-white data-[state=inactive]:text-white/65 data-[state=inactive]:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[rgba(255,194,77,0.35)] focus:ring-offset-0"
                 >
-                  2x Weekly
+                  Monthly
                 </TabsTrigger>
               </TabsList>
             </Tabs>
 
             {/* Frequency description - appears below the tabs */}
             <div className="w-full max-w-lg">
+              {selectedFrequency === "daily" && (
+                <div
+                  className="rounded-2xl p-4 border"
+                  style={{
+                    backgroundColor: withAlpha(frequencyAccent, 0.12),
+                    borderColor: withAlpha(frequencyAccent, 0.28),
+                  }}
+                >
+                  <p className="text-sm text-white text-center leading-relaxed font-medium">
+                    Mon–Fri visits for multi-dog homes that want a clean yard every day.
+                  </p>
+                </div>
+              )}
               {selectedFrequency === "biweekly" && (
-                <div className="bg-teal-50/70 border border-teal-200/30 rounded-2xl p-4">
-                  <p className="text-sm text-teal-800 text-center leading-relaxed font-medium">
-                    Higher per-visit due to accumulation • Fewer visits save you
-                    money overall
+                <div
+                  className="rounded-2xl p-4 border"
+                  style={{
+                    backgroundColor: withAlpha(frequencyAccent, 0.12),
+                    borderColor: withAlpha(frequencyAccent, 0.28),
+                  }}
+                >
+                  <p className="text-sm text-white text-center leading-relaxed font-medium">
+                    Budget-friendly rhythm with more buildup between visits.
                   </p>
                 </div>
               )}
               {selectedFrequency === "twice-weekly" && (
-                <div className="bg-cyan-50/70 border border-cyan-200/30 rounded-2xl p-4">
-                  <p className="text-sm text-cyan-800 text-center leading-relaxed font-medium">
-                    Slight discount for route efficiency
+                <div
+                  className="rounded-2xl p-4 border"
+                  style={{
+                    backgroundColor: withAlpha(frequencyAccent, 0.12),
+                    borderColor: withAlpha(frequencyAccent, 0.28),
+                  }}
+                >
+                  <p className="text-sm text-white text-center leading-relaxed font-medium">
+                    Great for busy yards—stays consistently clean.
+                  </p>
+                </div>
+              )}
+              {selectedFrequency === "monthly" && (
+                <div
+                  className="rounded-2xl p-4 border"
+                  style={{
+                    backgroundColor: withAlpha(frequencyAccent, 0.12),
+                    borderColor: withAlpha(frequencyAccent, 0.28),
+                  }}
+                >
+                  <p className="text-sm text-white text-center leading-relaxed font-medium">
+                    Seasonal tune-up to reset the yard when you need it.
                   </p>
                 </div>
               )}
@@ -244,7 +443,7 @@ export default function Pricing() {
         </Reveal>
 
         {/* Pricing Cards */}
-        <div className="grid-cards">
+        <div className="grid gap-8 md:grid-cols-3">
           <Reveal delay={0.2}>
             <PricingCard
               title="1 Dog"
@@ -252,7 +451,6 @@ export default function Pricing() {
               dogs={1}
               frequency={selectedFrequency}
               yardSize="medium"
-              color="emerald"
             />
           </Reveal>
 
@@ -264,7 +462,6 @@ export default function Pricing() {
               frequency={selectedFrequency}
               yardSize="medium"
               popular={true}
-              color="green"
             />
           </Reveal>
 
@@ -275,7 +472,6 @@ export default function Pricing() {
               dogs={3}
               frequency={selectedFrequency}
               yardSize="medium"
-              color="teal"
             />
           </Reveal>
         </div>
@@ -283,14 +479,12 @@ export default function Pricing() {
         {/* CTA */}
         <Reveal delay={0.6}>
           <div className="mt-20 text-center">
-            <div className="bg-white rounded-3xl p-10 max-w-4xl mx-auto shadow-floating border border-green-700/10">
-              <h3 className="text-responsive-2xl font-bold text-slate-900 mb-4 text-balance">
-                Ready to Get <span className="text-gradient">Started?</span>
+            <div className="rounded-3xl p-10 max-w-4xl mx-auto border border-white/18 bg-[rgba(12,24,18,0.8)] shadow-[0_32px_72px_rgba(3,7,6,0.6)]">
+              <h3 className="text-responsive-2xl font-serif text-white mb-4 text-balance">
+                Ready for a clean yard + a simple recap?
               </h3>
-              <p className="text-slate-600 text-lg mb-8 leading-relaxed max-w-2xl mx-auto text-balance">
-                Get an instant quote with no commitment. Eco-friendly service
-                with health insights included. Premium diversion options
-                available for maximum environmental impact.
+              <p className="text-white/78 text-lg mb-8 leading-relaxed max-w-2xl mx-auto text-balance">
+                Quotes take 60 seconds. Billing only after completed visits. Pause anytime, upgrade whenever you want.
               </p>
               <Button
                 size="lg"
@@ -302,7 +496,7 @@ export default function Pricing() {
                   data-analytics="cta_pricing_bottom_get_quote"
                   onClick={() => track("cta_pricing_bottom_get_quote")}
                 >
-                  Get Your Quote
+                  Get my quote
                   <ArrowRight className="size-5 ml-2" />
                 </a>
               </Button>

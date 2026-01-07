@@ -1,0 +1,21 @@
+{
+  "timestamp": "20260107135957.",
+  "model": "gemini-3-pro-image-preview",
+  "aspect": "1:1",
+  "resolution": "1K",
+  "prompts": [
+    {
+      "id": "watery-1",
+      "label": "Watery diarrhea",
+      "visual": {
+        "id": "watery-1",
+        "shape": "very loose mushy pile with no defined form, flat and spreading but still has some texture and small soft chunks",
+        "color": "medium brown, slightly lighter than normal due to moisture",
+        "distinguishingFeature": "lost log shape completely, flat mushy mess, but still has some chunky texture - not pure liquid",
+        "surface": "wet and glossy, uneven lumpy texture, spreading at edges",
+        "realLifeNote": "Like very loose oatmeal or thick muddy slurry - has substance but no form, messy pile"
+      },
+      "prompt": "Create a clean semi-realistic illustration, medical education style of dog stool for a veterinary education app. IMPORTANT: Use organic irregular shapes with natural lumpy edges, slight bulges, tapered ends. NOT perfect geometric cylinders or sharp clean edges. Real stool has uneven natural form like soft clay that was squeezed out. Use realistic natural earth tones, true-to-life colors. Background: plain solid light neutral gray (#F0F0F0) background, no textures or patterns. Rendering: soft shading with realistic form, gentle shadow underneath for grounding. Camera angle: slightly elevated 3/4 view, as if looking down at the ground. SHAPE: very loose mushy pile with no defined form, flat and spreading but still has some texture and small soft chunks. COLOR: medium brown, slightly lighter than normal due to moisture. KEY IDENTIFYING FEATURE: lost log shape completely, flat mushy mess, but still has some chunky texture - not pure liquid. SURFACE/TEXTURE: wet and glossy, uneven lumpy texture, spreading at edges. REAL LIFE REFERENCE: Like very loose oatmeal or thick muddy slurry - has substance but no form, messy pile. Do NOT include: text or labels, cartoon faces or expressions, flies or insects, smell lines or stink marks, grass or outdoor environment, overly gross or disgusting details, perfect geometric shapes, sharp clean cylinder edges, machine-cut or manufactured looking shapes. This must look realistic enough that a pet owner can compare it to their dog's actual stool. The image should clearly show the distinguishing characteristics so owners know what to look for. Remember: ORGANIC irregular shapes like squeezed-out soft material, NOT perfect geometric cylinders."
+    }
+  ]
+}

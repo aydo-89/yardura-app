@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { calculatePrice } from "@/lib/priceEstimator";
+import { sendTransactionalEmail } from "@/lib/email";
+import { getEmailConfig } from "@/lib/env";
 import type {
   YardSize as PricingYardSize,
   Frequency as PricingFrequency,
 } from "@/lib/priceEstimator";
 import { getZoneMultiplierForZip } from "@/lib/zip-eligibility";
-
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+import { computeIntroCredits, summarizeIntroCredits } from "@/lib/billing/introCredits";
+import { formatVisitsRange, getVisitsBounds } from "@/lib/utils";
+import { buildQuoteEmail } from "@/lib/email/templates";
+import type { PricingData } from "@/types/quote";
 
 const formatCurrency = (value?: number | null) => {
   if (typeof value !== "number" || Number.isNaN(value)) return "--";
@@ -21,6 +22,49 @@ const formatCurrency = (value?: number | null) => {
     maximumFractionDigits: 2,
   }).format(value / 100);
 };
+
+const formatCurrencyCompact = (value?: number | null) => {
+  if (typeof value !== "number" || Number.isNaN(value)) return "--";
+  const hasCents = Math.abs(value % 100) > 0;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0,
+  }).format(value / 100);
+};
+
+const formatCurrencyRangeCompact = (minCents: number, maxCents: number) => {
+  if (minCents === maxCents) {
+    return formatCurrencyCompact(minCents);
+  }
+  return `${formatCurrencyCompact(minCents)}–${formatCurrencyCompact(maxCents)}`;
+};
+
+const LEGACY_DIVERT_MODE_PATTERN = /^\d{1,3}%?$/;
+
+const normalizeDivertMode = (value?: string | null) => {
+  if (!value) return "none";
+  const normalized = value.toLowerCase().trim();
+  if (normalized === "takeaway") return "takeaway";
+  if (normalized === "compost") return "compost";
+  if (LEGACY_DIVERT_MODE_PATTERN.test(normalized)) return "compost";
+  return normalized;
+};
+
+const RANGE_NOTE_COPY =
+  "Range depends on how many service days land in a calendar month—for example, weekly plans sometimes include a fifth visit.";
+
+const formatAreaLabel = (value: string) =>
+  value
+    .replace(/[_-]/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 
 const buildAddOnsFromLead = (lead: any) => {
   const addOns: Record<string, any> = {};
@@ -34,14 +78,11 @@ const buildAddOnsFromLead = (lead: any) => {
   }
 
   if (lead?.divertMode && lead.divertMode !== "none") {
-    if (lead.divertMode === "takeaway") {
+    const normalized = normalizeDivertMode(lead.divertMode);
+    if (normalized === "takeaway") {
       addOns["divert-takeaway"] = true;
-    } else if (lead.divertMode === "25") {
-      addOns["divert-25"] = true;
-    } else if (lead.divertMode === "50") {
-      addOns["divert-50"] = true;
-    } else if (lead.divertMode === "100") {
-      addOns["divert-100"] = true;
+    } else if (normalized === "compost") {
+      addOns["divert-compost"] = true;
     }
   }
 
@@ -81,13 +122,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    if (!resend) {
-      return NextResponse.json(
-        { error: "Email service is not configured. Set RESEND_API_KEY." },
-        { status: 503 },
-      );
-    }
-
     const { id: leadId } = await params;
     if (!leadId) {
       return NextResponse.json(
@@ -97,10 +131,19 @@ export async function POST(
     }
 
     let requestedBusinessId: string | undefined;
+    let requestedBillingPreference: "monthly" | "weekly" | undefined;
     try {
       const body = await req.json();
       if (body && typeof body.businessId === "string") {
         requestedBusinessId = body.businessId;
+      }
+      if (body && typeof body.billingPreference === "string") {
+        const normalized = body.billingPreference.toLowerCase();
+        if (normalized === "monthly") {
+          requestedBillingPreference = "monthly";
+        } else if (normalized === "weekly" || normalized === "per-visit") {
+          requestedBillingPreference = "weekly";
+        }
       }
     } catch (error) {
       // Ignore JSON parse errors for empty bodies
@@ -148,6 +191,10 @@ export async function POST(
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
+    const quoteReference = lead.id.length > 8
+      ? lead.id.slice(-8).toUpperCase()
+      : lead.id.toUpperCase();
+
     if (requestedBusinessId && requestedBusinessId !== lead.orgId) {
       return NextResponse.json(
         { error: "Tenant mismatch for quote delivery" },
@@ -155,12 +202,27 @@ export async function POST(
       );
     }
 
+    // Update lead status to indicate quote was processed (even if email fails)
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        status: "PROPOSAL_SENT",
+      },
+    });
+
     let pricing: any = lead.pricingBreakdown;
     if (typeof pricing === "string") {
       try {
         pricing = JSON.parse(pricing);
       } catch (error) {
         pricing = null;
+      }
+    }
+
+    if (pricing && typeof pricing === "object") {
+      pricing = { ...pricing };
+      if (pricing.metadata && typeof pricing.metadata === "object") {
+        pricing.metadata = { ...pricing.metadata };
       }
     }
 
@@ -228,7 +290,7 @@ export async function POST(
         ? "custom schedule"
         : "weekly";
 
-    const areasToClean = (() => {
+    let areasToClean = (() => {
       if (!lead.areasToClean) return [] as string[];
       if (typeof lead.areasToClean === "string") {
         try {
@@ -252,6 +314,11 @@ export async function POST(
       return [] as string[];
     })();
 
+    areasToClean = areasToClean
+      .map((area) => formatAreaLabel(area))
+      .filter(Boolean)
+      .slice(0, 6);
+
     const addOnHighlights: string[] = [];
     if (lead.deodorize) {
       addOnHighlights.push(`Deodorize (${lead.deodorizeMode || "each visit"})`);
@@ -262,18 +329,60 @@ export async function POST(
       );
     }
     if (lead.divertMode && lead.divertMode !== "none") {
+      const normalizedDivert = normalizeDivertMode(lead.divertMode);
       addOnHighlights.push(
-        `Waste diversion (${lead.divertMode === "takeaway" ? "takeaway" : `${lead.divertMode}%`})`,
+        `Waste diversion (${normalizedDivert === "takeaway" ? "haul away" : "compost routing"})`,
       );
+    }
+
+    const existingBillingPreference =
+      typeof pricing?.metadata?.billingPreference === "string"
+        ? pricing.metadata.billingPreference.toLowerCase()
+        : null;
+    const normalizedBillingPreference =
+      requestedBillingPreference ??
+      (existingBillingPreference === "weekly" || existingBillingPreference === "monthly"
+        ? (existingBillingPreference as "weekly" | "monthly")
+        : null);
+
+    if (normalizedBillingPreference) {
+      const baseMetadata =
+        pricing && typeof pricing === "object" && pricing.metadata
+          ? (typeof pricing.metadata === "object" && pricing.metadata !== null
+              ? pricing.metadata
+              : {})
+          : {};
+      pricing = {
+        ...(pricing && typeof pricing === "object" ? pricing : {}),
+        metadata: {
+          ...baseMetadata,
+          billingPreference: normalizedBillingPreference,
+        },
+      };
     }
 
     const monthlyPrice = pricing?.monthly ?? lead.estimatedPrice ?? null;
     const perVisitPrice = pricing?.perVisit ?? null;
     const oneTimePrice = pricing?.oneTime ?? null;
     const isRecurring = lead.frequency && lead.frequency !== "onetime";
-    const initialVisitLabel = isRecurring
-      ? "Initial Visit (waived with recurring service)"
-      : "Initial Visit";
+
+    // Calculate first visit amount based on frequency
+    let firstVisitAmount = pricing?.oneTime ?? 0;
+    let initialVisitLabel = "Initial Visit";
+
+    if (isRecurring) {
+      if (lead.frequency === "monthly") {
+        // 50% off first visit for monthly
+        firstVisitAmount += Math.round((pricing?.perVisit ?? 0) * 0.5);
+        initialVisitLabel = "Initial Visit (50% off)";
+      } else {
+        // For weekly, bi-weekly, twice-weekly: first visit is free
+        initialVisitLabel = "Initial Visit (free with service)";
+      }
+    } else {
+      // One-time service includes per-visit charge
+      firstVisitAmount += pricing?.perVisit ?? 0;
+    }
 
     const onboardingParams = new URLSearchParams({ leadId: lead.id });
     if (lead.serviceType === "commercial") {
@@ -282,116 +391,259 @@ export async function POST(
     if (lead.orgId) {
       onboardingParams.set("businessId", lead.orgId);
     }
+    if (normalizedBillingPreference) {
+      onboardingParams.set("billingPreference", normalizedBillingPreference);
+    }
     const baseSiteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.yardura.com";
     const onboardingUrl = `${baseSiteUrl}/onboarding/start?${onboardingParams.toString()}`;
 
-    const html = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #1f2937;">
-        <div style="background: linear-gradient(120deg, #0d9488, #2563eb); padding: 32px; border-radius: 18px 18px 0 0; color: white; text-align: center;">
-          <h1 style="margin: 0; font-size: 26px;">Your Yardura Quote is Ready</h1>
-          <p style="margin: 12px 0 0; font-size: 16px;">Thanks for exploring cleaner, healthier outdoor spaces with us.</p>
-        </div>
-        <div style="background: #ffffff; padding: 32px; border-radius: 0 0 18px 18px; box-shadow: 0 15px 30px rgba(15, 23, 42, 0.08);">
-          <p style="font-size: 16px; line-height: 1.6;">Hi ${greetingName},</p>
-          <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-            Here's a quick summary of your quote. When you're ready, you can convert this
-            into a full service plan in just a few clicks.
-          </p>
+    const toCents = (value?: number | null) =>
+      typeof value === "number" && Number.isFinite(value) ? value : 0;
 
-          <div style="background: #f1f5f9; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-            <h2 style="margin: 0 0 16px; font-size: 18px; color: #0f172a;">Service Snapshot</h2>
-            <ul style="padding-left: 20px; margin: 0; font-size: 15px; line-height: 1.8;">
-              <li><strong>Service type:</strong> ${lead.serviceType === "commercial" ? "Commercial" : "Residential"} ${lead.initialClean ? "(includes initial deep clean)" : ""}</li>
-              <li><strong>Schedule:</strong> ${frequencyLabel}</li>
-              ${lead.dogs ? `<li><strong>Dogs:</strong> ${lead.dogs}</li>` : ""}
-              ${lead.yardSize ? `<li><strong>Yard size:</strong> ${lead.yardSize}</li>` : ""}
-              ${areasToClean.length ? `<li><strong>Areas to clean:</strong> ${areasToClean.join(", ")}</li>` : ""}
-              ${addOnHighlights.length ? `<li><strong>Add-ons:</strong> ${addOnHighlights.join(", ")}</li>` : ""}
-              ${addressLine ? `<li><strong>Service address:</strong> ${addressLine}</li>` : ""}
-            </ul>
-          </div>
+    const frequencyKey = (lead.frequency ?? "").toLowerCase();
+    const isOneTime = frequencyKey === "onetime";
+    const perVisitAvailable =
+      lead.serviceType !== "commercial" &&
+      typeof perVisitPrice === "number" &&
+      ["weekly", "biweekly", "twice-weekly", "daily"].includes(frequencyKey);
 
-          <div style="background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-            <h2 style="margin: 0 0 16px; font-size: 18px; color: #047857;">Pricing Overview</h2>
-            <p style="margin: 0 0 12px; font-size: 15px; color: #065f46;">
-              ${
-                lead.frequency === "onetime"
-                  ? "One-time premium cleanse - includes waste removal and deodorize treatments"
-                  : "Recurring wellness service - includes pet waste removal, wellness insights, and photo confirmation"
-              }
-            </p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px;">
-              <div>
-                <p style="margin: 0; font-size: 13px; text-transform: uppercase; color: #0f172a; letter-spacing: 0.05em;">Monthly</p>
-                <p style="margin: 4px 0 0; font-size: 20px; font-weight: 700; color: #0f172a;">${formatCurrency(monthlyPrice)}</p>
-              </div>
-              <div>
-                <p style="margin: 0; font-size: 13px; text-transform: uppercase; color: #334155; letter-spacing: 0.05em;">Per Visit</p>
-                <p style="margin: 4px 0 0; font-size: 20px; font-weight: 700; color: #0f172a;">${formatCurrency(perVisitPrice)}</p>
-              </div>
-              <div>
-                <p style="margin: 0; font-size: 13px; text-transform: uppercase; color: #334155; letter-spacing: 0.05em;">${initialVisitLabel}</p>
-                <p style="margin: 4px 0 0; font-size: 20px; font-weight: 700; color: #0f172a;">${formatCurrency(pricing?.initialClean ?? oneTimePrice)}</p>
-              </div>
-            </div>
-            ${isRecurring ? '<p style="margin: 12px 0 0; font-size: 13px; color: #0f172a;">Stay on weekly, every-other-week, or twice-weekly service and this initial visit fee is waived — your first invoice will only include the recurring rate.</p>' : ""}
-          </div>
+    const monthlyDueTodayCents = 0;
 
-          <div style="background: #eff6ff; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-            <h2 style="margin: 0 0 16px; font-size: 18px; color: #1d4ed8;">Next Steps</h2>
-            <ol style="padding-left: 20px; margin: 0; font-size: 15px; line-height: 1.8;">
-              <li>Reply to this email with any adjustments you'd like.</li>
-              <li>When you're ready, create your account to lock in pricing and schedule service.</li>
-              <li>Our team will confirm your start date and share visit updates after each service.</li>
-            </ol>
-          </div>
+    const perVisitAmountCents = perVisitAvailable ? toCents(perVisitPrice) : 0;
+    const perVisitPrimaryAmountCents =
+      frequencyKey === "twice-weekly"
+        ? perVisitAmountCents * 2
+        : frequencyKey === "daily"
+          ? perVisitAmountCents * 5
+          : perVisitAmountCents;
 
-          <div style="text-align: center; margin-bottom: 32px;">
-            <a
-              href="${onboardingUrl}"
-              style="display: inline-block; padding: 14px 28px; background: #2563eb; color: white; text-decoration: none; border-radius: 999px; font-weight: 600;"
-            >
-              Create Account & Schedule Service
-            </a>
-          </div>
+    const firstVisitAddOnsCents = toCents(pricing?.firstVisitAddOnsTotal);
 
-          <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-            Prefer a call? Reach us at <a href="tel:1-888-915-9273" style="color: #2563eb; text-decoration: none;">1-888-915-YARD</a>.
-            We're happy to walk through the plan or set everything up for you.
-          </p>
+    const perVisitDueTodayCents = 0;
 
-          <p style="font-size: 12px; color: #94a3b8; margin-top: 32px;">
-            Quote Reference: ${lead.id} - Submitted ${lead.submittedAt.toLocaleString(
-              "en-US",
-              {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              },
-            )}
-          </p>
-        </div>
-      </div>
-    `;
+    const rawInitialCleanSubtotalCents =
+      typeof pricing?.initialCleanCents === "number"
+        ? pricing.initialCleanCents
+        : typeof pricing?.firstVisitTotalCents === "number"
+          ? Math.max(0, pricing.firstVisitTotalCents - firstVisitAddOnsCents)
+          : 0;
 
-    const text = `Hi ${greetingName},
+    const rawInitialCleanDiscountCents = toCents(pricing?.initialCleanDiscount);
 
-Here is your Yardura quote summary:
+    const initialCleanSubtotalCents =
+      rawInitialCleanSubtotalCents > 0
+        ? rawInitialCleanSubtotalCents
+        : rawInitialCleanDiscountCents > 0
+          ? rawInitialCleanDiscountCents
+          : 0;
 
-Service type: ${lead.serviceType === "commercial" ? "Commercial" : "Residential"}
-Schedule: ${frequencyLabel}
-${lead.dogs ? `Dogs: ${lead.dogs}\n` : ""}${lead.yardSize ? `Yard size: ${lead.yardSize}\n` : ""}${areasToClean.length ? `Areas to clean: ${areasToClean.join(", ")}\n` : ""}${addOnHighlights.length ? `Add-ons: ${addOnHighlights.join(", ")}\n` : ""}
-Monthly estimate: ${formatCurrency(monthlyPrice)}
-Per-visit estimate: ${formatCurrency(perVisitPrice)}
-Initial visit${isRecurring ? " (waived with recurring service)" : ""}: ${formatCurrency(pricing?.initialClean ?? oneTimePrice)}
-${isRecurring ? "Initial visit fee is waived when you stay on weekly, every-other-week, or twice-weekly service." : ""}
+    const normalizedInitialCleanDiscountCents = Math.min(
+      initialCleanSubtotalCents,
+      rawInitialCleanDiscountCents,
+    );
 
-Ready to get started? Create your account to confirm service: ${onboardingUrl}
+    const discountedInitialCleanCents = Math.max(
+      0,
+      initialCleanSubtotalCents - normalizedInitialCleanDiscountCents,
+    );
 
-Questions? Call us at 1-888-915-YARD (9273) or reply to this email.
+    const initialVisitTotalCents =
+      typeof pricing?.firstVisitTotalCents === "number" && pricing.firstVisitTotalCents > 0
+        ? pricing.firstVisitTotalCents
+        : discountedInitialCleanCents + firstVisitAddOnsCents;
 
--- The Yardura Team`;
+    const resolvedBillingPreference: "monthly" | "weekly" =
+      normalizedBillingPreference
+        ? normalizedBillingPreference
+        : perVisitAvailable
+          ? "weekly"
+          : "monthly";
+
+    const billingPreferenceLabel =
+      resolvedBillingPreference === "weekly"
+        ? frequencyKey === "twice-weekly"
+          ? "Pay per visit (two visits/week)"
+          : "Pay per visit"
+        : "Monthly statement (post-visit billing)";
+
+    const showInitialBreakdown =
+      initialCleanSubtotalCents > 0 ||
+      normalizedInitialCleanDiscountCents > 0 ||
+      firstVisitAddOnsCents > 0;
+
+    const initialCleanStatusLabel = (() => {
+      if (initialCleanSubtotalCents <= 0) {
+        return null;
+      }
+      if (discountedInitialCleanCents <= 0) {
+        return { label: "Free", tone: "free" as const };
+      }
+      if (normalizedInitialCleanDiscountCents > 0) {
+        return {
+          label: `Half off (${formatCurrency(discountedInitialCleanCents)})`,
+          tone: "discount" as const,
+        };
+      }
+      return null;
+    })();
+
+    const initialCleanBadgeColors = initialCleanStatusLabel?.tone === "discount"
+      ? { bg: "rgba(243,100,91,0.16)", color: "#7C2E12" }
+      : { bg: "rgba(25,180,163,0.16)", color: "#0F3C34" };
+
+    const initialCleanStatusChipHtml = initialCleanStatusLabel
+      ? `<span style="display:inline-block;margin-left:8px;padding:4px 10px;border-radius:999px;background-color:${initialCleanBadgeColors.bg};color:${initialCleanBadgeColors.color};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">${initialCleanStatusLabel.label}</span>`
+      : `<span style="margin-left:8px;font-size:11px;color:rgba(27,30,35,0.55);">Included</span>`;
+
+    const renderAmountRow = (
+      label: string,
+      amountCents: number,
+      options: {
+        divider?: boolean;
+        highlight?: boolean;
+        noteHtml?: string;
+        variant?: "credit" | "default";
+      } = {},
+    ) => {
+      const styleParts = [
+        "display:flex",
+        "justify-content:space-between",
+        "align-items:flex-start",
+        "gap:12px",
+        "font-size:12px",
+        "line-height:1.55",
+        "color:#475569",
+        options.divider
+          ? "border-top:1px dashed rgba(27,30,35,0.15);padding-top:10px;margin-top:12px;"
+          : "margin:0 0 8px;",
+      ]
+        .filter(Boolean)
+        .join(";");
+
+      const baseColor = options.highlight ? "#1B1E23" : "#0F3C34";
+      const amountColor = options.variant === "credit" ? "#B42318" : baseColor;
+      const formattedAmount = formatCurrency(amountCents);
+      const displayAmount =
+        options.variant === "credit"
+          ? `- ${formattedAmount}`
+          : formattedAmount;
+      const noteBlock = options.noteHtml
+        ? `<div style="margin:6px 0 10px;">${options.noteHtml}</div>`
+        : "";
+
+      return `<div style="${styleParts}"><span style="font-size:12px;color:#475569;max-width:70%;">${label}</span><span style="font-size:12px;font-weight:600;color:${amountColor};white-space:nowrap;">${displayAmount}</span></div>${noteBlock}`;
+    };
+
+  const initialCleanNoteHtml = `<div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(27,30,35,0.55);"><span>Value</span>${initialCleanStatusChipHtml}</div>`;
+
+    const freeFollowUpVisits =
+      frequencyKey === "twice-weekly"
+        ? 1
+        : frequencyKey === "daily"
+          ? 4
+          : 0;
+
+    const initialValueLabelCents =
+      freeFollowUpVisits > 0
+        ? initialCleanSubtotalCents + perVisitAmountCents * freeFollowUpVisits
+        : initialCleanSubtotalCents;
+
+    const subtotalBeforeCreditsCents = initialValueLabelCents + firstVisitAddOnsCents;
+
+    const hasInitialCleanCredit =
+      initialCleanSubtotalCents > 0 && discountedInitialCleanCents === 0;
+
+    const totalCreditCents =
+      (hasInitialCleanCredit ? initialCleanSubtotalCents : 0) +
+      perVisitAmountCents * freeFollowUpVisits;
+
+    const creditRowLabel =
+      freeFollowUpVisits > 0 ? "First week credit" : "Initial clean credit";
+
+    const showCreditSummary = totalCreditCents > 0;
+
+    const initialCleanHtml = initialCleanSubtotalCents > 0
+      ? renderAmountRow("Initial clean", initialCleanSubtotalCents, { noteHtml: initialCleanNoteHtml })
+      : "";
+
+    const weekdayCreditsHtml =
+      frequencyKey === "daily" && perVisitAmountCents > 0
+        ? renderAmountRow("Weekday visits (4)", perVisitAmountCents * 4, {
+            noteHtml:
+              '<div style="font-size:11px;color:rgba(27,30,35,0.55);">Charged after each weekday service</div>',
+          })
+        : "";
+
+    const followUpLabel =
+      frequencyKey === "twice-weekly"
+        ? "Follow-up visit (2nd weekly)"
+        : frequencyKey === "daily"
+          ? "Weekday visits (4)"
+          : null;
+    const followUpAmountCents =
+      frequencyKey === "twice-weekly"
+        ? perVisitAmountCents
+        : frequencyKey === "daily"
+          ? perVisitAmountCents * 4
+          : 0;
+    const followUpRowHtml =
+      followUpLabel && followUpAmountCents > 0
+        ? renderAmountRow(followUpLabel, followUpAmountCents)
+        : "";
+
+    const subtotalBeforeCreditsHtml = showCreditSummary
+      ? renderAmountRow("Subtotal before credits", subtotalBeforeCreditsCents, {
+          divider: true,
+        })
+      : "";
+
+    const creditRowHtml = showCreditSummary
+      ? renderAmountRow(creditRowLabel, totalCreditCents, {
+          variant: "credit",
+        })
+      : "";
+
+    const initialCleanTextLine = initialCleanSubtotalCents > 0
+      ? `  Initial clean: ${formatCurrency(initialCleanSubtotalCents)} value${initialCleanStatusLabel ? ` — ${initialCleanStatusLabel.label}` : ""}`
+      : null;
+
+
+    const emailBillingPreference = isOneTime
+      ? "one-time"
+      : resolvedBillingPreference === "monthly"
+        ? "monthly"
+        : "per-visit";
+
+    const quoteEmail = buildQuoteEmail({
+      lead: {
+        firstName: lead.firstName ?? null,
+        lastName: lead.lastName ?? null,
+        email: lead.email ?? null,
+        submittedAt: lead.submittedAt ?? null,
+        dogs: lead.dogs ?? null,
+        yardSize: lead.yardSize ?? null,
+        address: lead.address ?? null,
+        city: lead.city ?? null,
+        state: lead.state ?? null,
+        zipCode: lead.zipCode ?? null,
+        deodorize: lead.deodorize ?? null,
+        deodorizeMode: lead.deodorizeMode ?? null,
+        sprayDeck: lead.sprayDeck ?? null,
+        sprayDeckMode: lead.sprayDeckMode ?? null,
+        divertMode: normalizeDivertMode(lead.divertMode),
+        areasToClean: lead.areasToClean ?? null,
+        serviceType: lead.serviceType ?? null,
+      },
+      pricing: (pricing as PricingData | null) ?? null,
+      quoteReference,
+      frequencyKey,
+      billingPreference: emailBillingPreference,
+      onboardingUrl,
+      siteUrl: baseSiteUrl,
+    });
+
+    const { subject, html, text } = quoteEmail;
 
     const recipients = [lead.email];
     const bccList = (process.env.CONTACT_TO_EMAIL || "")
@@ -399,30 +651,53 @@ Questions? Call us at 1-888-915-YARD (9273) or reply to this email.
       .map((email) => email.trim())
       .filter(Boolean);
 
-    const sendResult = await resend.emails.send({
-      from:
-        process.env.RESEND_FROM_EMAIL || "Yardura Quotes <quotes@yardura.com>",
+    const emailConfig = getEmailConfig();
+    const emailDeliveryEnabled = emailConfig.provider !== "console";
+    const fromEmail =
+      process.env.RESEND_FROM_EMAIL ||
+      emailConfig.from ||
+      "InsightScoop Quotes <quotes@insightscoop.com>";
+
+    const emailId = await sendTransactionalEmail({
       to: recipients,
       bcc: bccList.length ? bccList : undefined,
-      subject: "Your Yardura Service Quote",
+      subject,
       html,
       text,
+      from: fromEmail,
     });
+
+    // Update lead with final pricing information
+    const pricingSnapshot =
+      pricing && typeof pricing === "object"
+        ? pricing
+        : normalizedBillingPreference
+          ? {
+              metadata: { billingPreference: normalizedBillingPreference },
+            }
+          : pricing ?? lead.pricingBreakdown;
 
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
-        status: "PROPOSAL_SENT",
-        pricingBreakdown: pricing ?? lead.pricingBreakdown,
+        pricingBreakdown: pricingSnapshot,
         estimatedPrice:
           typeof monthlyPrice === "number" ? monthlyPrice : lead.estimatedPrice,
-      },
-    });
+        },
+      });
+
+    const normalizedEmailId = emailDeliveryEnabled
+      ? emailId ?? "queued"
+      : null;
 
     return NextResponse.json({
       ok: true,
       leadId: lead.id,
-      emailId: sendResult.data?.id ?? null,
+      emailId: normalizedEmailId,
+      emailEnabled: emailDeliveryEnabled,
+      message: emailDeliveryEnabled
+        ? undefined
+        : "Quote processed successfully, but email not sent (email provider not configured)",
     });
   } catch (error) {
     console.error("Failed to send quote email:", error);

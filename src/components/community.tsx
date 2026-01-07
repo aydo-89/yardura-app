@@ -68,7 +68,7 @@ export default function Community() {
               </h3>
               <p className="text-slate-700 text-sm mt-3">
                 Participation is optional. You can opt out anytime. Insights are
-                informational only — not veterinary advice.
+                informational only  -  not veterinary advice.
               </p>
               <ul className="text-sm text-slate-700 mt-4 space-y-2">
                 <li className="flex items-start gap-2">
@@ -88,23 +88,23 @@ export default function Community() {
             <div className="grid grid-cols-3 gap-3">
               <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-brand-200 p-1">
                 <img
-                  src="/yeller_icon_centered.png"
-                  alt="Yeller logo"
-                  className="w-full h-full object-contain transform scale-125"
+                  src="/brand/insightscoop-logo-stacked.png"
+                  alt="InsightScoop stacked logo"
+                  className="w-full h-full object-contain transform scale-110"
                 />
               </div>
               <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-brand-200 p-1">
                 <img
-                  src="/yeller_icon_centered.png"
-                  alt="Yeller logo"
-                  className="w-full h-full object-contain transform scale-125"
+                  src="/brand/insightscoop-logo-horizontal.png"
+                  alt="InsightScoop horizontal logo"
+                  className="w-full h-full object-contain transform scale-110"
                 />
               </div>
               <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-brand-200 p-1">
                 <img
-                  src="/yeller_icon_centered.png"
-                  alt="Yeller logo"
-                  className="w-full h-full object-contain transform scale-125"
+                  src="/brand/insightscoop-logo-stacked.png"
+                  alt="InsightScoop stacked logo"
+                  className="w-full h-full object-contain transform scale-110"
                 />
               </div>
             </div>

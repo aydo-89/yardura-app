@@ -208,7 +208,7 @@ export default function StripePaymentFormWrapper({
         appearance: {
           theme: "stripe",
           variables: {
-            colorPrimary: "#22c55e", // Green to match brand
+            colorPrimary: "#19B4A3", // Mint to match InsightScoop brand
           },
         },
       }}

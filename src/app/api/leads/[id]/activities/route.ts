@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { resolveApiAuth } from "@/lib/auth/api-auth";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -40,8 +39,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await resolveApiAuth(request);
+    if (!auth?.userId) {
       return forbidden();
     }
 
@@ -53,9 +52,10 @@ export async function GET(
       );
     }
 
-    const orgId = (session.user as any)?.orgId;
-    const userId = (session.user as any)?.id;
-    const role = (session as any)?.userRole;
+    const orgId = auth.orgId;
+    const userId = auth.userId;
+    const isSalesRep =
+      auth.role === "SALES_REP" || auth.roles.includes("SALES_REP");
 
     if (!orgId) {
       return NextResponse.json(
@@ -76,7 +76,7 @@ export async function GET(
       );
     }
 
-    if (role === "SALES_REP" && userId) {
+    if (isSalesRep && userId) {
       const ownsLead = lead.ownerId === userId || lead.salesRepId === userId;
       if (!ownsLead) {
         return forbidden();
@@ -127,8 +127,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await resolveApiAuth(request);
+    if (!auth?.userId) {
       return forbidden();
     }
 
@@ -140,9 +140,10 @@ export async function POST(
       );
     }
 
-    const orgId = (session.user as any)?.orgId;
-    const userId = (session.user as any)?.id;
-    const role = (session as any)?.userRole;
+    const orgId = auth.orgId;
+    const userId = auth.userId;
+    const isSalesRep =
+      auth.role === "SALES_REP" || auth.roles.includes("SALES_REP");
 
     if (!orgId) {
       return NextResponse.json(
@@ -163,7 +164,7 @@ export async function POST(
       );
     }
 
-    if (role === "SALES_REP" && userId) {
+    if (isSalesRep && userId) {
       const ownsLead = lead.ownerId === userId || lead.salesRepId === userId;
       if (!ownsLead) {
         return forbidden();

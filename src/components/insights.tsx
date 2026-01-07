@@ -1,7 +1,9 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/framermotion";
+import Image from "next/image";
+import Link from "next/link";
 import {
   AlertTriangle,
   Brain,
@@ -15,13 +17,17 @@ import {
   Target,
 } from "lucide-react";
 import { useInViewCountUp } from "@/hooks/useInViewCountUp";
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Reveal from "@/components/Reveal";
+import AppStoreButtons from "@/components/wellness/AppStoreButtons";
 import { liftHover, spring } from "@/lib/motion/presets";
 import { track } from "@/lib/analytics";
 import { WellnessHeader } from "./dashboard/tabs/WellnessTab/components/WellnessHeader";
 import { useWellnessData } from "./dashboard/tabs/WellnessTab/hooks/useWellnessData";
 import type { DataReading, ServiceVisit } from "@/shared/wellness";
+import { brandColors, withAlpha } from "@/shared/brand";
+import { COLOR_HEX } from "@/shared/wellness";
+import { useTheme } from "./theme/ThemeProvider";
 
 interface InsightsProps {
   dataReadings?: DataReading[];
@@ -33,11 +39,37 @@ export default function Insights({
   serviceVisits = [],
 }: InsightsProps = {}) {
   const [activeMetric, setActiveMetric] = useState("color");
+  const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { theme } = useTheme();
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const backgroundSrc = useMemo(() => {
+    const mode = theme === "dark" ? "dark" : "light";
+    const base =
+      mode === "dark"
+        ? { desktop: "/hero_backgrounds/pug_mint_left_dark.jpeg", mobile: "/hero_backgrounds/pug_mint_left_dark.jpeg" }
+        : { desktop: "/hero_backgrounds/pug_mint_left_light.jpeg", mobile: "/hero_backgrounds/pug_mint_left_light.jpeg" };
+    return isMobile ? base.mobile : base.desktop;
+  }, [theme, isMobile]);
+
+  const overlayStyle = useMemo(() => {
+    if (theme === "dark") {
+      return "linear-gradient(150deg, rgba(8,16,12,0.5) 0%, rgba(8,18,14,0.42) 45%, rgba(12,26,18,0.34) 100%)";
+    }
+    return "linear-gradient(150deg, rgba(8,16,12,0.1) 0%, rgba(8,18,14,0.09) 45%, rgba(12,22,16,0.08) 100%)";
+  }, [theme]);
 
   // Get wellness data if available, otherwise use sample data for demo
   const sampleDataReadings: DataReading[] = [
@@ -94,179 +126,327 @@ export default function Insights({
     window.location.href = "/reports";
   };
 
-  const metrics = [
-    {
-      id: "color",
-      label: "Color Analysis",
-      icon: Droplet,
-      color: "green",
-      status: "96% Normal",
-      details: { normal: 96, yellow: 3, red: 1 },
-    },
-    {
-      id: "consistency",
-      label: "Consistency",
-      icon: Activity,
-      color: "emerald",
-      status: "Mostly Normal",
-      details: { normal: 70, soft: 20, hard: 10 },
-    },
-    {
-      id: "content",
-      label: "Content Signals",
-      icon: Target,
-      color: "teal",
-      status: "No Issues",
-      details: { mucous: 0, greasy: 0, parasites: 0 },
-    },
-    {
-      id: "frequency",
-      label: "Deposit Frequency",
-      icon: TrendingUp,
-      color: "green",
-      status: "12-16 per week",
-      details: { avg: 14, min: 12, max: 16 },
-    },
-  ];
+const healthyStoolColor = COLOR_HEX.normal;
+const evergreenAccent = brandColors.mint;
+const dehydrationAccent = brandColors.sunset;
 
-  const alerts = [
-    {
-      type: "warning",
-      title: "Red color detected",
-      message:
-        "Possible fresh blood detected in stool. This requires immediate veterinary attention.",
-      time: "1 day ago",
-      color: "red",
-    },
-    {
-      type: "info",
-      title: "Softer than usual",
-      message:
-        "Week 2 showed softer consistency. This is usually normal but we'll monitor.",
-      time: "2 days ago",
-      color: "amber",
-    },
-    {
-      type: "warning",
-      title: "Color change detected",
-      message:
-        "Stool appeared slightly yellow this week. Could be dietary or require monitoring.",
-      time: "3 days ago",
-      color: "amber",
-    },
-    {
-      type: "success",
-      title: "Frequency normal",
-      message:
-        "Deposit frequency is within normal range for your dog's size and age.",
-      time: "5 days ago",
-      color: "emerald",
-    },
-    {
-      type: "info",
-      title: "Mild dehydration signs",
-      message:
-        "Stool consistency suggests mild dehydration. Ensure fresh water is always available.",
-      time: "1 week ago",
-      color: "blue",
-    },
-    {
-      type: "success",
-      title: "Baseline established",
-      message:
-        "Great! We've analyzed 4 weeks of data and established your dog's normal patterns.",
-      time: "1 week ago",
-      color: "emerald",
-    },
-  ];
+const metricPalettes = {
+  healthy: {
+    base: healthyStoolColor,
+    tint: withAlpha(healthyStoolColor, 0.16),
+    highlight: withAlpha(healthyStoolColor, 0.32),
+    border: withAlpha(healthyStoolColor, 0.44),
+    iconTint: withAlpha(healthyStoolColor, 0.22),
+  },
+  mint: {
+    base: brandColors.mint,
+    tint: withAlpha(brandColors.mint, 0.16),
+    highlight: withAlpha(brandColors.mint, 0.3),
+    border: withAlpha(brandColors.mint, 0.5),
+    iconTint: withAlpha(brandColors.mint, 0.24),
+  },
+  gold: {
+    base: brandColors.gold,
+    tint: withAlpha(brandColors.gold, 0.12),
+    highlight: withAlpha(brandColors.gold, 0.24),
+    border: withAlpha(brandColors.gold, 0.45),
+    iconTint: withAlpha(brandColors.gold, 0.22),
+  },
+  coral: {
+    base: brandColors.coral,
+    tint: withAlpha(brandColors.coral, 0.12),
+    highlight: withAlpha(brandColors.coral, 0.24),
+    border: withAlpha(brandColors.coral, 0.45),
+    iconTint: withAlpha(brandColors.coral, 0.2),
+  },
+} as const;
+
+type MetricPaletteKey = keyof typeof metricPalettes;
+
+const metrics = [
+  {
+    id: "color",
+    label: "Color Analysis",
+    icon: Droplet,
+    color: "healthy" as MetricPaletteKey,
+    status: "96% Normal",
+    details: { normal: 96, yellow: 3, red: 1 },
+  },
+  {
+    id: "consistency",
+    label: "Consistency",
+    icon: Activity,
+    color: "healthy" as MetricPaletteKey,
+    status: "Mostly Normal",
+    details: { normal: 70, soft: 20, hard: 10 },
+  },
+  {
+    id: "content",
+    label: "Content Signals",
+    icon: Target,
+    color: "mint" as MetricPaletteKey,
+    status: "No Issues",
+    details: { mucous: 0, greasy: 0, parasites: 0 },
+  },
+  {
+    id: "frequency",
+    label: "Deposit Frequency",
+    icon: TrendingUp,
+    color: "mint" as MetricPaletteKey,
+    status: "12-16 per week",
+    details: { avg: 14, min: 12, max: 16 },
+  },
+];
+
+const alerts = [
+  {
+    severity: "critical" as const,
+    title: "Red color detected",
+    message:
+      "Red color noted. If it persists or you’re concerned, consider checking in with your vet.",
+    time: "1 day ago",
+  },
+  {
+    severity: "watch" as const,
+    title: "Softer than usual",
+    message:
+      "Softer consistency noted compared to recent visits.",
+    time: "2 days ago",
+  },
+  {
+    severity: "watch" as const,
+    title: "Color change detected",
+    message:
+      "Color shift noted this week—worth keeping an eye on.",
+    time: "3 days ago",
+  },
+  {
+    severity: "positive" as const,
+    title: "Frequency normal",
+    message:
+      "Deposit frequency is within normal range for your yard based on dog count and size.",
+    time: "5 days ago",
+  },
+  {
+    severity: "info" as const,
+    title: "Mild dehydration signs",
+    message:
+      "Stool consistency suggests mild dehydration. Ensure fresh water is always available.",
+    time: "1 week ago",
+  },
+  {
+    severity: "positive" as const,
+    title: "Baseline established",
+    message:
+      "Great! We've analyzed 4 weeks of data and established your yard's normal patterns.",
+    time: "1 week ago",
+  },
+];
+
+const insightStats = [
+  { value: "Stool check", label: "color • consistency • content" },
+  { value: "Gate photo", label: "proof your visit happened" },
+  { value: "Dashboard", label: "wellness trends (2026)" },
+];
 
   return (
     <section
       id="insights"
-      className="section-modern relative overflow-hidden gradient-section-accent"
+      className="landing-section section-modern relative overflow-hidden"
+      style={{ backgroundColor: theme === "dark" ? "#0a100c" : "#f8f5ee" }}
     >
-      {/* Background Elements */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-20 w-64 h-64 bg-green-700/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-48 h-48 bg-green-100/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-green-700/5 rounded-full blur-2xl"></div>
+      <div className="absolute inset-0">
+        <Image
+          src={backgroundSrc}
+          alt="Pet wellness monitoring visuals"
+          fill
+          priority
+          className="object-cover"
+          sizes="100vw"
+          style={{ objectPosition: "45% center" }}
+        />
+        <motion.div
+          className="absolute inset-0"
+          style={{ background: overlayStyle }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ amount: 0.2 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+        />
       </div>
 
-      <div className="container relative z-10">
+      <motion.div
+        className="pointer-events-none absolute inset-x-0 -top-12 h-16 z-[1]"
+        initial={{ opacity: 0, y: -28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-12%" }}
+        transition={{ duration: 0.68, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="w-full h-full bg-gradient-to-b from-[rgba(var(--vanilla-rgb-commas),0.9)] via-[rgba(var(--mint-rgb-commas),0.38)] to-transparent" />
+      </motion.div>
+      <motion.div
+        className="pointer-events-none absolute inset-x-0 -bottom-12 h-16 z-[1]"
+        initial={{ opacity: 0, y: 26 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-12%" }}
+        transition={{ duration: 0.68, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+      >
+        <div className="w-full h-full bg-gradient-to-t from-[rgba(var(--vanilla-rgb-commas),0.82)] via-[rgba(var(--gold-rgb-commas),0.3)] to-transparent" />
+      </motion.div>
+
+      <div className="container relative z-10 py-20">
         {/* Modern Section Header */}
         <Reveal>
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 text-white">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-white/80">
+              <Brain className="size-4 text-brand-mint" />
+              Pet wellness insights
+            </div>
             <div className="relative">
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">
-                Smart Health{" "}
-                <span className="relative">
-                  Monitoring
-                  <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-emerald-700 via-emerald-600 to-white rounded-full"></div>
-                </span>
+              <h2 className="text-5xl md:text-6xl font-serif leading-tight">
+                Wellness insights you'll actually use.
               </h2>
-              <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-                Advanced wellness insights to help you stay ahead of potential
-                health issues
+              <p className="mt-4 text-lg text-white/85 max-w-3xl mx-auto">
+                A simple recap link with stool health notes and an export-ready summary for your vet—plus a dashboard and trends view coming in 2026.
               </p>
+              <div className="mt-10 grid gap-4 text-left md:grid-cols-3">
+                {insightStats.map((stat) => (
+                  <div key={stat.label} className="rounded-2xl border border-white/15 bg-white/5 p-4 text-sm text-white/70">
+                    <p className="text-3xl font-black text-white">{stat.value}</p>
+                    <p className="mt-1">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 rounded-3xl border border-white/20 bg-white/10 p-6 text-white/85">
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <span className="text-xs font-semibold uppercase tracking-[0.35em] text-white/75">
+                    Free wellness app
+                  </span>
+                  <p className="max-w-2xl text-sm text-white/80">
+                    Track symptoms between visits with daily check ins, stool capture,
+                    and a guided AI chat built for pet owners.
+                  </p>
+                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                    <Link
+                      href="/wellness"
+                      className="rounded-full border border-white/30 bg-white/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/85 hover:bg-white/20"
+                    >
+                      Explore the app
+                    </Link>
+                    <AppStoreButtons compact className="items-center justify-center" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </Reveal>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - How It Works & Recent Alerts */}
+        {/* Toggle to collapse/expand full Insights */}
+        <div className="text-center mb-6">
+          <p className="mb-3 text-lg font-semibold text-white/85">
+            👇 Preview the wellness dashboard experience (coming 2026)
+          </p>
+          <motion.button
+            type="button"
+            className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-[0_18px_40px_rgba(3,7,6,0.5)] border border-white/25 ${
+              isOpen ? "bg-[#0D3A32] text-[#9CF8D5]" : "bg-transparent text-white"
+            }`}
+            aria-expanded={isOpen}
+            onClick={() => {
+              setIsOpen((v) => !v);
+              track("insights_toggle", { open: !isOpen });
+            }}
+            animate={
+              isOpen
+                ? { scale: 1, boxShadow: "0 18px 40px rgba(3,7,6,0.5)" }
+                : {
+                    scale: [1, 1.03, 1],
+                    boxShadow: [
+                      "0 18px 40px rgba(3,7,6,0.45)",
+                      "0 24px 48px rgba(3,7,6,0.55)",
+                      "0 18px 40px rgba(3,7,6,0.45)",
+                    ],
+                  }
+            }
+            transition={
+              isOpen
+                ? { duration: 0.3 }
+                : { duration: 1.6, repeat: Infinity, repeatType: "mirror" }
+            }
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+          >
+            <Eye className="size-5" />
+            {isOpen ? "Hide preview" : "View preview"}
+          </motion.button>
+        </div>
+
+        <AnimatePresence initial={false}>
+          {isOpen ? (
+            <motion.div
+              key="insights-content"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - How It Works & Example highlights */}
           <div className="lg:col-span-1 space-y-6">
             <Reveal delay={0.4}>
               <motion.div
-                className="card-modern p-8 bg-white"
+                className="rounded-3xl p-8 border bg-[rgba(8,18,14,0.6)] text-white shadow-[0_36px_72px_rgba(3,7,6,0.55)]"
                 whileHover={liftHover.hover}
                 whileTap={liftHover.tap}
                 transition={spring.snappy}
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="p-3 bg-gradient-to-br from-green-100/50 to-green-200/30 rounded-2xl shadow-sm">
-                    <Brain className="size-6 text-green-600" />
+                  <div className="p-3 rounded-2xl shadow-[0_20px_40px_rgba(3,7,6,0.5)] bg-[rgba(143,244,195,0.25)] text-[#9CF8D5]">
+                    <Brain className="size-6" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900">
+                  <h3 className="text-xl font-serif font-semibold drop-shadow-[0_16px_32px_rgba(3,7,6,0.5)]">
                     How It Works
                   </h3>
                 </div>
-                <div className="space-y-5">
+                <div className="space-y-5 text-white/85">
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-green-100/50 rounded-xl mt-0.5">
-                      <CheckCircle className="size-5 text-green-600" />
+                    <div className="p-2 rounded-xl mt-0.5 bg-white/12 border border-white/20">
+                      <CheckCircle className="size-5 text-[#9CF8D5]" />
                     </div>
                     <div>
-                      <div className="font-semibold text-slate-900 text-base">
-                        Smart Capture
+                      <div className="font-semibold text-white text-base">
+                        Field capture
                       </div>
-                      <div className="text-sm text-slate-600 leading-relaxed">
-                        Controlled photos & weights during weekly pickup
+                      <div className="text-sm leading-relaxed">
+                        Stool health notes captured during pickup
                       </div>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-green-100/50 rounded-xl mt-0.5">
-                      <CheckCircle className="size-5 text-green-600" />
+                    <div className="p-2 rounded-xl mt-0.5 bg-white/12 border border-white/20">
+                      <CheckCircle className="size-5 text-[#9CF8D5]" />
                     </div>
                     <div>
-                      <div className="font-semibold text-slate-900 text-base">
-                        AI Analysis
+                      <div className="font-semibold text-white text-base">
+                        Clear recaps
                       </div>
-                      <div className="text-sm text-slate-600 leading-relaxed">
-                        Compares to your dog's baseline patterns
+                      <div className="text-sm leading-relaxed">
+                        Color • consistency • content, kept simple
                       </div>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-green-100/50 rounded-xl mt-0.5">
-                      <CheckCircle className="size-5 text-green-600" />
+                    <div className="p-2 rounded-xl mt-0.5 bg-white/12 border border-white/20">
+                      <CheckCircle className="size-5 text-[#FFC24D]" />
                     </div>
                     <div>
-                      <div className="font-semibold text-slate-900 text-base">
-                        Gentle Alerts
+                      <div className="font-semibold text-white text-base">
+                        Low-noise highlights
                       </div>
-                      <div className="text-sm text-slate-600 leading-relaxed">
-                        Only when patterns change significantly
+                      <div className="text-sm leading-relaxed">
+                        Marks when something looks different
                       </div>
                     </div>
                   </div>
@@ -274,72 +454,94 @@ export default function Insights({
               </motion.div>
             </Reveal>
 
-            {/* Recent Alerts */}
+            {/* Example highlights */}
             <Reveal delay={0.5}>
               <motion.div
-                className="card-modern p-8 bg-white"
+                className="rounded-3xl p-8 border bg-[rgba(8,18,14,0.6)] text-white shadow-[0_36px_72px_rgba(3,7,6,0.55)]"
                 whileHover={liftHover.hover}
                 whileTap={liftHover.tap}
                 transition={spring.snappy}
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="p-3 bg-gradient-to-br from-green-100/50 to-green-200/30 rounded-2xl shadow-sm">
-                    <AlertTriangle className="size-6 text-green-600" />
+                  <div className="p-3 rounded-2xl shadow-[0_20px_40px_rgba(3,7,6,0.5)] bg-[rgba(255,194,77,0.24)] text-[#FFC24D]">
+                    <AlertTriangle className="size-6" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900">
-                    Recent Alerts
+                  <h3 className="text-xl font-serif font-semibold drop-shadow-[0_16px_32px_rgba(3,7,6,0.5)]">
+                    Example highlights
                   </h3>
                 </div>
                 <div className="space-y-4">
                   {alerts.map((alert, index) => (
-                    <motion.div
-                      key={index}
-                      className={`p-4 rounded-xl border-l-4 backdrop-blur-sm transition-all duration-200 hover:shadow-sm ${
-                        alert.color === "amber"
-                          ? "border-amber-400 bg-amber-50/70"
-                          : alert.color === "blue"
-                            ? "border-blue-400 bg-blue-50/70"
-                            : alert.color === "red"
-                              ? "border-red-400 bg-red-50/70"
-                              : "border-emerald-400 bg-emerald-50/70"
-                      }`}
-                      whileHover={{ scale: 1.02, x: 2 }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`size-3 rounded-full mt-1.5 flex-shrink-0 ${
-                            alert.color === "amber"
-                              ? "bg-amber-500"
-                              : alert.color === "blue"
-                                ? "bg-blue-500"
-                                : alert.color === "red"
-                                  ? "bg-red-500"
-                                  : "bg-emerald-500"
-                          }`}
-                        ></div>
-                        <div className="flex-1">
-                          <div
-                            className={`text-sm font-semibold ${
-                              alert.color === "amber"
-                                ? "text-amber-800"
-                                : alert.color === "blue"
-                                  ? "text-blue-800"
-                                  : alert.color === "red"
-                                    ? "text-red-800"
-                                    : "text-emerald-800"
-                            }`}
-                          >
-                            {alert.title}
+                    (() => {
+                      const severityThemes = {
+                        critical: {
+                          container: {
+                            backgroundColor: withAlpha(brandColors.coral, 0.18),
+                            border: withAlpha(brandColors.coralInk, 0.55),
+                          },
+                          dot: brandColors.coralInk,
+                          title: brandColors.coralInk,
+                        },
+                        watch: {
+                          container: {
+                            backgroundColor: withAlpha(brandColors.gold, 0.2),
+                            border: withAlpha(brandColors.gold, 0.5),
+                          },
+                          dot: brandColors.gold,
+                          title: brandColors.gold,
+                        },
+                        info: {
+                          container: {
+                            backgroundColor: withAlpha(dehydrationAccent, 0.18),
+                            border: withAlpha(dehydrationAccent, 0.5),
+                          },
+                          dot: dehydrationAccent,
+                          title: dehydrationAccent,
+                        },
+                        positive: {
+                          container: {
+                            backgroundColor: withAlpha(evergreenAccent, 0.2),
+                            border: withAlpha(evergreenAccent, 0.5),
+                          },
+                          dot: evergreenAccent,
+                          title: evergreenAccent,
+                        },
+                      } as const;
+                      const theme = severityThemes[alert.severity];
+                      return (
+                        <motion.div
+                          key={index}
+                          className="p-4 rounded-xl backdrop-blur-sm transition-all duration-200 hover:shadow-[0_18px_32px_rgba(3,7,6,0.4)] border-l-4 text-white/90"
+                          style={{
+                            backgroundColor: theme.container.backgroundColor,
+                            borderColor: "transparent",
+                            borderLeftColor: theme.container.border,
+                          }}
+                          whileHover={{ scale: 1.02, x: 2 }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="size-3 rounded-full mt-1.5 flex-shrink-0"
+                              style={{ backgroundColor: theme.dot }}
+                            ></div>
+                            <div className="flex-1">
+                              <div
+                                className="text-sm font-semibold"
+                                style={{ color: theme.title }}
+                              >
+                                {alert.title}
+                              </div>
+                              <p className="text-sm text-white/80 leading-relaxed mt-1">
+                                {alert.message}
+                              </p>
+                              <div className="text-xs text-white/70 mt-2 font-medium">
+                                {alert.time}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-sm text-slate-600 mt-1 leading-relaxed">
-                            {alert.message}
-                          </div>
-                          <div className="text-xs text-slate-500 mt-2 font-medium">
-                            {alert.time}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
+                        </motion.div>
+                      );
+                    })()
                   ))}
                 </div>
               </motion.div>
@@ -360,24 +562,29 @@ export default function Insights({
 
             <Reveal delay={0.4}>
               <motion.div
-                className="card-modern p-10 bg-white shadow-floating border border-green-700/20"
+                className="rounded-3xl p-10 border bg-[rgba(8,18,14,0.82)] text-white shadow-[0_40px_80px_rgba(3,7,6,0.6)]"
                 whileHover={liftHover.hover}
                 whileTap={liftHover.tap}
                 transition={spring.snappy}
               >
                 <div className="flex items-center justify-between mb-8">
                   <div>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-1">
-                      GI Health Dashboard
+                    <h3 className="text-2xl font-serif font-semibold text-white mb-1 drop-shadow-[0_16px_32px_rgba(3,7,6,0.55)]">
+                      Pet Wellness Dashboard
                     </h3>
-                    <p className="text-slate-600 text-sm">
-                      Last 4 weeks • Bella (Golden Retriever)
+                    <p className="text-white/75 text-sm">
+                      Preview data • Example view
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 px-4 py-2 bg-green-700/10 rounded-2xl border border-green-700/20">
-                    <div className="size-3 bg-green-700 rounded-full animate-pulse shadow-sm"></div>
-                    <span className="text-sm text-green-800 font-semibold">
-                      All Normal
+                  <div
+                    className="flex items-center gap-2 px-4 py-2 rounded-2xl border bg-[rgba(25,180,163,0.22)] shadow-[0_20px_40px_rgba(3,7,6,0.45)]"
+                    style={{
+                      borderColor: withAlpha(brandColors.mint, 0.5),
+                    }}
+                  >
+                    <span className="flex size-2 rounded-full bg-[rgba(var(--mint-rgb-commas),1)]" />
+                    <span className="text-sm font-semibold" style={{ color: brandColors.mint }}>
+                      Preview • Coming 2026
                     </span>
                   </div>
                 </div>
@@ -386,49 +593,48 @@ export default function Insights({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                   {metrics.map((metric) => {
                     const Icon = metric.icon;
+                    const theme = metricPalettes[metric.color] ?? metricPalettes.mint;
+                    const isActive = activeMetric === metric.id;
                     return (
                       <motion.div
                         key={metric.id}
                         onClick={() => setActiveMetric(metric.id)}
-                        className={`p-6 rounded-2xl cursor-pointer transition-all duration-300 backdrop-blur-sm ${
-                          activeMetric === metric.id
-                            ? metric.color === "emerald"
-                              ? `bg-gradient-to-br from-emerald-50/90 via-green-50/50 to-emerald-100/70 border-emerald-200/30 shadow-floating scale-105`
-                              : metric.color === "teal"
-                                ? `bg-gradient-to-br from-teal-50/90 via-green-100/40 to-teal-100/70 border-teal-200/30 shadow-floating scale-105`
-                                : `bg-gradient-to-br from-cyan-50/90 via-green-50/60 to-cyan-100/70 border-cyan-200/30 shadow-floating scale-105`
-                            : "bg-white/70 border-slate-200/60 hover:bg-white/90 hover:shadow-card hover:scale-102"
-                        } border`}
-                        whileHover={{
-                          scale: activeMetric === metric.id ? 1.05 : 1.02,
-                        }}
+                        className="p-6 rounded-2xl cursor-pointer transition-all duration-300 border backdrop-blur-sm text-white"
+                        style={
+                          isActive
+                            ? {
+                                background: `linear-gradient(135deg, ${withAlpha(theme.base, 0.75)}, ${withAlpha(theme.base, 0.45)})`,
+                                borderColor: withAlpha(theme.base, 0.55),
+                                boxShadow: "0 24px 48px rgba(6,14,10,0.45)",
+                                transform: "scale(1.04)",
+                              }
+                            : {
+                                background: `linear-gradient(135deg, ${theme.tint}, rgba(8,18,14,0.78))`,
+                                borderColor: theme.border,
+                                boxShadow: "0 16px 32px rgba(3,7,6,0.38)",
+                              }
+                        }
+                        whileHover={{ scale: isActive ? 1.04 : 1.02, y: isActive ? -2 : -1 }}
                         whileTap={{ scale: 0.98 }}
                       >
                         <div className="flex items-center gap-4 mb-4">
                           <div
-                            className={`p-3 rounded-xl shadow-sm ${
-                              metric.color === "emerald"
-                                ? "bg-gradient-to-br from-emerald-500/30 to-emerald-600/20"
-                                : metric.color === "teal"
-                                  ? "bg-gradient-to-br from-teal-500/30 to-teal-600/20"
-                                  : "bg-gradient-to-br from-cyan-500/30 to-cyan-600/20"
-                            }`}
+                            className="p-3 rounded-xl shadow-[0_18px_32px_rgba(3,7,6,0.45)]"
+                            style={{
+                              backgroundColor: theme.iconTint,
+                              color: theme.base,
+                            }}
                           >
-                            <Icon
-                              className={`size-5 ${
-                                metric.color === "emerald"
-                                  ? "text-emerald-700"
-                                  : metric.color === "teal"
-                                    ? "text-teal-700"
-                                    : "text-cyan-700"
-                              }`}
-                            />
+                            <Icon className="size-5" />
                           </div>
                           <div className="flex-1">
-                            <div className="text-base font-semibold text-slate-900">
+                            <div className="text-base font-semibold text-white">
                               {metric.label}
                             </div>
-                            <div className="text-sm text-green-700 font-medium">
+                            <div
+                              className="text-sm font-semibold"
+                              style={{ color: withAlpha(theme.base, 0.85) }}
+                            >
                               {metric.status}
                             </div>
                           </div>
@@ -438,18 +644,20 @@ export default function Insights({
                         {metric.id === "color" && (
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <span className="text-xs text-slate-600">
-                                Normal
-                              </span>
-                              <span className="text-sm font-bold text-green-600">
+                              <span className="text-xs text-white/70">Normal</span>
+                              <span
+                                className="text-sm font-bold"
+                                style={{ color: theme.base }}
+                              >
                                 {metric.details.normal}%
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-xs text-slate-600">
-                                Alerts
-                              </span>
-                              <span className="text-sm font-bold text-amber-600">
+                              <span className="text-xs text-white/70">Alerts</span>
+                              <span
+                                className="text-sm font-bold"
+                                style={{ color: brandColors.gold }}
+                              >
                                 {(metric.details.yellow || 0) +
                                   (metric.details.red || 0)}
                                 %
@@ -461,19 +669,30 @@ export default function Insights({
                         {metric.id === "consistency" && (
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <span className="text-xs text-slate-600">
-                                Normal
-                              </span>
-                              <span className="text-sm font-bold text-green-600">
+                              <span className="text-xs text-white/70">Normal</span>
+                              <span
+                                className="text-sm font-bold"
+                                style={{ color: theme.base }}
+                              >
                                 {metric.details.normal}%
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-xs text-slate-600">
-                                Soft
-                              </span>
-                              <span className="text-sm font-bold text-amber-600">
+                              <span className="text-xs text-white/70">Soft</span>
+                              <span
+                                className="text-sm font-bold"
+                                style={{ color: brandColors.gold }}
+                              >
                                 {metric.details.soft}%
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-white/70">Dry</span>
+                              <span
+                                className="text-sm font-bold"
+                                style={{ color: dehydrationAccent }}
+                              >
+                                {metric.details.hard}%
                               </span>
                             </div>
                           </div>
@@ -481,40 +700,84 @@ export default function Insights({
 
                         {metric.id === "content" && (
                           <div className="space-y-2">
-                            <div className="flex justify-center gap-2">
-                              <div className="px-2 py-1 bg-green-50 text-green-600 text-xs rounded-full border border-green-200">
-                                Mucous: 0
-                              </div>
-                              <div className="px-2 py-1 bg-green-50 text-green-600 text-xs rounded-full border border-green-200">
-                                Greasy: 0
-                              </div>
-                              <div className="px-2 py-1 bg-red-50 text-red-700 text-xs rounded-full border border-red-200">
-                                Parasites: 0
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-xs text-slate-600">
-                                All clear this week
-                              </div>
-                            </div>
+                            {(() => {
+                              const flagEntries = [
+                                {
+                                  label: "Mucous",
+                                  value: metric.details.mucous ?? 0,
+                                  style: {
+                                    backgroundColor: withAlpha(evergreenAccent, 0.24),
+                                    borderColor: withAlpha(evergreenAccent, 0.52),
+                                    color: evergreenAccent,
+                                  },
+                                },
+                                {
+                                  label: "Greasy",
+                                  value: metric.details.greasy ?? 0,
+                                  style: {
+                                    backgroundColor: withAlpha(brandColors.gold, 0.16),
+                                    borderColor: withAlpha(brandColors.gold, 0.3),
+                                    color: brandColors.gold,
+                                  },
+                                },
+                                {
+                                  label: "Parasites",
+                                  value: metric.details.parasites ?? 0,
+                                  style: {
+                                    backgroundColor: withAlpha(dehydrationAccent, 0.18),
+                                    borderColor: withAlpha(dehydrationAccent, 0.32),
+                                    color: dehydrationAccent,
+                                  },
+                                },
+                              ].filter((flag) => flag.value && flag.value > 0);
+
+                              if (flagEntries.length === 0) {
+                                return (
+                                  <div className="text-center text-xs text-white/70">
+                                    All clear this week
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div className="space-y-2">
+                                  <div className="flex flex-wrap justify-center gap-2">
+                                    {flagEntries.map((flag) => (
+                                      <div
+                                        key={flag.label}
+                                        className="px-2 py-1 text-xs rounded-full border"
+                                        style={flag.style}
+                                      >
+                                        {flag.label}: {flag.value}
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="text-center text-xs text-white/70">
+                                    We’ll keep watching these signals closely
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
 
                         {metric.id === "frequency" && (
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <span className="text-xs text-slate-600">
-                                Average
-                              </span>
-                              <span className="text-sm font-bold text-green-700">
+                              <span className="text-xs text-white/70">Average</span>
+                              <span
+                                className="text-sm font-bold"
+                                style={{ color: evergreenAccent }}
+                              >
                                 {metric.details.avg}/week
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-xs text-slate-600">
-                                Range
-                              </span>
-                              <span className="text-sm font-bold text-green-700">
+                              <span className="text-xs text-white/70">Range</span>
+                              <span
+                                className="text-sm font-bold"
+                                style={{ color: brandColors.gold }}
+                              >
                                 {metric.details.min}-{metric.details.max}
                               </span>
                             </div>
@@ -523,8 +786,11 @@ export default function Insights({
                               {[13, 15, 12, 16, 14, 13].map((count, i) => (
                                 <div
                                   key={i}
-                                  className="w-2 bg-green-600 rounded-sm"
-                                  style={{ height: `${(count / 16) * 100}%` }}
+                                  className="w-2 rounded-sm"
+                                  style={{
+                                    height: `${(count / 16) * 100}%`,
+                                    backgroundColor: withAlpha(evergreenAccent, 0.75),
+                                  }}
                                   title={`${count} deposits`}
                                 />
                               ))}
@@ -537,19 +803,26 @@ export default function Insights({
                 </div>
 
                 {/* Weekly Timeline Chart (like wellness tab) */}
-                <div className="bg-white rounded-2xl p-8 border border-green-700/20 shadow-card">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-green-100/50 rounded-xl">
-                      <TrendingUp className="size-5 text-green-600" />
+                <div className="rounded-2xl p-8 border border-white/14 bg-[rgba(8,18,14,0.82)] shadow-[0_28px_60px_rgba(5,12,9,0.48)]">
+                  <div className="flex items-center gap-3 mb-6 text-white">
+                    <div
+                      className="p-2 rounded-xl border"
+                      style={{
+                        backgroundColor: withAlpha(evergreenAccent, 0.22),
+                        borderColor: withAlpha(evergreenAccent, 0.48),
+                        color: evergreenAccent,
+                      }}
+                    >
+                      <TrendingUp className="size-5" />
                     </div>
-                    <span className="font-semibold text-slate-900 text-lg">
+                    <span className="font-semibold text-lg">
                       Weekly Timeline
                     </span>
                   </div>
                   <div className="h-32 overflow-x-auto">
                     {!mounted ? (
                       <div className="w-full h-full min-w-[300px] flex items-center justify-center">
-                        <div className="animate-pulse bg-gray-200 rounded w-full h-full"></div>
+                        <div className="animate-pulse bg-white/10 rounded w-full h-full"></div>
                       </div>
                     ) : (
                       <svg
@@ -569,9 +842,9 @@ export default function Insights({
                           const maxDeposits = 16;
                           const y = 90 - (point.deposits / maxDeposits) * 60;
 
-                          let color = "#10b981"; // normal
-                          if (point.status === "monitor") color = "#f59e0b";
-                          if (point.status === "attention") color = "#ef4444";
+                          let color: string = evergreenAccent; // normal
+                          if (point.status === "monitor") color = brandColors.gold;
+                          if (point.status === "attention") color = brandColors.coral;
 
                           return (
                             <g key={index}>
@@ -594,9 +867,9 @@ export default function Insights({
                                       maxDeposits) *
                                       60
                                   }
-                                  stroke="#10b981"
+                                  stroke={withAlpha(evergreenAccent, 0.6)}
                                   strokeWidth="2"
-                                  opacity="0.7"
+                                  opacity="0.8"
                                 />
                               )}
 
@@ -614,7 +887,7 @@ export default function Insights({
                                 x={x}
                                 y="110"
                                 textAnchor="middle"
-                                className="fill-slate-500"
+                                className="fill-[rgba(255,255,255,0.55)]"
                                 fontSize="10"
                               >
                                 {point.week}
@@ -628,7 +901,7 @@ export default function Insights({
                           x="15"
                           y="30"
                           textAnchor="middle"
-                          className="fill-slate-400"
+                          className="fill-[rgba(255,255,255,0.45)]"
                           fontSize="9"
                         >
                           16
@@ -637,7 +910,7 @@ export default function Insights({
                           x="15"
                           y="50"
                           textAnchor="middle"
-                          className="fill-slate-400"
+                          className="fill-[rgba(255,255,255,0.45)]"
                           fontSize="9"
                         >
                           8
@@ -646,7 +919,7 @@ export default function Insights({
                           x="15"
                           y="70"
                           textAnchor="middle"
-                          className="fill-slate-400"
+                          className="fill-[rgba(255,255,255,0.45)]"
                           fontSize="9"
                         >
                           0
@@ -660,31 +933,75 @@ export default function Insights({
                 <div className="mt-8 grid sm:grid-cols-2 gap-8">
                   {/* Color Analysis (matches wellness tab exactly) */}
                   <motion.div
-                    className="p-6 rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm shadow-card"
+                    className="p-6 rounded-2xl border border-white/14 bg-[rgba(8,18,14,0.78)] backdrop-blur-sm shadow-[0_24px_56px_rgba(5,12,9,0.46)] text-white"
                     whileHover={{ scale: 1.02, y: -2 }}
                     transition={spring.snappy}
                   >
-                    <div className="text-base font-semibold text-slate-900 mb-4">
+                    <div className="text-base font-semibold mb-4 text-white">
                       Color Analysis
                     </div>
 
                     {/* Overview Cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-                      <div className="text-center p-2 bg-green-50 rounded border">
-                        <div className="text-lg font-bold text-green-600">
+                    <div
+                      className="text-center p-2 rounded border backdrop-blur-sm"
+                      style={{
+                        backgroundColor: withAlpha(healthyStoolColor, 0.24),
+                        borderColor: withAlpha(healthyStoolColor, 0.48),
+                      }}
+                      >
+                        <div
+                          className="text-lg font-bold"
+                          style={{ color: healthyStoolColor }}
+                        >
                           96%
                         </div>
-                        <div className="text-xs text-green-600">Normal</div>
+                        <div
+                          className="text-xs font-medium"
+                          style={{ color: healthyStoolColor }}
+                        >
+                          Normal
+                        </div>
                       </div>
-                      <div className="text-center p-2 bg-yellow-50 rounded border">
-                        <div className="text-lg font-bold text-yellow-700">
+                      <div
+                        className="text-center p-2 rounded border backdrop-blur-sm"
+                        style={{
+                          backgroundColor: withAlpha(brandColors.gold, 0.2),
+                          borderColor: withAlpha(brandColors.gold, 0.38),
+                        }}
+                      >
+                        <div
+                          className="text-lg font-bold"
+                          style={{ color: brandColors.gold }}
+                        >
                           3%
                         </div>
-                        <div className="text-xs text-yellow-600">Yellow</div>
+                        <div
+                          className="text-xs font-medium"
+                          style={{ color: brandColors.gold }}
+                        >
+                          Yellow
+                        </div>
                       </div>
-                      <div className="text-center p-2 bg-red-50 rounded border">
-                        <div className="text-lg font-bold text-red-700">1%</div>
-                        <div className="text-xs text-red-600">Red</div>
+                      <div
+                        className="text-center p-2 rounded border backdrop-blur-sm"
+                        style={{
+                          backgroundColor: withAlpha(brandColors.coral, 0.22),
+                          borderColor: withAlpha(brandColors.coral, 0.4),
+                        }}
+                      >
+                        <div
+                          className="text-lg font-bold"
+                          style={{ color: brandColors.coralInk }}
+                        >
+                          1%
+                        </div>
+                        <div
+                          className="text-xs font-medium"
+                          style={{ color: brandColors.coralInk }}
+                        >
+                          Red
+                        </div>
                       </div>
                     </div>
 
@@ -716,7 +1033,7 @@ export default function Insights({
                                 cy={center}
                                 r={radius}
                                 fill="none"
-                                stroke="#f1f5f9"
+                                stroke="rgba(255,255,255,0.12)"
                                 strokeWidth="12"
                               />
 
@@ -726,7 +1043,7 @@ export default function Insights({
                                 cy={center}
                                 r={radius}
                                 fill="none"
-                                stroke="#10b981"
+                                stroke={healthyStoolColor}
                                 strokeWidth="12"
                                 strokeDasharray={`${normalLength} ${circumference - normalLength}`}
                                 strokeLinecap="round"
@@ -738,7 +1055,7 @@ export default function Insights({
                                 cy={center}
                                 r={radius}
                                 fill="none"
-                                stroke="#f59e0b"
+                                  stroke={brandColors.gold}
                                 strokeWidth="12"
                                 strokeDasharray={`${yellowLength} ${circumference - yellowLength}`}
                                 strokeLinecap="round"
@@ -751,7 +1068,7 @@ export default function Insights({
                                 cy={center}
                                 r={radius}
                                 fill="none"
-                                stroke="#ef4444"
+                                  stroke={brandColors.coral}
                                 strokeWidth="12"
                                 strokeDasharray={`${redLength} ${circumference - redLength}`}
                                 strokeLinecap="round"
@@ -763,15 +1080,16 @@ export default function Insights({
                                 cx={center}
                                 cy={center}
                                 r="28"
-                                fill="white"
-                                stroke="#e5e7eb"
+                                fill="rgba(12,24,18,0.9)"
+                                stroke="rgba(255,255,255,0.15)"
                                 strokeWidth="1"
                               />
                               <text
                                 x={center}
                                 y="52"
                                 textAnchor="middle"
-                                className="text-xl font-bold fill-slate-800"
+                                className="text-xl font-bold"
+                                fill={healthyStoolColor}
                               >
                                 96%
                               </text>
@@ -779,7 +1097,8 @@ export default function Insights({
                                 x={center}
                                 y="68"
                                 textAnchor="middle"
-                                className="text-sm font-medium fill-slate-600"
+                                className="text-sm font-medium"
+                                fill={withAlpha(healthyStoolColor, 0.88)}
                               >
                                 Normal
                               </text>
@@ -790,140 +1109,164 @@ export default function Insights({
                     </div>
 
                     {/* Legend */}
-                    <div className="flex flex-wrap justify-center gap-2 text-xs">
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span>Normal</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                  <div className="flex flex-wrap justify-center gap-2 text-xs text-white/70">
+                    <div className="flex items-center gap-1">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: healthyStoolColor }}
+                      ></div>
+                      <span>Normal</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: brandColors.gold }}
+                        ></div>
                         <span>Yellow/Gray</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                        <span>Red</span>
-                      </div>
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: brandColors.coral }}
+                      ></div>
+                      <span>Red</span>
                     </div>
-                  </motion.div>
+                    <div className="flex items-center gap-1">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: COLOR_HEX.black }}
+                      ></div>
+                      <span>Black/Tarry</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-xs text-white/65 text-center">
+                    Occasional green stool can stem from leafy diets or rapid digestion. We flag it separately if we notice it across multiple visits.
+                  </div>
+                </motion.div>
 
                   {/* Consistency Analysis (like wellness tab) */}
                   <motion.div
-                    className="p-6 rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm shadow-card"
+                    className="p-6 rounded-2xl border border-white/14 bg-[rgba(8,18,14,0.78)] backdrop-blur-sm shadow-[0_24px_56px_rgba(5,12,9,0.46)] text-white"
                     whileHover={{ scale: 1.02, y: -2 }}
                     transition={spring.snappy}
                   >
-                    <div className="text-base font-semibold text-slate-900 mb-4">
+                    <div className="text-base font-semibold mb-4">
                       Consistency Analysis
                     </div>
 
                     {/* Bristol Scale Visual */}
                     <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between text-xs text-slate-600">
+                      <div className="flex items-center justify-between text-xs text-white/75">
                         <span>Hard</span>
                         <span>Normal</span>
                         <span>Soft</span>
                       </div>
-                      <div className="relative h-3 bg-gradient-to-r from-red-200 via-green-200 to-yellow-200 rounded-full overflow-hidden">
-                        <div className="absolute inset-y-0 left-1/3 right-1/3 bg-green-400 bg-opacity-60 rounded-full"></div>
-                        <div className="absolute top-0 bottom-0 w-0.5 bg-slate-700 rounded-full transform -translate-x-0.5 left-3/4"></div>
+                      <div className="relative h-3 rounded-full overflow-hidden bg-white/10 border border-white/20">
+                        <div
+                          className="absolute inset-y-0 left-0"
+                          style={{ width: "33.33%", backgroundColor: withAlpha(dehydrationAccent, 0.35) }}
+                        ></div>
+                        <div
+                          className="absolute inset-y-0 left-1/3"
+                          style={{ width: "33.33%", backgroundColor: withAlpha(evergreenAccent, 0.52) }}
+                        ></div>
+                        <div
+                          className="absolute inset-y-0 right-0"
+                          style={{ width: "33.33%", backgroundColor: withAlpha(brandColors.gold, 0.4) }}
+                        ></div>
+                        <div className="absolute inset-y-0 left-1/3 w-px bg-white/80"></div>
+                        <div className="absolute inset-y-0 left-2/3 w-px bg-white/70"></div>
                       </div>
-                      <div className="text-center text-xs text-slate-600">
+                      <div className="text-center text-xs text-white/75">
                         Mostly Normal
                       </div>
                     </div>
 
                     {/* Consistency Distribution */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      <div className="text-center p-2 bg-green-50 rounded border">
-                        <div className="text-lg font-bold text-green-600">
+                      <div
+                        className="text-center p-2 rounded border backdrop-blur-sm"
+                        style={{
+                          backgroundColor: withAlpha(evergreenAccent, 0.26),
+                          borderColor: withAlpha(evergreenAccent, 0.46),
+                        }}
+                      >
+                        <div className="text-lg font-bold" style={{ color: evergreenAccent }}>
                           70%
                         </div>
-                        <div className="text-xs text-green-600">Normal</div>
+                        <div className="text-xs" style={{ color: evergreenAccent }}>
+                          Normal
+                        </div>
                       </div>
-                      <div className="text-center p-2 bg-yellow-50 rounded border">
-                        <div className="text-lg font-bold text-yellow-700">
+                      <div
+                        className="text-center p-2 rounded border backdrop-blur-sm"
+                        style={{
+                          backgroundColor: withAlpha(healthyStoolColor, 0.24),
+                          borderColor: withAlpha(healthyStoolColor, 0.42),
+                        }}
+                      >
+                        <div className="text-lg font-bold" style={{ color: healthyStoolColor }}>
                           20%
                         </div>
-                        <div className="text-xs text-yellow-600">Soft</div>
+                        <div className="text-xs" style={{ color: healthyStoolColor }}>
+                          Soft
+                        </div>
                       </div>
-                      <div className="text-center p-2 bg-orange-50 rounded border">
-                        <div className="text-lg font-bold text-orange-700">
+                      <div
+                        className="text-center p-2 rounded border backdrop-blur-sm"
+                        style={{
+                          backgroundColor: withAlpha(brandColors.coral, 0.22),
+                          borderColor: withAlpha(brandColors.coral, 0.4),
+                        }}
+                      >
+                        <div className="text-lg font-bold" style={{ color: dehydrationAccent }}>
                           10%
                         </div>
-                        <div className="text-xs text-orange-600">Dry</div>
+                        <div className="text-xs" style={{ color: dehydrationAccent }}>
+                          Dry
+                        </div>
                       </div>
                     </div>
                   </motion.div>
                 </div>
 
                 {/* Insights Legend */}
-                <div className="mt-8 p-6 bg-white rounded-2xl border border-green-700/20 shadow-card">
+                <div className="mt-8 p-6 rounded-2xl border border-white/14 bg-[rgba(8,18,14,0.82)] shadow-[0_24px_56px_rgba(5,12,9,0.46)] text-white">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-green-100/50 rounded-xl">
-                      <Shield className="size-5 text-green-600" />
+                    <div
+                      className="p-2 rounded-xl border"
+                      style={{
+                        backgroundColor: withAlpha(evergreenAccent, 0.22),
+                        borderColor: withAlpha(evergreenAccent, 0.4),
+                        color: evergreenAccent,
+                      }}
+                    >
+                      <Shield className="size-5" />
                     </div>
-                    <span className="text-lg font-semibold text-slate-900">
+                    <span className="text-lg font-semibold">
                       What We Monitor
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs text-muted">
-                    <span>• Color changes</span>
-                    <span>• Texture variations</span>
-                    <span>• Content anomalies</span>
-                    <span>• Frequency patterns</span>
-                    <span>• Hydration indicators</span>
-                    <span>• GI health flags</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs text-white/75">
+                    <span>• Color shifts</span>
+                    <span>• Consistency shifts</span>
+                    <span>• Mucus</span>
+                    <span>• Parasite cues</span>
+                    <span>• Foreign objects</span>
+                    <span>• Frequency changes</span>
                   </div>
-                  <div className="mt-3 text-xs text-muted/70">
-                    📊 Insights based on weekly pickups. These are informational
-                    only and not veterinary advice. Always consult your vet for
-                    health concerns.
+                  <div className="mt-3 text-xs text-white/70">
+                    📊 Preview visualization. Recap links are available today; dashboard + trends view coming in 2026.
                   </div>
                 </div>
               </motion.div>
             </Reveal>
           </div>
-        </div>
-
-        {/* CTA Section */}
-        <Reveal delay={0.7}>
-          <div className="mt-16 text-center">
-            <motion.div
-              className="bg-white border-green-700/20 shadow-xl max-w-2xl mx-auto z-surface overflow-hidden rounded-xl border p-8"
-              whileHover={liftHover.hover}
-              whileTap={liftHover.tap}
-              transition={spring.snappy}
-            >
-              <Heart className="size-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-ink mb-2">
-                Join the Waitlist for Wellness Insights
-              </h3>
-              <p className="text-muted mb-6">
-                Sign up to Yardura now and be the first to receive advanced
-                wellness insights once we launch them. Get notified when
-                AI-powered health monitoring becomes available for your dog.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <a
-                  href="/quote?businessId=yardura"
-                  data-analytics="cta_quote"
-                  className="px-6 py-3 bg-gradient-to-r from-green-700 to-green-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                  onClick={() => track("cta_insights_get_quote")}
-                >
-                  Sign Up to Yardura Now
-                </a>
-                <a
-                  href="#why-matters"
-                  className="px-6 py-3 border border-green-600 text-green-600 rounded-xl font-semibold hover:bg-green-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                  onClick={() => track("cta_insights_learn_more")}
-                >
-                  Learn About Wellness Insights
-                </a>
-              </div>
-            </motion.div>
           </div>
-        </Reveal>
-      </div>
-    </section>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+    </div>
+  </section>
   );
 }

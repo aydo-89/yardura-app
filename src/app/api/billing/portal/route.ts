@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
+import { getSiteUrl } from "@/lib/env";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,8 +12,7 @@ export async function POST(req: NextRequest) {
       );
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url:
-        returnUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      return_url: returnUrl || getSiteUrl(),
     });
     return NextResponse.json({ url: session.url });
   } catch {

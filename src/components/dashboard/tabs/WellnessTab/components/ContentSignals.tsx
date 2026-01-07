@@ -32,16 +32,11 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
   return (
     <Disclosure title="Content Analysis" defaultOpen={true}>
       <div
-        className="rounded-lg p-6"
-        style={{
-          backgroundColor: wellnessTheme.slate50,
-          boxShadow: wellnessTheme.cardShadow,
-          borderRadius: wellnessTheme.radiusLg,
-        }}
+        className="rounded-lg p-6 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-slate-900">Content Analysis</h3>
-          <div className="text-sm text-slate-600">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Content Analysis</h3>
+          <div className="text-sm text-slate-600 dark:text-slate-400">
             Advanced AI-powered stool analysis
           </div>
         </div>
@@ -110,13 +105,13 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
                 return (
                   <div
                     key={signal.key}
-                    className="p-4 bg-white rounded-lg border border-slate-200 min-h-[120px] flex flex-col"
+                    className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 min-h-[120px] flex flex-col"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         {config.icon ? (
                           <config.icon
-                            className={`w-4 h-4 flex-shrink-0 ${signal.key === "parasites" ? "text-red-500" : "text-slate-500"}`}
+                            className={`w-4 h-4 flex-shrink-0 ${signal.key === "parasites" ? "text-red-500" : "text-slate-500 dark:text-slate-400"}`}
                           />
                         ) : (
                           <div
@@ -124,7 +119,7 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
                           ></div>
                         )}
                         <div
-                          className="text-sm font-medium text-slate-900 truncate"
+                          className="text-sm font-medium text-slate-900 dark:text-white truncate"
                           title={`${config.label}: ${config.description}`}
                         >
                           {config.label}
@@ -132,7 +127,7 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div
-                          className="text-sm font-bold text-slate-800"
+                          className="text-sm font-bold text-slate-800 dark:text-white"
                           title={`${latestValue} detection(s) in the most recent week`}
                         >
                           {latestValue}
@@ -140,7 +135,7 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
                       </div>
                     </div>
                     {/* Description */}
-                    <div className="text-xs text-slate-600 mb-3 leading-relaxed flex-1">
+                    <div className="text-xs text-slate-600 dark:text-slate-400 mb-3 leading-relaxed flex-1">
                       {config.description}
                     </div>
 
@@ -148,7 +143,7 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
                     {isConcerning && (
                       <div
                         className={`mt-2 pt-2 border-t ${
-                          isCritical ? "border-red-200" : "border-amber-200"
+                          isCritical ? "border-red-200 dark:border-red-800" : "border-amber-200 dark:border-amber-800"
                         }`}
                       >
                         <button
@@ -157,8 +152,8 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
                           }
                           className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors ${
                             isCritical
-                              ? "text-red-600 hover:text-red-700 hover:bg-red-50"
-                              : "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                              ? "text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                              : "text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30"
                           }`}
                           title={`Request veterinary review of ${config.label.toLowerCase()} detection`}
                         >
@@ -173,8 +168,8 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
                       <div
                         className={`mt-2 p-2 rounded text-xs ${
                           latestValue > 0
-                            ? "bg-amber-50 text-amber-700" // Current detections - monitoring needed
-                            : "bg-green-50 text-green-700" // Historical only - no current concern
+                            ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" // Current detections - monitoring needed
+                            : "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300" // Historical only - no current concern
                         }`}
                       >
                         {latestValue > 0
@@ -185,15 +180,15 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
 
                     {/* No detections indicator */}
                     {totalLast7Days === 0 && (
-                      <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
+                      <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/30 rounded text-xs text-green-700 dark:text-green-300">
                         ✅ None detected in last 7 days
                       </div>
                     )}
 
                     {/* Sample Context - Shows proportion for current detection */}
                     {latestValue > 0 && (
-                      <div className="mt-auto pt-2 border-t border-slate-100">
-                        <div className="text-xs text-center text-slate-600">
+                      <div className="mt-auto pt-2 border-t border-slate-100 dark:border-slate-700">
+                        <div className="text-xs text-center text-slate-600 dark:text-slate-400">
                           {(() => {
                             // Get total samples from the most recent week for proportion context
                             const latestWeekSamples =
@@ -218,7 +213,7 @@ export const ContentSignals: React.FC<ContentSignalsProps> = ({
           </>
         ) : (
           /* Coming soon message when no data */
-          <div className="text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             <div className="text-4xl mb-3">🔍</div>
             <p className="font-medium">Advanced content analysis coming soon</p>
             <p className="text-sm">

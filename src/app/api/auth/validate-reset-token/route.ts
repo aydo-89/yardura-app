@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/database-access";
-
-const prisma = getDb();
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {

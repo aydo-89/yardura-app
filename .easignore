@@ -1,0 +1,99 @@
+# Exclude large root directories
+/archive/
+/.git
+/.git/
+/.git/**
+**/.git
+**/.git/
+**/.git/**
+/.pnpm-store/
+/.cursor/
+/.next/
+/dist/
+/build/
+/node_modules/
+/src/
+/public/
+/prisma/
+/scripts/
+/infra/
+/jobs/
+/data/
+/docs/
+/.github/
+/.husky/
+
+# Exclude root config files
+/deploy.sh
+/provision.sh
+/create-hero-video.js
+/package-lock.json
+/package.json
+/tsconfig.json
+/*.tsbuildinfo
+
+# Exclude apps/native node_modules and build artifacts
+apps/native/node_modules/
+apps/native/android/
+apps/native/ios/
+apps/native/.expo/
+
+# Exclude large build artifacts in any node_modules
+**/node_modules/**/android/
+**/node_modules/**/ios/
+**/node_modules/**/.cxx/
+**/node_modules/**/build/
+**/node_modules/**/*.so
+**/node_modules/**/*.o
+**/node_modules/**/*.a
+**/node_modules/**/*.dylib
+**/node_modules/**/*.dll
+
+# Environment files
+.env*
+!.env.example
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+._*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.test.js
+**/*.test.jsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Documentation
+README.md
+*.md
+
+# Temporary files
+*.tmp
+.cache/
+
+# Large data files
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+*.geojson
+*.shp
+*.pack

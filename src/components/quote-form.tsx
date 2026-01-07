@@ -8,17 +8,10 @@ import {
   type Frequency,
   type YardSize,
 } from "@/lib/pricing";
-import { useEffect, useState } from "react";
-import { AlertCircle, Info } from "lucide-react";
-
-// Allowed service areas and ZIP codes
-const SERVICE_ZIPS: Record<string, string[]> = {
-  Minneapolis: ["55406", "55407", "55408", "55409", "55417", "55419"], // South Minneapolis
-  "South Minneapolis": ["55406", "55407", "55408", "55409", "55417", "55419"],
-  Richfield: ["55423"],
-  Bloomington: ["55420", "55425", "55431", "55435", "55437", "55438"],
-  Edina: ["55410", "55416", "55424", "55435", "55436", "55439"],
-};
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, Info, Loader2 } from "lucide-react";
+import type { ZipEligibilityResult } from "@/lib/zip-eligibility";
+import { buildTileMessaging } from "@/lib/marketplace/tile-readiness";
 
 const schema = z
   .object({
@@ -35,37 +28,21 @@ const schema = z
     litter: z.boolean().default(false),
     dataOptIn: z.boolean().default(false),
     message: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    const cityKey = Object.keys(SERVICE_ZIPS).find(
-      (k) => k.toLowerCase() === data.city.trim().toLowerCase(),
-    );
-    const allowedZips = cityKey ? SERVICE_ZIPS[cityKey] : [];
-    const isZipAllowed = allowedZips.includes(data.zip);
-    if (!cityKey) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "We currently serve South Minneapolis, Richfield, Bloomington, or Edina",
-        path: ["city"],
-      });
-    } else if (!isZipAllowed) {
-      const hint =
-        cityKey === "Minneapolis" || cityKey === "South Minneapolis"
-          ? "(South Minneapolis ZIPs: 55406, 55407, 55408, 55409, 55417, 55419)"
-          : `(${cityKey} ZIPs: ${SERVICE_ZIPS[cityKey].join(", ")})`;
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `ZIP not in our service area ${hint}`,
-        path: ["zip"],
-      });
-    }
   });
 
 type FormData = z.input<typeof schema>;
 
 export default function QuoteForm() {
   const [estimate, setEstimate] = useState<number | null>(null);
+  const [zipResult, setZipResult] = useState<ZipEligibilityResult | null>(null);
+  const [zipChecking, setZipChecking] = useState(false);
+  const [zipFetchError, setZipFetchError] = useState<string | null>(null);
+
+  const tileMessaging = useMemo(() => {
+    if (!zipResult) return null;
+    return buildTileMessaging(zipResult);
+  }, [zipResult]);
+
   // Function to scroll to community research section
   const scrollToCommunity = () => {
     const communitySection = document.getElementById("community");
@@ -82,6 +59,8 @@ export default function QuoteForm() {
     handleSubmit,
     watch,
     reset,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting, isValid },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -101,6 +80,7 @@ export default function QuoteForm() {
   const frequency = watch("frequency");
   const deodorize = watch("deodorize") ?? false;
   const litter = watch("litter") ?? false;
+  const zip = watch("zip");
 
   useEffect(() => {
     if (frequency === "one-time")
@@ -121,7 +101,68 @@ export default function QuoteForm() {
       );
   }, [dogs, yardSize, frequency, deodorize, litter]);
 
+  useEffect(() => {
+    if (!zip || zip.trim().length !== 5) {
+      setZipResult(null);
+      setZipFetchError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const fetchZip = async () => {
+      setZipChecking(true);
+      setZipFetchError(null);
+      try {
+        const response = await fetch(
+          `/api/zip-eligibility?zipCode=${zip.trim()}`,
+          { signal: controller.signal },
+        );
+        if (!response.ok) {
+          throw new Error(`ZIP lookup failed (${response.status})`);
+        }
+        const payload: ZipEligibilityResult = await response.json();
+        if (!cancelled) {
+          setZipResult(payload);
+          if (payload.eligible) {
+            clearErrors("zip");
+          }
+        }
+      } catch (error: any) {
+        if (cancelled || error?.name === "AbortError") return;
+        console.error("Quote ZIP eligibility request failed", error);
+        setZipResult(null);
+        setZipFetchError(
+          "Unable to verify service availability right now. Please try again shortly.",
+        );
+      } finally {
+        if (!cancelled) {
+          setZipChecking(false);
+        }
+      }
+    };
+
+    void fetchZip();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [zip, clearErrors]);
+
   const onSubmit = async (data: FormData) => {
+    if (!zipResult?.eligible) {
+      setError("zip", {
+        type: "manual",
+        message:
+          zipFetchError ??
+          tileMessaging?.headline ??
+          "We’re not live there yet, but join the waitlist so we can notify you when the tile goes live.",
+      });
+      return;
+    }
+
     // Store quote data in localStorage to pass to signup
     localStorage.setItem("quoteFormData", JSON.stringify(data));
     localStorage.setItem("quoteEstimate", estimate?.toString() || "0");
@@ -225,6 +266,37 @@ export default function QuoteForm() {
                 errors.zip ? "border-red-500 bg-red-50" : "border-brand-300"
               }`}
             />
+            {zipChecking && (
+              <div className="mt-1 text-sm text-slate-500 flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" aria-hidden />
+                Checking service coverage…
+              </div>
+            )}
+            {!zipChecking && zipFetchError && (
+              <div className="mt-1 text-sm text-amber-600 flex items-center gap-2">
+                <AlertCircle className="w-3 h-3" />
+                {zipFetchError}
+              </div>
+            )}
+            {!zipChecking && tileMessaging && (
+              <div
+                className={`mt-1 text-sm flex items-start gap-2 ${
+                  zipResult?.eligible
+                    ? "text-emerald-600"
+                    : "text-amber-700"
+                }`}
+              >
+                <AlertCircle className="w-3 h-3 mt-0.5" />
+                <div>
+                  <p className="font-medium">{tileMessaging.headline}</p>
+                  {tileMessaging.detail && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {tileMessaging.detail}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
             {errors.zip && (
               <div className="mt-1 text-red-500 text-sm flex items-center gap-1">
                 <AlertCircle className="size-3" />

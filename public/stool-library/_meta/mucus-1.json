@@ -1,0 +1,13 @@
+{
+  "id": "mucus-1",
+  "visual": {
+    "id": "mucus-1",
+    "shape": "log shape with visible coating layer",
+    "color": "brown with translucent whitish coating",
+    "distinguishingFeature": "visible slimy/jelly-like coating wrapped around the outside",
+    "surface": "translucent mucus layer visible on surface, possibly with strand shapes"
+  },
+  "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: log shape with visible coating layer. Color: brown with translucent whitish coating. Key identifying feature: visible slimy/jelly-like coating wrapped around the outside. Surface/texture: translucent mucus layer visible on surface, possibly with strand shapes. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"mucus\" stool looks like.",
+  "model": "gemini-3-pro-image-preview",
+  "generatedAt": "2026-01-07T13:21:24.545Z"
+}

@@ -3,6 +3,8 @@ import { safeGetServerSession } from "@/lib/auth";
 import AccountPageClient from "@/components/account/AccountPageClient";
 import UserLayout from "@/components/layout/UserLayout";
 
+export const dynamic = "force-dynamic";
+
 export default async function AccountPage() {
   // Check authentication on server side
   const session = await safeGetServerSession({

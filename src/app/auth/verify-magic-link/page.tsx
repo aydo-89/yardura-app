@@ -9,15 +9,16 @@ import { signIn } from "next-auth/react";
 
 function VerifyMagicLinkContent() {
   const searchParams = useSearchParams();
+  const params = searchParams ?? new URLSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<"verifying" | "success" | "error">(
     "verifying",
   );
   const [errorMessage, setErrorMessage] = useState("");
 
-  const token = searchParams.get("token");
-  const email = searchParams.get("email");
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const token = params.get("token");
+  const email = params.get("email");
+  const callbackUrl = params.get("callbackUrl") || "/dashboard";
 
   useEffect(() => {
     if (!token || !email) {

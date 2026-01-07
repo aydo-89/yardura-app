@@ -8,13 +8,21 @@
  */
 
 import { track as vercelTrack } from "@vercel/analytics";
+import {
+  defaultTrackingConsent,
+  readStoredConsent,
+  hasAnalyticsConsent,
+} from "@/lib/trackingConsent";
+import { getQuoteSessionId } from "@/lib/quoteSession";
+
+const GA4_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
 
 // Analytics configuration
 export const ANALYTICS_CONFIG = {
   enabled: process.env.NODE_ENV === "production",
   providers: {
     vercel: !!process.env.VERCEL,
-    google: !!process.env.NEXT_PUBLIC_GA_TRACKING_ID,
+    google: !!GA4_MEASUREMENT_ID,
     custom: true,
   },
 };
@@ -47,6 +55,7 @@ export type EventType =
   | "service_type_selected"
   | "report_download"
   | "referral_copy"
+  | "waitlist_signup"
   | "referral_native_share"
   | "dashboard_tab_change"
   | "dashboard_quick_action"
@@ -64,10 +73,14 @@ export type EventType =
   | "cta_pricing_bottom_get_quote"
   | "nav_click"
   | "cta_header_get_quote"
+  | "cta_header_download_app"
   | "header_phone_call"
   | "cta_header_signup"
   | "cta_header_login"
-  | "cta_sticky_get_quote";
+  | "cta_sticky_get_quote"
+  // UI toggles
+  | "insights_toggle"
+  | "weekend_upgrade_toggled";
 
 // Event properties interface
 export interface EventProperties {
@@ -80,6 +93,17 @@ export function track(
   properties: EventProperties = {},
   userId?: string,
 ) {
+  const consent =
+    typeof window !== "undefined" ? readStoredConsent() : defaultTrackingConsent;
+  const analyticsAllowed = hasAnalyticsConsent(consent);
+
+  if (!analyticsAllowed) {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Analytics Suppressed] ${event}:`, properties);
+    }
+    return;
+  }
+
   if (!ANALYTICS_CONFIG.enabled) {
     console.log(`[Analytics Debug] ${event}:`, properties);
     return;
@@ -94,6 +118,8 @@ export function track(
       url: typeof window !== "undefined" ? window.location.href : undefined,
       userAgent:
         typeof window !== "undefined" ? window.navigator.userAgent : undefined,
+      quote_session_id:
+        typeof window !== "undefined" ? getQuoteSessionId() : undefined,
     },
   };
 
@@ -279,6 +305,12 @@ declare global {
       command: "config" | "event",
       targetId: string,
       config?: Record<string, any>,
+    ) => void;
+    dataLayer?: Array<Record<string, any>>;
+    fbq?: (
+      command: string,
+      eventName: string,
+      params?: Record<string, any>,
     ) => void;
   }
 }

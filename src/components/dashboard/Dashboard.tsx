@@ -1,9 +1,22 @@
 // Refactor: extracted from legacy DashboardClientNew; removed mock wellness code and duplicates.
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, type ChangeEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { ChevronDown, Moon, Sun, User, PhoneCall } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { track } from "@/lib/analytics";
+import { buildWellnessReadingsFromMedia } from "@/lib/wellness/readings";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import {
+  ROLE_DISPLAY_NAME,
+  extractActiveRole,
+  extractUserRoles,
+  getDefaultRedirectForRole,
+  type AppUserRole,
+} from "@/lib/auth/roles";
 import type { DashboardClientProps } from "./types";
 import {
   OverviewTab,
@@ -14,8 +27,50 @@ import {
   ProfileTab,
 } from "./tabs";
 
+export type DashboardTabValue = "overview" | "services" | "eco" | "wellness" | "billing" | "profile";
+
 export default function Dashboard(props: DashboardClientProps) {
-  const { user, dogs, serviceVisits, dataReadings } = props;
+  const { user, dogs, serviceVisits, dataReadings, serviceSummary } = props;
+  const [activeTab, setActiveTab] = useState<DashboardTabValue>("overview");
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
+  const router = useRouter();
+  const { data: session, update } = useSession();
+  const availableRoles = useMemo(() => extractUserRoles(session), [session]);
+  const activeRole = useMemo(() => extractActiveRole(session), [session]);
+  const [switchingRole, setSwitchingRole] = useState<AppUserRole | null>(null);
+  const [roleSwitchError, setRoleSwitchError] = useState<string | null>(null);
+
+  const handleRoleChange = useCallback(
+    async (event: ChangeEvent<HTMLSelectElement>) => {
+      const nextRole = event.target.value as AppUserRole;
+      if (!nextRole || nextRole === activeRole) {
+        return;
+      }
+      try {
+        setRoleSwitchError(null);
+        setSwitchingRole(nextRole);
+        await update?.({ activeRole: nextRole });
+        router.replace(getDefaultRedirectForRole(nextRole));
+      } catch (error) {
+        console.error("[Dashboard] Failed to switch roles", error);
+        setRoleSwitchError("Unable to switch roles right now.");
+      } finally {
+        setSwitchingRole(null);
+      }
+    },
+    [activeRole, router, update],
+  );
+
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value as DashboardTabValue);
+    track("dashboard_tab_change", { tab: value });
+  }, []);
+
+  const derivedDogsCount = Math.max(dogs.length, user.dogsCount ?? 0);
+  const hasDogProfile = dogs.length > 0;
+  const summaryNextVisitIso =
+    serviceSummary?.nextVisitDate ?? serviceSummary?.firstVisitDate ?? null;
 
   // Shared computed metrics
   const profilePercent = useMemo(() => {
@@ -25,11 +80,11 @@ export default function Dashboard(props: DashboardClientProps) {
       ["Address", Boolean(user.address && user.address.trim().length > 0)],
       ["City", Boolean(user.city && user.city.trim().length > 0)],
       ["ZIP code", Boolean(user.zipCode && user.zipCode.trim().length > 0)],
-      ["At least 1 dog profile", dogs.length > 0],
+      ["At least 1 dog profile", hasDogProfile],
     ];
     const completed = fields.filter(([, ok]) => ok).length;
     return Math.round((completed / fields.length) * 100);
-  }, [user, dogs.length]);
+  }, [user, hasDogProfile]);
 
   const profileFields = useMemo(() => {
     return [
@@ -38,9 +93,9 @@ export default function Dashboard(props: DashboardClientProps) {
       ["Address", Boolean(user.address && user.address.trim().length > 0)],
       ["City", Boolean(user.city && user.city.trim().length > 0)],
       ["ZIP code", Boolean(user.zipCode && user.zipCode.trim().length > 0)],
-      ["At least 1 dog profile", dogs.length > 0],
+      ["At least 1 dog profile", hasDogProfile],
     ] as Array<[string, boolean]>;
-  }, [user, dogs.length]);
+  }, [user, hasDogProfile]);
 
   const totalGrams = useMemo(
     () => dataReadings.reduce((sum, r) => sum + (r.weight || 0), 0),
@@ -49,15 +104,21 @@ export default function Dashboard(props: DashboardClientProps) {
 
   const last30DaysCount = useMemo(() => {
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    return dataReadings.filter((r) => new Date(r.timestamp).getTime() >= cutoff)
-      .length;
-  }, [dataReadings]);
+    return serviceVisits.filter(
+      (visit) =>
+        visit.status === "COMPLETED" &&
+        new Date(visit.scheduledDate).getTime() >= cutoff,
+    ).length;
+  }, [serviceVisits]);
 
   const last7DaysCount = useMemo(() => {
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    return dataReadings.filter((r) => new Date(r.timestamp).getTime() >= cutoff)
-      .length;
-  }, [dataReadings]);
+    return serviceVisits.filter(
+      (visit) =>
+        visit.status === "COMPLETED" &&
+        new Date(visit.scheduledDate).getTime() >= cutoff,
+    ).length;
+  }, [serviceVisits]);
 
   const avgWeight30G = useMemo(() => {
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -71,6 +132,47 @@ export default function Dashboard(props: DashboardClientProps) {
     return sum / weights.length;
   }, [dataReadings]);
 
+  const fallbackWellnessReadings = useMemo(
+    () =>
+      dataReadings.map((reading) => ({
+        id: reading.id,
+        timestamp: reading.timestamp,
+        colors: { normal: 0, yellow: 0, red: 0, black: 0, total: 0 },
+        consistency: { normal: 0, soft: 0, dry: 0, total: 0 },
+        issues: Array.isArray(reading.issues)
+          ? reading.issues.filter(
+              (issue): issue is string =>
+                typeof issue === "string" && issue.trim().length > 0,
+            )
+          : [],
+        color: reading.color || undefined,
+        weight: typeof reading.weight === "number" ? reading.weight : undefined,
+        volume: typeof reading.volume === "number" ? reading.volume : undefined,
+        consistencyLabel:
+          typeof reading.consistencyLabel === "string"
+            ? reading.consistencyLabel
+            : undefined,
+      })),
+    [dataReadings],
+  );
+
+  const wellnessReadings = useMemo(() => {
+    const mediaReadings = buildWellnessReadingsFromMedia(
+      serviceVisits.flatMap((visit) =>
+        (visit.media ?? []).map((media) => ({
+          id: media.id,
+          capturedAt: new Date(media.capturedAt),
+          analysisResult: media.analysisResult ?? null,
+          stoolSampleId: media.stoolSampleId ?? null,
+          stoolSampleView: media.stoolSampleView ?? null,
+          assetType: media.assetType,
+        })),
+      ),
+    );
+
+    return mediaReadings.length > 0 ? mediaReadings : fallbackWellnessReadings;
+  }, [serviceVisits, fallbackWellnessReadings]);
+
   const lastReadingAt = useMemo(() => {
     if (dataReadings.length === 0) return null;
     const ts = Math.max(
@@ -79,7 +181,7 @@ export default function Dashboard(props: DashboardClientProps) {
     return new Date(ts);
   }, [dataReadings]);
 
-  const nextServiceAt = useMemo(() => {
+  const baseNextServiceAt = useMemo(() => {
     const nowTs = Date.now();
     const futureScheduled = serviceVisits
       .filter((v) => v.status === "SCHEDULED")
@@ -114,6 +216,13 @@ export default function Dashboard(props: DashboardClientProps) {
     return candidates[0];
   }, [serviceVisits]);
 
+  const resolvedNextServiceAt = useMemo(() => {
+    if (baseNextServiceAt) return baseNextServiceAt;
+    if (!summaryNextVisitIso) return null;
+    const parsed = new Date(summaryNextVisitIso);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [baseNextServiceAt, summaryNextVisitIso]);
+
   const lastCompletedAt = useMemo(() => {
     const completed = serviceVisits
       .filter((v) => v.status === "COMPLETED")
@@ -123,10 +232,18 @@ export default function Dashboard(props: DashboardClientProps) {
   }, [serviceVisits]);
 
   const daysUntilNext = useMemo(() => {
-    if (!nextServiceAt) return null;
-    const ms = nextServiceAt.getTime() - Date.now();
+    if (!baseNextServiceAt) return null;
+    const ms = baseNextServiceAt.getTime() - Date.now();
     return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
-  }, [nextServiceAt]);
+  }, [baseNextServiceAt]);
+
+  const resolvedDaysUntilNext = useMemo(() => {
+    if (resolvedNextServiceAt) {
+      const ms = resolvedNextServiceAt.getTime() - Date.now();
+      return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+    }
+    return daysUntilNext;
+  }, [resolvedNextServiceAt, daysUntilNext]);
 
   const serviceStreak = useMemo(() => {
     const sorted = [...serviceVisits].sort(
@@ -169,71 +286,10 @@ export default function Dashboard(props: DashboardClientProps) {
     return concerning ? "WATCH" : "NORMAL";
   }, [dataReadings]);
 
-  // Form state
-  const [showProfileForm, setShowProfileForm] = useState(false);
-  const [showDogForm, setShowDogForm] = useState(false);
-  const [formPhone, setFormPhone] = useState(user.phone || "");
-  const [formAddress, setFormAddress] = useState(user.address || "");
-  const [formCity, setFormCity] = useState(user.city || "");
-  const [formZip, setFormZip] = useState(user.zipCode || "");
-  const [savingProfile, setSavingProfile] = useState(false);
-
-  const [dogName, setDogName] = useState("");
-  const [dogBreed, setDogBreed] = useState("");
-  const [dogAge, setDogAge] = useState("");
-  const [dogWeight, setDogWeight] = useState("");
-  const [savingDog, setSavingDog] = useState(false);
-
   const referralUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/?ref=${user.id}`
-      : `https://www.yardura.com/?ref=${user.id}`;
-
-  // Form handlers
-  const submitProfile = async () => {
-    setSavingProfile(true);
-    try {
-      await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address: formAddress,
-          city: formCity,
-          zipCode: formZip,
-          phone: formPhone,
-        }),
-      });
-      // Update local state would go here
-      setShowProfileForm(false);
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
-  const submitDog = async () => {
-    if (!dogName.trim()) return;
-    setSavingDog(true);
-    try {
-      await fetch("/api/dogs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: dogName,
-          breed: dogBreed || null,
-          age: dogAge ? parseInt(dogAge) : null,
-          weight: dogWeight,
-        }),
-      });
-      // Update local state would go here
-      setDogName("");
-      setDogBreed("");
-      setDogAge("");
-      setDogWeight("");
-      setShowDogForm(false);
-    } finally {
-      setSavingDog(false);
-    }
-  };
+      : `https://www.getinsightscoop.com/?ref=${user.id}`;
 
   const handleCopy = async () => {
     try {
@@ -262,104 +318,99 @@ export default function Dashboard(props: DashboardClientProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Branded Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 text-white shadow-2xl">
-        {/* Background gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-accent-soft/20 via-transparent to-accent-soft/20 opacity-50"></div>
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          {/* Logo and Branding */}
-          <div className="flex items-center gap-3">
+    <div className="space-y-6 md:space-y-8">
+      {/* Minimal Header Bar */}
+      <header className="flex flex-col gap-4 pb-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
             <img
-              src="/yeller_icon_centered.png"
-              alt="Yeller logo"
-              className="h-10 w-10 rounded-lg shadow-soft object-cover bg-white transform scale-125"
+              src="/brand/insightscoop-logo-horizontal.png"
+            alt="InsightScoop"
+            className="h-8 w-auto object-contain dark:brightness-0 dark:invert"
             />
-            <div>
-              <div className="font-extrabold text-2xl text-white">Yeller</div>
-              <div className="text-sm text-slate-300 flex items-center gap-2">
-                <span>by Yardura</span>
-                <img
-                  src="/yardura-logo.png"
-                  alt="Yardura"
-                  className="h-5 w-5 rounded-sm object-contain bg-white/10 p-0.5"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Welcome Message and Stats */}
-          <div className="md:text-right">
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              Welcome back{user.name ? `, ${user.name}` : ""}! 🐾
-            </h1>
-            <p className="text-sm text-slate-400 mb-4">
-              Your Yeller Service Dashboard
+          <div className="hidden sm:block h-6 w-px bg-graphite/10 dark:bg-white/20" />
+          <div className="hidden sm:block">
+            <p className="text-sm font-medium text-graphite dark:text-white">
+              Hey {user.name?.split(" ")[0] || "there"} 👋
             </p>
-            <div className="flex flex-col md:flex-row md:items-center gap-2 text-slate-300">
-              <div className="text-sm">
-                Household: {dogs.length} {dogs.length === 1 ? "dog" : "dogs"}
+            <p className="text-xs text-graphite/50 dark:text-white/50">
+              {derivedDogsCount} {derivedDogsCount === 1 ? "pup" : "pups"} · {user.city || "Your dashboard"}
+            </p>
+          </div>
               </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {availableRoles.length > 1 ? (
+            <div className="relative">
+              <label className="sr-only" htmlFor="dashboard-role-switcher">
+                Switch role
+              </label>
+              <select
+                id="dashboard-role-switcher"
+                value={activeRole ?? ""}
+                onChange={handleRoleChange}
+                disabled={switchingRole !== null || !activeRole}
+                className="h-11 min-w-[170px] appearance-none rounded-xl border border-graphite/10 dark:border-white/15 bg-white/80 dark:bg-slate-900 px-4 pr-9 text-sm font-semibold text-graphite dark:text-white transition-all hover:border-graphite/20 dark:hover:bg-slate-800 disabled:opacity-60"
+              >
+                {availableRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {ROLE_DISPLAY_NAME[role]}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-graphite/50 dark:text-white/60" />
             </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex items-center">
+          ) : null}
             <a
-              href="tel:+18889159273"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-white hover:bg-accent/90 transition-colors text-sm font-medium shadow-soft"
-            >
-              📞 Call Support
-            </a>
-          </div>
+              href="tel:+18774179273"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-graphite dark:bg-white text-white dark:text-graphite hover:bg-graphite-soft dark:hover:bg-white/90 transition-all text-sm font-semibold shadow-sm hover:shadow-md"
+          >
+            <PhoneCall className="size-4" />
+            <span>Support</span>
+          </a>
+          <Link
+            href="/account"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-graphite/10 dark:border-white/15 bg-white/80 dark:bg-slate-900 text-graphite dark:text-white hover:bg-white hover:border-graphite/20 dark:hover:bg-slate-800 transition-all text-sm font-semibold"
+          >
+            <User className="size-4" />
+            <span>Account</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            aria-label="Toggle color theme"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-graphite/10 dark:border-white/15 bg-white/80 dark:bg-slate-900 text-graphite/70 dark:text-white/80 hover:text-graphite hover:border-graphite/20 dark:hover:bg-slate-800 transition-all"
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
         </div>
-      </div>
+        {roleSwitchError ? (
+          <p className="text-xs text-red-500 dark:text-red-400">{roleSwitchError}</p>
+        ) : null}
+      </header>
 
       <Tabs
-        defaultValue="overview"
-        onValueChange={(val) => track("dashboard_tab_change", { tab: val })}
-        className="space-y-6"
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-6 md:space-y-8"
       >
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 bg-white/80 backdrop-blur-sm border border-slate-200/60 p-1 rounded-2xl shadow-xl">
-          <TabsTrigger
-            value="overview"
-            className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-600 data-[state=active]:to-brand-700 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:bg-slate-50 hover:text-slate-900 font-medium py-2 px-2 text-xs md:text-sm"
-          >
-            <span className="hidden md:inline">Overview</span>
-            <span className="md:hidden">Home</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="services"
-            className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:bg-slate-50 hover:text-slate-900 font-medium py-2 px-2 text-xs md:text-sm"
-          >
-            Services
-          </TabsTrigger>
-          <TabsTrigger
-            value="eco"
-            className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-emerald-700 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:bg-slate-50 hover:text-slate-900 font-medium py-2 px-2 text-xs md:text-sm"
-          >
-            <span className="hidden md:inline">Eco Impact</span>
-            <span className="md:hidden">Eco</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="wellness"
-            className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-700 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:bg-slate-50 hover:text-slate-900 font-medium py-2 px-2 text-xs md:text-sm md:block hidden"
-          >
-            Wellness
-          </TabsTrigger>
-          <TabsTrigger
-            value="billing"
-            className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-orange-700 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:bg-slate-50 hover:text-slate-900 font-medium py-2 px-2 text-xs md:text-sm md:block hidden"
-          >
-            Billing
-          </TabsTrigger>
-          <TabsTrigger
-            value="profile"
-            className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-600 data-[state=active]:to-slate-700 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 hover:bg-slate-50 hover:text-slate-900 font-medium py-2 px-2 text-xs md:text-sm md:block hidden"
-          >
-            Profile
-          </TabsTrigger>
+        {/* Modern Tab Navigation */}
+        <TabsList className="flex w-full items-center gap-1 overflow-x-auto pb-1 border-b border-graphite/5 dark:border-white/10 bg-transparent p-0 h-auto">
+          {[
+            { value: "overview", label: "Overview", icon: "🏠" },
+            { value: "services", label: "Services", icon: "📅" },
+            { value: "eco", label: "Eco Impact", icon: "🌱" },
+            { value: "wellness", label: "Wellness", icon: "💚" },
+            { value: "billing", label: "Billing", icon: "💳" },
+            { value: "profile", label: "Profile", icon: "👤" },
+          ].map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="relative flex-shrink-0 px-4 py-3 text-sm font-medium text-graphite/50 dark:text-white/50 transition-all duration-200 rounded-none border-b-2 border-transparent data-[state=active]:border-coral data-[state=active]:text-graphite dark:data-[state=active]:text-white data-[state=active]:bg-transparent hover:text-graphite/80 dark:hover:text-white/80 bg-transparent shadow-none"
+            >
+              <span className="mr-1.5 hidden sm:inline">{tab.icon}</span>
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -371,8 +422,8 @@ export default function Dashboard(props: DashboardClientProps) {
             profilePercent={profilePercent}
             profileFields={profileFields}
             lastReadingAt={lastReadingAt}
-            nextServiceAt={nextServiceAt}
-            daysUntilNext={daysUntilNext}
+            nextServiceAt={resolvedNextServiceAt}
+            daysUntilNext={resolvedDaysUntilNext}
             serviceStreak={serviceStreak}
             last7DaysCount={last7DaysCount}
             last30DaysCount={last30DaysCount}
@@ -382,69 +433,40 @@ export default function Dashboard(props: DashboardClientProps) {
             methaneThisMonthLbsEq={methaneThisMonthLbsEq}
             recentInsightsLevel={recentInsightsLevel}
             referralUrl={referralUrl}
-            onOpenProfileForm={() => setShowProfileForm(true)}
-            onOpenDogForm={() => setShowDogForm(true)}
-            forms={{
-              showProfileForm,
-              showDogForm,
-              formPhone,
-              setFormPhone,
-              formAddress,
-              setFormAddress,
-              formCity,
-              setFormCity,
-              formZip,
-              setFormZip,
-              submitProfile,
-              savingProfile,
-              dogName,
-              setDogName,
-              dogBreed,
-              setDogBreed,
-              dogAge,
-              setDogAge,
-              dogWeight,
-              setDogWeight,
-              submitDog,
-              savingDog,
-              setShowProfileForm,
-              setShowDogForm,
-            }}
+            serviceSummary={serviceSummary}
             onCopyReferral={handleCopy}
             onShareReferral={handleShare}
+            onNavigateTab={handleTabChange}
           />
         </TabsContent>
 
         <TabsContent value="services" className="space-y-6">
           <ServicesTab
             serviceVisits={serviceVisits}
-            nextServiceAt={nextServiceAt}
-            daysUntilNext={daysUntilNext}
+            nextServiceAt={resolvedNextServiceAt}
+            daysUntilNext={resolvedDaysUntilNext}
             lastCompletedAt={lastCompletedAt}
             serviceStreak={serviceStreak}
             user={user}
+            serviceSummary={serviceSummary}
+            onNavigateTab={handleTabChange}
           />
         </TabsContent>
 
         <TabsContent value="eco" className="space-y-6">
           <EcoTab
-            gramsThisMonth={gramsThisMonth}
-            methaneThisMonthLbsEq={methaneThisMonthLbsEq}
-            totalGrams={totalGrams}
+            serviceVisits={serviceVisits}
+            dataReadings={dataReadings}
+            dogsCount={derivedDogsCount}
+            frequency={serviceSummary?.frequency ?? user.serviceFrequency ?? "weekly"}
+            divertMode={serviceSummary?.divertMode ?? null}
+            serviceSummary={serviceSummary}
           />
         </TabsContent>
 
         <TabsContent value="wellness" className="space-y-6">
           <WellnessTab
-            dataReadings={dataReadings.map((reading) => ({
-              id: reading.id,
-              timestamp: reading.timestamp,
-              colors: { normal: 0, yellow: 0, red: 0, black: 0, total: 0 },
-              consistency: { normal: 0, soft: 0, dry: 0, total: 0 },
-              issues: [],
-              color: reading.color || undefined,
-              weight: reading.weight || undefined,
-            }))}
+            dataReadings={wellnessReadings}
             serviceVisits={serviceVisits.map((visit) => ({
               id: visit.id,
               date: visit.scheduledDate,
@@ -459,11 +481,16 @@ export default function Dashboard(props: DashboardClientProps) {
         </TabsContent>
 
         <TabsContent value="billing" className="space-y-6">
-          <BillingTab user={user} />
+          <BillingTab user={user} serviceSummary={serviceSummary} />
         </TabsContent>
 
         <TabsContent value="profile" className="space-y-6">
-          <ProfileTab user={user} dogs={dogs} />
+          <ProfileTab
+            user={user}
+            dogs={dogs}
+            serviceSummary={serviceSummary}
+            profileFields={profileFields}
+          />
         </TabsContent>
       </Tabs>
     </div>

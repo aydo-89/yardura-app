@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/database";
 import { safeGetServerSession } from "@/lib/auth";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { ServiceStatus } from "@prisma/client";
+import { createCreditEntry } from "@/lib/billing/ledger";
+import { getPlanByJobId } from "@/lib/billing/plan";
+import type { BillingPreference } from "@/lib/billing/types";
+import { processPendingLedgerEntriesForJob } from "@/lib/billing/invoice-processor";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +25,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const { visitId, action, newDate, reason } = await request.json();
+    const { visitId, jobId, action, newDate, reason } = await request.json();
 
     if (!visitId || !action) {
       return NextResponse.json(
@@ -29,43 +34,126 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const visit = await db.getServiceVisit(visitId);
-    if (!visit) {
+    const visit = visitId
+      ? await prisma.serviceVisit.findUnique({
+          where: { id: visitId },
+          include: {
+            job: {
+              select: {
+                id: true,
+                orgId: true,
+                customerId: true,
+                perVisitRevenueCents: true,
+                frequency: true,
+                billingPlan: {
+                  select: {
+                    id: true,
+                    billingPreference: true,
+                    perVisitAmountCents: true,
+                  },
+                },
+              },
+            },
+          },
+        })
+      : null;
+
+    if (visitId && !visit) {
       return NextResponse.json(
         { error: "Service visit not found" },
         { status: 404 },
       );
     }
 
-    if (visit.status === "completed") {
+    if (visit && visit.status === ServiceStatus.COMPLETED) {
       return NextResponse.json(
         { error: "Cannot modify a completed service visit" },
         { status: 400 },
       );
     }
 
-    const customer = await db.getCustomer(visit.customerId);
-    if (!customer) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 },
-      );
+    if (!visit && jobId) {
+      if (action === "reschedule") {
+        if (!newDate) {
+          return NextResponse.json(
+            { error: "New date is required for rescheduling" },
+            { status: 400 },
+          );
+        }
+        await prisma.job.update({
+          where: { id: jobId },
+          data: { nextVisitAt: new Date(newDate) },
+        });
+      } else if (action === "cancel") {
+        await prisma.job.update({
+          where: { id: jobId },
+          data: { nextVisitAt: null },
+        });
+      }
+
+      return NextResponse.json({ success: true, message: "Job schedule updated" });
     }
 
     if (action === "cancel") {
-      // Cancel the service visit
-      await db.updateServiceVisit(visit.id, {
-        status: "cancelled",
-        notes: reason || "Service cancelled by customer",
+      if (!visit) {
+        return NextResponse.json(
+          { error: "visit_required" },
+          { status: 400 },
+        );
+      }
+
+      const updated = await prisma.serviceVisit.update({
+        where: { id: visit.id },
+        data: {
+          status: ServiceStatus.CANCELLED,
+          notes: reason ?? undefined,
+          completedDate: null,
+        },
       });
 
-      // For recurring services, we don't charge for cancelled visits
-      // The subscription will continue, but this specific visit won't be charged
+      if (visit.job) {
+        const plan = visit.job.billingPlan || (await getPlanByJobId(visit.job.id));
+        const billingPreference: BillingPreference = plan?.billingPreference
+          ? (plan.billingPreference as BillingPreference)
+          : "per-visit";
+
+        if (billingPreference !== "one-time") {
+          const existingEntries = await prisma.customerBillingLedgerEntry.findMany({
+            where: { serviceVisitId: visit.id },
+            select: { amountCents: true },
+          });
+          const hasCharge = existingEntries.some((entry) => entry.amountCents > 0);
+          const hasCredit = existingEntries.some((entry) => entry.amountCents < 0);
+          const shouldCredit = billingPreference === "monthly" || hasCharge;
+
+          if (!hasCredit && shouldCredit) {
+            const amountCents = plan?.perVisitAmountCents ?? visit.job.perVisitRevenueCents ?? 0;
+            if (amountCents > 0) {
+              await createCreditEntry({
+                orgId: visit.job.orgId ?? "yardura",
+                jobId: visit.job.id,
+                customerId: visit.job.customerId,
+                amountCents,
+                description: "Cancelled visit credit",
+                serviceVisitId: visit.id,
+                metadata: {
+                  source: "admin-cancel",
+                },
+              });
+            }
+          }
+
+          if (plan?.id) {
+            await processPendingLedgerEntriesForJob(visit.job.id);
+          }
+        }
+      }
 
       return NextResponse.json({
         success: true,
         message: "Service visit cancelled successfully",
         visitId: visit.id,
+        visit,
       });
     } else if (action === "reschedule") {
       if (!newDate) {
@@ -85,45 +173,33 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Validate the new date is on the customer's service day
-      const days = [
-        "sunday",
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-      ];
-      const newDayIndex = newServiceDate.getDay();
-      const customerDayIndex = days.indexOf(customer.serviceDay.toLowerCase());
-
-      if (newDayIndex !== customerDayIndex) {
-        return NextResponse.json(
-          {
-            error: `New date must be on customer's service day (${customer.serviceDay})`,
-            suggestedDate: calculateNextValidDate(
-              customer.serviceDay,
-              newServiceDate,
-            ),
+      if (visit) {
+        const updated = await prisma.serviceVisit.update({
+          where: { id: visit.id },
+          data: {
+            status: ServiceStatus.SCHEDULED,
+            scheduledDate: newServiceDate,
+            completedDate: null,
+            notes: reason ?? undefined,
           },
-          { status: 400 },
-        );
+        });
+
+        if (visit.jobId) {
+          await prisma.job.update({
+            where: { id: visit.jobId },
+            data: { nextVisitAt: newServiceDate },
+          });
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: "Service visit rescheduled successfully",
+          visitId: visit.id,
+          newDate: newServiceDate,
+          visit: updated,
+        });
       }
 
-      // Update the service visit
-      await db.updateServiceVisit(visit.id, {
-        status: "rescheduled",
-        scheduledDate: newServiceDate,
-        notes: reason || "Service rescheduled by customer",
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: "Service visit rescheduled successfully",
-        visitId: visit.id,
-        newDate: newServiceDate,
-      });
     } else {
       return NextResponse.json(
         { error: 'Invalid action. Must be "cancel" or "reschedule"' },
@@ -137,31 +213,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-// Helper function to calculate next valid date for customer's service day
-function calculateNextValidDate(serviceDay: string, referenceDate: Date): Date {
-  const days = [
-    "sunday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-  ];
-  const targetDayIndex = days.indexOf(serviceDay.toLowerCase());
-
-  const nextDate = new Date(referenceDate);
-  const currentDayIndex = nextDate.getDay();
-
-  let daysToAdd = targetDayIndex - currentDayIndex;
-  if (daysToAdd <= 0) {
-    daysToAdd += 7; // Next week
-  }
-
-  nextDate.setDate(nextDate.getDate() + daysToAdd);
-  nextDate.setHours(9, 0, 0, 0); // 9 AM
-
-  return nextDate;
 }

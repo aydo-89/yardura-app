@@ -1,0 +1,13 @@
+{
+  "id": "soft-1",
+  "visual": {
+    "id": "soft-1",
+    "shape": "soft mound that is starting to lose its form, edges are rounded and settling",
+    "color": "medium brown",
+    "distinguishingFeature": "softer appearance, edges not crisp, still has some structure but drooping",
+    "surface": "slightly matte, softer looking texture"
+  },
+  "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: soft mound that is starting to lose its form, edges are rounded and settling. Color: medium brown. Key identifying feature: softer appearance, edges not crisp, still has some structure but drooping. Surface/texture: slightly matte, softer looking texture. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"soft\" stool looks like.",
+  "model": "gemini-3-pro-image-preview",
+  "generatedAt": "2026-01-07T13:20:00.321Z"
+}

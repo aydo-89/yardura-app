@@ -1,408 +1,168 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+import { resolveBusinessId } from "@/lib/tenant";
 import {
-  getBusinessConfig,
-  updateBusinessConfig,
-  addZipsToZone,
-  createServiceZone,
-  ServiceZoneConfig,
-} from "@/lib/business-config";
-import {
-  geocodePlaceToPolygon,
-  fetchZctasForGeometry,
-  scoreZipsByOverlap,
-} from "@/lib/geo-zip";
+  listServiceAreas,
+  getServiceArea,
+  addZipsToTile,
+  removeZipsFromTile,
+} from "@/lib/tiles/service-areas";
 
-interface ZipCodeSearchRequest {
-  city: string;
-  state: string;
-  businessId?: string;
-}
+const manageSchema = z.object({
+  tileSlug: z.string().min(1),
+  addZips: z.array(z.string()).optional(),
+  removeZips: z.array(z.string()).optional(),
+});
 
-interface ManualZipRequest {
-  zipCodes: string[];
-  zoneId: string;
-  businessId?: string;
-}
-
-interface ServiceZoneRequest {
-  zone: Omit<ServiceZoneConfig, "zipCodes">;
-  businessId?: string;
-}
-
-// GET /api/admin/service-areas - Get service areas for a business
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const businessId = searchParams.get("businessId") || "yardura";
+  const orgId = await resolveBusinessId(request);
+  const url = new URL(request.url);
+  const tileSlug = url.searchParams.get("tileSlug") ?? undefined;
 
-    const config = await getBusinessConfig(businessId);
-    const serviceAreas = config.serviceZones.map((zone) => ({
-      ...zone,
-      zipCount: zone.zipCodes.length,
-      coverage: `${zone.zipCodes.length} ZIP codes`,
-    }));
+  try {
+    const serviceAreas = await listServiceAreas(orgId, tileSlug ? { slug: tileSlug } : {});
+    const statusCounts = serviceAreas.reduce<Record<string, number>>((acc, area) => {
+      const key = area.tile.status;
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    const conflictSummary = serviceAreas.reduce(
+      (acc, area) => {
+        if (area.hasConflicts) {
+          acc.tilesWithConflicts += 1;
+          acc.conflictZipTotal += area.conflictZipCount;
+          acc.conflictZips.push(...area.conflictZips);
+        }
+        return acc;
+      },
+      {
+        tilesWithConflicts: 0,
+        conflictZipTotal: 0,
+        conflictZips: [] as string[],
+      },
+    );
 
     return NextResponse.json({
-      businessId,
+      orgId,
       serviceAreas,
       totalZips: serviceAreas.reduce((sum, area) => sum + area.zipCount, 0),
+      statusCounts,
+      conflictSummary: {
+        ...conflictSummary,
+        conflictZips: Array.from(new Set(conflictSummary.conflictZips)),
+      },
     });
   } catch (error) {
-    console.error("Error fetching service areas:", error);
+    console.error("service-areas GET error", error);
     return NextResponse.json(
-      { error: "Failed to fetch service areas" },
+      { error: "Unable to load service areas" },
       { status: 500 },
     );
   }
 }
 
-// POST /api/admin/service-areas - Manage service areas
 export async function POST(request: NextRequest) {
+  const orgId = await resolveBusinessId(request);
+
   try {
     const body = await request.json();
-    const { action, businessId = "yardura" } = body;
+    const result = manageSchema.safeParse(body);
 
-    switch (action) {
-      case "search-zips":
-        return await handleZipSearch(body as ZipCodeSearchRequest);
-
-      case "add-manual-zips":
-        return await handleManualZips(body as ManualZipRequest);
-
-      case "create-zone":
-        return await handleCreateZone(body as ServiceZoneRequest);
-
-      case "update-zone":
-        return await handleUpdateZone(body);
-
-      default:
-        return NextResponse.json(
-          {
-            error:
-              "Invalid action. Must be search-zips, add-manual-zips, create-zone, or update-zone",
-          },
-          { status: 400 },
-        );
-    }
-  } catch (error) {
-    console.error("Error managing service areas:", error);
-    return NextResponse.json(
-      { error: "Failed to manage service areas" },
-      { status: 500 },
-    );
-  }
-}
-
-// Handle ZIP code search by city/area using geometric intersection
-async function handleZipSearch(
-  request: ZipCodeSearchRequest,
-): Promise<NextResponse> {
-  const { city, state, businessId = "yardura" } = request;
-
-  if (!city || !state) {
-    return NextResponse.json(
-      { error: "City and state are required for ZIP search" },
-      { status: 400 },
-    );
-  }
-
-  try {
-    // Step 1: Geocode city/state to polygon
-    const placePoly = await geocodePlaceToPolygon(city, state);
-
-    // Step 2: Fetch candidate ZCTA features
-    const zipResult = await fetchZctasForGeometry(placePoly);
-    const zctaFC = zipResult.polygonFeatures;
-
-    // Step 3: Score overlap and determine included ZIPs
-    const scored = scoreZipsByOverlap(placePoly, zctaFC);
-
-    const zips = scored.map((s) => s.zip);
-    const unique = Array.from(new Set(zips));
-
-    if (unique.length === 0) {
-      return NextResponse.json({
-        searchCriteria: { city, state },
-        results: [],
-        count: 0,
-        message: `No ZIP codes found from polygon/ZCTA intersection for ${city}, ${state}.`,
-      });
-    }
-
-    // Build map visualization data
-    const includedSet = new Set(unique);
-    const includedFeatures = zctaFC.features.filter((f: any) => {
-      const zipProp = (
-        f.properties?.zip ??
-        f.properties?.ZCTA5CE10 ??
-        f.properties?.ZCTA5 ??
-        f.properties?.zcta ??
-        f.properties?.ZIP ??
-        f.properties?.GEOID ??
-        ""
-      ).toString();
-      const zip = zipProp.replace(/\D/g, "").slice(0, 5);
-      return includedSet.has(zip);
-    });
-
-    const payload: any = {
-      searchCriteria: { city, state },
-      results: unique,
-      count: unique.length,
-      message: `Found ${unique.length} ZIP codes for ${city}, ${state} via polygon/ZCTA intersection.`,
-      map: {
-        place: placePoly,
-        includedZctas: {
-          type: "FeatureCollection",
-          features: includedFeatures,
-        },
-      },
-    };
-
-    // Optional debug mode with scores (enable via query param)
-    // Note: Debug mode disabled for now - can be re-enabled when needed
-    // const url = new URL(request.url.toString());
-    // if (url.searchParams.get('debug') === '1') {
-    //   payload.debug = { scores: scored };
-    // }
-
-    return NextResponse.json(payload);
-  } catch (error: any) {
-    console.error("ZIP search error:", error?.message || error);
-    return NextResponse.json(
-      {
-        error: `Failed to search ZIP codes: ${error?.message || "Unknown error"}`,
-      },
-      { status: 500 },
-    );
-  }
-}
-
-// Handle manual ZIP code addition
-async function handleManualZips(
-  request: ManualZipRequest,
-): Promise<NextResponse> {
-  const { zipCodes, zoneId, businessId = "yardura" } = request;
-
-  if (!zipCodes || !Array.isArray(zipCodes) || zipCodes.length === 0) {
-    return NextResponse.json(
-      { error: "ZIP codes array is required" },
-      { status: 400 },
-    );
-  }
-
-  if (!zoneId) {
-    return NextResponse.json({ error: "Zone ID is required" }, { status: 400 });
-  }
-
-  // Validate ZIP code format
-  const invalidZips = zipCodes.filter((zip) => !/^\d{5}(-\d{4})?$/.test(zip));
-  if (invalidZips.length > 0) {
-    return NextResponse.json(
-      { error: `Invalid ZIP code format: ${invalidZips.join(", ")}` },
-      { status: 400 },
-    );
-  }
-
-  try {
-    // First check if zone exists, if not create it
-    const config = await getBusinessConfig(businessId);
-    const zone = config.serviceZones.find((z) => z.zoneId === zoneId);
-
-    if (!zone) {
-      // Create the default zone if it doesn't exist
-      const defaultZone: ServiceZoneConfig = {
-        zoneId,
-        name: zoneId === "zone-urban-core" ? "Urban Core" : "Service Zone",
-        baseMultiplier: 1.0,
-        description: "Primary service area",
-        serviceable: true,
-        zipCodes: [],
-      };
-
-      const zoneCreated = await createServiceZone(businessId, defaultZone);
-      if (!zoneCreated) {
-        return NextResponse.json(
-          { error: `Failed to create zone ${zoneId}` },
-          { status: 500 },
-        );
-      }
-    }
-
-    const success = await addZipsToZone(businessId, zoneId, zipCodes);
-
-    if (!success) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: `Failed to add ZIP codes to zone ${zoneId}` },
-        { status: 500 },
+        { error: "Invalid payload", details: result.error.issues },
+        { status: 400 },
       );
     }
 
-    const updatedConfig = await getBusinessConfig(businessId);
-    const updatedZone = updatedConfig.serviceZones.find(
-      (z) => z.zoneId === zoneId,
-    );
+    const { tileSlug, addZips, removeZips } = result.data;
 
-    return NextResponse.json({
-      message: `Successfully added ${zipCodes.length} ZIP codes to zone ${zoneId}`,
-      zone: updatedZone,
-      addedZips: zipCodes,
-    });
-  } catch (error) {
-    console.error("Manual ZIP addition error:", error);
-    return NextResponse.json(
-      { error: "Failed to add ZIP codes" },
-      { status: 500 },
-    );
-  }
-}
-
-// Handle service zone creation
-async function handleCreateZone(
-  request: ServiceZoneRequest,
-): Promise<NextResponse> {
-  const { zone, businessId = "yardura" } = request;
-
-  if (!zone.zoneId || !zone.name) {
-    return NextResponse.json(
-      { error: "Zone ID and name are required" },
-      { status: 400 },
-    );
-  }
-
-  const newZone: ServiceZoneConfig = {
-    ...zone,
-    zipCodes: [], // Start with empty ZIP codes
-  };
-
-  try {
-    const success = await createServiceZone(businessId, newZone);
-
-    if (!success) {
+    if (!(addZips?.length || removeZips?.length)) {
       return NextResponse.json(
-        {
-          error: `Zone ${zone.zoneId} already exists for business ${businessId}`,
-        },
-        { status: 409 },
+        { error: "Nothing to update. Provide addZips and/or removeZips." },
+        { status: 400 },
       );
     }
 
-    return NextResponse.json({
-      message: `Successfully created service zone ${zone.name}`,
-      zone: newZone,
-    });
-  } catch (error) {
-    console.error("Zone creation error:", error);
-    return NextResponse.json(
-      { error: "Failed to create service zone" },
-      { status: 500 },
-    );
-  }
-}
+    let summary = null;
 
-// Handle service zone updates
-async function handleUpdateZone(request: any): Promise<NextResponse> {
-  const { zoneId, updates, businessId = "yardura" } = request;
+    let reassignedZips: { zip: string; previousTileSlug: string }[] = [];
 
-  if (!zoneId || !updates) {
-    return NextResponse.json(
-      { error: "Zone ID and updates are required" },
-      { status: 400 },
-    );
-  }
+    if (addZips?.length) {
+      const result = await addZipsToTile(orgId, tileSlug, addZips);
+      summary = result.summary;
+      reassignedZips = result.reassignedZips;
+    }
 
-  try {
-    const config = await getBusinessConfig(businessId);
-    const zoneIndex = config.serviceZones.findIndex((z) => z.zoneId === zoneId);
+    if (removeZips?.length) {
+      summary = await removeZipsFromTile(orgId, tileSlug, removeZips);
+    }
 
-    if (zoneIndex === -1) {
+    summary = summary ?? (await getServiceArea(orgId, tileSlug));
+
+    if (!summary) {
       return NextResponse.json(
-        { error: `Zone ${zoneId} not found` },
+        { error: "Tile not found" },
         { status: 404 },
       );
     }
 
-    // Update the zone
-    config.serviceZones[zoneIndex] = {
-      ...config.serviceZones[zoneIndex],
-      ...updates,
-    };
-
-    await updateBusinessConfig(businessId, {
-      serviceZones: config.serviceZones,
-    });
-
     return NextResponse.json({
-      message: `Successfully updated service zone ${zoneId}`,
-      zone: config.serviceZones[zoneIndex],
+      orgId,
+      serviceArea: summary,
+      reassignedZips,
     });
   } catch (error) {
-    console.error("Zone update error:", error);
+    console.error("service-areas POST error", error);
     return NextResponse.json(
-      { error: "Failed to update service zone" },
+      { error: "Failed to update service area" },
       { status: 500 },
     );
   }
 }
 
-// DELETE /api/admin/service-areas - Remove ZIP codes or zones
 export async function DELETE(request: NextRequest) {
+  const orgId = await resolveBusinessId(request);
+  const url = new URL(request.url);
+  const tileSlug = url.searchParams.get("tileSlug");
+  const zip = url.searchParams.get("zip");
+
+  if (!tileSlug) {
+    return NextResponse.json(
+      { error: "tileSlug is required" },
+      { status: 400 },
+    );
+  }
+
+  if (!zip) {
+    return NextResponse.json(
+      { error: "zip is required" },
+      { status: 400 },
+    );
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const businessId = searchParams.get("businessId") || "yardura";
-    const zoneId = searchParams.get("zoneId");
-    const zipCode = searchParams.get("zipCode");
-
-    const config = await getBusinessConfig(businessId);
-    const zoneIndex = config.serviceZones.findIndex((z) => z.zoneId === zoneId);
-
-    if (zoneIndex === -1) {
+    const summary = await removeZipsFromTile(orgId, tileSlug, [zip]);
+    if (!summary) {
       return NextResponse.json(
-        { error: `Zone ${zoneId} not found` },
+        { error: "Tile not found" },
         { status: 404 },
       );
     }
 
-    if (zipCode) {
-      // Remove specific ZIP code
-      const zone = config.serviceZones[zoneIndex];
-      const originalLength = zone.zipCodes.length;
-      zone.zipCodes = zone.zipCodes.filter((zip) => zip !== zipCode);
-
-      if (zone.zipCodes.length === originalLength) {
-        return NextResponse.json(
-          { error: `ZIP code ${zipCode} not found in zone ${zoneId}` },
-          { status: 404 },
-        );
-      }
-
-      await updateBusinessConfig(businessId, {
-        serviceZones: config.serviceZones,
-      });
-
-      return NextResponse.json({
-        message: `Removed ZIP code ${zipCode} from zone ${zoneId}`,
-        zone: zone,
-      });
-    } else {
-      // Remove entire zone
-      config.serviceZones.splice(zoneIndex, 1);
-      await updateBusinessConfig(businessId, {
-        serviceZones: config.serviceZones,
-      });
-
-      return NextResponse.json({
-        message: `Removed service zone ${zoneId}`,
-      });
-    }
+    return NextResponse.json({
+      orgId,
+      serviceArea: summary,
+    });
   } catch (error) {
-    console.error("Error deleting service area:", error);
+    console.error("service-areas DELETE error", error);
     return NextResponse.json(
-      { error: "Failed to delete service area" },
+      { error: "Failed to remove ZIP" },
       { status: 500 },
     );
   }
 }
 
-// Export an empty object to ensure clean module structure
-export {};
+export const runtime = "nodejs";

@@ -5,6 +5,7 @@ import {
   projectedMonthlyCents,
   initialCleanCents,
   visitsPerMonth,
+  getVisitRange,
   getPricingBreakdown,
   formatPrice,
   getFrequencyDisplayName,
@@ -26,7 +27,7 @@ describe("Price Estimator", () => {
     });
 
     test("applies yard size adders correctly", () => {
-      expect(estimatePerVisitCents(1, "small", "weekly")).toBe(2000); // No adder
+      expect(estimatePerVisitCents(1, "small", "weekly")).toBe(1800); // $20 base - $2 discount
       expect(estimatePerVisitCents(1, "large", "weekly")).toBe(2400); // +$4.00
       expect(estimatePerVisitCents(1, "xl", "weekly")).toBe(2800); // +$8.00
     });
@@ -53,6 +54,23 @@ describe("Price Estimator", () => {
       expect(visitsPerMonth("weekly")).toBe(4.33);
       expect(visitsPerMonth("biweekly")).toBe(2.17);
       expect(visitsPerMonth("twice-weekly")).toBe(8.67);
+      expect(visitsPerMonth("monthly")).toBe(4.33);
+    });
+
+    test("scales daily cadence when weekend upgrade is enabled", () => {
+      expect(visitsPerMonth("daily", { weekendUpgrade: true })).toBeCloseTo(
+        Math.round(((7 * 52) / 12) * 100) / 100,
+        2,
+      );
+    });
+  });
+
+  describe("getVisitRange", () => {
+    test("returns monthly range based on averaged cadence", () => {
+      const range = getVisitRange("monthly");
+      expect(range.average).toBe(4.33);
+      expect(range.min).toBe(4);
+      expect(range.max).toBe(5);
     });
   });
 
@@ -64,32 +82,31 @@ describe("Price Estimator", () => {
       expect(projectedMonthlyCents(perVisit, "twice-weekly")).toBe(17340); // 8.67 × $20 = $173.40
     });
 
-    test("includes add-on costs with calendar calculation", () => {
-      const perVisit = 2000; // $20.00
-      const addOns = { deodorize: true, sprayDeck: true }; // +$37.00 total
+    test("treats per-visit input as all-in price", () => {
+      const perVisitWithAddOns = 2000 + ADD_ON_PRICES.deodorize + ADD_ON_PRICES.sprayDeck;
 
-      expect(projectedMonthlyCents(perVisit, "weekly", addOns)).toBe(16042); // 4.33 × $37 = $160.42
-      expect(projectedMonthlyCents(perVisit, "biweekly", addOns)).toBe(8029); // 2.17 × $37 = $80.29
+      expect(projectedMonthlyCents(perVisitWithAddOns, "weekly")).toBe(
+        Math.round(perVisitWithAddOns * 4.33),
+      );
     });
 
-    test("handles partial add-ons with calendar calculation", () => {
-      const perVisit = 2000; // $20.00
-      const addOns = { deodorize: true }; // +$25.00
-
-      expect(projectedMonthlyCents(perVisit, "weekly", addOns)).toBe(12990); // 4.33 × $30 = $129.90
+    test("adds weekend surcharge to daily plans when enabled", () => {
+      const perVisit = 2500;
+      const result = projectedMonthlyCents(perVisit, "daily", { weekendUpgrade: true });
+      expect(result).toBeGreaterThan(projectedMonthlyCents(perVisit, "daily"));
     });
   });
 
   describe("initialCleanCents", () => {
     test("calculates initial clean cost with base pricing", () => {
       const perVisit = 2000; // $20.00 base
-      expect(initialCleanCents(perVisit)).toBe(2500); // 1.25 × base price
+      expect(initialCleanCents(perVisit)).toBe(8900); // Floor pricing applies
     });
 
     test("includes add-on costs in initial clean", () => {
       const perVisit = 2000; // $20.00 base
       const addOns = { deodorize: true }; // +$25.00
-      expect(initialCleanCents(perVisit, addOns)).toBe(7500); // 1.25 × (2000 + 2500)
+      expect(initialCleanCents(perVisit, addOns)).toBe(8900); // Floor pricing still applies
     });
   });
 
@@ -99,10 +116,20 @@ describe("Price Estimator", () => {
         deodorize: true,
       });
 
-      expect(result.perVisitCents).toBe(3750); // (2400 + 400) × 1.25 + 2500 deodorize
-      expect(result.monthlyCents).toBe(7500); // 3750 × 2 visits
-      expect(result.initialCleanCents).toBe(4688); // 1.25 × (2400 + 400 + 2500)
-      expect(result.visitsPerMonth).toBe(2);
+      expect(result.perVisitCents).toBe(3500); // (2400 + 400) × 1.25
+      expect(result.monthlyCents).toBe(Math.round(3500 * 2.17));
+      expect(result.initialCleanCents).toBe(8900); // minimum floor
+      expect(result.visitsPerMonth).toBeCloseTo(2.17, 2);
+    });
+
+    test("tracks weekend upgrade details in the breakdown", () => {
+      const result = getPricingBreakdown(1, "medium", "daily", {}, 1.0, {
+        weekendUpgrade: true,
+      });
+      expect(result.visitsPerMonth).toBeGreaterThan(21);
+      expect(result.monthlyCents).toBeGreaterThan(
+        getPricingBreakdown(1, "medium", "daily").monthlyCents,
+      );
     });
   });
 
@@ -120,6 +147,9 @@ describe("Price Estimator", () => {
       expect(getFrequencyDisplayName("weekly")).toBe("Weekly");
       expect(getFrequencyDisplayName("biweekly")).toBe("Every Other Week");
       expect(getFrequencyDisplayName("twice-weekly")).toBe("Twice Weekly");
+      expect(getFrequencyDisplayName("daily", { weekendUpgrade: true })).toBe(
+        "Daily (Mon–Sun)",
+      );
     });
 
     test("getYardSizeDisplayName returns correct labels", () => {
@@ -138,7 +168,7 @@ describe("Price Estimator", () => {
     });
 
     test("YARD_ADDERS are progressive", () => {
-      expect(YARD_ADDERS.small).toBe(0);
+      expect(YARD_ADDERS.small).toBeLessThan(YARD_ADDERS.medium);
       expect(YARD_ADDERS.medium).toBe(0);
       expect(YARD_ADDERS.large).toBe(400);
       expect(YARD_ADDERS.xl).toBe(800);
@@ -151,9 +181,9 @@ describe("Price Estimator", () => {
     });
 
     test("ADD_ON_PRICES are consistent", () => {
-      expect(ADD_ON_PRICES.deodorize).toBe(2500);
+      expect(ADD_ON_PRICES.deodorize).toBe(500);
       expect(ADD_ON_PRICES.sprayDeck).toBe(1200);
-      expect(ADD_ON_PRICES.takeaway).toBe(200);
+      expect(ADD_ON_PRICES.takeaway).toBe(500);
     });
 
     test("ONE_TIME_BASE_PRICES are reasonable", () => {
@@ -172,20 +202,20 @@ describe("Price Estimator", () => {
 
     test("handles minimum configuration", () => {
       const result = estimatePerVisitCents(1, "small", "weekly");
-      expect(result).toBe(2000);
+      expect(result).toBe(1800);
     });
 
     test("initial clean scales with per-visit price", () => {
       const lowPerVisit = 1000; // $10.00
       const initialCost = initialCleanCents(lowPerVisit);
-      expect(initialCost).toBe(1250); // 1.25 × 1000
+      expect(initialCost).toBe(8900); // Floor applies
     });
 
     test("rounding handles fractional results correctly", () => {
       // This test ensures we're not losing precision in calculations
       const perVisit = estimatePerVisitCents(1, "medium", "weekly");
       const monthly = projectedMonthlyCents(perVisit, "weekly");
-      expect(monthly).toBe(perVisit * 4); // Should be exact
+      expect(monthly).toBe(Math.round(perVisit * 4.33));
     });
   });
 });

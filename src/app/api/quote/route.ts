@@ -5,6 +5,10 @@ import {
   logSuspiciousActivity,
 } from "@/lib/formProtection";
 import { prisma } from "@/lib/prisma";
+import { resolveTileByZipCode } from "@/lib/marketplace/tile-map";
+import { buildUserRoleFilter } from "@/lib/auth/role-filters";
+import { UserRole } from "@prisma/client";
+import { sendSalesLeadAssignedPush } from "@/lib/notifications/push";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -70,6 +74,92 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let validatedSalesRepId: string | null = null;
+    if (body?.salesRepId) {
+      try {
+        const rep = await prisma.user.findFirst({
+          where: {
+            id: body.salesRepId,
+            orgId: businessId,
+            ...buildUserRoleFilter([UserRole.SALES_REP]),
+          },
+          select: { id: true },
+        });
+        if (rep) {
+          validatedSalesRepId = rep.id;
+        }
+      } catch (error) {
+        console.warn(
+          "quote: unable to validate sales rep",
+          body.salesRepId,
+          error,
+        );
+      }
+    }
+
+    const duplicateLeadRecord = await prisma.lead.findFirst({
+      where: {
+        email,
+        orgId: businessId,
+        status: {
+          not: "WON",
+        },
+      },
+      orderBy: { submittedAt: "desc" },
+      select: {
+        id: true,
+        submittedAt: true,
+        status: true,
+        frequency: true,
+      },
+    });
+
+    const phoneForConsent = body?.phone || body?.contact?.phone || null;
+    const legacySmsConsent =
+      typeof body?.smsConsent === "boolean" ? body.smsConsent : undefined;
+    const legacyEmailMarketingConsent =
+      typeof body?.emailMarketingConsent === "boolean"
+        ? body.emailMarketingConsent
+        : undefined;
+    const explicitEmailConsent =
+      typeof body?.emailConsent === "boolean" ? body.emailConsent : undefined;
+    const marketingOptInSource =
+      body?.consent?.marketingOptIn ??
+      legacySmsConsent ??
+      legacyEmailMarketingConsent;
+
+    const marketingOptIn =
+      typeof marketingOptInSource === "boolean"
+        ? marketingOptInSource
+        : Boolean(phoneForConsent);
+
+    const resolvedSmsOptIn =
+      (legacySmsConsent ?? marketingOptIn) && Boolean(phoneForConsent);
+    const resolvedEmailOptIn =
+      (explicitEmailConsent ?? marketingOptIn) && Boolean(email);
+
+    const resolvedZipCodeRaw = body.zipCode || body.addressMeta?.postalCode;
+    const resolvedZipCode =
+      typeof resolvedZipCodeRaw === "string" || typeof resolvedZipCodeRaw === "number"
+        ? String(resolvedZipCodeRaw)
+        : null;
+    let activeTileSlug: string | null = null;
+
+    if (resolvedZipCode) {
+      try {
+        const tile = await resolveTileByZipCode(businessId, resolvedZipCode);
+        if (tile?.status === "LIVE") {
+          activeTileSlug = tile.slug;
+        }
+      } catch (error) {
+        console.warn("quote: unable to resolve tile by ZIP", {
+          businessId,
+          zipCode: resolvedZipCode,
+          error,
+        });
+      }
+    }
+
     // Create lead record
     let lead;
     try {
@@ -92,7 +182,7 @@ export async function POST(req: NextRequest) {
           address: body.address,
           city: body.addressMeta?.city,
           state: body.addressMeta?.state,
-          zipCode: body.zipCode || body.addressMeta?.postalCode,
+          zipCode: resolvedZipCode,
           latitude: body.addressMeta?.latitude,
           longitude: body.addressMeta?.longitude,
 
@@ -129,6 +219,9 @@ export async function POST(req: NextRequest) {
               ? body.preferredContactMethods[0]
               : undefined),
 
+          salesRepId: validatedSalesRepId,
+          ownerId: validatedSalesRepId ?? undefined,
+
           // Wellness insights consent
           wellnessOptIn: body.consent?.stoolPhotosOptIn || false,
 
@@ -159,7 +252,16 @@ export async function POST(req: NextRequest) {
                 ? body.preferredContactMethods
                 : null,
               howDidYouHear: body.howDidYouHear || body.referralSource || null,
+              salesRepId: validatedSalesRepId,
+              salesRepName: body.salesRepName || null,
               specialRequests: body.specialInstructions || null,
+              quoteSessionId:
+                typeof body.quoteSessionId === "string"
+                  ? body.quoteSessionId
+                  : null,
+              marketingOptIn,
+              weekendUpgrade: Boolean(body.weekendUpgrade),
+              ...(activeTileSlug ? { serviceTileSlug: activeTileSlug } : {}),
             };
 
             if (body.pricingSnapshot) {
@@ -189,6 +291,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (validatedSalesRepId) {
+      const customerName = [body?.firstName, body?.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      void sendSalesLeadAssignedPush({
+        userId: validatedSalesRepId,
+        customerName: customerName || null,
+        city: body.addressMeta?.city ?? body.city ?? null,
+        state: body.addressMeta?.state ?? body.state ?? null,
+      }).catch(() => null);
+    }
+
     // Send notification email
     if (resend) {
       const displayFirstName =
@@ -212,6 +327,7 @@ export async function POST(req: NextRequest) {
         "Not provided";
       const serviceSummary = `${body.serviceType || body.propertyType || "residential"} • ${body.frequency || "n/a"} • ${body.yardSize || "n/a"} yard`;
       const pricing = body.pricingSnapshot || {};
+      const salesRepLabel = body.salesRepName || body.salesRepId || "";
 
       const envTo =
         process.env.CONTACT_TO_EMAIL || "ayden@yardura.com,austyn@yardura.com";
@@ -269,6 +385,14 @@ export async function POST(req: NextRequest) {
                 <td style="padding: 8px 0; font-weight: 600;">Address</td>
                 <td style="padding: 8px 0;">${locationLine}</td>
               </tr>
+              ${
+                salesRepLabel
+                  ? `<tr>
+                <td style="padding: 8px 0; font-weight: 600;">Sales Rep</td>
+                <td style="padding: 8px 0;">${salesRepLabel}</td>
+              </tr>`
+                  : ""
+              }
             </tbody>
           </table>
 
@@ -308,12 +432,13 @@ export async function POST(req: NextRequest) {
         `Monthly: ${monthlyPrice}`,
         `Per Visit: ${perVisitPrice}`,
         `Initial Visit: ${initialVisitPrice}`,
+        salesRepLabel ? `Sales Rep: ${salesRepLabel}` : "",
         "",
         JSON.stringify(quoteData, null, 2),
       ].join("\n");
 
       await resend.emails.send({
-        from: "Yardura <notifications@yardura.com>",
+        from: "InsightScoop <notifications@yardura.com>",
         to: recipients,
         subject: `New Quote Request from ${displayName}`,
         replyTo: contactEmail !== "N/A" ? contactEmail : undefined,
@@ -322,11 +447,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const duplicateLeadInfo =
+      duplicateLeadRecord && duplicateLeadRecord.id !== lead.id
+        ? {
+            id: duplicateLeadRecord.id,
+            submittedAt: duplicateLeadRecord.submittedAt
+              ? duplicateLeadRecord.submittedAt.toISOString()
+              : null,
+            status: duplicateLeadRecord.status
+              ? String(duplicateLeadRecord.status)
+              : null,
+            frequency: duplicateLeadRecord.frequency ?? null,
+          }
+        : null;
+
     return NextResponse.json({
       ok: true,
       message: "Quote submitted successfully",
       leadId: lead.id,
       protectionScore: 0, // Default score when protection is skipped
+      duplicateLead: duplicateLeadInfo,
     });
   } catch (e) {
     console.error("Quote submission error:", e);

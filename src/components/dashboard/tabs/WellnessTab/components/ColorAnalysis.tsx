@@ -87,12 +87,12 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                 key={key}
                 className={`text-center p-3 rounded-lg border-2 transition-all duration-200 min-h-[100px] flex flex-col justify-center ${
                   shouldShowConcerning
-                    ? "border-red-200 bg-red-50"
+                    ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
                     : stat.count ===
                           Math.max(...colorEntries.map(([, s]) => s.count)) &&
                         stat.count > 0
-                      ? "border-green-200 bg-green-50"
-                      : "border-slate-200 bg-white"
+                      ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                 }`}
               >
                 <div
@@ -102,21 +102,21 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                 >
                   {actualPercentage}%
                 </div>
-                <div className="text-xs font-semibold text-slate-900 mb-1 leading-tight break-words">
+                <div className="text-xs font-semibold text-slate-900 dark:text-white mb-1 leading-tight break-words">
                   {config.label.split("/")[0]}
                   {config.label.includes("/") && <br />}
                   {config.label.includes("/") && config.label.split("/")[1]}
                 </div>
-                <div className="text-xs text-slate-600 mb-1">
+                <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">
                   {displayCount} samples
                 </div>
                 {shouldShowConcerning && (
-                  <div className="mt-2 pt-2 border-t border-slate-200">
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                     <div
                       className={`text-xs font-medium flex items-center justify-center gap-1 mb-1 ${
                         key === "red" || key === "black"
-                          ? "text-red-600"
-                          : "text-amber-600"
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-amber-600 dark:text-amber-400"
                       }`}
                     >
                       <AlertTriangle className="size-3" />
@@ -128,10 +128,10 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                       onClick={() =>
                         handleImageRequest(config.label, stat.count)
                       }
-                      className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors ${
+                      className={`text-xs px-2 py-1 rounded flex items-center gap-1 mx-auto transition-colors ${
                         key === "red" || key === "black"
-                          ? "text-red-600 hover:text-red-700 hover:bg-red-50"
-                          : "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          ? "text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+                          : "text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30"
                       }`}
                       title={`Request veterinary review of ${config.label.toLowerCase()} stool`}
                     >
@@ -147,7 +147,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
 
         {/* Donut Chart */}
         <div className="flex justify-center mb-6">
-          <svg viewBox="0 0 140 140" className="w-44 h-44">
+          <svg viewBox="0 0 140 140" className="w-44 h-44 [--chart-text:theme(colors.slate.900)] dark:[--chart-text:theme(colors.white)] [--chart-text-muted:theme(colors.slate.600)] dark:[--chart-text-muted:theme(colors.slate.300)]">
             {(() => {
               const radius = 50;
               const circumference = 2 * Math.PI * radius;
@@ -195,6 +195,26 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
               const redLength = (redPercent / 100) * circumference;
               const blackLength = (blackPercent / 100) * circumference;
 
+              // Find the dominant color for center display
+              const maxPercent = Math.max(
+                normalPercent,
+                filteredRedPercent,
+                filteredBlackPercent,
+                yellowPercent,
+              );
+              
+              // Handle no data case
+              const hasData = totalSamples > 0;
+              const dominantLabel = !hasData
+                ? "No data"
+                : normalPercent >= maxPercent
+                  ? "Normal"
+                  : filteredRedPercent >= maxPercent
+                    ? "Red"
+                    : filteredBlackPercent >= maxPercent
+                      ? "Black"
+                      : "Yellow";
+
               return (
                 <>
                   {/* Background circle for reference */}
@@ -203,7 +223,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                     cy={center}
                     r={radius}
                     fill="none"
-                    stroke="#f1f5f9"
+                    className="stroke-slate-200 dark:stroke-slate-600"
                     strokeWidth="15"
                   />
 
@@ -266,57 +286,37 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                     />
                   )}
 
-                  {/* Center circle */}
+                  {/* Center circle - properly centered text */}
                   <circle
                     cx={center}
                     cy={center}
                     r="32"
-                    fill="white"
-                    stroke="#e5e7eb"
+                    className="fill-white dark:fill-slate-800 stroke-slate-200 dark:stroke-slate-600"
                     strokeWidth="1"
                   />
+                  {/* Percentage text - vertically centered */}
                   <text
                     x={center}
-                    y="58"
+                    y={center - 6}
                     textAnchor="middle"
-                    className="text-xl font-bold fill-slate-800"
+                    dominantBaseline="middle"
+                    fontSize="18"
+                    fontWeight="bold"
+                    fill="var(--chart-text)"
                   >
-                    {Math.max(
-                      normalPercent,
-                      filteredRedPercent,
-                      filteredBlackPercent,
-                      yellowPercent,
-                    )}
-                    %
+                    {hasData ? `${maxPercent}%` : "–"}
                   </text>
+                  {/* Label text - below percentage */}
                   <text
                     x={center}
-                    y="75"
+                    y={center + 12}
                     textAnchor="middle"
-                    className="text-sm font-medium fill-slate-600"
+                    dominantBaseline="middle"
+                    fontSize="11"
+                    fontWeight="500"
+                    fill="var(--chart-text-muted)"
                   >
-                    {normalPercent >=
-                    Math.max(
-                      filteredRedPercent,
-                      filteredBlackPercent,
-                      yellowPercent,
-                    )
-                      ? "Normal"
-                      : filteredRedPercent >=
-                          Math.max(
-                            normalPercent,
-                            filteredBlackPercent,
-                            yellowPercent,
-                          )
-                        ? "Red"
-                        : filteredBlackPercent >=
-                            Math.max(
-                              normalPercent,
-                              filteredRedPercent,
-                              yellowPercent,
-                            )
-                          ? "Black"
-                          : "Yellow"}
+                    {dominantLabel}
                   </text>
                 </>
               );
@@ -325,8 +325,8 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
         </div>
 
         {/* Weekly Trend Overview */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
-          <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 mb-6">
+          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
             <BarChart3 className="size-4" />
             Weekly Color Trends
           </h4>
@@ -343,7 +343,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                 <div key={i} className="text-center">
                   {/* Color composition bar with issue indicator */}
                   <div className="relative mb-1">
-                    <div className="relative h-12 bg-slate-100 rounded-md overflow-hidden">
+                    <div className="relative h-12 bg-slate-100 dark:bg-slate-700 rounded-md overflow-hidden">
                       {totalDeposits > 0 && (
                         <>
                           {/* Normal (bottom) */}
@@ -368,7 +368,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                           {/* Red (top) */}
                           {week.colors.red > 0 && (
                             <div
-                              className="absolute w-full border-t border-white"
+                              className="absolute w-full border-t border-white dark:border-slate-600"
                               style={{
                                 bottom: `${((week.colors.normal + week.colors.yellow) / totalDeposits) * 100}%`,
                                 height: `${(week.colors.red / totalDeposits) * 100}%`,
@@ -379,7 +379,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                           {/* Black (top with border) */}
                           {week.colors.black > 0 && (
                             <div
-                              className="absolute w-full border-t border-white"
+                              className="absolute w-full border-t border-white dark:border-slate-600"
                               style={{
                                 bottom: `${((week.colors.normal + week.colors.yellow + week.colors.red) / totalDeposits) * 100}%`,
                                 height: `${(week.colors.black / totalDeposits) * 100}%`,
@@ -394,7 +394,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                     {/* Issue indicator - positioned above the bar */}
                     {hasIssues && (
                       <div
-                        className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center"
+                        className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center"
                         title="Week contains concerning colors (red, black, or yellow)"
                       >
                         <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -403,7 +403,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                   </div>
 
                   {/* Date label */}
-                  <div className="text-xs text-slate-600 font-medium">
+                  <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                     {(() => {
                       const weekDate = new Date(week.start);
                       const month = weekDate.toLocaleDateString("en-US", {
@@ -414,7 +414,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                     })()}
                   </div>
                   <div
-                    className="text-xs text-slate-500"
+                    className="text-xs text-slate-500 dark:text-slate-500"
                     title={`${totalDeposits} samples analyzed this week`}
                   >
                     {totalDeposits} samples
@@ -425,7 +425,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
           </div>
 
           {/* Legend */}
-          <div className="mt-4 pt-3 border-t border-slate-100">
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
             <div className="flex flex-wrap justify-center gap-4 text-xs mb-2">
               {colorEntries.map(([key, stat]) => {
                 const config = colorConfig[key as keyof typeof colorConfig];
@@ -435,7 +435,7 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: config.color }}
                     />
-                    <span className="text-slate-600">{config.label}</span>
+                    <span className="text-slate-600 dark:text-slate-400">{config.label}</span>
                   </div>
                 );
               })}
@@ -443,8 +443,8 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
 
             {/* Issue indicator explanation */}
             <div className="flex justify-center">
-              <div className="flex items-center gap-2 text-xs text-slate-600">
-                <div className="w-3 h-3 bg-red-500 rounded-full border border-white flex items-center justify-center">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                <div className="w-3 h-3 bg-red-500 rounded-full border border-white dark:border-slate-800 flex items-center justify-center">
                   <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                 </div>
                 <span>Concerning colors detected</span>
@@ -454,17 +454,17 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
         </div>
 
         {/* Health Insights */}
-        <div className="bg-slate-50 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-slate-700 mb-3">
+        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
             Waste Color Insights
           </h4>
 
           <div className="grid md:grid-cols-2 gap-4 text-sm">
             <div>
-              <div className="font-medium text-slate-900 mb-2">
+              <div className="font-medium text-slate-900 dark:text-white mb-2">
                 Normal Range
               </div>
-              <div className="text-slate-600 space-y-1">
+              <div className="text-slate-600 dark:text-slate-400 space-y-1">
                 <div>• Brown/tan colors are typical and healthy</div>
                 <div>• Slight variations are usually normal</div>
                 <div>
@@ -475,22 +475,22 @@ export const ColorAnalysis: React.FC<ColorAnalysisProps> = ({
             </div>
 
             <div>
-              <div className="font-medium text-slate-900 mb-2">
+              <div className="font-medium text-slate-900 dark:text-white mb-2">
                 Concerning Signs
               </div>
-              <div className="text-slate-600 space-y-1">
+              <div className="text-slate-600 dark:text-slate-400 space-y-1">
                 {colorStats.red.count > 0 && (
-                  <div className="text-red-600">
+                  <div className="text-red-600 dark:text-red-400">
                     • Red color may indicate fresh blood
                   </div>
                 )}
                 {colorStats.black.count > 0 && (
-                  <div className="text-red-600">
+                  <div className="text-red-600 dark:text-red-400">
                     • Black/tarry may indicate digested blood
                   </div>
                 )}
                 {colorStats.yellow.count > 0 && (
-                  <div className="text-amber-600">
+                  <div className="text-amber-600 dark:text-amber-400">
                     • Yellow may indicate liver issues
                   </div>
                 )}

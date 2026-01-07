@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import {
   AlertCircle,
   CheckCircle,
@@ -17,11 +16,106 @@ import {
   Settings,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   BusinessConfig,
   DEFAULT_YARDURA_CONFIG,
   AddOnConfig,
 } from "@/lib/business-config";
+
+type ConfigFrequency =
+  BusinessConfig["basePricing"]["frequencies"][number]["frequency"];
+
+const FREQUENCY_DISPLAY_ORDER: ConfigFrequency[] = [
+  "daily",
+  "twice-weekly",
+  "weekly",
+  "bi-weekly",
+  "monthly",
+  "one-time",
+];
+
+const FREQUENCY_DETAILS: Record<ConfigFrequency, {
+  label: string;
+  description: string;
+  defaultMultiplier: number;
+  defaultVisits: number;
+  badgeClass: string;
+}> = {
+  daily: {
+    label: "Daily (Mon–Fri)",
+    description: "Weekday visit cadence for spotless yards",
+    defaultMultiplier: 0.5,
+    defaultVisits: 21.67,
+    badgeClass:
+      "bg-emerald-500/15 text-emerald-600 border border-emerald-400/30",
+  },
+  "twice-weekly": {
+    label: "Twice Weekly",
+    description: "High-traffic yards with mid-week refresh",
+    defaultMultiplier: 0.75,
+    defaultVisits: 8.67,
+    badgeClass:
+      "bg-indigo-500/15 text-indigo-600 border border-indigo-400/30",
+  },
+  weekly: {
+    label: "Weekly",
+    description: "Standard upkeep cadence",
+    defaultMultiplier: 1.0,
+    defaultVisits: 4.33,
+    badgeClass:
+      "bg-blue-500/15 text-blue-600 border border-blue-400/30",
+  },
+  "bi-weekly": {
+    label: "Bi-weekly",
+    description: "Every other week for lighter usage",
+    defaultMultiplier: 1.25,
+    defaultVisits: 2.17,
+    badgeClass:
+      "bg-amber-500/15 text-amber-600 border border-amber-400/30",
+  },
+  monthly: {
+    label: "Monthly",
+    description: "Deep maintenance visit once per month",
+    defaultMultiplier: 1.5,
+    defaultVisits: 1,
+    badgeClass:
+      "bg-rose-500/15 text-rose-600 border border-rose-400/30",
+  },
+  "one-time": {
+    label: "One-time",
+    description: "Single visit or spring clean",
+    defaultMultiplier: 1,
+    defaultVisits: 1,
+    badgeClass:
+      "bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-400/30",
+  },
+};
+
+const STATUS_BADGES = [
+  {
+    label: "Pricing engine active",
+    className:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200",
+  },
+  {
+    label: "Multi-zone support",
+    className:
+      "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-200",
+  },
+  {
+    label: "Dynamic add-ons",
+    className:
+      "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200",
+  },
+];
 
 // Helper function to safely parse numeric inputs
 const safeParseNumber = (value: string, fallback: number = 0): number => {
@@ -78,9 +172,13 @@ const NumericInputSlider = ({
 
   return (
     <div className="space-y-2">
-      {label && <Label className="text-sm font-medium">{label}</Label>}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 relative">
+      {label && (
+        <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+          {label}
+        </Label>
+      )}
+      <div className="flex items-start gap-3">
+        <div className="relative flex-1 pt-2">
           <input
             type="range"
             min={min}
@@ -88,13 +186,13 @@ const NumericInputSlider = ({
             step={step}
             value={value}
             onChange={(e) => handleSliderChange(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+            className="h-2 w-full appearance-none rounded-full bg-slate-200/80 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:bg-slate-700/60"
             style={{
-              background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((value - min) / (max - min)) * 100}%, #e5e7eb ${((value - min) / (max - min)) * 100}%, #e5e7eb 100%)`,
+              background: `linear-gradient(to right, #0ea5e9 0%, #0ea5e9 ${((value - min) / (max - min)) * 100}%, #e2e8f0 ${((value - min) / (max - min)) * 100}%, #e2e8f0 100%)`,
             }}
           />
-          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
-            <div className="bg-accent text-white text-sm font-medium px-2 py-1 rounded shadow-sm">
+          <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-12">
+            <div className="rounded-full bg-slate-900 px-3 py-1 text-sm font-semibold text-white shadow-lg dark:bg-slate-950">
               {typeof value === "number" ? value.toFixed(2) : value}
             </div>
           </div>
@@ -106,7 +204,7 @@ const NumericInputSlider = ({
           onChange={(e) => handleInputChange(e.target.value)}
           onBlur={() => setInputValue(value.toString())} // Reset to actual value on blur
           placeholder={placeholder}
-          className="w-20 text-center"
+          className="w-24 rounded-xl border-slate-200 text-center dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 font-medium"
         />
       </div>
     </div>
@@ -231,7 +329,7 @@ export default function AdminPricingPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="admin-surface min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
       </div>
     );
@@ -239,7 +337,7 @@ export default function AdminPricingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-brand-50/20">
+      <div className="admin-surface min-h-screen">
         <div className="container mx-auto p-6 pt-20">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
@@ -251,11 +349,11 @@ export default function AdminPricingPage() {
 
   if (!config) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-brand-50/20">
-        <div className="container mx-auto p-6 pt-20">
-          <Alert>
+      <div className="admin-surface min-h-screen">
+        <div className="container mx-auto px-6 pt-24">
+          <Alert className="max-w-xl border-red-200 bg-red-50 dark:border-red-400/40 dark:bg-red-500/20">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-red-800 dark:text-red-100">
               Failed to load pricing configuration
             </AlertDescription>
           </Alert>
@@ -265,90 +363,116 @@ export default function AdminPricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50/30">
-      <div className="container mx-auto p-6 pt-20">
-        {/* Enhanced header with better visual hierarchy */}
-        <div className="mb-16">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl mx-auto mb-6">
-              <DollarSign className="size-10 text-white" />
+    <div className="admin-surface min-h-screen">
+      <header className="relative isolate overflow-hidden bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+        <div className="absolute left-0 top-0 h-64 w-64 -translate-y-1/3 -translate-x-1/3 rounded-full bg-emerald-200/40 blur-3xl dark:bg-indigo-500/35" />
+        <div className="absolute right-10 top-16 h-48 w-48 rounded-full bg-emerald-300/30 blur-[110px] dark:bg-sky-400/30" />
+        <div className="absolute inset-x-0 bottom-[-18rem] h-[24rem] bg-gradient-to-t from-white via-white/60 to-transparent dark:from-slate-900 dark:via-slate-900/40" />
+        <div className="container relative mx-auto px-6 py-16 space-y-10">
+          <div className="flex flex-wrap items-start justify-between gap-8">
+            <div className="max-w-2xl space-y-4">
+              <div className="flex items-center gap-3 admin-kicker">
+                <DollarSign className="h-4 w-4" />
+                <span>Pricing controls</span>
+              </div>
+              <div className="space-y-3">
+                <h1 className="admin-title">
+                  Pricing Management
+                </h1>
+                <p className="admin-subtitle">
+                  Configure cadences, multipliers, and launch promotions across InsightScoop service zones.
+                </p>
+              </div>
             </div>
-            <h1 className="text-5xl font-black text-slate-900 tracking-tight mb-4">
-              Pricing Management
-            </h1>
-            <p className="text-xl text-slate-600 font-medium max-w-2xl mx-auto">
-              Configure service pricing, frequencies, and yard size multipliers
-              for your business
-            </p>
+            <div className="flex flex-col items-start gap-4 sm:items-end">
+              <div className="flex flex-wrap justify-end gap-2">
+                {STATUS_BADGES.map((badge) => (
+                  <Badge
+                    key={badge.label}
+                    className={`inline-flex max-w-[10rem] items-center gap-2 rounded-full px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.24em] ${badge.className}`}
+                  >
+                    <span className="truncate">{badge.label}</span>
+                  </Badge>
+                ))}
+              </div>
+              <Button
+                onClick={saveConfig}
+                disabled={saving}
+                className="rounded-xl border border-slate-200/80 bg-white px-5 py-2 text-slate-900 shadow-lg transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-emerald-400 dark:hover:bg-emerald-500/20"
+              >
+                {saving ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-slate-900" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" /> Save Pricing Configuration
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
-          {/* Enhanced status indicators with better styling */}
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl shadow-sm">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-sm"></div>
-              <span className="text-sm font-semibold text-green-800">
-                Pricing Engine Active
-              </span>
-            </div>
-            <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-sm">
-              <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
-              <span className="text-sm font-semibold text-blue-800">
-                Multi-zone Support
-              </span>
-            </div>
-            <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl shadow-sm">
-              <div className="w-3 h-3 bg-purple-500 rounded-full shadow-sm"></div>
-              <span className="text-sm font-semibold text-purple-800">
-                Dynamic Add-ons
-              </span>
-            </div>
-          </div>
-
-          {/* Quick stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-              <div className="text-2xl font-bold text-indigo-600">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="admin-card rounded-2xl p-5 backdrop-blur">
+              <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                Dog pricing tiers
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
                 {(config?.basePricing?.tiers || []).length}
-              </div>
-              <div className="text-sm text-gray-600">Dog Pricing Tiers</div>
+              </p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">
+            <div className="admin-card rounded-2xl p-5 backdrop-blur">
+              <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                Frequency options
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
                 {(config?.basePricing?.frequencies || []).length}
-              </div>
-              <div className="text-sm text-gray-600">Frequency Options</div>
+              </p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-              <div className="text-2xl font-bold text-pink-600">
+            <div className="admin-card rounded-2xl p-5 backdrop-blur">
+              <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                Yard size multipliers
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
                 {(config?.basePricing?.yardSizes || []).length}
-              </div>
-              <div className="text-sm text-gray-600">Yard Size Multipliers</div>
+              </p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="admin-card rounded-2xl p-5 backdrop-blur">
+              <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                Active add-ons
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
                 {
                   (config?.basePricing?.addOns || []).filter((a) => a.available)
                     .length
                 }
-              </div>
-              <div className="text-sm text-gray-600">Active Add-ons</div>
+              </p>
             </div>
           </div>
         </div>
+      </header>
 
-        {/* Message */}
+      <main className="container mx-auto max-w-6xl px-6 pb-20 pt-14">
         {message && (
           <Alert
-            className={`mb-6 ${message.type === "success" ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}
+            className={`mb-6 max-w-3xl rounded-2xl border ${
+              message.type === "success"
+                ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/15"
+                : "border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/15"
+            }`}
           >
             {message.type === "success" ? (
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-200" />
             ) : (
-              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-200" />
             )}
             <AlertDescription
               className={
-                message.type === "success" ? "text-green-800" : "text-red-800"
+                message.type === "success"
+                  ? "text-emerald-800 dark:text-emerald-100"
+                  : "text-rose-800 dark:text-rose-100"
               }
             >
               {message.text}
@@ -356,38 +480,17 @@ export default function AdminPricingPage() {
           </Alert>
         )}
 
-        {/* Save Button */}
-        <div className="flex justify-end mb-6">
-          <Button
-            onClick={saveConfig}
-            disabled={saving}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            {saving ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save Pricing Configuration
-              </>
-            )}
-          </Button>
-        </div>
-
-        <div className="space-y-8">
+        <div className="space-y-10">
           {/* Base Dog Pricing Tiers */}
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-indigo-50/30">
+          <Card className="admin-card rounded-3xl">
             <CardHeader className="pb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-xl">
                   <DollarSign className="w-5 h-5 text-indigo-600" />
                 </div>
-                <CardTitle className="text-2xl">Dog Count Pricing</CardTitle>
+                <CardTitle className="text-2xl text-slate-900 dark:text-white">Dog Count Pricing</CardTitle>
               </div>
-              <p className="text-slate-600 ml-11">
+              <p className="text-slate-600 dark:text-slate-300 ml-11">
                 Configure the base pricing for different numbers of dogs. These
                 prices will be multiplied by zone multipliers and add-on costs.
               </p>
@@ -397,7 +500,7 @@ export default function AdminPricingPage() {
                 {(config.basePricing?.tiers || []).map((tier, index) => (
                   <div
                     key={index}
-                    className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg"
+                    className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/95 p-5 shadow-sm md:grid-cols-4"
                   >
                     <div>
                       <Label className="text-sm font-medium">Dogs</Label>
@@ -526,130 +629,193 @@ export default function AdminPricingPage() {
           </Card>
 
           {/* Frequency Multipliers */}
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-purple-50/30">
+          <Card className="admin-card rounded-3xl">
             <CardHeader className="pb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl">
                   <DollarSign className="w-5 h-5 text-purple-600" />
                 </div>
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-2xl text-slate-900 dark:text-white">
                   Service Frequency Multipliers
                 </CardTitle>
               </div>
-              <p className="text-slate-600 ml-11">
+              <p className="text-slate-600 dark:text-slate-300 ml-11">
                 Configure multipliers for different service frequencies. Higher
                 frequencies should have higher multipliers.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                {(config.basePricing?.frequencies || []).map((freq, index) => (
-                  <div
-                    key={freq.frequency}
-                    className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg"
-                  >
-                    <div>
-                      <Label className="text-sm font-medium">Frequency</Label>
-                      <select
-                        className="w-full px-3 py-2 border border-input bg-background rounded-md"
-                        value={freq.frequency}
-                        onChange={(e) => {
-                          const newFreqs = [...config.basePricing.frequencies];
-                          newFreqs[index].frequency = e.target.value as any;
-                          setConfig({
-                            ...config,
-                            basePricing: {
-                              ...config.basePricing,
-                              frequencies: newFreqs,
-                            },
-                          });
-                        }}
-                      >
-                        <option value="weekly">Weekly</option>
-                        <option value="twice-weekly">Twice Weekly</option>
-                        <option value="bi-weekly">Bi-weekly</option>
-                        <option value="monthly">Monthly</option>
-                        <option value="one-time">One-time</option>
-                      </select>
+                {(config.basePricing?.frequencies || [])
+                  .map((freq, originalIndex) => ({ freq, originalIndex }))
+                  .sort((a, b) => {
+                    const orderMap = new Map(
+                      FREQUENCY_DISPLAY_ORDER.map((frequency, idx) => [
+                        frequency,
+                        idx,
+                      ]),
+                    );
+                    const indexA = orderMap.get(a.freq.frequency) ?? 99;
+                    const indexB = orderMap.get(b.freq.frequency) ?? 99;
+                    return indexA - indexB;
+                  })
+                  .map(({ freq, originalIndex }) => {
+                    const optionMeta = FREQUENCY_DETAILS[freq.frequency];
+
+                    const handleFrequencyChange = (value: ConfigFrequency) => {
+                      const newFreqs = [...config.basePricing.frequencies];
+                      const meta = FREQUENCY_DETAILS[value];
+                      newFreqs[originalIndex] = {
+                        ...newFreqs[originalIndex],
+                        frequency: value,
+                        multiplier:
+                          meta?.defaultMultiplier ??
+                          newFreqs[originalIndex].multiplier,
+                        visitsPerMonth:
+                          meta?.defaultVisits ??
+                          newFreqs[originalIndex].visitsPerMonth,
+                      };
+                      setConfig({
+                        ...config,
+                        basePricing: {
+                          ...config.basePricing,
+                          frequencies: newFreqs,
+                        },
+                      });
+                    };
+
+                  return (
+                    <div
+                      key={`${freq.frequency}-${originalIndex}`}
+                      className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/95 p-5 shadow-sm md:grid-cols-4"
+                    >
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Frequency</Label>
+                        <Select
+                          value={freq.frequency}
+                          onValueChange={(value) =>
+                            handleFrequencyChange(value as ConfigFrequency)
+                          }
+                        >
+                          <SelectTrigger className="w-full justify-start rounded-xl border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 px-3 py-2 text-left text-sm font-medium text-slate-900 dark:text-slate-100 shadow-sm">
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FREQUENCY_DISPLAY_ORDER.map((value) => {
+                              const meta = FREQUENCY_DETAILS[value];
+                              return (
+                                <SelectItem key={value} value={value}>
+                                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                                    {meta.label}
+                                  </span>
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                        {optionMeta ? (
+                          <Badge
+                            className={`${optionMeta.badgeClass} mt-1 rounded-full px-3 py-1 text-xs font-medium capitalize`}
+                          >
+                            {optionMeta.description}
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <div>
+                        <NumericInputSlider
+                          label="Multiplier"
+                          value={freq.multiplier}
+                          onChange={(value) => {
+                            const newFreqs = [...config.basePricing.frequencies];
+                            newFreqs[originalIndex].multiplier = value;
+                            setConfig({
+                              ...config,
+                              basePricing: {
+                                ...config.basePricing,
+                                frequencies: newFreqs,
+                              },
+                            });
+                          }}
+                          min={0}
+                          max={3.0}
+                          step={0.05}
+                          placeholder="1.0"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Visits / Month
+                        </Label>
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={freq.visitsPerMonth ?? ""}
+                          onChange={(e) => {
+                            const newFreqs = [...config.basePricing.frequencies];
+                            newFreqs[originalIndex].visitsPerMonth =
+                              safeParseNumber(
+                                e.target.value,
+                                freq.visitsPerMonth,
+                              );
+                            setConfig({
+                              ...config,
+                              basePricing: {
+                                ...config.basePricing,
+                                frequencies: newFreqs,
+                              },
+                            });
+                          }}
+                          className="rounded-xl"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">
+                          Typical: {optionMeta ? optionMeta.defaultVisits.toFixed(2) : "—"}
+                          {" "}
+                          visits/mo
+                        </p>
+                      </div>
+                      <div className="flex items-end justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-slate-500 hover:text-slate-700"
+                          onClick={() => {
+                            const newFreqs =
+                              config.basePricing.frequencies.filter(
+                                (_, i) => i !== originalIndex,
+                              );
+                            setConfig({
+                              ...config,
+                              basePricing: {
+                                ...config.basePricing,
+                                frequencies: newFreqs,
+                              },
+                            });
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
                     </div>
-                    <div>
-                      <NumericInputSlider
-                        label="Multiplier"
-                        value={freq.multiplier}
-                        onChange={(value) => {
-                          const newFreqs = [...config.basePricing.frequencies];
-                          newFreqs[index].multiplier = value;
-                          setConfig({
-                            ...config,
-                            basePricing: {
-                              ...config.basePricing,
-                              frequencies: newFreqs,
-                            },
-                          });
-                        }}
-                        min={0}
-                        max={3.0}
-                        step={0.1}
-                        placeholder="1.0"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">
-                        Visits/Month
-                      </Label>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        value={freq.visitsPerMonth || ""}
-                        onChange={(e) => {
-                          const newFreqs = [...config.basePricing.frequencies];
-                          newFreqs[index].visitsPerMonth = safeParseNumber(
-                            e.target.value,
-                            freq.visitsPerMonth,
-                          );
-                          setConfig({
-                            ...config,
-                            basePricing: {
-                              ...config.basePricing,
-                              frequencies: newFreqs,
-                            },
-                          });
-                        }}
-                        min="0"
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const newFreqs =
-                            config.basePricing.frequencies.filter(
-                              (_, i) => i !== index,
-                            );
-                          setConfig({
-                            ...config,
-                            basePricing: {
-                              ...config.basePricing,
-                              frequencies: newFreqs,
-                            },
-                          });
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <Button
                   variant="outline"
+                  className="rounded-xl border-dashed border-slate-300 bg-white/70"
                   onClick={() => {
+                    const existing = new Set(
+                      config.basePricing.frequencies.map((f) => f.frequency),
+                    );
+                    const nextFrequency =
+                      FREQUENCY_DISPLAY_ORDER.find(
+                        (value) => !existing.has(value),
+                      ) ?? "weekly";
+                    const preset = FREQUENCY_DETAILS[nextFrequency];
                     const newFreqs = [
                       ...config.basePricing.frequencies,
                       {
-                        frequency: "weekly" as const,
-                        multiplier: 1,
-                        visitsPerMonth: 4.3,
+                        frequency: nextFrequency,
+                        multiplier: preset.defaultMultiplier,
+                        visitsPerMonth: preset.defaultVisits,
                       },
                     ];
                     setConfig({
@@ -661,24 +827,24 @@ export default function AdminPricingPage() {
                     });
                   }}
                 >
-                  Add Frequency
+                  <Plus className="mr-2 h-4 w-4" /> Add Frequency
                 </Button>
               </div>
             </CardContent>
           </Card>
 
           {/* Yard Size Multipliers */}
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-pink-50/30">
+          <Card className="admin-card rounded-3xl">
             <CardHeader className="pb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl">
                   <DollarSign className="w-5 h-5 text-pink-600" />
                 </div>
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-2xl text-slate-900 dark:text-white">
                   Yard Size Multipliers
                 </CardTitle>
               </div>
-              <p className="text-slate-600 ml-11">
+              <p className="text-slate-600 dark:text-slate-300 ml-11">
                 Configure multipliers for different yard sizes. Larger yards
                 should have higher multipliers.
               </p>
@@ -689,12 +855,12 @@ export default function AdminPricingPage() {
                   (yardSize, index) => (
                     <div
                       key={yardSize.size}
-                      className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg"
+                      className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/95 p-5 shadow-sm md:grid-cols-4"
                     >
                       <div>
                         <Label className="text-sm font-medium">Size</Label>
                         <select
-                          className="w-full px-3 py-2 border border-input bg-background rounded-md"
+                          className="w-full rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 px-3 py-2"
                           value={yardSize.size}
                           onChange={(e) => {
                             const newYardSizes = [
@@ -769,17 +935,17 @@ export default function AdminPricingPage() {
           </Card>
 
           {/* Initial Clean Pricing */}
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-green-50/30">
+          <Card className="admin-card rounded-3xl">
             <CardHeader className="pb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-gradient-to-br from-green-100 to-green-200 rounded-xl">
                   <DollarSign className="w-5 h-5 text-green-600" />
                 </div>
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-2xl text-slate-900 dark:text-white">
                   Initial Clean Pricing
                 </CardTitle>
               </div>
-              <p className="text-slate-600 ml-11">
+              <p className="text-slate-600 dark:text-slate-300 ml-11">
                 Configure pricing for initial cleanups based on time since last
                 service. Higher multipliers apply to more neglected yards.
               </p>
@@ -790,7 +956,7 @@ export default function AdminPricingPage() {
                   (bucket, index) => (
                     <div
                       key={bucket.bucket}
-                      className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg"
+                      className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/95 p-5 shadow-sm md:grid-cols-5"
                     >
                       <div>
                         <Label className="text-sm font-medium">
@@ -934,10 +1100,10 @@ export default function AdminPricingPage() {
           </Card>
 
           {/* Areas Pricing */}
-          <Card>
+          <Card className="admin-card rounded-3xl">
             <CardHeader>
-              <CardTitle>Areas Pricing</CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <CardTitle className="text-2xl text-slate-900 dark:text-white">Areas Pricing</CardTitle>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 Configure pricing for service areas. The first area is always
                 free, with additional costs for each extra area.
               </p>
@@ -945,7 +1111,7 @@ export default function AdminPricingPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-sm font-medium">Free Areas</Label>
+                  <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">Free Areas</Label>
                   <Input
                     type="text"
                     inputMode="decimal"
@@ -966,8 +1132,9 @@ export default function AdminPricingPage() {
                       })
                     }
                     min="0"
+                    className="mt-1 bg-white/90 text-slate-900 dark:bg-slate-900/70 dark:text-slate-100"
                   />
-                  <p className="text-xs text-muted mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Number of areas included free
                   </p>
                 </div>
@@ -1001,7 +1168,7 @@ export default function AdminPricingPage() {
                     step={0.5}
                     placeholder="5.00"
                   />
-                  <p className="text-xs text-muted mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Cost per additional area for one-time service
                   </p>
                 </div>
@@ -1036,7 +1203,7 @@ export default function AdminPricingPage() {
                     step={0.5}
                     placeholder="3.00"
                   />
-                  <p className="text-xs text-muted mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Cost per additional area for recurring service
                   </p>
                 </div>
@@ -1045,15 +1212,15 @@ export default function AdminPricingPage() {
           </Card>
 
           {/* Add-ons Pricing */}
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-purple-50/30">
+          <Card className="admin-card rounded-3xl">
             <CardHeader className="pb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl">
                   <Settings className="w-5 h-5 text-purple-600" />
                 </div>
-                <CardTitle className="text-2xl">Service Add-ons</CardTitle>
+                <CardTitle className="text-2xl text-slate-900 dark:text-white">Service Add-ons</CardTitle>
               </div>
-              <p className="text-slate-600 ml-11">
+              <p className="text-slate-600 dark:text-slate-300 ml-11">
                 Configure pricing and availability for premium service add-ons.
                 Each add-on supports multiple billing modes.
               </p>
@@ -1068,10 +1235,10 @@ export default function AdminPricingPage() {
                     return (
                       <div
                         key={addon.id}
-                        className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+                        className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 shadow-sm"
                       >
                         {/* Add-on Header */}
-                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                        <div className="border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/90 px-6 py-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-2">
@@ -1093,17 +1260,17 @@ export default function AdminPricingPage() {
                                       },
                                     });
                                   }}
-                                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                                  className="h-4 w-4 rounded border border-gray-300 bg-gray-100 text-purple-600 focus:ring-purple-500 dark:border-slate-600 dark:bg-slate-800 dark:text-purple-300 dark:focus:ring-purple-300"
                                 />
                                 <Label
                                   htmlFor={`available-${addon.id}`}
-                                  className="text-sm font-medium text-gray-700"
+                                  className="text-sm font-medium text-slate-700 dark:text-slate-200"
                                 >
                                   Available
                                 </Label>
                               </div>
-                              <div className="h-4 w-px bg-gray-300"></div>
-                              <h3 className="font-semibold text-gray-900">
+                              <div className="h-4 w-px bg-gray-300 dark:bg-slate-700"></div>
+                              <h3 className="font-semibold text-slate-900 dark:text-white">
                                 {addon.name}
                               </h3>
                             </div>
@@ -1122,7 +1289,7 @@ export default function AdminPricingPage() {
                                   },
                                 });
                               }}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:text-red-200 dark:hover:bg-red-500/10"
                             >
                               Remove
                             </Button>
@@ -1130,10 +1297,10 @@ export default function AdminPricingPage() {
                         </div>
 
                         {/* Add-on Details */}
-                        <div className="p-6 space-y-4">
+                        <div className="space-y-4 bg-white p-6 dark:bg-slate-900">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <Label className="text-sm font-medium text-gray-700">
+                              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                                 Add-on ID
                               </Label>
                               <Input
@@ -1152,11 +1319,11 @@ export default function AdminPricingPage() {
                                   });
                                 }}
                                 placeholder="unique-id"
-                                className="mt-1"
+                                className="mt-1 bg-white/90 text-slate-900 dark:bg-slate-900/70 dark:text-slate-100"
                               />
                             </div>
                             <div>
-                              <Label className="text-sm font-medium text-gray-700">
+                              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                                 Display Name
                               </Label>
                               <Input
@@ -1176,17 +1343,17 @@ export default function AdminPricingPage() {
                                   });
                                 }}
                                 placeholder="Service name"
-                                className="mt-1"
+                                className="mt-1 bg-white/90 text-slate-900 dark:bg-slate-900/70 dark:text-slate-100"
                               />
                             </div>
                           </div>
 
                           <div>
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                               Description
                             </Label>
-                            <Input
-                              value={addon.description}
+                              <Input
+                                value={addon.description}
                               onChange={(e) => {
                                 const newAddOns = [
                                   ...config.basePricing.addOns,
@@ -1202,8 +1369,8 @@ export default function AdminPricingPage() {
                                 });
                               }}
                               placeholder="Brief description of the service"
-                              className="mt-1"
-                            />
+                                className="mt-1 bg-white/90 text-slate-900 dark:bg-slate-900/70 dark:text-slate-100"
+                              />
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1241,11 +1408,11 @@ export default function AdminPricingPage() {
                               />
                             </div>
                             <div>
-                              <Label className="text-sm font-medium text-gray-700">
+                              <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                                 Default Billing Mode
                               </Label>
                               <select
-                                className="w-full px-3 py-2 mt-1 border border-gray-300 bg-white rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                                className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-purple-500 focus:ring-purple-500 dark:border-slate-600 dark:bg-slate-900"
                                 value={addon.billingMode}
                                 onChange={(e) => {
                                   const newAddOns = [
@@ -1276,39 +1443,23 @@ export default function AdminPricingPage() {
 
                           {/* Billing Mode Availability */}
                           <div>
-                            <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                            <Label className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-3 block">
                               Available Billing Modes
                             </Label>
-                            <p className="text-xs text-gray-500 mb-3">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
                               Customers can choose from these billing options
                               during quote
                             </p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                               {[
-                                {
-                                  value: "first-visit",
-                                  label: "First Visit",
-                                  description: "One-time charge",
-                                },
-                                {
-                                  value: "each-visit",
-                                  label: "Each Visit",
-                                  description: "Per visit charge",
-                                },
-                                {
-                                  value: "every-other",
-                                  label: "Every Other",
-                                  description: "Half price frequency",
-                                },
-                                {
-                                  value: "one-time",
-                                  label: "One-time",
-                                  description: "Single service",
-                                },
+                                { value: "first-visit", label: "First Visit" },
+                                { value: "each-visit", label: "Each Visit" },
+                                { value: "every-other", label: "Every Other" },
+                                { value: "one-time", label: "One-time" },
                               ].map((mode) => (
                                 <div
                                   key={mode.value}
-                                  className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg"
+                                  className="flex items-center gap-2 rounded-lg bg-gray-50 p-3 dark:bg-slate-800/60"
                                 >
                                   <input
                                     type="checkbox"
@@ -1317,18 +1468,15 @@ export default function AdminPricingPage() {
                                     onChange={() => {
                                       // Future: implement per-mode availability
                                     }}
-                                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                                    className="h-4 w-4 rounded border border-gray-300 bg-gray-100 text-purple-600 focus:ring-purple-500 dark:border-slate-600 dark:bg-slate-800 dark:text-purple-300 dark:focus:ring-purple-300"
                                   />
                                   <div>
                                     <Label
                                       htmlFor={`${addon.id}-${mode.value}`}
-                                      className="text-xs font-medium text-gray-700"
+                                      className="text-xs font-medium text-slate-700 dark:text-slate-200"
                                     >
                                       {mode.label}
                                     </Label>
-                                    <p className="text-xs text-gray-500">
-                                      {mode.description}
-                                    </p>
                                   </div>
                                 </div>
                               ))}
@@ -1343,7 +1491,7 @@ export default function AdminPricingPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

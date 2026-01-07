@@ -36,7 +36,7 @@ export const KeyInsights: React.FC<KeyInsightsProps> = ({
   if (goodWeeks >= 3) {
     insights.push({
       icon: Activity,
-      text: "Stool consistency looks normal most weeks — great job with their diet!",
+      text: "Stool consistency looks normal most weeks  -  great job with their diet!",
       color: wellnessTheme.colors.green,
     });
   }
@@ -44,7 +44,7 @@ export const KeyInsights: React.FC<KeyInsightsProps> = ({
   if (monitorWeeks > 0) {
     insights.push({
       icon: Eye,
-      text: "A few weeks with softer consistency — try adding more fiber from pumpkin or sweet potato.",
+      text: "A few weeks with softer consistency  -  try adding more fiber from pumpkin or sweet potato.",
       color: wellnessTheme.colors.yellow,
     });
   }
@@ -52,7 +52,7 @@ export const KeyInsights: React.FC<KeyInsightsProps> = ({
   if (attentionWeeks > 0) {
     insights.push({
       icon: AlertTriangle,
-      text: "Some weeks show concerning patterns — consider a vet visit to rule out any issues.",
+      text: "Some weeks show concerning patterns  -  consider a vet visit to rule out any issues.",
       color: wellnessTheme.colors.red,
     });
   }
@@ -62,7 +62,7 @@ export const KeyInsights: React.FC<KeyInsightsProps> = ({
   if (yellowWeeks > 0) {
     insights.push({
       icon: Thermometer,
-      text: "Yellow color detected in some samples — if this continues, ask your vet about liver function.",
+      text: "Yellow color detected in some samples  -  if this continues, ask your vet about liver function.",
       color: wellnessTheme.colors.yellow,
     });
   }
@@ -76,7 +76,7 @@ export const KeyInsights: React.FC<KeyInsightsProps> = ({
   if (parasiteWeeks > 0) {
     insights.push({
       icon: Bug,
-      text: "Some signs of possible parasites — your vet can check for internal parasites.",
+      text: "Some signs of possible parasites  -  your vet can check for internal parasites.",
       color: wellnessTheme.colors.orange,
     });
   }
@@ -86,21 +86,15 @@ export const KeyInsights: React.FC<KeyInsightsProps> = ({
   if (dryWeeks > 0) {
     insights.push({
       icon: Droplets,
-      text: "A few dry samples — make sure they're getting enough water throughout the day.",
+      text: "A few dry samples  -  make sure they're getting enough water throughout the day.",
       color: wellnessTheme.colors.blue,
     });
   }
 
   return (
-    <Card
-      style={{
-        backgroundColor: wellnessTheme.slate50,
-        boxShadow: wellnessTheme.cardShadow,
-        borderRadius: wellnessTheme.radiusLg,
-      }}
-    >
+    <Card className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm">
       <CardContent className="p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
           What we're seeing
         </h3>
 
@@ -113,7 +107,7 @@ export const KeyInsights: React.FC<KeyInsightsProps> = ({
                   className="size-4 mt-0.5 flex-shrink-0"
                   style={{ color: insight.color }}
                 />
-                <div className="text-slate-700 leading-relaxed">
+                <div className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
                   {insight.text}
                 </div>
               </div>
@@ -121,12 +115,12 @@ export const KeyInsights: React.FC<KeyInsightsProps> = ({
           })}
 
           {/* Overall summary */}
-          <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-200">
+          <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
             <Activity
               className="size-4 mt-0.5 flex-shrink-0"
               style={{ color: wellnessTheme.colors.teal }}
             />
-            <div className="text-slate-700">
+            <div className="text-slate-700 dark:text-slate-300 text-sm">
               <strong>{totalDeposits4w} deposits</strong> tracked over 4 weeks,
               with{" "}
               <strong>

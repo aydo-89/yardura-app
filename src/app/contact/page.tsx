@@ -30,10 +30,10 @@ export default function ContactPage() {
               <CardContent>
                 <p className="text-gray-600 mb-2">Available 8AM - 6PM CST</p>
                 <a
-                  href="tel:1-888-915-9273"
+                  href="tel:1-877-417-9273"
                   className="text-accent hover:text-accent-dark font-medium"
                 >
-                  1-888-915-YARD
+                  1-877-417-YARD
                 </a>
               </CardContent>
             </Card>

@@ -1,0 +1,13 @@
+{
+  "id": "dry-1",
+  "visual": {
+    "id": "dry-1",
+    "shape": "several small separate pellets or pebbles, not connected",
+    "color": "darker dry brown",
+    "distinguishingFeature": "broken into many small hard pieces instead of logs, gaps between pieces",
+    "surface": "dry cracked appearance, no moisture/sheen"
+  },
+  "prompt": "Create a simple flat vector illustration, clean minimal design, soft rounded shapes of dog stool for a pet health app. Use muted natural tones, soft shadows, no harsh colors. Background: plain solid very light beige (#FAF8F5) background, no patterns, no gradients. Rendering: flat colors with subtle soft shadow underneath for grounding, slight highlight on top. View: top-down 3/4 view looking at ground level. Shape: several small separate pellets or pebbles, not connected. Color: darker dry brown. Key identifying feature: broken into many small hard pieces instead of logs, gaps between pieces. Surface/texture: dry cracked appearance, no moisture/sheen. Do NOT include: any text or labels, badges or icons, realistic/photorealistic style, gross details like flies or smell lines, complex backgrounds, human hands or tools, dogs or other animals. Keep it clean, simple, and educational - not gross or realistic. This image helps pet owners identify what \"dry\" stool looks like.",
+  "model": "gemini-3-pro-image-preview",
+  "generatedAt": "2026-01-07T13:20:30.220Z"
+}

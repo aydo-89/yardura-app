@@ -1,7 +1,7 @@
 "use client";
 
 import { PropsWithChildren, ElementType } from "react";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/framermotion";
 import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
 import { reveal, createStaggerItem, dur, ease } from "@/lib/motion/presets";
 

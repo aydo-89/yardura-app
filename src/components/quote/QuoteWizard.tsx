@@ -1,31 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/framermotion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import AddressAutocomplete from "@/components/AddressAutocomplete";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft,
   ArrowRight,
   Calculator,
   CheckCircle,
   Check,
+  ChevronDown,
   Phone,
   Mail,
   Settings,
@@ -33,12 +19,8 @@ import {
   Clock,
   Loader2,
   Star,
-  Shield,
-  Truck,
   Users,
-  Award,
   Sparkles,
-  Heart,
   Zap,
   AlertCircle,
   Building,
@@ -62,18 +44,58 @@ import { getZoneMultiplierFromZip } from "@/lib/pricing";
 import {
   QuoteInput,
   getPremiumOnboardingOptions,
-  getServiceTypeOptions,
   getFrequencyDisplayName,
 } from "@/lib/priceEstimator";
 // import { FormProtection } from '@/components/ui/recaptcha'; // Temporarily disabled
 import { env } from "@/lib/env";
 import { StepCustomization as ExternalStepCustomization } from "./steps/StepCustomization";
-import { getBusinessConfig, AddOnConfig } from "@/lib/business-config";
-import { StepContactReview as ExternalStepContactReview } from "./steps/StepContactReview";
-import { PricingSummary as ExternalPricingSummary } from "@/components/quote/components/PricingSummary";
-import { StepWellness } from "./steps/StepWellness";
+import { StepContactReview as StepContactReviewComponent } from "./steps/StepContactReview";
+import type { PricingData } from "@/types/quote";
+import {
+  deriveTrialWeekPresentation,
+  derivePostTrialPresentation,
+  describeFirstWeekCoverage,
+} from "@/lib/pricing-presentation";
+import { FirstWeekCreditBanner } from "@/components/quote/components/FirstWeekCreditBanner";
 import { StepOnboarding } from "./steps/StepOnboarding";
-import { StepCommercialContact } from "./steps/StepCommercialContact";
+import { StepCommunityContact } from "./steps/StepCommunityContact";
+import { StepServiceType } from "./steps/StepServiceType";
+import { StepZipCheck } from "./steps/StepZipCheck";
+import { StepBasics } from "./steps/StepBasics";
+import { StepFrequency } from "./steps/StepFrequency";
+import { InitialCleanLabel } from "@/components/quote/InitialCleanTooltip";
+import { brandColors, withAlpha } from "@/shared/brand";
+import { cn, formatVisitsRange } from "@/lib/utils";
+import {
+  quoteShellClass,
+  quoteStepChipBase,
+  quoteStepChipActive,
+  quoteStepChipCompleted,
+  quoteStepChipIdle,
+} from "./quoteStyles";
+import { QuoteStepBackground } from "./QuoteStepBackground";
+import {
+  ensureQuoteSessionId,
+  getQuoteSessionId,
+  clearQuoteSessionId,
+} from "@/lib/quoteSession";
+
+const formatCurrency = (value: number): string =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(value) ? value : 0);
+
+const toAmount = (value: unknown): number => {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+};
 
 // Transform add-ons from quote format to pricing API format
 const transformAddOnsForPricing = (addOns: any) => {
@@ -93,12 +115,8 @@ const transformAddOnsForPricing = (addOns: any) => {
   if (addOns.divertMode && addOns.divertMode !== "none") {
     if (addOns.divertMode === "takeaway") {
       transformed["divert-takeaway"] = true;
-    } else if (addOns.divertMode === "25") {
-      transformed["divert-25"] = true;
-    } else if (addOns.divertMode === "50") {
-      transformed["divert-50"] = true;
-    } else if (addOns.divertMode === "100") {
-      transformed["divert-100"] = true;
+    } else {
+      transformed["divert-compost"] = true;
     }
   }
 
@@ -117,15 +135,28 @@ const transformAddOnsForPricing = (addOns: any) => {
   return transformed;
 };
 
-// Helper function to get dynamic add-on pricing
-const getAddonDisplay = (addonId: string, mode: string) => {
-  // This is a simplified version - in a real implementation, you'd load from business config
-  // For now, return a default structure that matches the expected format
-  return {
-    name: addonId,
-    price: "+$0.00", // This will be replaced by the actual dynamic pricing system
+const trackQuoteEvent = (eventName: string, params: Record<string, any> = {}) => {
+  if (typeof window === "undefined") return;
+  const win = window as typeof window & { dataLayer?: Array<Record<string, any>> };
+  const sessionId = getQuoteSessionId() ?? ensureQuoteSessionId();
+  const payload = {
+    event: eventName,
+    quote_session_id: sessionId,
+    ...params,
   };
+
+  win.dataLayer = win.dataLayer || [];
+  if (Array.isArray(win.dataLayer)) {
+    win.dataLayer.push(payload);
+  }
+  if (typeof win.gtag === "function") {
+    win.gtag("event", eventName, payload);
+  }
+  if (typeof win.fbq === "function") {
+    win.fbq("trackCustom", eventName, payload);
+  }
 };
+
 
 // pricing summary sidebar component
 const PricingSummary = ({
@@ -156,15 +187,15 @@ const PricingSummary = ({
             </p>
             <div className="space-y-2">
               <a
-                href="tel:1-888-915-9273"
-                className="flex items-center gap-2 text-teal-700 hover:text-teal-700-dark"
+                href="tel:1-877-417-9273"
+                className="flex items-center gap-2 text-brand-deep hover:text-brand-ink"
               >
                 <Phone className="size-4" />
-                <span>Call 1-888-915-YARD</span>
+                <span>Call 1-877-417-YARD</span>
               </a>
               <a
                 href="/contact"
-                className="flex items-center gap-2 text-teal-700 hover:text-teal-700-dark"
+                className="flex items-center gap-2 text-brand-deep hover:text-brand-ink"
               >
                 <Mail className="size-4" />
                 <span>Request more information</span>
@@ -199,85 +230,308 @@ const PricingSummary = ({
         discountPercent: 50,
         discountAmount: initialCleanAmount * 0.5,
         finalAmount: initialCleanAmount * 0.5 + firstVisitAddOns,
+        firstVisitAddOnAmount: firstVisitAddOns,
       };
     } else if (
-      ["weekly", "biweekly", "twice-weekly"].includes(frequency || "")
+      ["weekly", "biweekly", "twice-weekly", "daily"].includes(
+        frequency || "",
+      )
     ) {
       return {
         discountPercent: 100,
         discountAmount: initialCleanAmount,
         finalAmount: firstVisitAddOns,
+        firstVisitAddOnAmount: firstVisitAddOns,
       };
     }
 
     return null;
   };
 
+  const toNumber = (value: unknown): number => {
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
+  const resolveFrequencyValue = (value?: string) => {
+    if (!value) return "weekly";
+    const normalized = value.toLowerCase();
+    if (normalized === "onetime") return "one-time";
+    return value;
+  };
+
+  const getPricingAddonAmount = (
+    addonId: string,
+    mode: string,
+  ): number => {
+    const normalizedMode =
+      mode === "selected" || !mode ? "each-visit" : mode.toLowerCase();
+    const frequencySource = resolveFrequencyValue(
+      frequency ?? quoteData?.frequency,
+    );
+    const isFirstVisitCharge =
+      frequencySource === "one-time" ||
+      normalizedMode === "first-visit" ||
+      normalizedMode === "one-time" ||
+      normalizedMode === "onetime";
+
+    const firstVisitSource =
+      (pricing?.firstVisitAddOns as Record<string, string | number> | undefined) ||
+      undefined;
+    const recurringSource =
+      (pricing?.recurringAddOns as Record<string, string | number> | undefined) ||
+      undefined;
+
+    if (isFirstVisitCharge && firstVisitSource) {
+      if (addonId === "deodorize") return toNumber(firstVisitSource.deodorize);
+      if (addonId === "spray-deck") return toNumber(firstVisitSource.sprayDeck);
+      return toNumber(firstVisitSource.other);
+    }
+
+    if (!isFirstVisitCharge && recurringSource) {
+      if (addonId === "deodorize") return toNumber(recurringSource.deodorize);
+      if (addonId === "spray-deck") return toNumber(recurringSource.sprayDeck);
+      if (addonId.startsWith("divert")) return toNumber(recurringSource.divert);
+      return toNumber(recurringSource.other);
+    }
+
+    return 0;
+  };
+
+  const buildAddonPriceLabel = (addonId: string, mode: string) => {
+    const cents = getPricingAddonAmount(addonId, mode);
+    if (cents <= 0) return "Included";
+
+    const normalizedMode =
+      mode === "selected" || !mode ? "each-visit" : mode.toLowerCase();
+    const normalizedFrequency = resolveFrequencyValue(
+      frequency ?? quoteData?.frequency,
+    ).toLowerCase();
+
+    const amount = (cents / 100).toFixed(2);
+    const suffix = (() => {
+      if (
+        normalizedMode === "first-visit" ||
+        normalizedMode === "one-time" ||
+        normalizedMode === "onetime" ||
+        normalizedFrequency === "one-time"
+      ) {
+        return " one-time";
+      }
+      if (normalizedMode === "every-other") {
+        return " / visit (every other)";
+      }
+      return " / visit";
+    })();
+
+    return `+$${amount}${suffix}`;
+  };
+
+  const getAddonDisplay = (addonId: string, mode: string) => {
+    return {
+      name: addonId,
+      price: buildAddonPriceLabel(addonId, mode),
+    };
+  };
+
   const discount = getInitialCleanDiscount();
 
+  const resolvedFrequency = resolveFrequencyValue(
+    frequency ?? quoteData?.frequency,
+  );
+  const normalizedFrequency = resolvedFrequency
+    ? resolvedFrequency.toLowerCase()
+    : "weekly";
+
+  const pricingData = useMemo(() => {
+    if (!pricing || (pricing as any).requiresCustomQuote) {
+      return null;
+    }
+    return pricing as PricingData;
+  }, [pricing]);
+
+  const trialPresentation = useMemo(
+    () =>
+      pricingData
+        ? deriveTrialWeekPresentation(
+            pricingData,
+            normalizedFrequency === "onetime" ? "one-time" : normalizedFrequency,
+          )
+        : null,
+    [pricingData, normalizedFrequency],
+  );
+
+  const postTrialPresentation = useMemo(
+    () => (pricingData ? derivePostTrialPresentation(pricingData) : null),
+    [pricingData],
+  );
+
+  const trialValueCents = trialPresentation?.totalValueCents ?? 0;
+  const trialCreditCents = trialPresentation?.totalCreditCents ?? 0;
+  const trialNetCents = trialPresentation?.netDueCents ?? 0;
+  const trialDescriptor = trialPresentation?.descriptor;
+
+  const trialLengthCopy = (() => {
+    const days = trialPresentation?.trialLengthDays;
+    if (!days) return null;
+    if (days === 7) return "Free week covers your kickoff + follow-ups.";
+    if (days === 14) return "Free coverage runs for two weeks after kickoff.";
+    return `Free coverage runs for ${days} days after kickoff.`;
+  })();
+
+  const formatCentsToCurrency = (value?: number | string | null) => {
+    const cents = typeof value === "string" ? Number(value) : value;
+    if (typeof cents !== "number" || Number.isNaN(cents)) {
+      return "$0.00";
+    }
+    return formatCurrency(cents / 100);
+  };
+
+  const activationCopy = (() => {
+    const days =
+      postTrialPresentation?.activationDelayDays ??
+      trialPresentation?.trialLengthDays ??
+      null;
+    if (!days) return null;
+    if (days === 7) return "Billing begins one week after your kickoff visit.";
+    if (days === 14) return "Billing begins two weeks after your kickoff visit.";
+    return `Billing begins ${days} days after your kickoff visit.`;
+  })();
+
   return (
-    <div className="sticky top-4">
-      {/* Header with per-visit and first-visit prices */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-        {/* Show different pricing based on step and frequency */}
-        {frequency === "onetime" ? (
-          // One-time service: only show initial clean cost
-          <div className="text-center">
-            <div className="text-sm text-gray-600 mb-1">
-              One-time service cost
-            </div>
-            <span className="font-semibold text-lg">${pricing.oneTime}</span>
-          </div>
-        ) : currentStep === 2 ? (
-          // Property details step: show per-visit with free initial visit indicator
-          <>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">Price per visit</span>
-              <span className="font-semibold text-lg">${pricing.perVisit}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                Total for first visit
-              </span>
-              <span className="font-semibold text-lg">${pricing.oneTime}</span>
-            </div>
-            {/* Free initial visit indicator for property details step */}
-            <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-xs text-green-700 text-center">
-                💚 <strong>Initial clean FREE</strong> with weekly, bi-weekly,
-                or twice-weekly subscriptions!
-              </p>
-            </div>
-          </>
-        ) : (
-          // Other steps: show normal pricing with discount if applicable
-          <>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">Price per visit</span>
-              <span className="font-semibold text-lg">${pricing.perVisit}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                Total for first visit
-              </span>
-              <span className="font-semibold text-lg">
-                {discount
-                  ? `$${discount.finalAmount.toFixed(2)}`
-                  : `$${pricing.oneTime}`}
+    <div className="sticky top-4 space-y-4">
+      {resolvedFrequency === "onetime" ? (
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">One-time service</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-brand-muted">
+            <div className="flex items-center justify-between text-brand-ink">
+              <span className="font-medium">Visit total</span>
+              <span className="text-2xl font-semibold text-brand-ink">
+                ${pricing.oneTime}
               </span>
             </div>
-            {/* Show discount explanation if applicable */}
-            {discount && discount.discountPercent === 100 && (
-              <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-xs text-green-700 text-center">
-                  💚 Initial clean FREE with recurring weekly, biweekly or
-                  twice-weekly service!
-                </p>
+            <p className="text-xs">
+              We invoice after the cleanup wraps so you only pay for a completed visit.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {resolvedFrequency !== "onetime" && pricingData ? (
+        <>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Free trial week</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="space-y-2">
+                {trialPresentation?.charges.map((item) => (
+                  <div
+                    key={`trial-charge-${item.key}`}
+                    className="flex items-center justify-between text-brand-ink"
+                  >
+                    <span>{item.label}</span>
+                    <span className="font-semibold">
+                      {formatCentsToCurrency(item.amountCents)}
+                    </span>
+                  </div>
+                ))}
               </div>
-            )}
-          </>
-        )}
-      </div>
+
+              {trialPresentation?.credits.length ? (
+                <div className="space-y-2 border-t border-brand-soft pt-2">
+                  {trialPresentation.credits.map((item) => (
+                    <div
+                      key={`trial-credit-${item.key}`}
+                      className="flex items-center justify-between text-emerald-600"
+                    >
+                      <span>{item.label}</span>
+                      <span className="font-semibold">
+                        -{formatCentsToCurrency(item.amountCents)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between text-brand-ink">
+                    <span className="font-medium">Trial week total</span>
+                    <span className="text-lg font-semibold">
+                      {formatCentsToCurrency(trialNetCents)}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              {trialDescriptor ? (
+                <p className="text-xs text-brand-muted">{trialDescriptor}</p>
+              ) : null}
+
+              <FirstWeekCreditBanner
+                amount={formatCentsToCurrency(trialCreditCents)}
+                descriptor={trialLengthCopy}
+                subtext="Schedule your kickoff to activate these credits before billing begins."
+                className="text-left"
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">After the trial</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-brand-ink">
+                  <span className="font-medium">Per visit</span>
+                  <span className="text-lg font-semibold">
+                    {formatCentsToCurrency(pricingData.perVisit)}
+                  </span>
+                </div>
+                {pricingData.visitsPerMonth ? (
+                  <span className="block text-xs text-brand-muted">
+                    ~{formatVisitsRange(Number(pricingData.visitsPerMonth)) || ""} / month
+                  </span>
+                ) : null}
+              </div>
+
+              {pricingData.monthly ? (
+                <div className="flex items-center justify-between rounded-lg bg-brand-soft/30 px-3 py-2 text-sm">
+                  <span className="font-medium text-brand-ink">Flat monthly option</span>
+                  <span className="font-semibold text-brand-ink">
+                    {formatCentsToCurrency(pricingData.monthly)}
+                  </span>
+                </div>
+              ) : null}
+
+              {postTrialPresentation?.firstInvoiceAddOns.length ? (
+                <div className="space-y-2 border-t border-brand-soft pt-2">
+                  <div className="font-medium text-brand-ink">First paid visit add-ons</div>
+                  {postTrialPresentation.firstInvoiceAddOns.map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between text-brand-muted"
+                    >
+                      <span>{item.label}</span>
+                      <span>{formatCentsToCurrency(item.amountCents)}</span>
+                    </div>
+                  ))}
+                  <p className="text-xs text-brand-muted">
+                    These extras apply to your first billed visit after the trial week.
+                  </p>
+                </div>
+              ) : null}
+
+              {activationCopy ? (
+                <p className="text-xs text-brand-muted">{activationCopy}</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        </>
+      ) : null}
 
       {/* Service Summary */}
       <Card className="shadow-sm">
@@ -460,7 +714,7 @@ const PricingSummary = ({
                       <span>
                         Deodorize & Sanitize
                         {addOns.deodorizeMode === "first-visit" &&
-                          " (First visit only)"}
+                          " (Kickoff visit only)"}
                         {addOns.deodorizeMode === "each-visit" &&
                           " (Each visit)"}
                         {addOns.deodorizeMode === "every-other" &&
@@ -483,7 +737,7 @@ const PricingSummary = ({
                       <span>
                         Spray Deck/Patio
                         {addOns.sprayDeckMode === "first-visit" &&
-                          " (First visit only)"}
+                          " (Initial clean only)"}
                         {addOns.sprayDeckMode === "each-visit" &&
                           " (Each visit)"}
                         {addOns.sprayDeckMode === "every-other" &&
@@ -504,21 +758,24 @@ const PricingSummary = ({
                   {hasDivertMode && (
                     <div className="flex justify-between items-center text-xs text-gray-600">
                       <span>
-                        🌱 Take away
-                        {addOns.divertMode === "takeaway" && " (standard)"}
-                        {addOns.divertMode === "25" && " - divert 25%"}
-                        {addOns.divertMode === "50" && " - divert 50%"}
-                        {addOns.divertMode === "100" && " - divert 100%"}
+                        {addOns.divertMode === "takeaway"
+                          ? "Haul away"
+                          : "Compost routing"}
                       </span>
                       <span>
-                        {
-                          getAddonDisplay(
-                            `divert-${addOns.divertMode}`,
-                            "selected",
-                          ).price
-                        }
+                        {getAddonDisplay(
+                          addOns.divertMode === "takeaway"
+                            ? "divert-takeaway"
+                            : "divert-compost",
+                          "selected",
+                        ).price}
                       </span>
                     </div>
+                  )}
+                  {hasDivertMode && addOns.divertMode !== "takeaway" && (
+                    <p className="mt-2 text-[11px] text-gray-500">
+                      Compost routing availability can vary. We divert as much as our partners can accept and still log your eco impact.
+                    </p>
                   )}
                 </div>
                 <div className="border-t border-gray-200 my-3" />
@@ -533,23 +790,31 @@ const PricingSummary = ({
                 <div className="text-sm font-medium mb-2">One-time charges</div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs text-gray-600">
-                    <span>
-                      Initial clean ({pricing.initialCleanBucket || "2-6 weeks"}
-                      )
+                    <span className="inline-flex items-center gap-1">
+                      <InitialCleanLabel className="text-xs text-gray-600" />
+                      <span>
+                        ({pricing.initialCleanBucket || "2-6 weeks"})
+                      </span>
                     </span>
                     <span>${pricing.initialClean}</span>
                   </div>
                   {discount && (
-                    <div className="flex justify-between items-center text-xs text-green-600 bg-green-50 p-2 rounded">
-                      <span>
-                        🎉 Initial clean discount ({discount.discountPercent}%
-                        off)
+                    <div className="flex justify-between items-center text-xs text-emerald-600 bg-green-50 p-2 rounded">
+                      <span className="inline-flex items-center gap-1">
+                        <span aria-hidden="true">🎉</span>
+                        <InitialCleanLabel
+                          className="text-xs text-emerald-700"
+                          label="Initial clean discount"
+                        />
+                        <span>
+                          ({discount.discountPercent}% off)
+                        </span>
                       </span>
                       <span>-${discount.discountAmount.toFixed(2)}</span>
                     </div>
                   )}
 
-                  {/* First visit only add-ons */}
+                  {/* Initial clean only add-ons */}
                   {quoteData.addOns?.deodorizeMode === "first-visit" && (
                     <div className="flex justify-between items-center text-xs text-gray-600">
                       <span>Deodorize & Sanitize (first visit only)</span>
@@ -571,23 +836,26 @@ const PricingSummary = ({
                     frequency === "onetime" && (
                       <div className="flex justify-between items-center text-xs text-gray-600">
                         <span>
-                          Take away
-                          {quoteData.addOns.divertMode === "25" &&
-                            " - divert 25%"}
-                          {quoteData.addOns.divertMode === "50" &&
-                            " - divert 50%"}
-                          {quoteData.addOns.divertMode === "100" &&
-                            " - divert 100%"}
+                          {quoteData.addOns.divertMode === "takeaway"
+                            ? "Haul away"
+                            : "Compost routing"}
                         </span>
                         <span>
-                          {
-                            getAddonDisplay(
-                              `divert-${quoteData.addOns.divertMode}`,
-                              "selected",
-                            ).price
-                          }
+                          {getAddonDisplay(
+                            quoteData.addOns.divertMode === "takeaway"
+                              ? "divert-takeaway"
+                              : "divert-compost",
+                            "selected",
+                          ).price}
                         </span>
                       </div>
+                    )}
+                  {quoteData.addOns?.divertMode &&
+                    quoteData.addOns.divertMode !== "takeaway" &&
+                    frequency === "onetime" && (
+                      <p className="mt-2 text-[11px] text-gray-500">
+                        Compost routing availability can vary. We divert as much as our partners can accept and still log your eco impact.
+                      </p>
                     )}
                 </div>
               </div>
@@ -624,10 +892,10 @@ const PricingSummary = ({
         <p className="text-xs text-blue-700">
           Call us at{" "}
           <a
-            href="tel:1-888-915-9273"
+            href="tel:1-877-417-9273"
             className="text-blue-600 hover:underline"
           >
-            1-888-915-YARD
+            1-877-417-YARD
           </a>{" "}
           or{" "}
           <a href="/contact" className="text-blue-600 hover:underline">
@@ -640,7 +908,9 @@ const PricingSummary = ({
 };
 
 // Enhanced step configuration with conditional flow - inspired by DoodyCalls
-const getSteps = (frequency?: string, isCommercial?: boolean) => [
+const getSteps = (frequency?: string, isCommunity?: boolean) => {
+  const normalizedFrequency = frequency?.toLowerCase?.();
+  const steps = [
   {
     id: "zip-check",
     title: "Service Area",
@@ -655,17 +925,19 @@ const getSteps = (frequency?: string, isCommercial?: boolean) => [
     icon: Building,
     color: "from-purple-500 to-pink-600",
   },
+    ...(!isCommunity
+      ? [
   {
     id: "basics",
     title: "Property Details",
     description: "Tell us about your dogs and yard",
     icon: Home,
-    color: "from-green-500 to-emerald-600",
-  },
-  // Skip service frequency step for commercial properties
-  ...(isCommercial
-    ? []
-    : [
+            color: "from-[rgba(243,100,91,0.9)] to-[rgba(255,194,77,0.85)]",
+          },
+        ]
+      : []),
+    ...(!isCommunity
+      ? [
         {
           id: "frequency",
           title: "Service Frequency",
@@ -673,10 +945,10 @@ const getSteps = (frequency?: string, isCommercial?: boolean) => [
           icon: Clock,
           color: "from-orange-500 to-red-600",
         },
-      ]),
-  ...(isCommercial
-    ? []
-    : [
+        ]
+      : []),
+    ...(!isCommunity
+      ? [
         {
           id: "customization",
           title: "Customize Service",
@@ -684,68 +956,62 @@ const getSteps = (frequency?: string, isCommercial?: boolean) => [
           icon: Settings,
           color: "from-yellow-500 to-orange-600",
         },
-      ]),
-  // Wellness insights step (only for residential, not commercial)
-  ...(isCommercial
-    ? []
-    : [
-        {
-          id: "wellness",
-          title: "Wellness & Health",
-          description: "Basic insights included free - add premium options",
-          icon: Star,
-          color: "from-teal-500 to-cyan-600",
-        },
-      ]),
-  ...(isCommercial
-    ? [
-        {
-          id: "commercial-contact",
-          title: "Commercial Contact",
-          description: "Provide your details for custom quote",
+        ]
+      : []),
+    ...(isCommunity
+      ? [
+          {
+            id: "community-contact",
+            title: "Community Contact",
+            description: "Tell us how to reach you",
           icon: Building,
           color: "from-indigo-500 to-blue-600",
         },
       ]
     : []),
+    ...(!isCommunity
+      ? [
   {
     id: "contact-review",
-    title: isCommercial ? "Review & Submit" : "Contact & Confirm",
-    description: isCommercial
-      ? "Review your request and submit"
-      : "Your info and final quote review",
+            title: "Contact & Confirm",
+            description: "Your info and final quote review",
     icon: CheckCircle,
-    color: "from-emerald-500 to-teal-600",
-  },
-];
+            color: "from-[rgba(243,100,91,0.9)] to-[rgba(255,194,77,0.85)]",
+          },
+        ]
+      : []),
+  ];
 
-// Trust signals data for top bar
-const TRUST_SIGNALS = [
-  {
-    icon: Shield,
-    text: "Licensed & Insured",
-    description: "Fully licensed and insured for your peace of mind",
+  return steps;
+};
+
+const QUOTE_STORAGE_VERSION = 2;
+const QUOTE_STORAGE_PREFIX = "yardura_quote_state";
+const LEGACY_QUOTE_STORAGE_KEY = "yardura_pending_quote_v2";
+
+const DEFAULT_QUOTE_DATA: Partial<QuoteInput> = {
+  serviceType: "residential",
+  dogs: 1,
+  yardSize: "medium",
+  frequency: "weekly",
+  weekendUpgrade: false,
+  addOns: {},
+  initialClean: false,
+  premiumOnboarding: "none",
+  consent: { stoolPhotosOptIn: false, terms: false, marketingOptIn: false },
+  zipValidated: false,
+  deepCleanAssessment: {
+    daysSinceLastCleanup: 42, // Default to "2-6 weeks" bucket
   },
-  {
-    icon: Award,
-    text: "Quality Service",
-    description: "Professional waste collection and disposal",
+  areasToClean: {
+    backYard: true, // Default to backyard selected
   },
-  {
-    icon: Truck,
-    text: "Reliable Service",
-    description: "98% on-time service rate with flexible scheduling",
-  },
-  {
-    icon: Heart,
-    text: "Eco-Friendly",
-    description: "Carbon-neutral service with sustainable practices",
-  },
-];
+};
 
 function QuoteWizardComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = searchParams ?? new URLSearchParams();
   const { data: session } = useSession();
 
   // Determine which organization this quote is for
@@ -753,10 +1019,10 @@ function QuoteWizardComponent() {
   const getBusinessOrgId = () => {
     // Check for org/tenant parameter in URL (supports businessId, tenantId aliases)
     const urlOrgId =
-      searchParams.get("org") ||
-      searchParams.get("businessId") ||
-      searchParams.get("tenant") ||
-      searchParams.get("tenantId");
+      params.get("org") ||
+      params.get("businessId") ||
+      params.get("tenant") ||
+      params.get("tenantId");
     if (urlOrgId) return urlOrgId;
 
     // Use session user's org if logged in as admin/staff
@@ -774,6 +1040,8 @@ function QuoteWizardComponent() {
   };
 
   const userOrgId = getBusinessOrgId();
+  const storageKey = `${QUOTE_STORAGE_PREFIX}:${userOrgId}`;
+  const resumeFlagParam = params.get("resume");
 
   console.log(
     "Quote flow using orgId:",
@@ -785,26 +1053,39 @@ function QuoteWizardComponent() {
   // Simplified state management
   const [currentStep, setCurrentStep] = useState(0);
   const [quoteData, setQuoteData] = useState<Partial<QuoteInput>>({
-    serviceType: "residential", // Default to residential
-    dogs: 1,
-    yardSize: "medium",
-    frequency: "weekly",
-    addOns: {},
-    initialClean: false,
-    premiumOnboarding: "none",
-    consent: { stoolPhotosOptIn: false, terms: false },
+    ...DEFAULT_QUOTE_DATA,
   });
   const [_errors, setErrors] = useState<Record<string, string[]>>({});
+  const flattenedFieldErrors = useMemo(() => {
+    const result: Record<string, string> = {};
+    Object.entries(_errors).forEach(([key, value]) => {
+      if (Array.isArray(value) && value.length > 0) {
+        result[key] = value[0];
+      }
+    });
+    return result;
+  }, [_errors]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isCommunity = quoteData.serviceType === "commercial";
 
-  const [showTrustSignals, setShowTrustSignals] = useState(true);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [formProtectionErrors, setFormProtectionErrors] = useState<string[]>(
     [],
   );
   const [zoneMultiplier, setZoneMultiplier] = useState<number>(1.0);
   const [completedSteps, setCompletedSteps] = useState<boolean[]>([]);
+  const [hasRestoredState, setHasRestoredState] = useState(false);
+  const quoteSessionIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    quoteSessionIdRef.current = ensureQuoteSessionId();
+  }, []);
+
+  // Check for pre-filled zip code from URL params (e.g., from landing page zip check)
+  // This should run AFTER state restoration is complete
+  const [hasProcessedUrlParams, setHasProcessedUrlParams] = useState(false);
 
   // New validation system
   const zipValidation = useZipValidation();
@@ -842,8 +1123,15 @@ function QuoteWizardComponent() {
   // Pricing state for async calculations
   const [pricing, setPricing] = useState<any>(null);
 
+  // Get dynamic steps based on frequency and commercial status
+  const STEPS = useMemo(
+    () => getSteps(quoteData.frequency, isCommunity),
+    [quoteData.frequency, isCommunity],
+  );
+
   // Show mobile sticky pricing only after property details are selected
   const hasPropertyDetails = useMemo(() => {
+    if (isCommunity) return false;
     const hasDogs = !!quoteData.dogs;
     const hasYard = !!quoteData.yardSize;
     const hasLastCleanup =
@@ -859,88 +1147,320 @@ function QuoteWizardComponent() {
     quoteData.areasToClean,
   ]);
 
-  // Get dynamic steps based on frequency and commercial status
-  const STEPS = useMemo(
-    () => getSteps(quoteData.frequency, quoteData.serviceType === "commercial"),
-    [quoteData.frequency, quoteData.serviceType],
+  const lastTrackedStepRef = useRef<string | null>(null);
+  const lastTrackedStepIndexRef = useRef(0);
+  const quoteStartedRef = useRef(false);
+  const quoteCompletedRef = useRef(false);
+  const propertyTypeRef = useRef<string | null>(quoteData.propertyType ?? null);
+
+  useEffect(() => {
+    propertyTypeRef.current = quoteData.propertyType ?? null;
+  }, [quoteData.propertyType]);
+
+  // Process URL params after state restoration and STEPS are defined
+  useEffect(() => {
+    if (!hasRestoredState || hasProcessedUrlParams) return;
+    
+    const urlZipCode = params.get("zipCode");
+    const skipZipCheck = params.get("skipZipCheck") === "true";
+    const resumeAtStep = params.get("resumeAtStep");
+    
+    if (urlZipCode && skipZipCheck) {
+      // Pre-fill the zip code and mark it as validated
+      setQuoteData((prev) => ({ 
+        ...prev, 
+        zipCode: urlZipCode,
+        zipValidated: true 
+      }));
+      // Skip to step 2 (service-type step, index 1)
+      setCurrentStep(1);
+      // Mark zip check step as completed
+      setCompletedSteps((prev) => {
+        const newCompleted = [...prev];
+        newCompleted[0] = true;
+        return newCompleted;
+      });
+      setHasProcessedUrlParams(true);
+    } else if (resumeAtStep) {
+      // Handle resuming at a specific step (e.g., "frequency" from quote success page)
+      const stepIndex = STEPS.findIndex(s => s.id === resumeAtStep);
+      if (stepIndex >= 0) {
+        setCurrentStep(stepIndex);
+        setHasProcessedUrlParams(true);
+      }
+    }
+  }, [params, hasRestoredState, hasProcessedUrlParams, STEPS]);
+
+  useEffect(() => {
+    const currentStepId = STEPS[currentStep]?.id;
+    if (!currentStepId) return;
+
+    if (!quoteStartedRef.current) {
+      trackQuoteEvent("quote_started", { step_id: currentStepId });
+      quoteStartedRef.current = true;
+    }
+
+    if (lastTrackedStepRef.current === currentStepId) return;
+    trackQuoteEvent("quote_step", {
+      step_id: currentStepId,
+      step_index: currentStep,
+      total_steps: STEPS.length,
+      property_type: quoteData.propertyType ?? null,
+    });
+    lastTrackedStepRef.current = currentStepId;
+    lastTrackedStepIndexRef.current = currentStep;
+  }, [STEPS, currentStep, quoteData.propertyType]);
+
+  useEffect(() => {
+    return () => {
+      if (!quoteCompletedRef.current && lastTrackedStepRef.current) {
+        trackQuoteEvent("quote_abandon", {
+          step_id: lastTrackedStepRef.current,
+          step_index: lastTrackedStepIndexRef.current,
+          property_type: propertyTypeRef.current,
+        });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const canProceed = useMemo(() => {
+    const currentStepId = STEPS[currentStep]?.id;
+
+    if (!currentStepId) {
+      return false;
+    }
+
+    if (currentStepId === "zip-check") {
+      return Boolean(quoteData.zipValidated);
+    }
+
+    if (currentStepId === "service-type") {
+      return Boolean(quoteData.serviceType);
+    }
+
+    if (currentStepId === "basics" && !isCommunity) {
+      const hasDogs = typeof quoteData.dogs === "number" && quoteData.dogs > 0;
+      const hasYard = Boolean(quoteData.yardSize);
+      const hasLastCleanup = Boolean(
+        quoteData.deepCleanAssessment?.daysSinceLastCleanup,
+      );
+      const hasAreas =
+        !!quoteData.areasToClean &&
+        Object.values(quoteData.areasToClean).some(Boolean);
+
+      return hasDogs && hasYard && hasLastCleanup && hasAreas;
+    }
+
+    if (currentStepId === "frequency" && !isCommunity) {
+      return Boolean(quoteData.frequency);
+    }
+
+    if (currentStepId === "contact-review" && !isCommunity) {
+      return quoteData.consent?.terms === true;
+    }
+
+    return true;
+  }, [
+    STEPS,
+    currentStep,
+    isCommunity,
+    quoteData.zipValidated,
+    quoteData.serviceType,
+    quoteData.dogs,
+    quoteData.yardSize,
+    quoteData.deepCleanAssessment?.daysSinceLastCleanup,
+    quoteData.areasToClean,
+    quoteData.frequency,
+    quoteData.consent?.terms,
+  ]);
+
+  const determineStepFromQuote = useCallback(
+    (data: Partial<QuoteInput> | undefined | null) => {
+      if (!data) return 0;
+
+      if (data.serviceType === "commercial") {
+        if (data.contact?.name && data.contact?.email && data.contact?.phone) {
+          return Math.max(0, STEPS.length - 1);
+        }
+        return Math.min(1, Math.max(0, STEPS.length - 1));
+      }
+
+      if (data.contact?.name && data.contact?.email) {
+        return Math.min(4, Math.max(0, STEPS.length - 1));
+      }
+
+      if (data.dogs && data.yardSize && data.frequency) {
+        return Math.min(3, Math.max(0, STEPS.length - 1));
+      }
+
+      if (data.dogs || data.yardSize || data.frequency) {
+        return Math.min(1, Math.max(0, STEPS.length - 1));
+      }
+
+      return 0;
+    },
+    [STEPS.length],
   );
+
+  useEffect(() => {
+    setCompletedSteps((prev) => {
+      if (prev.length === STEPS.length) {
+        return prev;
+      }
+
+      const next = new Array(STEPS.length).fill(false);
+      for (let i = 0; i < Math.min(prev.length, next.length); i += 1) {
+        next[i] = prev[i];
+      }
+      return next;
+    });
+
+    setCurrentStep((prev) => {
+      if (prev >= STEPS.length) {
+        return Math.max(0, STEPS.length - 1);
+      }
+      return prev;
+    });
+  }, [STEPS.length]);
 
   const isFinalStep = currentStep === STEPS.length - 1;
 
-  // Calculate price asynchronously via API
-  useEffect(() => {
-    const calculatePricingAsync = async () => {
-      // For basics/customization step, we can estimate price with just dogs and yardSize
-      if (quoteData.dogs && quoteData.yardSize) {
-        try {
-          // Use selected frequency or default to weekly for estimation
-          const frequencyToUse = quoteData.frequency || "weekly";
+  const addOnSignature = useMemo(
+    () => JSON.stringify(quoteData.addOns || {}),
+    [quoteData.addOns],
+  );
 
-          // Call the pricing API endpoint
-          console.log("Making pricing API call with data:", {
-            dogs: quoteData.dogs,
-            yardSize: quoteData.yardSize,
-            frequency: frequencyToUse,
-            addons: transformAddOnsForPricing(quoteData.addOns || {}),
-            businessId: userOrgId,
-          });
+  const areasSignature = useMemo(
+    () => JSON.stringify(quoteData.areasToClean || {}),
+    [quoteData.areasToClean],
+  );
 
-          const response = await fetch("/api/quote/calculate-price", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              dogs: quoteData.dogs,
-              yardSize: quoteData.yardSize,
-              frequency: frequencyToUse,
-              addons: transformAddOnsForPricing(quoteData.addOns || {}),
-              initialClean: quoteData.initialClean,
-              premiumOnboarding: quoteData.premiumOnboarding,
-              deepCleanAssessment: quoteData.deepCleanAssessment,
-              propertyType: quoteData.propertyType,
-              address: quoteData.address || "", // Provide empty string if not set
-              lastCleanedBucket:
-                quoteData.deepCleanAssessment?.daysSinceLastCleanup?.toString(),
-              lastCleanedDate: quoteData.lastCleanedDate,
-              zoneMultiplier, // Add zone multiplier for pricing
-              areasToClean: quoteData.areasToClean,
-              businessId: userOrgId, // Add business ID for multi-tenancy
-            }),
-          });
+  const pricingPayload = useMemo(() => {
+    if (isCommunity) {
+      return null;
+    }
 
-          if (response.ok) {
-            const result = await response.json();
-            setPricing(result);
-          } else {
-            console.error("Price calculation API error:", response.statusText);
-            setPricing(null);
-          }
-        } catch (error) {
-          console.error("Price calculation error:", error);
-          setPricing(null);
-        }
-      } else {
-        setPricing(null);
-      }
+    if (!quoteData.dogs || !quoteData.yardSize) {
+      return null;
+    }
+
+    return {
+      dogs: quoteData.dogs,
+      yardSize: quoteData.yardSize,
+      frequency: quoteData.frequency || "weekly",
+      weekendUpgrade: Boolean(quoteData.weekendUpgrade),
+      addons: transformAddOnsForPricing(quoteData.addOns || {}),
+      initialClean: quoteData.initialClean,
+      premiumOnboarding: quoteData.premiumOnboarding,
+      deepCleanAssessment: quoteData.deepCleanAssessment,
+      propertyType: quoteData.propertyType,
+      address: quoteData.address || "",
+      lastCleanedBucket:
+        quoteData.deepCleanAssessment?.daysSinceLastCleanup?.toString(),
+      lastCleanedDate: quoteData.lastCleanedDate,
+      zoneMultiplier,
+      areasToClean: quoteData.areasToClean,
+      businessId: userOrgId,
     };
-
-    calculatePricingAsync();
   }, [
     quoteData.dogs,
     quoteData.yardSize,
     quoteData.frequency,
-    quoteData.zipCode, // Add zipCode to dependencies
-    quoteData.addOns,
+    quoteData.weekendUpgrade,
     quoteData.initialClean,
     quoteData.premiumOnboarding,
     quoteData.deepCleanAssessment,
     quoteData.propertyType,
     quoteData.address,
-    quoteData.areasToClean,
-    zoneMultiplier, // Add zoneMultiplier to dependencies
-    userOrgId, // Add userOrgId for business-specific pricing
+    quoteData.lastCleanedDate,
+    zoneMultiplier,
+    userOrgId,
+    addOnSignature,
+    areasSignature,
   ]);
+
+  const [debouncedPricingPayload, setDebouncedPricingPayload] = useState(
+    pricingPayload,
+  );
+
+  useEffect(() => {
+    if (pricingPayload === null) {
+      setDebouncedPricingPayload(null);
+      return;
+    }
+
+    const handle = setTimeout(() => {
+      setDebouncedPricingPayload(pricingPayload);
+    }, 250);
+
+    return () => clearTimeout(handle);
+  }, [pricingPayload]);
+
+  // Calculate price asynchronously via API (debounced)
+  useEffect(() => {
+    if (!debouncedPricingPayload) {
+      setPricing(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    let retryTimeout: NodeJS.Timeout | null = null;
+
+    const calculatePricingAsync = async (attempt: number = 0) => {
+      try {
+        console.log("Making pricing API call with data:", debouncedPricingPayload);
+
+        const response = await fetch("/api/quote/calculate-price", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(debouncedPricingPayload),
+            signal: controller.signal,
+          });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (retryTimeout) {
+          clearTimeout(retryTimeout);
+          retryTimeout = null;
+        }
+        console.log("Received pricing result:", result);
+        setPricing(result);
+          } else {
+            console.warn(
+              "Price calculation API error:",
+              response.status,
+              response.statusText,
+            );
+            setPricing(null);
+          }
+        } catch (error) {
+          if ((error as Error)?.name === "AbortError") {
+            return;
+          }
+          if (attempt < 2 && !controller.signal.aborted) {
+            retryTimeout = setTimeout(
+              () => calculatePricingAsync(attempt + 1),
+              500 * (attempt + 1),
+            );
+          } else {
+            console.warn("Price calculation error:", error);
+            setPricing(null);
+          }
+      }
+    };
+
+    calculatePricingAsync();
+
+    return () => {
+      controller.abort();
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+    };
+  }, [debouncedPricingPayload]);
 
   // Extract pricing display values
   const _estimatedPrice = useMemo(() => {
@@ -958,6 +1478,20 @@ function QuoteWizardComponent() {
       };
     }
 
+    const firstVisitAddOns = Object.fromEntries(
+      Object.entries(pricing.firstVisitAddOns || {}).map(([key, value]) => [
+        key,
+        ((value as number) / 100).toFixed(2),
+      ]),
+    );
+
+    const recurringAddOns = Object.fromEntries(
+      Object.entries(pricing.recurringAddOns || {}).map(([key, value]) => [
+        key,
+        ((value as number) / 100).toFixed(2),
+      ]),
+    );
+
     return {
       perVisit: (pricing.perVisit / 100).toFixed(2),
       monthly: (pricing.monthly / 100).toFixed(2),
@@ -965,18 +1499,147 @@ function QuoteWizardComponent() {
       initialClean: pricing.initialClean
         ? (pricing.initialClean / 100).toFixed(2)
         : "0.00",
+      initialCleanDiscount: pricing.initialCleanDiscount
+        ? (pricing.initialCleanDiscount / 100).toFixed(2)
+        : "0.00",
+      discountedInitialClean: pricing.discountedInitialClean
+        ? (pricing.discountedInitialClean / 100).toFixed(2)
+        : "0.00",
       initialCleanBucket: pricing.initialCleanBucket,
+      firstVisitTotal: pricing.firstVisitTotalCents
+        ? (pricing.firstVisitTotalCents / 100).toFixed(2)
+        : (pricing.oneTime / 100).toFixed(2),
+      firstMonth: pricing.firstMonthCents
+        ? (pricing.firstMonthCents / 100).toFixed(2)
+        : "0.00",
+      firstMonthVisits: pricing.firstMonthVisits,
+      amountDueToday: pricing.amountDueToday
+        ? (pricing.amountDueToday / 100).toFixed(2)
+        : (pricing.monthly / 100).toFixed(2),
+      fullMonthlyAmount: pricing.fullMonthlyAmount
+        ? (pricing.fullMonthlyAmount / 100).toFixed(2)
+        : (pricing.monthly / 100).toFixed(2),
       visitsPerMonth: pricing.visitsPerMonth,
+      weekendVisitsPerMonth: pricing.weekendVisitsPerMonth,
+      firstVisitAddOns,
+      recurringAddOns,
       breakdown: pricing.breakdown,
+      trialWeek: pricing.trialWeek,
+      postTrial: pricing.postTrial,
+      weekendUpgrade: pricing.weekendUpgrade,
+      weekendSurchargeCents: pricing.weekendSurchargeCents ?? 0,
+      weekendSurcharge: pricing.weekendSurchargeCents
+        ? (pricing.weekendSurchargeCents / 100).toFixed(2)
+        : "0.00",
       showContactStep: false,
     };
   }, [pricing]);
 
-  // Auto-hide trust signals after 5 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => setShowTrustSignals(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
+  const firstVisitDisplay = useMemo(() => {
+    if (!_estimatedPrice) return null;
+
+    const frequencyValue = quoteData.frequency?.toLowerCase() || "weekly";
+    if (frequencyValue === "onetime") {
+      return null;
+    }
+
+    const baseValue = parseFloat(_estimatedPrice.initialClean || "0");
+    if (!(baseValue > 0)) {
+      return null;
+    }
+
+    const discountedValue = parseFloat(
+      _estimatedPrice.discountedInitialClean || "0",
+    );
+
+    let statusLabel: string;
+    if (discountedValue <= 0.009) {
+      statusLabel = "Free";
+    } else if (discountedValue < baseValue - 0.009) {
+      statusLabel = `Half off ($${discountedValue.toFixed(2)})`;
+    } else {
+      statusLabel = `$${discountedValue.toFixed(2)}`;
+    }
+
+    const helper = (() => {
+      if (frequencyValue === "monthly" && discountedValue < baseValue - 0.009) {
+        return "Initial clean 50% off when you start monthly service.";
+      }
+      if (discountedValue <= 0.009) {
+        return "Initial clean included with your plan.";
+      }
+      return undefined;
+    })();
+
+    const addOnTotal = Object.values(
+      (_estimatedPrice.firstVisitAddOns as Record<string, string> | undefined) || {},
+    ).reduce((sum, value) => sum + parseFloat(value || "0"), 0);
+
+    return {
+      baseDisplay: `$${baseValue.toFixed(2)}`,
+      statusLabel,
+      helper,
+      addOnDisplay: addOnTotal > 0 ? `$${addOnTotal.toFixed(2)}` : null,
+    };
+  }, [_estimatedPrice, quoteData.frequency]);
+
+  const initialCleanBaseDisplay = useMemo(() => {
+    if (firstVisitDisplay) {
+      return firstVisitDisplay.baseDisplay;
+    }
+    if (_estimatedPrice?.initialClean) {
+      return `$${Number(_estimatedPrice.initialClean).toFixed(2)}`;
+    }
+    if (_estimatedPrice?.oneTime) {
+      return `$${Number(_estimatedPrice.oneTime).toFixed(2)}`;
+    }
+    if (_estimatedPrice?.perVisit) {
+      return `$${Number(_estimatedPrice.perVisit).toFixed(2)}`;
+    }
+    return " - ";
+  }, [firstVisitDisplay, _estimatedPrice]);
+
+  const creditSummary = useMemo(() => {
+    if (!_estimatedPrice) {
+      return null;
+    }
+
+    const frequencyValue = quoteData.frequency?.toLowerCase();
+    const perVisitValue = parseFloat(_estimatedPrice.perVisit || "0");
+    const initialBase = parseFloat(_estimatedPrice.initialClean || "0");
+    const discountedInitial = parseFloat(_estimatedPrice.discountedInitialClean || "0");
+    const initialCredit = Math.max(initialBase - Math.max(discountedInitial, 0), 0);
+
+    let followUpCredit = 0;
+    if (frequencyValue === "daily") {
+      followUpCredit = perVisitValue * 4;
+    } else if (frequencyValue === "twice-weekly") {
+      followUpCredit = perVisitValue;
+    }
+
+    const total = initialCredit + followUpCredit;
+    if (!(total > 0)) {
+      return null;
+    }
+
+    return {
+      total,
+      initialCredit,
+      followUpCredit,
+    } as const;
+  }, [_estimatedPrice, quoteData.frequency]);
+
+  const finalStepCtaLabel = useMemo(() => {
+    const frequencyValue = quoteData.frequency?.toLowerCase();
+    if (creditSummary && frequencyValue !== "onetime") {
+      // Monthly frequency gets half off, others get FREE
+      if (frequencyValue === "monthly") {
+        return "Claim 50% Off Your First Week";
+      }
+      return "Get Your First Week Free";
+    }
+    return "Get Started";
+  }, [creditSummary, quoteData.frequency]);
 
   // Enhanced analytics tracking for step progression
   useEffect(() => {
@@ -996,70 +1659,194 @@ function QuoteWizardComponent() {
     quoteData.propertyType,
   ]);
 
-  // Load saved quote from localStorage
+  // Restore saved progress immediately on mount or when resume parameter changes
   useEffect(() => {
-    const resume = searchParams.get("resume");
-    if (resume === "1") {
-      const savedQuote = localStorage.getItem("yardura_pending_quote_v2");
-      if (savedQuote) {
+    if (hasRestoredState) {
+      return;
+    }
+
+    if (typeof window === "undefined") return;
+
+    const storage = window.localStorage;
+    const resumeFlag = resumeFlagParam;
+
+    if (resumeFlag === "0") {
+      storage.removeItem(storageKey);
+      storage.removeItem(LEGACY_QUOTE_STORAGE_KEY);
+      
+      // Check for URL params after clearing storage
+      const urlZipCode = params.get("zipCode");
+      const skipZipCheck = params.get("skipZipCheck") === "true";
+      
+      if (urlZipCode && skipZipCheck) {
+        // Pre-fill the zip code and mark it as validated
+        setQuoteData((prev) => ({ 
+          ...prev, 
+          zipCode: urlZipCode,
+          zipValidated: true 
+        }));
+        // Skip to step 2 (service-type step, index 1)
+        setCurrentStep(1);
+        // Mark zip check step as completed
+        setCompletedSteps([true]);
+      }
+      
+      setHasRestoredState(true);
+      return;
+    }
+
+    // Migrate legacy payloads if present
+    if (!storage.getItem(storageKey)) {
+      const legacyValue = storage.getItem(LEGACY_QUOTE_STORAGE_KEY);
+      if (legacyValue) {
         try {
-          const parsedQuote = JSON.parse(savedQuote);
-          if (parsedQuote && typeof parsedQuote === "object") {
-            setQuoteData(parsedQuote);
-            // Smart step progression based on data completeness
-            if (
-              parsedQuote.dogs &&
-              parsedQuote.yardSize &&
-              parsedQuote.frequency
-            ) {
-              if (parsedQuote.contact?.name && parsedQuote.contact?.email) {
-                setCurrentStep(4); // Go to review step
-              } else {
-                setCurrentStep(3); // Go to contact step
-              }
-            } else if (
-              parsedQuote.dogs ||
-              parsedQuote.yardSize ||
-              parsedQuote.frequency
-            ) {
-              setCurrentStep(1); // Go to basics step
-            }
+          const legacyQuote = JSON.parse(legacyValue);
+          if (legacyQuote && typeof legacyQuote === "object") {
+            const inferredStep = determineStepFromQuote(legacyQuote);
+            const migratedPayload = {
+              version: QUOTE_STORAGE_VERSION,
+              migratedFrom: LEGACY_QUOTE_STORAGE_KEY,
+              migratedAt: Date.now(),
+              quoteData: legacyQuote,
+              currentStep: inferredStep,
+              completedSteps: [],
+              businessId: userOrgId,
+            };
+            storage.setItem(storageKey, JSON.stringify(migratedPayload));
           }
         } catch (error) {
-          console.error("Error loading saved quote:", error);
-          localStorage.removeItem("yardura_pending_quote_v2");
+          console.error("Error migrating legacy quote state:", error);
+        } finally {
+          storage.removeItem(LEGACY_QUOTE_STORAGE_KEY);
         }
       }
     }
-  }, [searchParams]);
 
-  // Auto-save quote data
-  useEffect(() => {
-    if (
-      quoteData.dogs ||
-      quoteData.yardSize ||
-      quoteData.frequency ||
-      quoteData.contact?.name
-    ) {
-      try {
-        localStorage.setItem(
-          "yardura_pending_quote_v2",
-          JSON.stringify(quoteData),
+    const rawValue = storage.getItem(storageKey);
+
+    if (!rawValue) {
+      // No saved state - check for URL params immediately
+      const urlZipCode = params.get("zipCode");
+      const skipZipCheck = params.get("skipZipCheck") === "true";
+      
+      if (urlZipCode && skipZipCheck) {
+        // Pre-fill the zip code and mark it as validated
+        setQuoteData((prev) => ({ 
+          ...prev, 
+          zipCode: urlZipCode,
+          zipValidated: true 
+        }));
+        // Skip to step 2 (service-type step, index 1)
+        setCurrentStep(1);
+        // Mark zip check step as completed
+        setCompletedSteps([true]);
+      }
+      
+      setHasRestoredState(true);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(rawValue);
+
+      // Support both structured payloads and legacy plain quoteData objects
+      const hasStructuredPayload =
+        parsed && typeof parsed === "object" && "quoteData" in parsed;
+      const quotePayload = hasStructuredPayload ? parsed.quoteData : parsed;
+
+      if (!quotePayload || typeof quotePayload !== "object") {
+        throw new Error("Invalid quote payload");
+      }
+
+      if (hasStructuredPayload && parsed.version !== QUOTE_STORAGE_VERSION) {
+        storage.removeItem(storageKey);
+        setHasRestoredState(true);
+        return;
+      }
+
+      setQuoteData((previous) => {
+        const mergedConsent = {
+          ...(previous.consent || {}),
+          ...((quotePayload as Partial<QuoteInput>).consent || {}),
+        };
+
+        if (typeof mergedConsent.marketingOptIn !== "boolean") {
+          mergedConsent.marketingOptIn = false;
+        }
+
+        const hasConsentValues = Object.keys(mergedConsent).length > 0;
+
+        return {
+          ...previous,
+          ...quotePayload,
+          ...(hasConsentValues ? { consent: mergedConsent } : {}),
+        };
+      });
+
+      const restoredStep = hasStructuredPayload
+        ? parsed.currentStep
+        : determineStepFromQuote(quotePayload as Partial<QuoteInput>);
+
+      if (typeof restoredStep === "number" && Number.isFinite(restoredStep)) {
+        const clampedStep = Math.min(
+          Math.max(restoredStep, 0),
+          Math.max(0, STEPS.length - 1),
         );
+        setCurrentStep(clampedStep);
+      }
+
+      if (
+        hasStructuredPayload &&
+        Array.isArray(parsed.completedSteps) &&
+        parsed.completedSteps.length
+      ) {
+        setCompletedSteps(parsed.completedSteps as boolean[]);
+      }
+    } catch (error) {
+      console.error("Error restoring quote from localStorage:", error);
+      storage.removeItem(storageKey);
+    } finally {
+      setHasRestoredState(true);
+    }
+  }, [
+    resumeFlagParam,
+    storageKey,
+    determineStepFromQuote,
+    userOrgId,
+    hasRestoredState,
+  ]);
+
+  // Persist quote progress as the user moves through the wizard
+  useEffect(() => {
+    if (typeof window === "undefined" || !hasRestoredState) {
+      return;
+    }
+
+    try {
+      const payload = {
+        version: QUOTE_STORAGE_VERSION,
+        updatedAt: Date.now(),
+        businessId: userOrgId,
+        quoteData,
+        currentStep,
+        completedSteps,
+      };
+      window.localStorage.setItem(storageKey, JSON.stringify(payload));
       } catch (error) {
         console.error("Error saving quote to localStorage:", error);
       }
-    }
-  }, [quoteData]);
+  }, [
+    quoteData,
+    currentStep,
+    completedSteps,
+    storageKey,
+    userOrgId,
+    hasRestoredState,
+  ]);
 
   // (removed duplicate STEPS declaration)
 
-  // Initialize completedSteps when STEPS is available
-  useEffect(() => {
-    setCompletedSteps((prev) =>
-      prev.length === 0 ? new Array(STEPS.length).fill(false) : prev,
-    );
-  }, [STEPS.length]);
+  // Initialize completedSteps when STEPS is available handled by steps-length effect above
 
   // Analytics tracking
   useEffect(() => {
@@ -1079,13 +1866,34 @@ function QuoteWizardComponent() {
   ]);
 
   // Simplified data update function
-  const updateQuoteData = (field: keyof QuoteInput, value: any) => {
+  const updateQuoteData = (
+    field: keyof QuoteInput | Partial<QuoteInput>,
+    value?: any,
+  ) => {
+    if (typeof field === "object" && field !== null) {
+      const updates = field as Partial<QuoteInput>;
+      setQuoteData((prev) => ({
+        ...prev,
+        ...updates,
+      }));
+
+      Object.keys(updates).forEach((key) => {
+        if (_errors[key as keyof QuoteInput]) {
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors[key as keyof QuoteInput];
+            return newErrors;
+          });
+        }
+      });
+      return;
+    }
+
     setQuoteData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
-    // Clear _errors for this field
     if (_errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -1097,11 +1905,7 @@ function QuoteWizardComponent() {
 
   // Real-time field validation handler
   const validateFieldOnBlur = (fieldName: string, value: any) => {
-    const steps = getSteps(
-      quoteData.frequency,
-      quoteData.serviceType === "commercial",
-    );
-    const currentStepData = steps[currentStep];
+    const currentStepData = STEPS[currentStep];
 
     if (!currentStepData) return;
 
@@ -1181,19 +1985,18 @@ function QuoteWizardComponent() {
         break;
 
       case "service-type":
-        if (!quoteData.frequency) {
+        if (!isCommunity && !quoteData.frequency) {
           newErrors.frequency = [
             "Please choose your preferred service frequency",
           ];
         }
-        // Address validation moved to basics step
         break;
 
       case "onboarding":
         // Onboarding step is optional - no validation required
         break;
 
-      case "commercial-contact":
+      case "community-contact":
         if (!quoteData.contact?.name?.trim()) {
           newErrors.contact = ["Please enter your full name"];
         }
@@ -1211,10 +2014,11 @@ function QuoteWizardComponent() {
             ];
           }
         }
-        if (!quoteData.contact?.phone?.trim()) {
+        const contactPhoneDigitsCommunity = (quoteData.contact?.phone || "").replace(/\D/g, "");
+        if (contactPhoneDigitsCommunity && contactPhoneDigitsCommunity.length < 10) {
           newErrors.contact = [
             ...(newErrors.contact || []),
-            "Please enter your phone number",
+            "Please enter a valid phone number",
           ];
         }
         break;
@@ -1271,6 +2075,41 @@ function QuoteWizardComponent() {
           }
         }
 
+        // Contact details validation
+        const contactName = quoteData.contact?.name?.trim();
+        if (!contactName) {
+          newErrors["contact.name"] = ["Please enter your full name"];
+        }
+
+        const contactEmail = quoteData.contact?.email?.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!contactEmail) {
+          newErrors["contact.email"] = ["Please enter your email address"];
+        } else if (!emailRegex.test(contactEmail)) {
+          newErrors["contact.email"] = ["Please enter a valid email address"];
+        }
+
+        const contactReviewPhoneDigits = (quoteData.contact?.phone || "").replace(/\D/g, "");
+        const hasContactPhone = contactReviewPhoneDigits.length > 0;
+        if (hasContactPhone && contactReviewPhoneDigits.length < 10) {
+          newErrors["contact.phone"] = ["Please enter a valid phone number"];
+        }
+
+        const preferredMethods = Array.isArray(quoteData.preferredContactMethods)
+          ? quoteData.preferredContactMethods.filter(Boolean)
+          : [];
+        if (hasContactPhone && preferredMethods.length === 0) {
+          newErrors.preferredContactMethods = [
+            "Select at least one way we can contact you",
+          ];
+        }
+
+        if (quoteData.consent?.terms !== true) {
+          newErrors["consent.terms"] = [
+            "Please confirm you agree to the Privacy Policy",
+          ];
+        }
+
         break;
 
       default:
@@ -1279,7 +2118,24 @@ function QuoteWizardComponent() {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    if (Object.keys(newErrors).length > 0) {
+      const firstInvalidKey = Object.keys(newErrors)[0];
+      announceValidationErrors(
+        liveRegionRef,
+        newErrors[firstInvalidKey]?.[0] || "Please fix the highlighted fields.",
+      );
+      track("quote_step_error", {
+        step: currentStep + 1,
+        firstErrorField: firstInvalidKey,
+      });
+      setTimeout(() => {
+        scrollToFirstError(fieldRefs, firstInvalidKey);
+      }, 100);
+      return false;
+    }
+
+    return true;
   };
 
   // Simplified navigation
@@ -1345,6 +2201,7 @@ function QuoteWizardComponent() {
     }
   };
 
+
   // Enhanced submission with form protection
   const handleSubmit = async () => {
     if (!validateCurrentStep()) {
@@ -1368,6 +2225,7 @@ function QuoteWizardComponent() {
         dogs: quoteData.dogs || null,
         yard_size: quoteData.yardSize || null,
         frequency: quoteData.frequency || null,
+        weekend_upgrade: Boolean(quoteData.weekendUpgrade),
         property_type: quoteData.propertyType || null,
         estimated_price:
           quoteData.propertyType === "commercial"
@@ -1388,6 +2246,10 @@ function QuoteWizardComponent() {
         pricingSnapshot: pricing,
         recaptchaToken,
         submittedAt: new Date().toISOString(),
+        quoteSessionId:
+          quoteSessionIdRef.current ?? (typeof window !== "undefined"
+            ? getQuoteSessionId()
+            : null),
         // Honeypot field (should be empty)
         honeypot: "",
       };
@@ -1417,8 +2279,12 @@ function QuoteWizardComponent() {
         return;
       }
 
-      // Success - clean up and redirect
-      localStorage.removeItem("yardura_pending_quote_v2");
+      // Success - keep state so users can adjust frequency without retyping.
+      if (typeof window !== "undefined") {
+        clearQuoteSessionId();
+      }
+
+      const isDuplicateLead = Boolean(result.duplicateLead?.id);
 
       // Track successful conversion
       track("quote_conversion", {
@@ -1428,13 +2294,37 @@ function QuoteWizardComponent() {
         estimated_value:
           quoteData.propertyType === "commercial" ? 0 : pricing?.total || 0,
         is_commercial: quoteData.propertyType === "commercial",
+        duplicate: isDuplicateLead,
       });
+
+      trackQuoteEvent("quote_submit", {
+        lead_id: result.leadId,
+        duplicate: isDuplicateLead,
+        property_type: quoteData.propertyType ?? null,
+      });
+
+      quoteCompletedRef.current = true;
 
       // Handle commercial vs residential success flow
       const successParams = new URLSearchParams({
         leadId: result.leadId,
         businessId: userOrgId,
       });
+      if (isDuplicateLead) {
+        successParams.set("duplicateLeadId", result.duplicateLead.id);
+        if (result.duplicateLead.submittedAt) {
+          successParams.set(
+            "duplicateSubmittedAt",
+            result.duplicateLead.submittedAt,
+          );
+        }
+        if (result.duplicateLead.status) {
+          successParams.set(
+            "duplicateStatus",
+            result.duplicateLead.status,
+          );
+        }
+      }
       if (
         quoteData.propertyType === "commercial" ||
         quoteData.serviceType === "commercial"
@@ -1455,9 +2345,33 @@ function QuoteWizardComponent() {
     }
   };
 
+  const handleResetQuote = useCallback(() => {
+    setQuoteData({ ...DEFAULT_QUOTE_DATA });
+    setCurrentStep(0);
+    setCompletedSteps([]);
+    setErrors({});
+    setFieldErrors({});
+    setPricing(null);
+    setFormProtectionErrors([]);
+    setRecaptchaToken(null);
+    setIsSubmitting(false);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(storageKey);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [storageKey]);
+
   // Enhanced step rendering with better component structure
   const renderStep = () => {
     const step = STEPS[currentStep];
+
+    if (!step) {
+      return (
+        <div className="p-6 text-sm text-brand-muted">
+          We couldn't load the next step - please try again.
+        </div>
+      );
+    }
 
     let stepContent: React.ReactNode = null;
 
@@ -1466,10 +2380,11 @@ function QuoteWizardComponent() {
         stepContent = (
           <StepZipCheck
             quoteData={quoteData as any}
-            updateQuoteData={updateQuoteData}
-            _errors={_errors}
+            updateQuoteData={(updates) =>
+              updateQuoteData(updates as Partial<QuoteInput>)
+            }
             onNext={handleNext}
-            userOrgId={userOrgId}
+            orgId={userOrgId}
           />
         );
         break;
@@ -1477,7 +2392,9 @@ function QuoteWizardComponent() {
         stepContent = (
           <StepServiceType
             quoteData={quoteData as any}
-            updateQuoteData={updateQuoteData}
+            updateQuoteData={(updates) =>
+              updateQuoteData(updates as Partial<QuoteInput>)
+            }
             onNext={handleNext}
           />
         );
@@ -1486,9 +2403,10 @@ function QuoteWizardComponent() {
         stepContent = (
           <StepBasics
             quoteData={quoteData as any}
-            updateQuoteData={updateQuoteData}
-            _errors={_errors}
-            _estimatedPrice={_estimatedPrice || undefined}
+            updateQuoteData={(updates) =>
+              updateQuoteData(updates as Partial<QuoteInput>)
+            }
+            errors={flattenedFieldErrors}
           />
         );
         break;
@@ -1496,8 +2414,9 @@ function QuoteWizardComponent() {
         stepContent = (
           <StepFrequency
             quoteData={quoteData as any}
-            updateQuoteData={updateQuoteData}
-            _errors={_errors}
+            updateQuoteData={(updates) =>
+              updateQuoteData(updates as Partial<QuoteInput>)
+            }
             _estimatedPrice={_estimatedPrice || undefined}
           />
         );
@@ -1509,21 +2428,8 @@ function QuoteWizardComponent() {
             updateQuoteData={(updates: any) => {
               setQuoteData((prev) => ({ ...prev, ...updates }));
             }}
+            estimatedPrice={pricing || undefined}
             errors={{}}
-            onNext={handleNext}
-          />
-        );
-        break;
-      case "wellness":
-        stepContent = (
-          <StepWellness
-            quoteData={quoteData as any}
-            updateQuoteData={(updates: any) => {
-              Object.entries(updates).forEach(([field, value]) => {
-                updateQuoteData(field as any, value);
-              });
-            }}
-            _errors={_errors}
             onNext={handleNext}
           />
         );
@@ -1542,9 +2448,9 @@ function QuoteWizardComponent() {
           />
         );
         break;
-      case "commercial-contact":
+      case "community-contact":
         stepContent = (
-          <StepCommercialContact
+          <StepCommunityContact
             quoteData={quoteData as any}
             updateQuoteData={(updates: any) => {
               Object.entries(updates).forEach(([field, value]) => {
@@ -1552,20 +2458,20 @@ function QuoteWizardComponent() {
               });
             }}
             _errors={_errors}
-            _estimatedPrice={_estimatedPrice || undefined}
           />
         );
         break;
       case "contact-review":
         stepContent = (
-          <ExternalStepContactReview
+          <StepContactReviewComponent
             quoteData={quoteData as any}
-            updateQuoteData={(updates: any) => {
-              setQuoteData((prev) => ({ ...prev, ...updates }));
-            }}
-            errors={_errors as any}
-            estimatedPrice={_estimatedPrice as any}
+            updateQuoteData={(updates) =>
+              updateQuoteData(updates as Partial<QuoteInput>)
+            }
+            _errors={_errors}
+            estimatedPrice={_estimatedPrice || undefined}
             onNext={() => handleNext()}
+            orgId={userOrgId}
           />
         );
         break;
@@ -1576,242 +2482,120 @@ function QuoteWizardComponent() {
     return <div data-step={currentStep}>{stepContent}</div>;
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50/20 pt-20 pb-24">
-      {/* Enhanced Trust Signals Bar */}
-      <AnimatePresence>
-        {showTrustSignals && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="hidden md:block bg-white/95 backdrop-blur-xl border-b border-green-200/60 shadow-lg overflow-hidden"
-          >
-            <div className="container py-6 relative">
-              <div className="flex items-center justify-center gap-12 text-sm">
-                {TRUST_SIGNALS.map((signal, index) => (
-                  <motion.div
-                    key={signal.text}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.4 }}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    className="flex items-center gap-3 group cursor-pointer"
-                  >
-                    <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl group-hover:from-green-200 group-hover:to-green-300 transition-all duration-200 shadow-sm">
-                      <signal.icon className="size-5 text-green-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-slate-900 group-hover:text-green-700 transition-colors">
-                        {signal.text}
-                      </div>
-                      <div className="text-xs text-slate-500 max-w-32 leading-tight">
-                        {signal.description}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      <div className="flex flex-col items-center py-4 px-4">
+  const progressIndicator = (
+    <div className="flex items-center gap-2">
+      <span className="font-heading text-xs font-semibold text-brand-muted whitespace-nowrap dark:text-cream-vanilla/80">
+        Step {currentStep + 1} of {STEPS.length}
+      </span>
+      <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-brand-coral/15 dark:bg-brand-coral/25">
+        <motion.div
+          className="h-full rounded-full bg-gradient-to-r from-brand-coral to-gold"
+          initial={{ width: 0 }}
+          animate={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        />
+      </div>
+      <span className="font-heading text-xs font-bold text-brand-ink dark:text-emerald-100">
+        {Math.round(((currentStep + 1) / STEPS.length) * 100)}%
+      </span>
+    </div>
+  );
+
+  return (
+    <div className={quoteShellClass}>
+      <QuoteStepBackground stepIndex={currentStep} />
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-32 right-[-18%] h-72 w-72 rounded-full bg-brand-coral/20 blur-3xl" />
+        <div className="absolute bottom-[-28%] left-[-12%] h-80 w-80 rounded-full bg-gold/15 blur-3xl" />
+        <div className="absolute right-[12%] top-1/3 h-64 w-64 rounded-full bg-mint/10 blur-[120px]" />
+      </div>
+
+      <div
+        className="relative mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pb-40 md:max-w-6xl md:flex-col md:gap-4 md:px-6 md:pb-36"
+        style={{ marginTop: "calc(env(safe-area-inset-top, 0px) + 4rem)" }}
+      >
         {/* Enhanced Header with Modern Design */}
         <motion.div
-          className="w-full max-w-screen-xl mb-4 mt-2"
+          className="mt-4 md:mt-5 rounded-3xl border border-brand-coral/15 bg-cream-porcelain/95 text-brand-ink shadow-[0_18px_40px_rgba(243,100,91,0.06)] backdrop-blur-sm px-5 py-4 md:px-7 dark:border-brand-coral/30 dark:bg-evergreen-900/85 dark:text-cream-vanilla dark:shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-3">
-              <div>
-                <motion.h1
-                  className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-green-700 bg-clip-text text-transparent"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                >
-                  {currentStep === 0 ? "Let's Get Started!" : "Get Your Quote"}
-                </motion.h1>
-                <motion.p
-                  className="text-muted mt-1"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                  Step {currentStep + 1} of {STEPS.length}:{" "}
-                  {STEPS[currentStep].title}
-                </motion.p>
-              </div>
-            </div>
+          <div className="flex flex-col gap-2">
+            <motion.span
+                className="inline-flex w-max items-center gap-2 rounded-full border border-brand-coral/30 bg-brand-coral/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-brand-coral backdrop-blur dark:border-brand-coral/40 dark:bg-brand-coral/15 dark:text-cream-vanilla"
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15, duration: 0.4 }}
+              >
+                <Sparkles className="size-3.5" />
+                Finish in under 3 minutes
+              </motion.span>
 
-            {/* Quick Stats for Steps 2+ */}
-            {currentStep >= 2 &&
-              _estimatedPrice &&
-              !_estimatedPrice.requiresCustomQuote && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="hidden sm:flex items-center gap-4 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-green-700/20"
+              <motion.h1
+                className="font-serif text-2xl font-normal leading-tight text-brand-ink md:text-3xl lg:text-4xl dark:text-cream-vanilla"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.25, duration: 0.5 }}
+              >
+                {currentStep === 0
+                  ? "Start with your service address"
+                  : STEPS[currentStep].title}
+              </motion.h1>
+
+              <motion.p
+                className="text-sm leading-relaxed text-brand-muted md:text-base dark:text-cream-vanilla/80"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.35, duration: 0.5 }}
+              >
+                Step {currentStep + 1} of {STEPS.length} · {" "}
+                {STEPS[currentStep].description}
+              </motion.p>
+
+              <div className="mt-2">{progressIndicator}</div>
+          </div>
+
+          {/* Minimal step tabs for desktop */}
+          <div className="hidden md:flex items-center justify-center gap-2 overflow-x-auto pb-1">
+            {STEPS.map((step, index) => {
+              const StepIcon = step.icon;
+              const isCompleted = index < currentStep;
+              const isCurrent = index === currentStep;
+              const isClickable = completedSteps[index - 1] || index === 0;
+
+              return (
+                <motion.button
+                  key={step.id}
+                  onClick={() => isClickable && goToStep(index)}
+                  className={cn(
+                    quoteStepChipBase,
+                    isCurrent
+                      ? quoteStepChipActive
+                      : isCompleted
+                        ? quoteStepChipCompleted
+                        : quoteStepChipIdle,
+                    !isClickable && "cursor-not-allowed opacity-70",
+                  )}
+                  whileHover={isClickable ? { scale: 1.01 } : {}}
+                  whileTap={isClickable ? { scale: 0.98 } : {}}
+                  disabled={!isClickable}
                 >
-                  <div className="text-center">
-                    <div className="text-sm font-bold text-green-700">
-                      ${_estimatedPrice.oneTime}
-                    </div>
-                    <div className="text-xs text-slate-500">One-time</div>
-                  </div>
-                  <div className="w-px h-6 bg-green-700/20"></div>
-                  <div className="text-center">
-                    <div className="text-sm font-bold text-green-700">
-                      ${_estimatedPrice.monthly}
-                    </div>
-                    <div className="text-xs text-slate-500">Monthly</div>
-                  </div>
-                </motion.div>
-              )}
+                  <StepIcon className="size-3" />
+                  <span className="truncate max-w-[8rem]">{step.title}</span>
+                </motion.button>
+              );
+            })}
           </div>
         </motion.div>
-
-        {/* Enhanced Progress Bar with Better UX (hidden on mobile) */}
-        <div className="relative mb-0.5 hidden md:block">
-          {/* Step Counter */}
-          <div className="flex items-center justify-between mb-1">
-            <div className="text-xs text-muted">
-              Step {currentStep + 1} of {STEPS.length}
-            </div>
-            <div className="text-xs font-medium text-green-700">
-              {Math.round(((currentStep + 1) / STEPS.length) * 100)}% Complete
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mb-1 overflow-x-auto pb-1">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-max px-1">
-              {STEPS.map((step, index) => {
-                const StepIcon = step.icon;
-                const isCompleted = index < currentStep;
-                const isCurrent = index === currentStep;
-                const isUpcoming = index > currentStep;
-                const isClickable = completedSteps[index - 1] || index === 0; // Step 0 is always clickable, others require previous step completion
-
-                return (
-                  <motion.button
-                    key={step.id}
-                    onClick={() => isClickable && goToStep(index)}
-                    className={`relative flex flex-col items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-lg transition-all duration-300 flex-shrink-0 ${
-                      isCompleted
-                        ? "bg-gradient-to-r from-green-700 to-green-600 text-white shadow-sm"
-                        : isCurrent
-                          ? "bg-gradient-to-br from-green-50 to-green-100 text-green-700 shadow-sm border border-green-700/30"
-                          : isClickable
-                            ? "bg-white border border-gray-200 text-gray-700 hover:bg-green-700/5 hover:text-green-700 hover:border-green-700/30"
-                            : "bg-white/50 border border-gray-200 text-gray-400"
-                    }`}
-                    whileHover={isClickable ? { scale: 1.02 } : {}}
-                    whileTap={isClickable ? { scale: 0.98 } : {}}
-                    disabled={!isClickable}
-                  >
-                    {/* Step Number Badge */}
-                    <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-gradient-to-r from-green-700 to-green-600 text-white text-xs font-bold flex items-center justify-center shadow-sm border border-white z-20">
-                      {index + 1}
-                    </div>
-
-                    <div
-                      className={`p-1 rounded-md transition-colors ${
-                        isCompleted || isCurrent ? "bg-white/20" : "bg-muted"
-                      }`}
-                    >
-                      <StepIcon className="size-2.5 sm:size-3" />
-                    </div>
-
-                    <div className="text-center">
-                      <div className="text-[10px] font-medium whitespace-nowrap truncate max-w-[4rem] sm:max-w-[8rem]">
-                        {step.title}
-                      </div>
-                      <div className="text-[9px] opacity-60 hidden sm:block whitespace-nowrap truncate max-w-[4rem] sm:max-w-[7rem]">
-                        {step.description}
-                      </div>
-                    </div>
-
-                    {/* Completion Checkmark */}
-                    {isCompleted && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-sm border border-white z-30"
-                      >
-                        <Check className="w-2.5 h-2.5 text-white" />
-                      </motion.div>
-                    )}
-
-                    {/* Current Step Pulse */}
-                    {isCurrent && (
-                      <motion.div
-                        className="absolute inset-0 rounded-xl bg-green-700/5"
-                        animate={{
-                          boxShadow: [
-                            "0 0 0 0px rgba(59, 130, 246, 0.2)",
-                            "0 0 0 4px rgba(59, 130, 246, 0.1)",
-                            "0 0 0 0px rgba(59, 130, 246, 0.2)",
-                          ],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    )}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Enhanced Progress Bar with Gradient */}
-          <div className="relative w-full bg-muted rounded-full h-3 overflow-hidden shadow-inner">
-            <motion.div
-              className="bg-gradient-to-r from-green-700 via-green-600 to-green-700 h-3 rounded-full shadow-sm"
-              initial={{ width: 0 }}
-              animate={{
-                width: `${((currentStep + 1) / STEPS.length) * 100}%`,
-              }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-            />
-            {/* Progress Text Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-medium text-white drop-shadow-sm">
-                {currentStep + 1}/{STEPS.length}
-              </span>
-            </div>
-          </div>
-
-          {/* Step Names Below Progress Bar */}
-          <div className="flex justify-between mt-1 text-xs text-muted">
-            <span className="truncate max-w-[80px]">{STEPS[0]?.title}</span>
-            <span className="truncate max-w-[80px] text-center">
-              {STEPS[Math.floor(STEPS.length / 2)]?.title}
-            </span>
-            <span className="truncate max-w-[80px] text-right">
-              {STEPS[STEPS.length - 1]?.title}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Step Content with Responsive Two-Column Layout */}
-      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 sm:-mt-24 md:-mt-20 lg:-mt-16 xl:-mt-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           {/* Main Form Content - Conditional Layout */}
-          <div
-            className={
-              currentStep >= 2
-                ? "lg:col-span-7"
-                : "lg:col-span-12 flex justify-center"
-            }
-          >
+          <div className="lg:col-span-12 flex justify-center">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
@@ -1839,114 +2623,56 @@ function QuoteWizardComponent() {
                   filter: { duration: 0.2 },
                 }}
               >
-                {currentStep >= 2 ? (
-                  renderStep()
-                ) : (
-                  <div className="max-w-4xl w-full">{renderStep()}</div>
-                )}
+                <div className="w-full max-w-5xl pb-28 md:pb-36">{renderStep()}</div>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* Enhanced Pricing Display - Right Sidebar */}
-          {currentStep >= 2 && (
-            <div className="lg:col-span-5 hidden md:block">
-              {_estimatedPrice && (
-                <ExternalPricingSummary
-                  pricing={_estimatedPrice as any}
-                  quoteData={quoteData as any}
-                  frequency={quoteData.frequency as any}
-                />
-              )}
-            </div>
-          )}
-          {/* Mobile: show full pricing summary only on final confirm step */}
-          {isFinalStep && (
-            <div className="md:hidden">
-              {_estimatedPrice && (
-                <ExternalPricingSummary
-                  pricing={_estimatedPrice as any}
-                  quoteData={quoteData as any}
-                  frequency={quoteData.frequency as any}
-                />
-              )}
-            </div>
-          )}
         </div>
       </div>
 
       {/* Desktop/tablet sticky footer */}
-      <div className="hidden md:block fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200">
-        <div className="max-w-screen-xl mx-auto px-4 py-3">
+      <div className="hidden md:block fixed bottom-0 left-0 right-0 z-40 border-t border-brand-coral/15 bg-cream-porcelain/95 backdrop-blur shadow-lg dark:border-brand-coral/30 dark:bg-[#07140F]/95 dark:text-cream-vanilla dark:shadow-[0_-6px_20px_rgba(0,0,0,0.4)]">
+        <div className="max-w-screen-xl mx-auto px-4 py-2">
           <QuoteStepFooter
+            minimal
             currentStep={currentStep}
             totalSteps={STEPS.length}
             onBack={handleBack}
             onContinue={
               currentStep === STEPS.length - 1 ? handleSubmit : handleNext
             }
-            continueDisabled={isSubmitting}
+            continueDisabled={isSubmitting || !canProceed}
             continueLoading={isSubmitting}
             showBack={currentStep > 0}
             isFinalStep={currentStep === STEPS.length - 1}
+            showReset
+            onReset={handleResetQuote}
+            resetDisabled={isSubmitting}
+            finalCtaLabel={finalStepCtaLabel}
           />
         </div>
       </div>
 
       {/* Mobile sticky action bar: pricing + nav buttons */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-t border-slate-200 px-4 py-3">
-        <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-3">
-          {_estimatedPrice && hasPropertyDetails ? (
-            <div className="flex items-center gap-4">
-              {quoteData.frequency !== "onetime" && (
-                <div className="text-sm">
-                  <div className="text-slate-500">Per visit</div>
-                  <div className="font-semibold">
-                    ${_estimatedPrice.perVisit}
-                  </div>
-                </div>
-              )}
-              {quoteData.frequency !== "onetime" ? (
-                <div className="text-sm text-right">
-                  <div className="text-slate-500">Monthly</div>
-                  <div className="font-semibold">
-                    ${_estimatedPrice.monthly}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-right">
-                  <div className="text-slate-500">One-time</div>
-                  <div className="font-semibold">
-                    ${_estimatedPrice.oneTime}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div />
-          )}
-
-          <div className="flex items-center gap-2 ml-auto">
-            {currentStep > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBack}
-                disabled={isSubmitting}
-              >
-                Back
-              </Button>
-            )}
-            <Button
-              size="sm"
-              onClick={
-                currentStep === STEPS.length - 1 ? handleSubmit : handleNext
-              }
-              disabled={isSubmitting}
-            >
-              {currentStep === STEPS.length - 1 ? "Confirm" : "Continue"}
-            </Button>
-          </div>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-brand-coral/15 bg-cream-porcelain/95 px-3.5 py-2.5 text-brand-ink backdrop-blur shadow-lg dark:border-brand-coral/30 dark:bg-[#07140F]/95 dark:text-cream-vanilla dark:shadow-[0_-6px_20px_rgba(0,0,0,0.4)]">
+        <div className="mx-auto flex max-w-screen-xl flex-col gap-2">
+          <QuoteStepFooter
+            minimal
+            className="w-full"
+            currentStep={currentStep}
+            totalSteps={STEPS.length}
+            onBack={handleBack}
+            onContinue={
+              currentStep === STEPS.length - 1 ? handleSubmit : handleNext
+            }
+            continueDisabled={isSubmitting || !canProceed}
+            continueLoading={isSubmitting}
+            showBack={currentStep > 0}
+            isFinalStep={currentStep === STEPS.length - 1}
+            showReset={false}
+            finalCtaLabel={finalStepCtaLabel}
+          />
         </div>
       </div>
 
@@ -1959,933 +2685,7 @@ function QuoteWizardComponent() {
       />
 
       {/* Auto-save indicator */}
-      {(quoteData.dogs || quoteData.contact?.name) && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 text-xs text-muted text-center"
-        >
-          <Zap className="size-3 inline mr-1" />
-          Progress automatically saved
-        </motion.div>
-      )}
-    </div>
-  );
-}
-
-// Enhanced Step Components
-
-function StepBasics({
-  quoteData,
-  updateQuoteData,
-  _errors,
-  _estimatedPrice,
-}: any) {
-  const isCommercial = quoteData.serviceType === "commercial";
-
-  return (
-    <div className="space-y-6">
-      <Card className="border-0 shadow-xl min-h-[500px]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="size-5 text-green-700" />
-            Property Details
-          </CardTitle>
-          <p className="text-muted">
-            {isCommercial
-              ? "Tell us about your commercial property and service needs"
-              : "Tell us about your home and pets"}
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Service Type Display (DoodyCalls style) */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-green-700 to-green-600 rounded-full flex items-center justify-center">
-                {isCommercial ? (
-                  <Building className="w-5 h-5 text-white" />
-                ) : (
-                  <Home className="w-5 h-5 text-white" />
-                )}
-              </div>
-              <div>
-                <p className="font-semibold text-green-800">
-                  {isCommercial ? "Commercial Service" : "Residential Service"}
-                </p>
-                <p className="text-sm text-green-600">
-                  {isCommercial
-                    ? "Pet waste stations and common-area cleanup for businesses"
-                    : "Professional pet waste removal for your home"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Conditional Fields Based on Service Type */}
-          <>
-            {/* Commercial Property Info */}
-            {isCommercial && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-green-50 border border-green-200 rounded-lg"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-green-800">
-                      Commercial Property Service
-                    </p>
-                    <p className="text-sm text-green-700 mt-1">
-                      Perfect for dog parks, veterinary clinics, hotels,
-                      grooming salons, boarding facilities, and other
-                      businesses. We'll provide a custom quote based on your
-                      specific needs.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Dog Count - Different for Residential vs Commercial */}
-            <div>
-              <Label htmlFor="dogs" className="text-base font-medium">
-                {isCommercial
-                  ? "Expected Number of Dogs *"
-                  : "Number of Dogs *"}
-              </Label>
-              <p className="text-sm text-muted mt-1">
-                {isCommercial
-                  ? "How many dogs do you typically serve or expect to have on your property?"
-                  : "How many dogs live in your home?"}
-              </p>
-
-              {isCommercial ? (
-                // Free-form input for commercial
-                <Input
-                  id="dogs"
-                  type="number"
-                  min="1"
-                  max="500"
-                  value={quoteData.dogs || ""}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    updateQuoteData("dogs", parseInt(e.target.value) || 0)
-                  }
-                  placeholder="Enter number of dogs (e.g., 50)"
-                  className="mt-2 bg-white border-2 border-gray-200 hover:border-green-700/30 focus:ring-2 focus:ring-green-700 focus:ring-offset-2 focus:outline-none"
-                />
-              ) : (
-                // Slider for residential (1-4+)
-                <div className="mt-4">
-                  <Slider
-                    min={1}
-                    max={4}
-                    step={1}
-                    value={Math.min(quoteData.dogs || 1, 4)}
-                    onValueChange={(value) => updateQuoteData("dogs", value)}
-                    valueFormatter={(value) =>
-                      value === 4
-                        ? "4+ dogs"
-                        : `${value} dog${value > 1 ? "s" : ""}`
-                    }
-                    className="mb-2"
-                  />
-                  <div className="flex justify-between text-xs text-muted mt-2">
-                    <span>1 dog</span>
-                    <span>4+ dogs</span>
-                  </div>
-                </div>
-              )}
-
-              {_errors.dogs && (
-                <motion.p
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="text-sm text-red-600 mt-1"
-                  data-error="true"
-                >
-                  {_errors.dogs[0]}
-                </motion.p>
-              )}
-            </div>
-
-            {/* Property Type - Clickable Cards */}
-            <div>
-              <Label className="text-base font-medium">
-                {isCommercial
-                  ? "Service Area Size *"
-                  : "What's your place like? *"}
-              </Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                {(isCommercial
-                  ? [
-                      {
-                        value: "small",
-                        label: "Small Property",
-                        desc: "Townhouse, condo, or small attached home",
-                        icon: "🏠",
-                      },
-                      {
-                        value: "medium",
-                        label: "Medium Property",
-                        desc: "Standard single-family home (under ½ acre)",
-                        icon: "🏡",
-                      },
-                      {
-                        value: "large",
-                        label: "Large Property",
-                        desc: "Spacious home or property (½ to 2 acres)",
-                        icon: "🏘️",
-                      },
-                      {
-                        value: "xl",
-                        label: "Extra Large",
-                        desc: "Estate or very large property (2+ acres)",
-                        icon: "🏰",
-                      },
-                    ]
-                  : [
-                      {
-                        value: "small",
-                        label: "Small Property",
-                        desc: "Townhouse, condo, or small attached home",
-                        icon: "🏠",
-                      },
-                      {
-                        value: "medium",
-                        label: "Medium Property",
-                        desc: "Standard single-family home (under ½ acre)",
-                        icon: "🏡",
-                      },
-                      {
-                        value: "large",
-                        label: "Large Property",
-                        desc: "Spacious home or property (½ to 2 acres)",
-                        icon: "🏘️",
-                      },
-                      {
-                        value: "xl",
-                        label: "Extra Large",
-                        desc: "Estate or very large property (2+ acres)",
-                        icon: "🏰",
-                      },
-                    ]
-                ).map((option) => (
-                  <motion.div
-                    key={option.value}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Card
-                      className={`cursor-pointer border-2 transition-all duration-200 ${
-                        quoteData.yardSize === option.value
-                          ? "border-green-700 bg-green-700/5 shadow-md"
-                          : "border-gray-200 hover:border-green-700/50 hover:shadow-sm"
-                      }`}
-                      onClick={() => updateQuoteData("yardSize", option.value)}
-                    >
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl mb-2">{option.icon}</div>
-                        <div className="font-medium text-sm mb-1">
-                          {option.label}
-                        </div>
-                        <div className="text-xs text-muted leading-tight">
-                          {option.desc}
-                        </div>
-                        {quoteData.yardSize === option.value && (
-                          <div className="mt-2">
-                            <Check className="w-4 h-4 text-green-700 mx-auto" />
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-              {_errors.yardSize && (
-                <motion.p
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="text-sm text-red-600 mt-1"
-                  data-error="true"
-                >
-                  {_errors.yardSize[0]}
-                </motion.p>
-              )}
-            </div>
-
-            {/* Commercial-specific questions */}
-            {isCommercial && (
-              <>
-                <div>
-                  <Label
-                    htmlFor="businessType"
-                    className="text-base font-medium"
-                  >
-                    Business Type *
-                  </Label>
-                  <Select
-                    value={quoteData.businessType || ""}
-                    onValueChange={(value) =>
-                      updateQuoteData("businessType", value)
-                    }
-                  >
-                    <SelectTrigger className="mt-2 bg-white border-2 border-gray-200 hover:border-green-700/30 focus:ring-2 focus:ring-green-700 focus:ring-offset-2 focus:outline-none">
-                      <SelectValue placeholder="Select your business type" />
-                    </SelectTrigger>
-                    <SelectContent className="[&_*[data-radix-select-item]]:text-gray-900 [&_*[data-radix-select-item][data-highlighted]]:bg-green-700 [&_*[data-radix-select-item][data-highlighted]]:text-white">
-                      <SelectItem value="dog-park">
-                        🏞️ Dog Park or Recreation Area
-                      </SelectItem>
-                      <SelectItem value="veterinary">
-                        🏥 Veterinary Clinic or Hospital
-                      </SelectItem>
-                      <SelectItem value="grooming">
-                        ✂️ Grooming Salon
-                      </SelectItem>
-                      <SelectItem value="boarding">
-                        🏠 Boarding or Daycare Facility
-                      </SelectItem>
-                      <SelectItem value="hotel">
-                        🏨 Pet Hotel or Resort
-                      </SelectItem>
-                      <SelectItem value="training">
-                        🎾 Training Facility
-                      </SelectItem>
-                      <SelectItem value="retail">
-                        🛍️ Pet Retail Store
-                      </SelectItem>
-                      <SelectItem value="other">
-                        🏢 Other Commercial Facility
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {_errors.businessType && (
-                    <motion.p
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="text-sm text-red-600 mt-1"
-                      data-error="true"
-                    >
-                      {_errors.businessType[0]}
-                    </motion.p>
-                  )}
-                </div>
-
-                <div>
-                  <Label
-                    htmlFor="serviceFrequency"
-                    className="text-base font-medium"
-                  >
-                    Typical Service Frequency
-                  </Label>
-                  <p className="text-sm text-muted mt-1">
-                    How often do you need waste removal services?
-                  </p>
-                  <Select
-                    value={quoteData.serviceFrequency || ""}
-                    onValueChange={(value) =>
-                      updateQuoteData("serviceFrequency", value)
-                    }
-                  >
-                    <SelectTrigger className="mt-2 bg-white border-2 border-gray-200 hover:border-green-700/30 focus:ring-2 focus:ring-green-700 focus:ring-offset-2 focus:outline-none">
-                      <SelectValue placeholder="Select service frequency" />
-                    </SelectTrigger>
-                    <SelectContent className="[&_*[data-radix-select-item]]:text-gray-900 [&_*[data-radix-select-item][data-highlighted]]:bg-green-700 [&_*[data-radix-select-item][data-highlighted]]:text-white">
-                      <SelectItem value="daily">
-                        Daily - High-traffic facility
-                      </SelectItem>
-                      <SelectItem value="multiple-daily">
-                        Multiple times daily - Very busy operation
-                      </SelectItem>
-                      <SelectItem value="weekly">
-                        Weekly - Standard maintenance
-                      </SelectItem>
-                      <SelectItem value="as-needed">
-                        As needed - Variable traffic
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-
-            {/* Cleanup Assessment - Different for residential vs commercial */}
-            <div>
-              <Label htmlFor="lastCleanup" className="text-base font-medium">
-                {isCommercial
-                  ? "Current Cleanup Situation *"
-                  : "When was your yard last cleaned? *"}
-              </Label>
-              <p className="text-sm text-muted mt-1 mb-3">
-                {isCommercial
-                  ? "How often is waste currently being removed from your property?"
-                  : "This helps us provide the most accurate pricing for your specific needs"}
-              </p>
-              <div className="grid grid-cols-1 gap-3 mt-3">
-                {(isCommercial
-                  ? [
-                      {
-                        value: 1,
-                        label: "Daily - Well maintained",
-                        desc: "Professional cleanup daily",
-                      },
-                      {
-                        value: 3,
-                        label: "Every few days - Moderate traffic",
-                        desc: "3-4 days between cleanups",
-                      },
-                      {
-                        value: 7,
-                        label: "Weekly - Standard facility",
-                        desc: "Weekly maintenance",
-                      },
-                      {
-                        value: 14,
-                        label: "Every 2 weeks - Lower traffic",
-                        desc: "Bi-weekly service",
-                      },
-                      {
-                        value: 30,
-                        label: "Monthly - Minimal use",
-                        desc: "Monthly cleanup only",
-                      },
-                      {
-                        value: 90,
-                        label: "Over 3 months - Needs attention",
-                        desc: "Significant accumulation",
-                      },
-                    ]
-                  : [
-                      {
-                        value: 14,
-                        label: "< 2 weeks (It's spotless)",
-                        desc: "Recently cleaned",
-                      },
-                      {
-                        value: 42,
-                        label: "2–6 weeks (It's pretty neglected)",
-                        desc: "Moderate accumulation",
-                      },
-                      {
-                        value: 999,
-                        label: "> 6 weeks (Watch your step!)",
-                        desc: "Significant cleanup needed",
-                      },
-                    ]
-                ).map((option) => (
-                  <motion.button
-                    key={option.value}
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`p-4 text-left border-2 rounded-lg transition-all duration-200 ${
-                      quoteData.deepCleanAssessment?.daysSinceLastCleanup ===
-                      option.value
-                        ? "border-green-700 bg-green-700/5 shadow-md"
-                        : "border-gray-200 hover:border-green-700/50 hover:shadow-sm bg-white"
-                    }`}
-                    onClick={() =>
-                      updateQuoteData("deepCleanAssessment", {
-                        ...quoteData.deepCleanAssessment,
-                        daysSinceLastCleanup: option.value,
-                      })
-                    }
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-medium text-sm mb-1">
-                          {option.label}
-                        </div>
-                        <div className="text-xs text-muted">{option.desc}</div>
-                      </div>
-                      {quoteData.deepCleanAssessment?.daysSinceLastCleanup ===
-                        option.value && (
-                        <Check className="w-5 h-5 text-green-700 flex-shrink-0 mt-0.5" />
-                      )}
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
-              <p className="text-xs text-muted mt-2">
-                {isCommercial
-                  ? "💼 This helps us understand your current maintenance needs"
-                  : "🧹 This sets the one-time initial clean price"}
-              </p>
-            </div>
-
-            {/* Areas to Clean (DoodyCalls inspired) */}
-            {!isCommercial && (
-              <div>
-                <Label className="text-base font-medium">Areas to Clean</Label>
-                <p className="text-sm text-muted mt-1 mb-3">
-                  Which areas of your property need service? (Select all that
-                  apply)
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { id: "frontYard", label: "Front Yard", icon: "🌳" },
-                    { id: "backYard", label: "Back Yard", icon: "🏡" },
-                    { id: "sideYard", label: "Side Yard", icon: "🌿" },
-                    { id: "dogRun", label: "Dog Run", icon: "🏃" },
-                    {
-                      id: "fencedArea",
-                      label: "Additional Fenced Area",
-                      icon: "🔒",
-                    },
-                  ].map((area) => (
-                    <motion.div
-                      key={area.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Card
-                        className={`cursor-pointer border-2 transition-all duration-200 ${
-                          quoteData.areasToClean?.[area.id]
-                            ? "border-green-700 bg-green-700/5"
-                            : "border-gray-200 hover:border-green-700/50"
-                        }`}
-                        onClick={() => {
-                          const currentAreas = quoteData.areasToClean || {};
-                          updateQuoteData("areasToClean", {
-                            ...currentAreas,
-                            [area.id]: !currentAreas[area.id],
-                          });
-                        }}
-                      >
-                        <CardContent className="p-3 text-center">
-                          <div className="text-xl mb-1">{area.icon}</div>
-                          <p className="text-sm font-medium">{area.label}</p>
-                          {quoteData.areasToClean?.[area.id] && (
-                            <CheckCircle className="w-4 h-4 text-green-700 mx-auto mt-1" />
-                          )}
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-                <div className="mt-3">
-                  <Label htmlFor="otherArea" className="text-sm">
-                    Other areas:
-                  </Label>
-                  <Input
-                    id="otherArea"
-                    placeholder="e.g., Deck, Patio, Driveway"
-                    value={quoteData.areasToClean?.other || ""}
-                    onChange={(e) => {
-                      const currentAreas = quoteData.areasToClean || {};
-                      updateQuoteData("areasToClean", {
-                        ...currentAreas,
-                        other: e.target.value,
-                      });
-                    }}
-                    className="mt-1 bg-white border-2 border-gray-200 hover:border-teal-700/30 focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:outline-none"
-                  />
-                </div>
-              </div>
-            )}
-          </>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Step 5.5: Commercial Contact Step
-
-// Step 1: Zip Code Check (DoodyCalls inspired)
-function StepZipCheck({
-  quoteData,
-  updateQuoteData,
-  _errors,
-  onNext,
-  userOrgId,
-}: any) {
-  const [zipCode, setZipCode] = useState(quoteData.zipCode || "");
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState<{
-    valid: boolean;
-    message: string;
-    location?: string;
-  } | null>(null);
-
-  // ZIP validation is now handled by the configurable business system
-
-  const validateZipCode = async () => {
-    if (!zipCode.trim()) {
-      setValidationResult({ valid: false, message: "Please enter a zip code" });
-      return;
-    }
-
-    setIsValidating(true);
-    setValidationResult(null);
-
-    try {
-      // Use API route instead of direct function call to avoid Prisma client in browser
-      const response = await fetch("/api/admin/zip-search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          zipCode: zipCode.trim(),
-          businessId: userOrgId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to validate ZIP code");
-      }
-
-      const eligibilityResult = await response.json();
-
-      setValidationResult({
-        valid: eligibilityResult.eligible,
-        message: eligibilityResult.message,
-        location: eligibilityResult.zone?.name || "Outside Service Area",
-      });
-
-      if (eligibilityResult.eligible) {
-        updateQuoteData("zipCode", zipCode.trim());
-      }
-
-      track("zip_check", {
-        zip: zipCode.trim(),
-        inArea: eligibilityResult.eligible,
-        location: eligibilityResult.zone?.name || "Outside Service Area",
-        zone: eligibilityResult.zone?.zoneId || null,
-        estimatedDelivery: eligibilityResult.estimatedDelivery || null,
-      });
-    } catch (error) {
-      console.error("ZIP validation error:", error);
-      setValidationResult({
-        valid: false,
-        message: "Unable to validate ZIP code. Please try again.",
-      });
-    }
-
-    setIsValidating(false);
-  };
-
-  const handleContinue = () => {
-    if (validationResult?.valid) {
-      updateQuoteData("zipCode", zipCode.trim());
-      onNext();
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <Card className="border-0 shadow-xl min-h-[500px]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="size-5 text-green-700" />
-            Service Area Check
-          </CardTitle>
-          <p className="text-muted">
-            Let's make sure we can provide service in your area. Enter your zip
-            code below.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Current Location Display */}
-          <div className="bg-green-700/5 border border-green-700/20 rounded-lg p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-700 to-green-600 rounded-full flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="font-medium text-green-700">
-                  {validationResult?.location || "Twin Cities Metro Area"}
-                </p>
-                <p className="text-sm text-muted">Minnesota</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted mt-2">
-              Serving Minneapolis, Richfield, Edina, Bloomington, and
-              surrounding areas
-            </p>
-          </div>
-
-          {/* Zip Code Input */}
-          <div>
-            <Label htmlFor="zipCode" className="text-base font-medium">
-              Zip Code *
-            </Label>
-            <div className="flex gap-3 mt-2">
-              <Input
-                id="zipCode"
-                type="text"
-                placeholder="55401"
-                value={zipCode}
-                onChange={(e) => setZipCode(e.target.value)}
-                className="flex-1 bg-white border-2 border-gray-200 hover:border-teal-700/30 focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:outline-none"
-                maxLength={5}
-              />
-              <Button
-                onClick={validateZipCode}
-                disabled={!zipCode.trim() || isValidating}
-                className="px-6"
-              >
-                {isValidating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  "Check"
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Validation Result */}
-          {validationResult && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`p-4 rounded-lg border ${
-                validationResult.valid
-                  ? "bg-green-50 border-green-200 text-green-800"
-                  : "bg-yellow-50 border-yellow-200 text-yellow-800"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    validationResult.valid ? "bg-green-500" : "bg-yellow-500"
-                  }`}
-                >
-                  {validationResult.valid ? (
-                    <CheckCircle className="w-3 h-3 text-white" />
-                  ) : (
-                    <AlertCircle className="w-3 h-3 text-white" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-medium">{validationResult.message}</p>
-                  {validationResult.location && (
-                    <p className="text-sm mt-1 opacity-80">
-                      {validationResult.location}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Step 3: Service Frequency Selection (DoodyCalls inspired)
-function StepFrequency({
-  quoteData,
-  updateQuoteData,
-  _errors,
-  _estimatedPrice,
-}: any) {
-  // Use the same options from priceEstimator for consistency
-  const serviceTypeOptions = getServiceTypeOptions();
-
-  const frequencyOptions = serviceTypeOptions.map((option) => ({
-    id: option.value,
-    title: option.label,
-    subtitle: option.isPopular
-      ? "Most Popular"
-      : option.description.split(" - ")[0] || "",
-    visits: option.description,
-    description: option.description,
-    icon:
-      option.value === "weekly"
-        ? "📅"
-        : option.value === "biweekly"
-          ? "📆"
-          : option.value === "twice-weekly"
-            ? "⚡"
-            : option.value === "monthly"
-              ? "📊"
-              : option.value === "onetime"
-                ? "🧹"
-                : "📅",
-    popular: option.isPopular || false,
-  }));
-
-  const handleFrequencySelect = (frequency: string) => {
-    updateQuoteData("frequency", frequency);
-    track("frequency_selected", { frequency, _estimatedPrice });
-  };
-
-  return (
-    <div className="space-y-6">
-      <Card className="border-0 shadow-xl min-h-[500px]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="size-5 text-green-700" />
-            Service Frequency
-          </CardTitle>
-          <p className="text-muted">
-            How often do you need service? We'll match your needs with the right
-            frequency.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3">
-            {frequencyOptions.map((option) => (
-              <motion.div
-                key={option.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Card
-                  className={`cursor-pointer border-2 transition-all duration-200 hover:shadow-md ${
-                    quoteData.frequency === option.id
-                      ? "border-green-700 bg-green-700/8 shadow-md"
-                      : "border-gray-200 hover:border-green-700/60"
-                  }`}
-                  onClick={() => handleFrequencySelect(option.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="text-xl">{option.icon}</div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-base">
-                              {option.title}
-                            </h3>
-                            {option.popular && (
-                              <span className="bg-gradient-to-r from-green-700 to-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                                Most Popular
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-muted text-xs">
-                            {option.description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        {quoteData.frequency === option.id && (
-                          <CheckCircle className="w-5 h-5 text-green-700" />
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Estimated Monthly Cost - Show prominently for recurring services */}
-      {_estimatedPrice &&
-        quoteData.frequency &&
-        quoteData.frequency !== "onetime" && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-700/30 rounded-xl p-6 text-center shadow-lg"
-          >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="w-2 h-2 bg-green-700 rounded-full"></div>
-              <p className="text-sm font-medium text-green-700">
-                Estimated Monthly Cost
-              </p>
-              <div className="w-2 h-2 bg-green-700 rounded-full"></div>
-            </div>
-            <p className="text-3xl font-bold text-green-700 mb-1">
-              ${_estimatedPrice.monthly}
-            </p>
-            <p className="text-sm text-muted">
-              {_estimatedPrice.visitsPerMonth} visits per month • Best value for
-              consistent service
-            </p>
-          </motion.div>
-        )}
-    </div>
-  );
-}
-
-// Step 2: Service Type Selection (DoodyCalls inspired)
-function StepServiceType({ quoteData, updateQuoteData, onNext }: any) {
-  const handleServiceTypeSelect = (
-    serviceType: "residential" | "commercial",
-  ) => {
-    updateQuoteData("serviceType", serviceType);
-    track("service_type_selected", { serviceType });
-    onNext();
-  };
-
-  return (
-    <div className="space-y-6">
-      <Card className="border-0 shadow-xl min-h-[600px]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building className="size-5 text-green-700" />
-            Service Type
-          </CardTitle>
-          <p className="text-muted">What type of service do you need?</p>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Residential Service */}
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Card
-                className="cursor-pointer border-2 hover:border-green-700 transition-all duration-200 hover:shadow-lg"
-                onClick={() => handleServiceTypeSelect("residential")}
-              >
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-green-700/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Home className="w-8 h-8 text-green-700" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">Residential</h3>
-                  <p className="text-muted text-base leading-relaxed">
-                    We clean up after your dog in your own yard. Perfect for
-                    homes and apartments.
-                  </p>
-                  <div className="mt-4 text-xs text-muted">
-                    Most popular choice
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Commercial Service */}
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Card
-                className="cursor-pointer border-2 hover:border-green-700 transition-all duration-200 hover:shadow-lg"
-                onClick={() => handleServiceTypeSelect("commercial")}
-              >
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-green-700/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Building className="w-8 h-8 text-green-700" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">Community</h3>
-                  <p className="text-muted text-base leading-relaxed">
-                    Pet waste stations and common-area cleanup for HOAs,
-                    apartments, and businesses.
-                  </p>
-                  <div className="mt-4 text-xs text-muted">
-                    Custom quote required
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* auto-save indicator removed per UX feedback */}
     </div>
   );
 }
@@ -2894,10 +2694,10 @@ export default function QuoteWizard() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gradient-to-br from-white via-accent-soft/10 to-accent-soft/20 flex items-center justify-center">
+        <div className="min-h-screen bg-brand-porcelain flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-700 mx-auto mb-4"></div>
-            <p className="text-muted">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[rgba(243,100,91,0.45)] mx-auto mb-4"></div>
+            <p className="text-brand-muted">
               Loading your enhanced quote experience...
             </p>
           </div>

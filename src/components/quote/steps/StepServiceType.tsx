@@ -2,33 +2,57 @@
 
 import React from "react";
 import { useServiceTypeValidation } from "@/hooks/useFormValidation";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/framermotion";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building, Home } from "lucide-react";
+import { Building, Home, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { track } from "@/lib/analytics";
 import { StepProps } from "@/types/quote";
 import {
-  stepServiceTypeSchema,
-  StepServiceTypeData,
-} from "@/lib/validations/quote";
+  withQuotePanel,
+  quoteSubtleTextClass,
+  quoteMutedBadgeClass,
+} from "../quoteStyles";
+
+const cardBase =
+  "group relative flex h-full flex-col rounded-3xl border-2 p-6 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-coral/40";
+const cardSelected =
+  "border-brand-coral/55 bg-brand-coral/8 text-brand-ink shadow-[0_22px_60px_rgba(243,100,91,0.2)] ring-2 ring-brand-coral/40 dark:border-brand-coral/70 dark:bg-brand-coral/15 dark:text-cream-vanilla dark:ring-brand-coral/45";
+const cardIdle =
+  "border-brand-coral/15 bg-cream-vanilla/60 text-brand-ink hover:border-brand-coral/30 hover:bg-cream-vanilla/80 hover:shadow-[0_12px_32px_rgba(243,100,91,0.08)] dark:border-brand-coral/25 dark:bg-evergreen-800/75 dark:text-cream-vanilla dark:hover:border-brand-coral/45";
 
 export const StepServiceType: React.FC<StepProps> = ({
   quoteData,
   updateQuoteData,
   onNext,
 }) => {
-  const {
-    handleSubmit,
-    setValue,
-    formState: { isSubmitting },
-  } = useServiceTypeValidation(quoteData.serviceType);
+  const { handleSubmit, setValue } = useServiceTypeValidation(
+    quoteData.serviceType,
+  );
 
   const handleServiceTypeSelect = async (
     serviceType: "residential" | "commercial",
   ) => {
     setValue("serviceType", serviceType);
-    updateQuoteData({ serviceType });
+    updateQuoteData({
+      serviceType,
+      ...(serviceType === "commercial"
+        ? {
+            frequency: undefined,
+            dogs: undefined,
+            yardSize: undefined,
+            deepCleanAssessment: undefined,
+            areasToClean: {},
+            addOns: {},
+          }
+        : {
+            frequency: quoteData.frequency || "weekly",
+            dogs: quoteData.dogs || 1,
+            yardSize: quoteData.yardSize || "medium",
+          }),
+    });
     track("service_type_selected", { serviceType });
     onNext?.();
   };
@@ -42,85 +66,89 @@ export const StepServiceType: React.FC<StepProps> = ({
     }
   };
 
+  const isCommercial = quoteData.serviceType === "commercial";
+  const isResidential = !isCommercial;
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="max-w-4xl mx-auto space-y-6"
+      className="space-y-6 pb-24 md:pb-28"
     >
-      <Card className="border-0 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building className="size-5 text-accent" />
+      <Card className={withQuotePanel("space-y-6 text-brand-ink dark:text-cream-vanilla")}>
+        <CardHeader className="space-y-2">
+          <CardTitle className="flex items-center gap-2 font-serif text-base font-normal md:text-lg text-brand-ink dark:text-cream-vanilla">
+            <span className="inline-flex size-9 items-center justify-center rounded-2xl bg-brand-coral/10 text-brand-coral dark:bg-brand-coral/20 dark:text-cream-vanilla">
+              <Building className="size-4" />
+            </span>
             Service Type
           </CardTitle>
-          <p className="text-muted">What type of service do you need?</p>
+          <p className={cn("text-sm leading-relaxed", quoteSubtleTextClass)}>
+            Tell us where we're helping. Residential routes unlock instant pricing; community spaces route to our team for tailored packages.
+          </p>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Residential Service */}
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Card
-                className={`cursor-pointer border-2 transition-all duration-200 hover:shadow-lg ${
-                  quoteData.serviceType === "residential"
-                    ? "border-accent bg-accent/5"
-                    : "hover:border-accent border-gray-200"
-                }`}
-                onClick={() => handleServiceTypeSelect("residential")}
-              >
-                <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Home className="w-8 h-8 text-accent" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">Residential</h3>
-                  <p className="text-muted text-sm">
-                    We clean up after your dog in your own yard. Perfect for
-                    homes and apartments.
-                  </p>
-                  <div className="mt-4 text-xs text-muted">
-                    Most popular choice
-                  </div>
-                  {quoteData.serviceType === "residential" && (
-                    <div className="mt-2 text-accent font-medium">
-                      ✓ Selected
-                    </div>
+        <CardContent className="space-y-8">
+          <div className="grid gap-5 md:grid-cols-2 md:gap-6">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleServiceTypeSelect("residential")}
+              aria-pressed={isResidential}
+              className={cn(cardBase, isResidential ? cardSelected : cardIdle)}
+            >
+              {isResidential ? (
+                <span
+                  className={cn(
+                    quoteMutedBadgeClass,
+                    "absolute right-5 top-5 bg-brand-coral/12 text-brand-coral shadow dark:bg-brand-coral/25 dark:text-cream-vanilla",
                   )}
-                </CardContent>
-              </Card>
-            </motion.div>
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Selected
+                </span>
+              ) : null}
+              <span className="inline-flex size-14 items-center justify-center rounded-2xl bg-brand-coral/10 text-brand-coral dark:bg-brand-coral/20 dark:text-cream-vanilla">
+                <Home className="h-7 w-7" />
+              </span>
+              <div className="mt-5 space-y-3">
+                <h3 className="font-serif text-lg font-normal md:text-xl">Residential</h3>
+                <p className={cn("text-sm leading-relaxed", quoteSubtleTextClass)}>
+                  Ideal for single-family homes, condos, and apartments. Instant pricing and flexible visit schedules.
+                </p>
+                <span className={cn(quoteMutedBadgeClass, "mt-3 w-fit bg-gold/15 text-gold dark:bg-gold/25 dark:text-cream-vanilla")}>Most booked</span>
+              </div>
+            </motion.button>
 
-            {/* Commercial Service */}
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Card
-                className={`cursor-pointer border-2 transition-all duration-200 hover:shadow-lg ${
-                  quoteData.serviceType === "commercial"
-                    ? "border-accent bg-accent/5"
-                    : "hover:border-accent border-gray-200"
-                }`}
-                onClick={() => handleServiceTypeSelect("commercial")}
-              >
-                <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Building className="w-8 h-8 text-accent" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">Community</h3>
-                  <p className="text-muted text-sm">
-                    Pet waste stations and common-area cleanup for HOAs,
-                    apartments, and businesses.
-                  </p>
-                  <div className="mt-4 text-xs text-muted">
-                    Custom quote required
-                  </div>
-                  {quoteData.serviceType === "commercial" && (
-                    <div className="mt-2 text-accent font-medium">
-                      ✓ Selected
-                    </div>
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleServiceTypeSelect("commercial")}
+              aria-pressed={isCommercial}
+              className={cn(cardBase, isCommercial ? cardSelected : cardIdle)}
+            >
+              {isCommercial ? (
+                <span
+                  className={cn(
+                    quoteMutedBadgeClass,
+                    "absolute right-5 top-5 bg-brand-coral/12 text-brand-coral shadow dark:bg-brand-coral/25 dark:text-cream-vanilla",
                   )}
-                </CardContent>
-              </Card>
-            </motion.div>
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Selected
+                </span>
+              ) : null}
+              <span className="inline-flex size-14 items-center justify-center rounded-2xl bg-brand-coral/10 text-brand-coral dark:bg-brand-coral/20 dark:text-cream-vanilla">
+                <Building className="h-7 w-7" />
+              </span>
+              <div className="mt-5 space-y-3">
+                <h3 className="font-serif text-lg font-normal md:text-xl">Community & Commercial</h3>
+                <p className={cn("text-sm leading-relaxed", quoteSubtleTextClass)}>
+                  HOAs, pet amenities, vet clinics, and shared spaces. We'll align visits, staffing, and reporting with your residents.
+                </p>
+                <span className={cn(quoteMutedBadgeClass, "mt-3 w-fit bg-mint/15 text-mint dark:bg-mint/25 dark:text-cream-vanilla")}>Custom quote & concierge onboarding</span>
+              </div>
+            </motion.button>
           </div>
 
-          {/* Hidden submit button for form validation */}
           <button type="submit" className="hidden" />
         </CardContent>
       </Card>

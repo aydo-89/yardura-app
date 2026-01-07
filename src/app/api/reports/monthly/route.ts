@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { supabaseAdmin, createSignedUrl } from "@/lib/supabase-admin";
+import { createSignedUrl, getSupabaseAdmin } from "@/lib/supabase-admin";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 async function generatePdf(params: {
@@ -74,6 +74,7 @@ export async function GET(req: NextRequest) {
 
   const pdf = await generatePdf({ orgId, customerId, month });
   const path = `reports/${orgId}/${customerId || "all"}/${month}.pdf`;
+  const supabaseAdmin = getSupabaseAdmin();
   await supabaseAdmin.storage
     .from(process.env.STORAGE_BUCKET || "stool-samples")
     .upload(path, pdf, {

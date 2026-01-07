@@ -1,0 +1,34 @@
+{
+  "timestamp": "20260107135636.",
+  "model": "gemini-3-pro-image-preview",
+  "aspect": "1:1",
+  "resolution": "1K",
+  "prompts": [
+    {
+      "id": "soft-1",
+      "label": "Soft but formed",
+      "visual": {
+        "id": "soft-1",
+        "shape": "coiled soft pile that still has some structure but is visibly drooping and settling, like soft-serve ice cream",
+        "color": "medium brown, natural color",
+        "distinguishingFeature": "still has log-like coiled form but edges are soft and rounding out, slightly flattening at the base",
+        "surface": "moist looking, slightly glossy from moisture, soft texture visible, edges are losing definition",
+        "realLifeNote": "Like soft-serve ice cream just dispensed - still has a coiled/swirled shape but soft, sagging, would smear if touched"
+      },
+      "prompt": "Create a clean semi-realistic illustration, medical education style of dog stool for a veterinary education app. IMPORTANT: Use organic irregular shapes with natural lumpy edges, slight bulges, tapered ends. NOT perfect geometric cylinders or sharp clean edges. Real stool has uneven natural form like soft clay that was squeezed out. Use realistic natural earth tones, true-to-life colors. Background: plain solid light neutral gray (#F0F0F0) background, no textures or patterns. Rendering: soft shading with realistic form, gentle shadow underneath for grounding. Camera angle: slightly elevated 3/4 view, as if looking down at the ground. SHAPE: coiled soft pile that still has some structure but is visibly drooping and settling, like soft-serve ice cream. COLOR: medium brown, natural color. KEY IDENTIFYING FEATURE: still has log-like coiled form but edges are soft and rounding out, slightly flattening at the base. SURFACE/TEXTURE: moist looking, slightly glossy from moisture, soft texture visible, edges are losing definition. REAL LIFE REFERENCE: Like soft-serve ice cream just dispensed - still has a coiled/swirled shape but soft, sagging, would smear if touched. Do NOT include: text or labels, cartoon faces or expressions, flies or insects, smell lines or stink marks, grass or outdoor environment, overly gross or disgusting details, perfect geometric shapes, sharp clean cylinder edges, machine-cut or manufactured looking shapes. This must look realistic enough that a pet owner can compare it to their dog's actual stool. The image should clearly show the distinguishing characteristics so owners know what to look for. Remember: ORGANIC irregular shapes like squeezed-out soft material, NOT perfect geometric cylinders."
+    },
+    {
+      "id": "black-1",
+      "label": "Black or tarry",
+      "visual": {
+        "id": "black-1",
+        "shape": "organic log shape with natural lumpy irregular edges, slightly sticky or tarry looking",
+        "color": "very dark brownish-black, like dark coffee grounds or very dark chocolate - NOT pure jet black",
+        "distinguishingFeature": "unusually dark color that is darker than normal brown but has brown undertones, sticky looking",
+        "surface": "slightly shiny, tar-like sheen, looks sticky and wet, organic irregular form",
+        "realLifeNote": "Like dark coffee grounds or very dark chocolate brownie - brownish-black, shiny, sticky looking"
+      },
+      "prompt": "Create a clean semi-realistic illustration, medical education style of dog stool for a veterinary education app. IMPORTANT: Use organic irregular shapes with natural lumpy edges, slight bulges, tapered ends. NOT perfect geometric cylinders or sharp clean edges. Real stool has uneven natural form like soft clay that was squeezed out. Use realistic natural earth tones, true-to-life colors. Background: plain solid light neutral gray (#F0F0F0) background, no textures or patterns. Rendering: soft shading with realistic form, gentle shadow underneath for grounding. Camera angle: slightly elevated 3/4 view, as if looking down at the ground. SHAPE: organic log shape with natural lumpy irregular edges, slightly sticky or tarry looking. COLOR: very dark brownish-black, like dark coffee grounds or very dark chocolate - NOT pure jet black. KEY IDENTIFYING FEATURE: unusually dark color that is darker than normal brown but has brown undertones, sticky looking. SURFACE/TEXTURE: slightly shiny, tar-like sheen, looks sticky and wet, organic irregular form. REAL LIFE REFERENCE: Like dark coffee grounds or very dark chocolate brownie - brownish-black, shiny, sticky looking. Do NOT include: text or labels, cartoon faces or expressions, flies or insects, smell lines or stink marks, grass or outdoor environment, overly gross or disgusting details, perfect geometric shapes, sharp clean cylinder edges, machine-cut or manufactured looking shapes. This must look realistic enough that a pet owner can compare it to their dog's actual stool. The image should clearly show the distinguishing characteristics so owners know what to look for. Remember: ORGANIC irregular shapes like squeezed-out soft material, NOT perfect geometric cylinders."
+    }
+  ]
+}

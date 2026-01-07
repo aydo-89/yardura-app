@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { resolveApiAuth } from "@/lib/auth/api-auth";
 import { prisma } from "@/lib/prisma";
 
 const territorySchema = z.object({
@@ -26,25 +25,36 @@ function forbidden(message = "Unauthorized") {
   return NextResponse.json({ ok: false, error: message }, { status: 403 });
 }
 
+const MANAGER_ROLES = [
+  "ADMIN",
+  "OWNER",
+  "SALES_MANAGER",
+  "FRANCHISE_OWNER",
+];
+
+const READ_ROLES = [...MANAGER_ROLES, "SALES_REP"];
+
+function hasAccess(
+  auth: { role: string | null; roles: string[] } | null,
+  allowed: string[],
+) {
+  if (!auth) return false;
+  if (auth.role && allowed.includes(auth.role)) return true;
+  return auth.roles.some((role) => allowed.includes(role));
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await resolveApiAuth(req);
+    if (!auth?.userId) {
       return forbidden();
     }
 
-    const role = (session as any)?.userRole;
-    const isManager = [
-      "ADMIN",
-      "OWNER",
-      "SALES_MANAGER",
-      "FRANCHISE_OWNER",
-    ].includes(role);
-    if (!isManager) {
+    if (!hasAccess(auth, READ_ROLES)) {
       return forbidden();
     }
 
-    const orgId = (session.user as any)?.orgId;
+    const orgId = auth.orgId;
     if (!orgId) {
       return NextResponse.json(
         { ok: false, error: "Organization not set" },
@@ -110,23 +120,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await resolveApiAuth(req);
+    if (!auth?.userId) {
       return forbidden();
     }
 
-    const role = (session as any)?.userRole;
-    const isManager = [
-      "ADMIN",
-      "OWNER",
-      "SALES_MANAGER",
-      "FRANCHISE_OWNER",
-    ].includes(role);
-    if (!isManager) {
+    if (!hasAccess(auth, MANAGER_ROLES)) {
       return forbidden();
     }
 
-    const orgId = (session.user as any)?.orgId;
+    const orgId = auth.orgId;
     if (!orgId) {
       return NextResponse.json(
         { ok: false, error: "Organization not set" },

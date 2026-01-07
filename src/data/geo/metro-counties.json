@@ -1,0 +1,4493 @@
+{
+  "generatedAt": "2026-01-06T12:55:26.722Z",
+  "source": {
+    "listUrl": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx",
+    "populationUrl": "https://api.census.gov/data/2022/acs/acs5?get=NAME,B01001_001E&for=metropolitan%20statistical%20area/micropolitan%20statistical%20area:*",
+    "includeMicro": false,
+    "top": 100
+  },
+  "metros": [
+    {
+      "cbsa": "26420",
+      "name": "26420",
+      "population": 7142603,
+      "countyCount": 10
+    },
+    {
+      "cbsa": "38060",
+      "name": "38060",
+      "population": 4864209,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "40140",
+      "name": "40140",
+      "population": 4610050,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "33460",
+      "name": "33460",
+      "population": 3678328,
+      "countyCount": 15
+    },
+    {
+      "cbsa": "41740",
+      "name": "41740",
+      "population": 3289701,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "19740",
+      "name": "19740",
+      "population": 2959386,
+      "countyCount": 10
+    },
+    {
+      "cbsa": "12580",
+      "name": "12580",
+      "population": 2840005,
+      "countyCount": 7
+    },
+    {
+      "cbsa": "41180",
+      "name": "41180",
+      "population": 2813523,
+      "countyCount": 15
+    },
+    {
+      "cbsa": "36740",
+      "name": "36740",
+      "population": 2679298,
+      "countyCount": 4
+    },
+    {
+      "cbsa": "16740",
+      "name": "16740",
+      "population": 2668688,
+      "countyCount": 11
+    },
+    {
+      "cbsa": "41700",
+      "name": "41700",
+      "population": 2570862,
+      "countyCount": 8
+    },
+    {
+      "cbsa": "38900",
+      "name": "38900",
+      "population": 2505312,
+      "countyCount": 7
+    },
+    {
+      "cbsa": "40900",
+      "name": "40900",
+      "population": 2394673,
+      "countyCount": 4
+    },
+    {
+      "cbsa": "38300",
+      "name": "38300",
+      "population": 2365501,
+      "countyCount": 8
+    },
+    {
+      "cbsa": "12420",
+      "name": "12420",
+      "population": 2296377,
+      "countyCount": 5
+    },
+    {
+      "cbsa": "29820",
+      "name": "29820",
+      "population": 2265926,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "17140",
+      "name": "17140",
+      "population": 2253528,
+      "countyCount": 15
+    },
+    {
+      "cbsa": "28140",
+      "name": "28140",
+      "population": 2190750,
+      "countyCount": 14
+    },
+    {
+      "cbsa": "18140",
+      "name": "18140",
+      "population": 2137223,
+      "countyCount": 10
+    },
+    {
+      "cbsa": "26900",
+      "name": "26900",
+      "population": 2109957,
+      "countyCount": 11
+    },
+    {
+      "cbsa": "34980",
+      "name": "34980",
+      "population": 1990873,
+      "countyCount": 14
+    },
+    {
+      "cbsa": "41940",
+      "name": "41940",
+      "population": 1981584,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "47260",
+      "name": "47260",
+      "population": 1798025,
+      "countyCount": 18
+    },
+    {
+      "cbsa": "39300",
+      "name": "39300",
+      "population": 1670949,
+      "countyCount": 6
+    },
+    {
+      "cbsa": "27260",
+      "name": "27260",
+      "population": 1613587,
+      "countyCount": 5
+    },
+    {
+      "cbsa": "33340",
+      "name": "33340",
+      "population": 1568940,
+      "countyCount": 4
+    },
+    {
+      "cbsa": "36420",
+      "name": "36420",
+      "population": 1428923,
+      "countyCount": 7
+    },
+    {
+      "cbsa": "39580",
+      "name": "39580",
+      "population": 1420825,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "32820",
+      "name": "32820",
+      "population": 1335804,
+      "countyCount": 9
+    },
+    {
+      "cbsa": "40060",
+      "name": "40060",
+      "population": 1316145,
+      "countyCount": 17
+    },
+    {
+      "cbsa": "31140",
+      "name": "31140",
+      "population": 1282588,
+      "countyCount": 12
+    },
+    {
+      "cbsa": "35380",
+      "name": "35380",
+      "population": 1264357,
+      "countyCount": 7
+    },
+    {
+      "cbsa": "41620",
+      "name": "41620",
+      "population": 1254675,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "25540",
+      "name": "25540",
+      "population": 1215703,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "15380",
+      "name": "15380",
+      "population": 1163462,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "13820",
+      "name": "13820",
+      "population": 1114368,
+      "countyCount": 7
+    },
+    {
+      "cbsa": "24340",
+      "name": "24340",
+      "population": 1087068,
+      "countyCount": 5
+    },
+    {
+      "cbsa": "40380",
+      "name": "40380",
+      "population": 1086859,
+      "countyCount": 5
+    },
+    {
+      "cbsa": "46060",
+      "name": "46060",
+      "population": 1042393,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "46140",
+      "name": "46140",
+      "population": 1017724,
+      "countyCount": 7
+    },
+    {
+      "cbsa": "46520",
+      "name": "46520",
+      "population": 1010100,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "23420",
+      "name": "23420",
+      "population": 1008280,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "49340",
+      "name": "49340",
+      "population": 975551,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "36540",
+      "name": "36540",
+      "population": 966688,
+      "countyCount": 8
+    },
+    {
+      "cbsa": "14860",
+      "name": "14860",
+      "population": 958371,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "24860",
+      "name": "24860",
+      "population": 931405,
+      "countyCount": 4
+    },
+    {
+      "cbsa": "10740",
+      "name": "10740",
+      "population": 915968,
+      "countyCount": 4
+    },
+    {
+      "cbsa": "12540",
+      "name": "12540",
+      "population": 906883,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "10580",
+      "name": "10580",
+      "population": 901729,
+      "countyCount": 5
+    },
+    {
+      "cbsa": "28940",
+      "name": "28940",
+      "population": 884359,
+      "countyCount": 9
+    },
+    {
+      "cbsa": "32580",
+      "name": "32580",
+      "population": 873167,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "12940",
+      "name": "12940",
+      "population": 869755,
+      "countyCount": 10
+    },
+    {
+      "cbsa": "21340",
+      "name": "21340",
+      "population": 867161,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "35300",
+      "name": "35300",
+      "population": 866377,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "10900",
+      "name": "10900",
+      "population": 863166,
+      "countyCount": 4
+    },
+    {
+      "cbsa": "35840",
+      "name": "35840",
+      "population": 844461,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "37100",
+      "name": "37100",
+      "population": 842009,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "17900",
+      "name": "17900",
+      "population": 831913,
+      "countyCount": 6
+    },
+    {
+      "cbsa": "19430",
+      "name": "19430",
+      "population": 812506,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "16700",
+      "name": "16700",
+      "population": 803398,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "44700",
+      "name": "44700",
+      "population": 779445,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "24660",
+      "name": "24660",
+      "population": 775169,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "15980",
+      "name": "15980",
+      "population": 772902,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "14260",
+      "name": "14260",
+      "population": 771602,
+      "countyCount": 5
+    },
+    {
+      "cbsa": "17820",
+      "name": "17820",
+      "population": 755081,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "30780",
+      "name": "30780",
+      "population": 749290,
+      "countyCount": 6
+    },
+    {
+      "cbsa": "29460",
+      "name": "29460",
+      "population": 736229,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "19780",
+      "name": "19780",
+      "population": 711490,
+      "countyCount": 6
+    },
+    {
+      "cbsa": "10420",
+      "name": "10420",
+      "population": 700578,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "36260",
+      "name": "36260",
+      "population": 696650,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "44140",
+      "name": "44140",
+      "population": 689486,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "31540",
+      "name": "31540",
+      "population": 678995,
+      "countyCount": 4
+    },
+    {
+      "cbsa": "49180",
+      "name": "49180",
+      "population": 678243,
+      "countyCount": 5
+    },
+    {
+      "cbsa": "39340",
+      "name": "39340",
+      "population": 677964,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "19660",
+      "name": "19660",
+      "population": 676035,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "45060",
+      "name": "45060",
+      "population": 658694,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "20500",
+      "name": "20500",
+      "population": 648066,
+      "countyCount": 4
+    },
+    {
+      "cbsa": "48620",
+      "name": "48620",
+      "population": 646794,
+      "countyCount": 4
+    },
+    {
+      "cbsa": "45780",
+      "name": "45780",
+      "population": 644547,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "12260",
+      "name": "12260",
+      "population": 612898,
+      "countyCount": 7
+    },
+    {
+      "cbsa": "37340",
+      "name": "37340",
+      "population": 610723,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "25420",
+      "name": "25420",
+      "population": 593318,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "27140",
+      "name": "27140",
+      "population": 591397,
+      "countyCount": 8
+    },
+    {
+      "cbsa": "44060",
+      "name": "44060",
+      "population": 585485,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "42540",
+      "name": "42540",
+      "population": 567287,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "16860",
+      "name": "16860",
+      "population": 564466,
+      "countyCount": 6
+    },
+    {
+      "cbsa": "29540",
+      "name": "29540",
+      "population": 553202,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "38860",
+      "name": "38860",
+      "population": 552916,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "33700",
+      "name": "33700",
+      "population": 552063,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "22220",
+      "name": "22220",
+      "population": 550596,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "49660",
+      "name": "49660",
+      "population": 540328,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "29620",
+      "name": "29620",
+      "population": 538985,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "22180",
+      "name": "22180",
+      "population": 522537,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "30460",
+      "name": "30460",
+      "population": 515954,
+      "countyCount": 6
+    },
+    {
+      "cbsa": "37860",
+      "name": "37860",
+      "population": 510290,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "34820",
+      "name": "34820",
+      "population": 496299,
+      "countyCount": 1
+    },
+    {
+      "cbsa": "38940",
+      "name": "38940",
+      "population": 494081,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "26620",
+      "name": "26620",
+      "population": 493980,
+      "countyCount": 2
+    },
+    {
+      "cbsa": "39900",
+      "name": "39900",
+      "population": 490769,
+      "countyCount": 3
+    },
+    {
+      "cbsa": "42220",
+      "name": "42220",
+      "population": 488436,
+      "countyCount": 1
+    }
+  ],
+  "counties": [
+    {
+      "cbsa": "10420",
+      "cbsaName": "10420",
+      "countyName": "Portage County",
+      "countyFips": "39133",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "10420",
+      "cbsaName": "10420",
+      "countyName": "Summit County",
+      "countyFips": "39153",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "10580",
+      "cbsaName": "10580",
+      "countyName": "Albany County",
+      "countyFips": "36001",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "10580",
+      "cbsaName": "10580",
+      "countyName": "Rensselaer County",
+      "countyFips": "36083",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "10580",
+      "cbsaName": "10580",
+      "countyName": "Saratoga County",
+      "countyFips": "36091",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "10580",
+      "cbsaName": "10580",
+      "countyName": "Schenectady County",
+      "countyFips": "36093",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "10580",
+      "cbsaName": "10580",
+      "countyName": "Schoharie County",
+      "countyFips": "36095",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "10740",
+      "cbsaName": "10740",
+      "countyName": "Bernalillo County",
+      "countyFips": "35001",
+      "state": "NM",
+      "stateFips": "35"
+    },
+    {
+      "cbsa": "10740",
+      "cbsaName": "10740",
+      "countyName": "Sandoval County",
+      "countyFips": "35043",
+      "state": "NM",
+      "stateFips": "35"
+    },
+    {
+      "cbsa": "10740",
+      "cbsaName": "10740",
+      "countyName": "Torrance County",
+      "countyFips": "35057",
+      "state": "NM",
+      "stateFips": "35"
+    },
+    {
+      "cbsa": "10740",
+      "cbsaName": "10740",
+      "countyName": "Valencia County",
+      "countyFips": "35061",
+      "state": "NM",
+      "stateFips": "35"
+    },
+    {
+      "cbsa": "10900",
+      "cbsaName": "10900",
+      "countyName": "Warren County",
+      "countyFips": "34041",
+      "state": "NJ",
+      "stateFips": "34"
+    },
+    {
+      "cbsa": "10900",
+      "cbsaName": "10900",
+      "countyName": "Carbon County",
+      "countyFips": "42025",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "10900",
+      "cbsaName": "10900",
+      "countyName": "Lehigh County",
+      "countyFips": "42077",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "10900",
+      "cbsaName": "10900",
+      "countyName": "Northampton County",
+      "countyFips": "42095",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "12260",
+      "cbsaName": "12260",
+      "countyName": "Burke County",
+      "countyFips": "13033",
+      "state": "GA",
+      "stateFips": "13"
+    },
+    {
+      "cbsa": "12260",
+      "cbsaName": "12260",
+      "countyName": "Columbia County",
+      "countyFips": "13073",
+      "state": "GA",
+      "stateFips": "13"
+    },
+    {
+      "cbsa": "12260",
+      "cbsaName": "12260",
+      "countyName": "Lincoln County",
+      "countyFips": "13181",
+      "state": "GA",
+      "stateFips": "13"
+    },
+    {
+      "cbsa": "12260",
+      "cbsaName": "12260",
+      "countyName": "McDuffie County",
+      "countyFips": "13189",
+      "state": "GA",
+      "stateFips": "13"
+    },
+    {
+      "cbsa": "12260",
+      "cbsaName": "12260",
+      "countyName": "Richmond County",
+      "countyFips": "13245",
+      "state": "GA",
+      "stateFips": "13"
+    },
+    {
+      "cbsa": "12260",
+      "cbsaName": "12260",
+      "countyName": "Aiken County",
+      "countyFips": "45003",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "12260",
+      "cbsaName": "12260",
+      "countyName": "Edgefield County",
+      "countyFips": "45037",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "12420",
+      "cbsaName": "12420",
+      "countyName": "Bastrop County",
+      "countyFips": "48021",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "12420",
+      "cbsaName": "12420",
+      "countyName": "Caldwell County",
+      "countyFips": "48055",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "12420",
+      "cbsaName": "12420",
+      "countyName": "Hays County",
+      "countyFips": "48209",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "12420",
+      "cbsaName": "12420",
+      "countyName": "Travis County",
+      "countyFips": "48453",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "12420",
+      "cbsaName": "12420",
+      "countyName": "Williamson County",
+      "countyFips": "48491",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "12540",
+      "cbsaName": "12540",
+      "countyName": "Kern County",
+      "countyFips": "06029",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "12580",
+      "cbsaName": "12580",
+      "countyName": "Anne Arundel County",
+      "countyFips": "24003",
+      "state": "MD",
+      "stateFips": "24"
+    },
+    {
+      "cbsa": "12580",
+      "cbsaName": "12580",
+      "countyName": "Baltimore County",
+      "countyFips": "24005",
+      "state": "MD",
+      "stateFips": "24"
+    },
+    {
+      "cbsa": "12580",
+      "cbsaName": "12580",
+      "countyName": "Carroll County",
+      "countyFips": "24013",
+      "state": "MD",
+      "stateFips": "24"
+    },
+    {
+      "cbsa": "12580",
+      "cbsaName": "12580",
+      "countyName": "Harford County",
+      "countyFips": "24025",
+      "state": "MD",
+      "stateFips": "24"
+    },
+    {
+      "cbsa": "12580",
+      "cbsaName": "12580",
+      "countyName": "Howard County",
+      "countyFips": "24027",
+      "state": "MD",
+      "stateFips": "24"
+    },
+    {
+      "cbsa": "12580",
+      "cbsaName": "12580",
+      "countyName": "Queen Anne's County",
+      "countyFips": "24035",
+      "state": "MD",
+      "stateFips": "24"
+    },
+    {
+      "cbsa": "12580",
+      "cbsaName": "12580",
+      "countyName": "Baltimore city",
+      "countyFips": "24510",
+      "state": "MD",
+      "stateFips": "24"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "Ascension Parish",
+      "countyFips": "22005",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "Assumption Parish",
+      "countyFips": "22007",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "East Baton Rouge Parish",
+      "countyFips": "22033",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "East Feliciana Parish",
+      "countyFips": "22037",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "Iberville Parish",
+      "countyFips": "22047",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "Livingston Parish",
+      "countyFips": "22063",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "Pointe Coupee Parish",
+      "countyFips": "22077",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "St. Helena Parish",
+      "countyFips": "22091",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "West Baton Rouge Parish",
+      "countyFips": "22121",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "12940",
+      "cbsaName": "12940",
+      "countyName": "West Feliciana Parish",
+      "countyFips": "22125",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "13820",
+      "cbsaName": "13820",
+      "countyName": "Bibb County",
+      "countyFips": "01007",
+      "state": "AL",
+      "stateFips": "01"
+    },
+    {
+      "cbsa": "13820",
+      "cbsaName": "13820",
+      "countyName": "Blount County",
+      "countyFips": "01009",
+      "state": "AL",
+      "stateFips": "01"
+    },
+    {
+      "cbsa": "13820",
+      "cbsaName": "13820",
+      "countyName": "Chilton County",
+      "countyFips": "01021",
+      "state": "AL",
+      "stateFips": "01"
+    },
+    {
+      "cbsa": "13820",
+      "cbsaName": "13820",
+      "countyName": "Jefferson County",
+      "countyFips": "01073",
+      "state": "AL",
+      "stateFips": "01"
+    },
+    {
+      "cbsa": "13820",
+      "cbsaName": "13820",
+      "countyName": "St. Clair County",
+      "countyFips": "01115",
+      "state": "AL",
+      "stateFips": "01"
+    },
+    {
+      "cbsa": "13820",
+      "cbsaName": "13820",
+      "countyName": "Shelby County",
+      "countyFips": "01117",
+      "state": "AL",
+      "stateFips": "01"
+    },
+    {
+      "cbsa": "13820",
+      "cbsaName": "13820",
+      "countyName": "Walker County",
+      "countyFips": "01127",
+      "state": "AL",
+      "stateFips": "01"
+    },
+    {
+      "cbsa": "14260",
+      "cbsaName": "14260",
+      "countyName": "Ada County",
+      "countyFips": "16001",
+      "state": "ID",
+      "stateFips": "16"
+    },
+    {
+      "cbsa": "14260",
+      "cbsaName": "14260",
+      "countyName": "Boise County",
+      "countyFips": "16015",
+      "state": "ID",
+      "stateFips": "16"
+    },
+    {
+      "cbsa": "14260",
+      "cbsaName": "14260",
+      "countyName": "Canyon County",
+      "countyFips": "16027",
+      "state": "ID",
+      "stateFips": "16"
+    },
+    {
+      "cbsa": "14260",
+      "cbsaName": "14260",
+      "countyName": "Gem County",
+      "countyFips": "16045",
+      "state": "ID",
+      "stateFips": "16"
+    },
+    {
+      "cbsa": "14260",
+      "cbsaName": "14260",
+      "countyName": "Owyhee County",
+      "countyFips": "16073",
+      "state": "ID",
+      "stateFips": "16"
+    },
+    {
+      "cbsa": "14860",
+      "cbsaName": "14860",
+      "countyName": "Greater Bridgeport Planning Region",
+      "countyFips": "09120",
+      "state": "CT",
+      "stateFips": "09"
+    },
+    {
+      "cbsa": "14860",
+      "cbsaName": "14860",
+      "countyName": "Western Connecticut Planning Region",
+      "countyFips": "09190",
+      "state": "CT",
+      "stateFips": "09"
+    },
+    {
+      "cbsa": "15380",
+      "cbsaName": "15380",
+      "countyName": "Erie County",
+      "countyFips": "36029",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "15380",
+      "cbsaName": "15380",
+      "countyName": "Niagara County",
+      "countyFips": "36063",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "15980",
+      "cbsaName": "15980",
+      "countyName": "Lee County",
+      "countyFips": "12071",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "16700",
+      "cbsaName": "16700",
+      "countyName": "Berkeley County",
+      "countyFips": "45015",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "16700",
+      "cbsaName": "16700",
+      "countyName": "Charleston County",
+      "countyFips": "45019",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "16700",
+      "cbsaName": "16700",
+      "countyName": "Dorchester County",
+      "countyFips": "45035",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Anson County",
+      "countyFips": "37007",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Cabarrus County",
+      "countyFips": "37025",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Gaston County",
+      "countyFips": "37071",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Iredell County",
+      "countyFips": "37097",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Lincoln County",
+      "countyFips": "37109",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Mecklenburg County",
+      "countyFips": "37119",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Rowan County",
+      "countyFips": "37159",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Union County",
+      "countyFips": "37179",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Chester County",
+      "countyFips": "45023",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "Lancaster County",
+      "countyFips": "45057",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "16740",
+      "cbsaName": "16740",
+      "countyName": "York County",
+      "countyFips": "45091",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "16860",
+      "cbsaName": "16860",
+      "countyName": "Catoosa County",
+      "countyFips": "13047",
+      "state": "GA",
+      "stateFips": "13"
+    },
+    {
+      "cbsa": "16860",
+      "cbsaName": "16860",
+      "countyName": "Dade County",
+      "countyFips": "13083",
+      "state": "GA",
+      "stateFips": "13"
+    },
+    {
+      "cbsa": "16860",
+      "cbsaName": "16860",
+      "countyName": "Walker County",
+      "countyFips": "13295",
+      "state": "GA",
+      "stateFips": "13"
+    },
+    {
+      "cbsa": "16860",
+      "cbsaName": "16860",
+      "countyName": "Hamilton County",
+      "countyFips": "47065",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "16860",
+      "cbsaName": "16860",
+      "countyName": "Marion County",
+      "countyFips": "47115",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "16860",
+      "cbsaName": "16860",
+      "countyName": "Sequatchie County",
+      "countyFips": "47153",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Dearborn County",
+      "countyFips": "18029",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Franklin County",
+      "countyFips": "18047",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Ohio County",
+      "countyFips": "18115",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Boone County",
+      "countyFips": "21015",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Bracken County",
+      "countyFips": "21023",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Campbell County",
+      "countyFips": "21037",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Gallatin County",
+      "countyFips": "21077",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Grant County",
+      "countyFips": "21081",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Kenton County",
+      "countyFips": "21117",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Pendleton County",
+      "countyFips": "21191",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Brown County",
+      "countyFips": "39015",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Butler County",
+      "countyFips": "39017",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Clermont County",
+      "countyFips": "39025",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Hamilton County",
+      "countyFips": "39061",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "17140",
+      "cbsaName": "17140",
+      "countyName": "Warren County",
+      "countyFips": "39165",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "17820",
+      "cbsaName": "17820",
+      "countyName": "El Paso County",
+      "countyFips": "08041",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "17820",
+      "cbsaName": "17820",
+      "countyName": "Teller County",
+      "countyFips": "08119",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "17900",
+      "cbsaName": "17900",
+      "countyName": "Calhoun County",
+      "countyFips": "45017",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "17900",
+      "cbsaName": "17900",
+      "countyName": "Fairfield County",
+      "countyFips": "45039",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "17900",
+      "cbsaName": "17900",
+      "countyName": "Kershaw County",
+      "countyFips": "45055",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "17900",
+      "cbsaName": "17900",
+      "countyName": "Lexington County",
+      "countyFips": "45063",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "17900",
+      "cbsaName": "17900",
+      "countyName": "Richland County",
+      "countyFips": "45079",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "17900",
+      "cbsaName": "17900",
+      "countyName": "Saluda County",
+      "countyFips": "45081",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Delaware County",
+      "countyFips": "39041",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Fairfield County",
+      "countyFips": "39045",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Franklin County",
+      "countyFips": "39049",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Hocking County",
+      "countyFips": "39073",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Licking County",
+      "countyFips": "39089",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Madison County",
+      "countyFips": "39097",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Morrow County",
+      "countyFips": "39117",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Perry County",
+      "countyFips": "39127",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Pickaway County",
+      "countyFips": "39129",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "18140",
+      "cbsaName": "18140",
+      "countyName": "Union County",
+      "countyFips": "39159",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "19430",
+      "cbsaName": "19430",
+      "countyName": "Greene County",
+      "countyFips": "39057",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "19430",
+      "cbsaName": "19430",
+      "countyName": "Miami County",
+      "countyFips": "39109",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "19430",
+      "cbsaName": "19430",
+      "countyName": "Montgomery County",
+      "countyFips": "39113",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "19660",
+      "cbsaName": "19660",
+      "countyName": "Flagler County",
+      "countyFips": "12035",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "19660",
+      "cbsaName": "19660",
+      "countyName": "Volusia County",
+      "countyFips": "12127",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Adams County",
+      "countyFips": "08001",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Arapahoe County",
+      "countyFips": "08005",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Broomfield County",
+      "countyFips": "08014",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Clear Creek County",
+      "countyFips": "08019",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Denver County",
+      "countyFips": "08031",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Douglas County",
+      "countyFips": "08035",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Elbert County",
+      "countyFips": "08039",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Gilpin County",
+      "countyFips": "08047",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Jefferson County",
+      "countyFips": "08059",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19740",
+      "cbsaName": "19740",
+      "countyName": "Park County",
+      "countyFips": "08093",
+      "state": "CO",
+      "stateFips": "08"
+    },
+    {
+      "cbsa": "19780",
+      "cbsaName": "19780",
+      "countyName": "Dallas County",
+      "countyFips": "19049",
+      "state": "IA",
+      "stateFips": "19"
+    },
+    {
+      "cbsa": "19780",
+      "cbsaName": "19780",
+      "countyName": "Guthrie County",
+      "countyFips": "19077",
+      "state": "IA",
+      "stateFips": "19"
+    },
+    {
+      "cbsa": "19780",
+      "cbsaName": "19780",
+      "countyName": "Jasper County",
+      "countyFips": "19099",
+      "state": "IA",
+      "stateFips": "19"
+    },
+    {
+      "cbsa": "19780",
+      "cbsaName": "19780",
+      "countyName": "Madison County",
+      "countyFips": "19121",
+      "state": "IA",
+      "stateFips": "19"
+    },
+    {
+      "cbsa": "19780",
+      "cbsaName": "19780",
+      "countyName": "Polk County",
+      "countyFips": "19153",
+      "state": "IA",
+      "stateFips": "19"
+    },
+    {
+      "cbsa": "19780",
+      "cbsaName": "19780",
+      "countyName": "Warren County",
+      "countyFips": "19181",
+      "state": "IA",
+      "stateFips": "19"
+    },
+    {
+      "cbsa": "20500",
+      "cbsaName": "20500",
+      "countyName": "Chatham County",
+      "countyFips": "37037",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "20500",
+      "cbsaName": "20500",
+      "countyName": "Durham County",
+      "countyFips": "37063",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "20500",
+      "cbsaName": "20500",
+      "countyName": "Orange County",
+      "countyFips": "37135",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "20500",
+      "cbsaName": "20500",
+      "countyName": "Person County",
+      "countyFips": "37145",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "21340",
+      "cbsaName": "21340",
+      "countyName": "El Paso County",
+      "countyFips": "48141",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "21340",
+      "cbsaName": "21340",
+      "countyName": "Hudspeth County",
+      "countyFips": "48229",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "22180",
+      "cbsaName": "22180",
+      "countyName": "Cumberland County",
+      "countyFips": "37051",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "22180",
+      "cbsaName": "22180",
+      "countyName": "Hoke County",
+      "countyFips": "37093",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "22220",
+      "cbsaName": "22220",
+      "countyName": "Benton County",
+      "countyFips": "05007",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "22220",
+      "cbsaName": "22220",
+      "countyName": "Madison County",
+      "countyFips": "05087",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "22220",
+      "cbsaName": "22220",
+      "countyName": "Washington County",
+      "countyFips": "05143",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "23420",
+      "cbsaName": "23420",
+      "countyName": "Fresno County",
+      "countyFips": "06019",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "23420",
+      "cbsaName": "23420",
+      "countyName": "Madera County",
+      "countyFips": "06039",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "24340",
+      "cbsaName": "24340",
+      "countyName": "Barry County",
+      "countyFips": "26015",
+      "state": "MI",
+      "stateFips": "26"
+    },
+    {
+      "cbsa": "24340",
+      "cbsaName": "24340",
+      "countyName": "Ionia County",
+      "countyFips": "26067",
+      "state": "MI",
+      "stateFips": "26"
+    },
+    {
+      "cbsa": "24340",
+      "cbsaName": "24340",
+      "countyName": "Kent County",
+      "countyFips": "26081",
+      "state": "MI",
+      "stateFips": "26"
+    },
+    {
+      "cbsa": "24340",
+      "cbsaName": "24340",
+      "countyName": "Montcalm County",
+      "countyFips": "26117",
+      "state": "MI",
+      "stateFips": "26"
+    },
+    {
+      "cbsa": "24340",
+      "cbsaName": "24340",
+      "countyName": "Ottawa County",
+      "countyFips": "26139",
+      "state": "MI",
+      "stateFips": "26"
+    },
+    {
+      "cbsa": "24660",
+      "cbsaName": "24660",
+      "countyName": "Guilford County",
+      "countyFips": "37081",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "24660",
+      "cbsaName": "24660",
+      "countyName": "Randolph County",
+      "countyFips": "37151",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "24660",
+      "cbsaName": "24660",
+      "countyName": "Rockingham County",
+      "countyFips": "37157",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "24860",
+      "cbsaName": "24860",
+      "countyName": "Anderson County",
+      "countyFips": "45007",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "24860",
+      "cbsaName": "24860",
+      "countyName": "Greenville County",
+      "countyFips": "45045",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "24860",
+      "cbsaName": "24860",
+      "countyName": "Laurens County",
+      "countyFips": "45059",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "24860",
+      "cbsaName": "24860",
+      "countyName": "Pickens County",
+      "countyFips": "45077",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "25420",
+      "cbsaName": "25420",
+      "countyName": "Cumberland County",
+      "countyFips": "42041",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "25420",
+      "cbsaName": "25420",
+      "countyName": "Dauphin County",
+      "countyFips": "42043",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "25420",
+      "cbsaName": "25420",
+      "countyName": "Perry County",
+      "countyFips": "42099",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "25540",
+      "cbsaName": "25540",
+      "countyName": "Capitol Planning Region",
+      "countyFips": "09110",
+      "state": "CT",
+      "stateFips": "09"
+    },
+    {
+      "cbsa": "25540",
+      "cbsaName": "25540",
+      "countyName": "Lower Connecticut River Valley Planning Region",
+      "countyFips": "09130",
+      "state": "CT",
+      "stateFips": "09"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "Austin County",
+      "countyFips": "48015",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "Brazoria County",
+      "countyFips": "48039",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "Chambers County",
+      "countyFips": "48071",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "Fort Bend County",
+      "countyFips": "48157",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "Galveston County",
+      "countyFips": "48167",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "Harris County",
+      "countyFips": "48201",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "Liberty County",
+      "countyFips": "48291",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "Montgomery County",
+      "countyFips": "48339",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "San Jacinto County",
+      "countyFips": "48407",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26420",
+      "cbsaName": "26420",
+      "countyName": "Waller County",
+      "countyFips": "48473",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "26620",
+      "cbsaName": "26620",
+      "countyName": "Limestone County",
+      "countyFips": "01083",
+      "state": "AL",
+      "stateFips": "01"
+    },
+    {
+      "cbsa": "26620",
+      "cbsaName": "26620",
+      "countyName": "Madison County",
+      "countyFips": "01089",
+      "state": "AL",
+      "stateFips": "01"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Boone County",
+      "countyFips": "18011",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Brown County",
+      "countyFips": "18013",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Hamilton County",
+      "countyFips": "18057",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Hancock County",
+      "countyFips": "18059",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Hendricks County",
+      "countyFips": "18063",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Johnson County",
+      "countyFips": "18081",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Madison County",
+      "countyFips": "18095",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Marion County",
+      "countyFips": "18097",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Morgan County",
+      "countyFips": "18109",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Shelby County",
+      "countyFips": "18145",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "26900",
+      "cbsaName": "26900",
+      "countyName": "Tipton County",
+      "countyFips": "18159",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "27140",
+      "cbsaName": "27140",
+      "countyName": "Copiah County",
+      "countyFips": "28029",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "27140",
+      "cbsaName": "27140",
+      "countyName": "Hinds County",
+      "countyFips": "28049",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "27140",
+      "cbsaName": "27140",
+      "countyName": "Holmes County",
+      "countyFips": "28051",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "27140",
+      "cbsaName": "27140",
+      "countyName": "Madison County",
+      "countyFips": "28089",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "27140",
+      "cbsaName": "27140",
+      "countyName": "Rankin County",
+      "countyFips": "28121",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "27140",
+      "cbsaName": "27140",
+      "countyName": "Scott County",
+      "countyFips": "28123",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "27140",
+      "cbsaName": "27140",
+      "countyName": "Simpson County",
+      "countyFips": "28127",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "27140",
+      "cbsaName": "27140",
+      "countyName": "Yazoo County",
+      "countyFips": "28163",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "27260",
+      "cbsaName": "27260",
+      "countyName": "Baker County",
+      "countyFips": "12003",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "27260",
+      "cbsaName": "27260",
+      "countyName": "Clay County",
+      "countyFips": "12019",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "27260",
+      "cbsaName": "27260",
+      "countyName": "Duval County",
+      "countyFips": "12031",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "27260",
+      "cbsaName": "27260",
+      "countyName": "Nassau County",
+      "countyFips": "12089",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "27260",
+      "cbsaName": "27260",
+      "countyName": "St. Johns County",
+      "countyFips": "12109",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Johnson County",
+      "countyFips": "20091",
+      "state": "KS",
+      "stateFips": "20"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Leavenworth County",
+      "countyFips": "20103",
+      "state": "KS",
+      "stateFips": "20"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Linn County",
+      "countyFips": "20107",
+      "state": "KS",
+      "stateFips": "20"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Miami County",
+      "countyFips": "20121",
+      "state": "KS",
+      "stateFips": "20"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Wyandotte County",
+      "countyFips": "20209",
+      "state": "KS",
+      "stateFips": "20"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Bates County",
+      "countyFips": "29013",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Caldwell County",
+      "countyFips": "29025",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Cass County",
+      "countyFips": "29037",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Clay County",
+      "countyFips": "29047",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Clinton County",
+      "countyFips": "29049",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Jackson County",
+      "countyFips": "29095",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Lafayette County",
+      "countyFips": "29107",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Platte County",
+      "countyFips": "29165",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "28140",
+      "cbsaName": "28140",
+      "countyName": "Ray County",
+      "countyFips": "29177",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "28940",
+      "cbsaName": "28940",
+      "countyName": "Anderson County",
+      "countyFips": "47001",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "28940",
+      "cbsaName": "28940",
+      "countyName": "Blount County",
+      "countyFips": "47009",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "28940",
+      "cbsaName": "28940",
+      "countyName": "Campbell County",
+      "countyFips": "47013",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "28940",
+      "cbsaName": "28940",
+      "countyName": "Grainger County",
+      "countyFips": "47057",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "28940",
+      "cbsaName": "28940",
+      "countyName": "Knox County",
+      "countyFips": "47093",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "28940",
+      "cbsaName": "28940",
+      "countyName": "Loudon County",
+      "countyFips": "47105",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "28940",
+      "cbsaName": "28940",
+      "countyName": "Morgan County",
+      "countyFips": "47129",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "28940",
+      "cbsaName": "28940",
+      "countyName": "Roane County",
+      "countyFips": "47145",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "28940",
+      "cbsaName": "28940",
+      "countyName": "Union County",
+      "countyFips": "47173",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "29460",
+      "cbsaName": "29460",
+      "countyName": "Polk County",
+      "countyFips": "12105",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "29540",
+      "cbsaName": "29540",
+      "countyName": "Lancaster County",
+      "countyFips": "42071",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "29620",
+      "cbsaName": "29620",
+      "countyName": "Clinton County",
+      "countyFips": "26037",
+      "state": "MI",
+      "stateFips": "26"
+    },
+    {
+      "cbsa": "29620",
+      "cbsaName": "29620",
+      "countyName": "Eaton County",
+      "countyFips": "26045",
+      "state": "MI",
+      "stateFips": "26"
+    },
+    {
+      "cbsa": "29620",
+      "cbsaName": "29620",
+      "countyName": "Ingham County",
+      "countyFips": "26065",
+      "state": "MI",
+      "stateFips": "26"
+    },
+    {
+      "cbsa": "29820",
+      "cbsaName": "29820",
+      "countyName": "Clark County",
+      "countyFips": "32003",
+      "state": "NV",
+      "stateFips": "32"
+    },
+    {
+      "cbsa": "30460",
+      "cbsaName": "30460",
+      "countyName": "Bourbon County",
+      "countyFips": "21017",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "30460",
+      "cbsaName": "30460",
+      "countyName": "Clark County",
+      "countyFips": "21049",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "30460",
+      "cbsaName": "30460",
+      "countyName": "Fayette County",
+      "countyFips": "21067",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "30460",
+      "cbsaName": "30460",
+      "countyName": "Jessamine County",
+      "countyFips": "21113",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "30460",
+      "cbsaName": "30460",
+      "countyName": "Scott County",
+      "countyFips": "21209",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "30460",
+      "cbsaName": "30460",
+      "countyName": "Woodford County",
+      "countyFips": "21239",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "30780",
+      "cbsaName": "30780",
+      "countyName": "Faulkner County",
+      "countyFips": "05045",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "30780",
+      "cbsaName": "30780",
+      "countyName": "Grant County",
+      "countyFips": "05053",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "30780",
+      "cbsaName": "30780",
+      "countyName": "Lonoke County",
+      "countyFips": "05085",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "30780",
+      "cbsaName": "30780",
+      "countyName": "Perry County",
+      "countyFips": "05105",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "30780",
+      "cbsaName": "30780",
+      "countyName": "Pulaski County",
+      "countyFips": "05119",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "30780",
+      "cbsaName": "30780",
+      "countyName": "Saline County",
+      "countyFips": "05125",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Clark County",
+      "countyFips": "18019",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Floyd County",
+      "countyFips": "18043",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Harrison County",
+      "countyFips": "18061",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Washington County",
+      "countyFips": "18175",
+      "state": "IN",
+      "stateFips": "18"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Bullitt County",
+      "countyFips": "21029",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Henry County",
+      "countyFips": "21103",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Jefferson County",
+      "countyFips": "21111",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Meade County",
+      "countyFips": "21163",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Nelson County",
+      "countyFips": "21179",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Oldham County",
+      "countyFips": "21185",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Shelby County",
+      "countyFips": "21211",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "31140",
+      "cbsaName": "31140",
+      "countyName": "Spencer County",
+      "countyFips": "21215",
+      "state": "KY",
+      "stateFips": "21"
+    },
+    {
+      "cbsa": "31540",
+      "cbsaName": "31540",
+      "countyName": "Columbia County",
+      "countyFips": "55021",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "31540",
+      "cbsaName": "31540",
+      "countyName": "Dane County",
+      "countyFips": "55025",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "31540",
+      "cbsaName": "31540",
+      "countyName": "Green County",
+      "countyFips": "55045",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "31540",
+      "cbsaName": "31540",
+      "countyName": "Iowa County",
+      "countyFips": "55049",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "32580",
+      "cbsaName": "32580",
+      "countyName": "Hidalgo County",
+      "countyFips": "48215",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "32820",
+      "cbsaName": "32820",
+      "countyName": "Crittenden County",
+      "countyFips": "05035",
+      "state": "AR",
+      "stateFips": "05"
+    },
+    {
+      "cbsa": "32820",
+      "cbsaName": "32820",
+      "countyName": "Benton County",
+      "countyFips": "28009",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "32820",
+      "cbsaName": "32820",
+      "countyName": "DeSoto County",
+      "countyFips": "28033",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "32820",
+      "cbsaName": "32820",
+      "countyName": "Marshall County",
+      "countyFips": "28093",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "32820",
+      "cbsaName": "32820",
+      "countyName": "Tate County",
+      "countyFips": "28137",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "32820",
+      "cbsaName": "32820",
+      "countyName": "Tunica County",
+      "countyFips": "28143",
+      "state": "MS",
+      "stateFips": "28"
+    },
+    {
+      "cbsa": "32820",
+      "cbsaName": "32820",
+      "countyName": "Fayette County",
+      "countyFips": "47047",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "32820",
+      "cbsaName": "32820",
+      "countyName": "Shelby County",
+      "countyFips": "47157",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "32820",
+      "cbsaName": "32820",
+      "countyName": "Tipton County",
+      "countyFips": "47167",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "33340",
+      "cbsaName": "33340",
+      "countyName": "Milwaukee County",
+      "countyFips": "55079",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "33340",
+      "cbsaName": "33340",
+      "countyName": "Ozaukee County",
+      "countyFips": "55089",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "33340",
+      "cbsaName": "33340",
+      "countyName": "Washington County",
+      "countyFips": "55131",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "33340",
+      "cbsaName": "33340",
+      "countyName": "Waukesha County",
+      "countyFips": "55133",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Anoka County",
+      "countyFips": "27003",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Carver County",
+      "countyFips": "27019",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Chisago County",
+      "countyFips": "27025",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Dakota County",
+      "countyFips": "27037",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Hennepin County",
+      "countyFips": "27053",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Isanti County",
+      "countyFips": "27059",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Le Sueur County",
+      "countyFips": "27079",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Mille Lacs County",
+      "countyFips": "27095",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Ramsey County",
+      "countyFips": "27123",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Scott County",
+      "countyFips": "27139",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Sherburne County",
+      "countyFips": "27141",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Washington County",
+      "countyFips": "27163",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Wright County",
+      "countyFips": "27171",
+      "state": "MN",
+      "stateFips": "27"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "Pierce County",
+      "countyFips": "55093",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "33460",
+      "cbsaName": "33460",
+      "countyName": "St. Croix County",
+      "countyFips": "55109",
+      "state": "WI",
+      "stateFips": "55"
+    },
+    {
+      "cbsa": "33700",
+      "cbsaName": "33700",
+      "countyName": "Stanislaus County",
+      "countyFips": "06099",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "34820",
+      "cbsaName": "34820",
+      "countyName": "Horry County",
+      "countyFips": "45051",
+      "state": "SC",
+      "stateFips": "45"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Cannon County",
+      "countyFips": "47015",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Cheatham County",
+      "countyFips": "47021",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Davidson County",
+      "countyFips": "47037",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Dickson County",
+      "countyFips": "47043",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Hickman County",
+      "countyFips": "47081",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Macon County",
+      "countyFips": "47111",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Maury County",
+      "countyFips": "47119",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Robertson County",
+      "countyFips": "47147",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Rutherford County",
+      "countyFips": "47149",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Smith County",
+      "countyFips": "47159",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Sumner County",
+      "countyFips": "47165",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Trousdale County",
+      "countyFips": "47169",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Williamson County",
+      "countyFips": "47187",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "34980",
+      "cbsaName": "34980",
+      "countyName": "Wilson County",
+      "countyFips": "47189",
+      "state": "TN",
+      "stateFips": "47"
+    },
+    {
+      "cbsa": "35300",
+      "cbsaName": "35300",
+      "countyName": "South Central Connecticut Planning Region",
+      "countyFips": "09170",
+      "state": "CT",
+      "stateFips": "09"
+    },
+    {
+      "cbsa": "35380",
+      "cbsaName": "35380",
+      "countyName": "Jefferson Parish",
+      "countyFips": "22051",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "35380",
+      "cbsaName": "35380",
+      "countyName": "Orleans Parish",
+      "countyFips": "22071",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "35380",
+      "cbsaName": "35380",
+      "countyName": "Plaquemines Parish",
+      "countyFips": "22075",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "35380",
+      "cbsaName": "35380",
+      "countyName": "St. Bernard Parish",
+      "countyFips": "22087",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "35380",
+      "cbsaName": "35380",
+      "countyName": "St. Charles Parish",
+      "countyFips": "22089",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "35380",
+      "cbsaName": "35380",
+      "countyName": "St. James Parish",
+      "countyFips": "22093",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "35380",
+      "cbsaName": "35380",
+      "countyName": "St. John the Baptist Parish",
+      "countyFips": "22095",
+      "state": "LA",
+      "stateFips": "22"
+    },
+    {
+      "cbsa": "35840",
+      "cbsaName": "35840",
+      "countyName": "Manatee County",
+      "countyFips": "12081",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "35840",
+      "cbsaName": "35840",
+      "countyName": "Sarasota County",
+      "countyFips": "12115",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "36260",
+      "cbsaName": "36260",
+      "countyName": "Davis County",
+      "countyFips": "49011",
+      "state": "UT",
+      "stateFips": "49"
+    },
+    {
+      "cbsa": "36260",
+      "cbsaName": "36260",
+      "countyName": "Morgan County",
+      "countyFips": "49029",
+      "state": "UT",
+      "stateFips": "49"
+    },
+    {
+      "cbsa": "36260",
+      "cbsaName": "36260",
+      "countyName": "Weber County",
+      "countyFips": "49057",
+      "state": "UT",
+      "stateFips": "49"
+    },
+    {
+      "cbsa": "36420",
+      "cbsaName": "36420",
+      "countyName": "Canadian County",
+      "countyFips": "40017",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "36420",
+      "cbsaName": "36420",
+      "countyName": "Cleveland County",
+      "countyFips": "40027",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "36420",
+      "cbsaName": "36420",
+      "countyName": "Grady County",
+      "countyFips": "40051",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "36420",
+      "cbsaName": "36420",
+      "countyName": "Lincoln County",
+      "countyFips": "40081",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "36420",
+      "cbsaName": "36420",
+      "countyName": "Logan County",
+      "countyFips": "40083",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "36420",
+      "cbsaName": "36420",
+      "countyName": "McClain County",
+      "countyFips": "40087",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "36420",
+      "cbsaName": "36420",
+      "countyName": "Oklahoma County",
+      "countyFips": "40109",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "36540",
+      "cbsaName": "36540",
+      "countyName": "Harrison County",
+      "countyFips": "19085",
+      "state": "IA",
+      "stateFips": "19"
+    },
+    {
+      "cbsa": "36540",
+      "cbsaName": "36540",
+      "countyName": "Mills County",
+      "countyFips": "19129",
+      "state": "IA",
+      "stateFips": "19"
+    },
+    {
+      "cbsa": "36540",
+      "cbsaName": "36540",
+      "countyName": "Pottawattamie County",
+      "countyFips": "19155",
+      "state": "IA",
+      "stateFips": "19"
+    },
+    {
+      "cbsa": "36540",
+      "cbsaName": "36540",
+      "countyName": "Cass County",
+      "countyFips": "31025",
+      "state": "NE",
+      "stateFips": "31"
+    },
+    {
+      "cbsa": "36540",
+      "cbsaName": "36540",
+      "countyName": "Douglas County",
+      "countyFips": "31055",
+      "state": "NE",
+      "stateFips": "31"
+    },
+    {
+      "cbsa": "36540",
+      "cbsaName": "36540",
+      "countyName": "Sarpy County",
+      "countyFips": "31153",
+      "state": "NE",
+      "stateFips": "31"
+    },
+    {
+      "cbsa": "36540",
+      "cbsaName": "36540",
+      "countyName": "Saunders County",
+      "countyFips": "31155",
+      "state": "NE",
+      "stateFips": "31"
+    },
+    {
+      "cbsa": "36540",
+      "cbsaName": "36540",
+      "countyName": "Washington County",
+      "countyFips": "31177",
+      "state": "NE",
+      "stateFips": "31"
+    },
+    {
+      "cbsa": "36740",
+      "cbsaName": "36740",
+      "countyName": "Lake County",
+      "countyFips": "12069",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "36740",
+      "cbsaName": "36740",
+      "countyName": "Orange County",
+      "countyFips": "12095",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "36740",
+      "cbsaName": "36740",
+      "countyName": "Osceola County",
+      "countyFips": "12097",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "36740",
+      "cbsaName": "36740",
+      "countyName": "Seminole County",
+      "countyFips": "12117",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "37100",
+      "cbsaName": "37100",
+      "countyName": "Ventura County",
+      "countyFips": "06111",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "37340",
+      "cbsaName": "37340",
+      "countyName": "Brevard County",
+      "countyFips": "12009",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "37860",
+      "cbsaName": "37860",
+      "countyName": "Escambia County",
+      "countyFips": "12033",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "37860",
+      "cbsaName": "37860",
+      "countyName": "Santa Rosa County",
+      "countyFips": "12113",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "38060",
+      "cbsaName": "38060",
+      "countyName": "Maricopa County",
+      "countyFips": "04013",
+      "state": "AZ",
+      "stateFips": "04"
+    },
+    {
+      "cbsa": "38060",
+      "cbsaName": "38060",
+      "countyName": "Pinal County",
+      "countyFips": "04021",
+      "state": "AZ",
+      "stateFips": "04"
+    },
+    {
+      "cbsa": "38300",
+      "cbsaName": "38300",
+      "countyName": "Allegheny County",
+      "countyFips": "42003",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "38300",
+      "cbsaName": "38300",
+      "countyName": "Armstrong County",
+      "countyFips": "42005",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "38300",
+      "cbsaName": "38300",
+      "countyName": "Beaver County",
+      "countyFips": "42007",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "38300",
+      "cbsaName": "38300",
+      "countyName": "Butler County",
+      "countyFips": "42019",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "38300",
+      "cbsaName": "38300",
+      "countyName": "Fayette County",
+      "countyFips": "42051",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "38300",
+      "cbsaName": "38300",
+      "countyName": "Lawrence County",
+      "countyFips": "42073",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "38300",
+      "cbsaName": "38300",
+      "countyName": "Washington County",
+      "countyFips": "42125",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "38300",
+      "cbsaName": "38300",
+      "countyName": "Westmoreland County",
+      "countyFips": "42129",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "38860",
+      "cbsaName": "38860",
+      "countyName": "Cumberland County",
+      "countyFips": "23005",
+      "state": "ME",
+      "stateFips": "23"
+    },
+    {
+      "cbsa": "38860",
+      "cbsaName": "38860",
+      "countyName": "Sagadahoc County",
+      "countyFips": "23023",
+      "state": "ME",
+      "stateFips": "23"
+    },
+    {
+      "cbsa": "38860",
+      "cbsaName": "38860",
+      "countyName": "York County",
+      "countyFips": "23031",
+      "state": "ME",
+      "stateFips": "23"
+    },
+    {
+      "cbsa": "38900",
+      "cbsaName": "38900",
+      "countyName": "Clackamas County",
+      "countyFips": "41005",
+      "state": "OR",
+      "stateFips": "41"
+    },
+    {
+      "cbsa": "38900",
+      "cbsaName": "38900",
+      "countyName": "Columbia County",
+      "countyFips": "41009",
+      "state": "OR",
+      "stateFips": "41"
+    },
+    {
+      "cbsa": "38900",
+      "cbsaName": "38900",
+      "countyName": "Multnomah County",
+      "countyFips": "41051",
+      "state": "OR",
+      "stateFips": "41"
+    },
+    {
+      "cbsa": "38900",
+      "cbsaName": "38900",
+      "countyName": "Washington County",
+      "countyFips": "41067",
+      "state": "OR",
+      "stateFips": "41"
+    },
+    {
+      "cbsa": "38900",
+      "cbsaName": "38900",
+      "countyName": "Yamhill County",
+      "countyFips": "41071",
+      "state": "OR",
+      "stateFips": "41"
+    },
+    {
+      "cbsa": "38900",
+      "cbsaName": "38900",
+      "countyName": "Clark County",
+      "countyFips": "53011",
+      "state": "WA",
+      "stateFips": "53"
+    },
+    {
+      "cbsa": "38900",
+      "cbsaName": "38900",
+      "countyName": "Skamania County",
+      "countyFips": "53059",
+      "state": "WA",
+      "stateFips": "53"
+    },
+    {
+      "cbsa": "38940",
+      "cbsaName": "38940",
+      "countyName": "Martin County",
+      "countyFips": "12085",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "38940",
+      "cbsaName": "38940",
+      "countyName": "St. Lucie County",
+      "countyFips": "12111",
+      "state": "FL",
+      "stateFips": "12"
+    },
+    {
+      "cbsa": "39300",
+      "cbsaName": "39300",
+      "countyName": "Bristol County",
+      "countyFips": "25005",
+      "state": "MA",
+      "stateFips": "25"
+    },
+    {
+      "cbsa": "39300",
+      "cbsaName": "39300",
+      "countyName": "Bristol County",
+      "countyFips": "44001",
+      "state": "RI",
+      "stateFips": "44"
+    },
+    {
+      "cbsa": "39300",
+      "cbsaName": "39300",
+      "countyName": "Kent County",
+      "countyFips": "44003",
+      "state": "RI",
+      "stateFips": "44"
+    },
+    {
+      "cbsa": "39300",
+      "cbsaName": "39300",
+      "countyName": "Newport County",
+      "countyFips": "44005",
+      "state": "RI",
+      "stateFips": "44"
+    },
+    {
+      "cbsa": "39300",
+      "cbsaName": "39300",
+      "countyName": "Providence County",
+      "countyFips": "44007",
+      "state": "RI",
+      "stateFips": "44"
+    },
+    {
+      "cbsa": "39300",
+      "cbsaName": "39300",
+      "countyName": "Washington County",
+      "countyFips": "44009",
+      "state": "RI",
+      "stateFips": "44"
+    },
+    {
+      "cbsa": "39340",
+      "cbsaName": "39340",
+      "countyName": "Juab County",
+      "countyFips": "49023",
+      "state": "UT",
+      "stateFips": "49"
+    },
+    {
+      "cbsa": "39340",
+      "cbsaName": "39340",
+      "countyName": "Utah County",
+      "countyFips": "49049",
+      "state": "UT",
+      "stateFips": "49"
+    },
+    {
+      "cbsa": "39580",
+      "cbsaName": "39580",
+      "countyName": "Franklin County",
+      "countyFips": "37069",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "39580",
+      "cbsaName": "39580",
+      "countyName": "Johnston County",
+      "countyFips": "37101",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "39580",
+      "cbsaName": "39580",
+      "countyName": "Wake County",
+      "countyFips": "37183",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "39900",
+      "cbsaName": "39900",
+      "countyName": "Lyon County",
+      "countyFips": "32019",
+      "state": "NV",
+      "stateFips": "32"
+    },
+    {
+      "cbsa": "39900",
+      "cbsaName": "39900",
+      "countyName": "Storey County",
+      "countyFips": "32029",
+      "state": "NV",
+      "stateFips": "32"
+    },
+    {
+      "cbsa": "39900",
+      "cbsaName": "39900",
+      "countyName": "Washoe County",
+      "countyFips": "32031",
+      "state": "NV",
+      "stateFips": "32"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Amelia County",
+      "countyFips": "51007",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Charles City County",
+      "countyFips": "51036",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Chesterfield County",
+      "countyFips": "51041",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Dinwiddie County",
+      "countyFips": "51053",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Goochland County",
+      "countyFips": "51075",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Hanover County",
+      "countyFips": "51085",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Henrico County",
+      "countyFips": "51087",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "King and Queen County",
+      "countyFips": "51097",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "King William County",
+      "countyFips": "51101",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "New Kent County",
+      "countyFips": "51127",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Powhatan County",
+      "countyFips": "51145",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Prince George County",
+      "countyFips": "51149",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Sussex County",
+      "countyFips": "51183",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Colonial Heights city",
+      "countyFips": "51570",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Hopewell city",
+      "countyFips": "51670",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Petersburg city",
+      "countyFips": "51730",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40060",
+      "cbsaName": "40060",
+      "countyName": "Richmond city",
+      "countyFips": "51760",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "40140",
+      "cbsaName": "40140",
+      "countyName": "Riverside County",
+      "countyFips": "06065",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "40140",
+      "cbsaName": "40140",
+      "countyName": "San Bernardino County",
+      "countyFips": "06071",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "40380",
+      "cbsaName": "40380",
+      "countyName": "Livingston County",
+      "countyFips": "36051",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "40380",
+      "cbsaName": "40380",
+      "countyName": "Monroe County",
+      "countyFips": "36055",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "40380",
+      "cbsaName": "40380",
+      "countyName": "Ontario County",
+      "countyFips": "36069",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "40380",
+      "cbsaName": "40380",
+      "countyName": "Orleans County",
+      "countyFips": "36073",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "40380",
+      "cbsaName": "40380",
+      "countyName": "Wayne County",
+      "countyFips": "36117",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "40900",
+      "cbsaName": "40900",
+      "countyName": "El Dorado County",
+      "countyFips": "06017",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "40900",
+      "cbsaName": "40900",
+      "countyName": "Placer County",
+      "countyFips": "06061",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "40900",
+      "cbsaName": "40900",
+      "countyName": "Sacramento County",
+      "countyFips": "06067",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "40900",
+      "cbsaName": "40900",
+      "countyName": "Yolo County",
+      "countyFips": "06113",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Bond County",
+      "countyFips": "17005",
+      "state": "IL",
+      "stateFips": "17"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Calhoun County",
+      "countyFips": "17013",
+      "state": "IL",
+      "stateFips": "17"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Clinton County",
+      "countyFips": "17027",
+      "state": "IL",
+      "stateFips": "17"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Jersey County",
+      "countyFips": "17083",
+      "state": "IL",
+      "stateFips": "17"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Macoupin County",
+      "countyFips": "17117",
+      "state": "IL",
+      "stateFips": "17"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Madison County",
+      "countyFips": "17119",
+      "state": "IL",
+      "stateFips": "17"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Monroe County",
+      "countyFips": "17133",
+      "state": "IL",
+      "stateFips": "17"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "St. Clair County",
+      "countyFips": "17163",
+      "state": "IL",
+      "stateFips": "17"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Franklin County",
+      "countyFips": "29071",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Jefferson County",
+      "countyFips": "29099",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Lincoln County",
+      "countyFips": "29113",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "St. Charles County",
+      "countyFips": "29183",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "St. Louis County",
+      "countyFips": "29189",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "Warren County",
+      "countyFips": "29219",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "41180",
+      "cbsaName": "41180",
+      "countyName": "St. Louis city",
+      "countyFips": "29510",
+      "state": "MO",
+      "stateFips": "29"
+    },
+    {
+      "cbsa": "41620",
+      "cbsaName": "41620",
+      "countyName": "Salt Lake County",
+      "countyFips": "49035",
+      "state": "UT",
+      "stateFips": "49"
+    },
+    {
+      "cbsa": "41620",
+      "cbsaName": "41620",
+      "countyName": "Tooele County",
+      "countyFips": "49045",
+      "state": "UT",
+      "stateFips": "49"
+    },
+    {
+      "cbsa": "41700",
+      "cbsaName": "41700",
+      "countyName": "Atascosa County",
+      "countyFips": "48013",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "41700",
+      "cbsaName": "41700",
+      "countyName": "Bandera County",
+      "countyFips": "48019",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "41700",
+      "cbsaName": "41700",
+      "countyName": "Bexar County",
+      "countyFips": "48029",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "41700",
+      "cbsaName": "41700",
+      "countyName": "Comal County",
+      "countyFips": "48091",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "41700",
+      "cbsaName": "41700",
+      "countyName": "Guadalupe County",
+      "countyFips": "48187",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "41700",
+      "cbsaName": "41700",
+      "countyName": "Kendall County",
+      "countyFips": "48259",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "41700",
+      "cbsaName": "41700",
+      "countyName": "Medina County",
+      "countyFips": "48325",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "41700",
+      "cbsaName": "41700",
+      "countyName": "Wilson County",
+      "countyFips": "48493",
+      "state": "TX",
+      "stateFips": "48"
+    },
+    {
+      "cbsa": "41740",
+      "cbsaName": "41740",
+      "countyName": "San Diego County",
+      "countyFips": "06073",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "41940",
+      "cbsaName": "41940",
+      "countyName": "San Benito County",
+      "countyFips": "06069",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "41940",
+      "cbsaName": "41940",
+      "countyName": "Santa Clara County",
+      "countyFips": "06085",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "42220",
+      "cbsaName": "42220",
+      "countyName": "Sonoma County",
+      "countyFips": "06097",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "42540",
+      "cbsaName": "42540",
+      "countyName": "Lackawanna County",
+      "countyFips": "42069",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "42540",
+      "cbsaName": "42540",
+      "countyName": "Luzerne County",
+      "countyFips": "42079",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "42540",
+      "cbsaName": "42540",
+      "countyName": "Wyoming County",
+      "countyFips": "42131",
+      "state": "PA",
+      "stateFips": "42"
+    },
+    {
+      "cbsa": "44060",
+      "cbsaName": "44060",
+      "countyName": "Spokane County",
+      "countyFips": "53063",
+      "state": "WA",
+      "stateFips": "53"
+    },
+    {
+      "cbsa": "44060",
+      "cbsaName": "44060",
+      "countyName": "Stevens County",
+      "countyFips": "53065",
+      "state": "WA",
+      "stateFips": "53"
+    },
+    {
+      "cbsa": "44140",
+      "cbsaName": "44140",
+      "countyName": "Hampden County",
+      "countyFips": "25013",
+      "state": "MA",
+      "stateFips": "25"
+    },
+    {
+      "cbsa": "44700",
+      "cbsaName": "44700",
+      "countyName": "San Joaquin County",
+      "countyFips": "06077",
+      "state": "CA",
+      "stateFips": "06"
+    },
+    {
+      "cbsa": "45060",
+      "cbsaName": "45060",
+      "countyName": "Madison County",
+      "countyFips": "36053",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "45060",
+      "cbsaName": "45060",
+      "countyName": "Onondaga County",
+      "countyFips": "36067",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "45060",
+      "cbsaName": "45060",
+      "countyName": "Oswego County",
+      "countyFips": "36075",
+      "state": "NY",
+      "stateFips": "36"
+    },
+    {
+      "cbsa": "45780",
+      "cbsaName": "45780",
+      "countyName": "Fulton County",
+      "countyFips": "39051",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "45780",
+      "cbsaName": "45780",
+      "countyName": "Lucas County",
+      "countyFips": "39095",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "45780",
+      "cbsaName": "45780",
+      "countyName": "Wood County",
+      "countyFips": "39173",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "46060",
+      "cbsaName": "46060",
+      "countyName": "Pima County",
+      "countyFips": "04019",
+      "state": "AZ",
+      "stateFips": "04"
+    },
+    {
+      "cbsa": "46140",
+      "cbsaName": "46140",
+      "countyName": "Creek County",
+      "countyFips": "40037",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "46140",
+      "cbsaName": "46140",
+      "countyName": "Okmulgee County",
+      "countyFips": "40111",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "46140",
+      "cbsaName": "46140",
+      "countyName": "Osage County",
+      "countyFips": "40113",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "46140",
+      "cbsaName": "46140",
+      "countyName": "Pawnee County",
+      "countyFips": "40117",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "46140",
+      "cbsaName": "46140",
+      "countyName": "Rogers County",
+      "countyFips": "40131",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "46140",
+      "cbsaName": "46140",
+      "countyName": "Tulsa County",
+      "countyFips": "40143",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "46140",
+      "cbsaName": "46140",
+      "countyName": "Wagoner County",
+      "countyFips": "40145",
+      "state": "OK",
+      "stateFips": "40"
+    },
+    {
+      "cbsa": "46520",
+      "cbsaName": "46520",
+      "countyName": "Honolulu County",
+      "countyFips": "15003",
+      "state": "HI",
+      "stateFips": "15"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Camden County",
+      "countyFips": "37029",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Currituck County",
+      "countyFips": "37053",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Gates County",
+      "countyFips": "37073",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Gloucester County",
+      "countyFips": "51073",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Isle of Wight County",
+      "countyFips": "51093",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "James City County",
+      "countyFips": "51095",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Mathews County",
+      "countyFips": "51115",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Surry County",
+      "countyFips": "51181",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "York County",
+      "countyFips": "51199",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Chesapeake city",
+      "countyFips": "51550",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Hampton city",
+      "countyFips": "51650",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Newport News city",
+      "countyFips": "51700",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Norfolk city",
+      "countyFips": "51710",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Poquoson city",
+      "countyFips": "51735",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Portsmouth city",
+      "countyFips": "51740",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Suffolk city",
+      "countyFips": "51800",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Virginia Beach city",
+      "countyFips": "51810",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "47260",
+      "cbsaName": "47260",
+      "countyName": "Williamsburg city",
+      "countyFips": "51830",
+      "state": "VA",
+      "stateFips": "51"
+    },
+    {
+      "cbsa": "48620",
+      "cbsaName": "48620",
+      "countyName": "Butler County",
+      "countyFips": "20015",
+      "state": "KS",
+      "stateFips": "20"
+    },
+    {
+      "cbsa": "48620",
+      "cbsaName": "48620",
+      "countyName": "Harvey County",
+      "countyFips": "20079",
+      "state": "KS",
+      "stateFips": "20"
+    },
+    {
+      "cbsa": "48620",
+      "cbsaName": "48620",
+      "countyName": "Sedgwick County",
+      "countyFips": "20173",
+      "state": "KS",
+      "stateFips": "20"
+    },
+    {
+      "cbsa": "48620",
+      "cbsaName": "48620",
+      "countyName": "Sumner County",
+      "countyFips": "20191",
+      "state": "KS",
+      "stateFips": "20"
+    },
+    {
+      "cbsa": "49180",
+      "cbsaName": "49180",
+      "countyName": "Davidson County",
+      "countyFips": "37057",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "49180",
+      "cbsaName": "49180",
+      "countyName": "Davie County",
+      "countyFips": "37059",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "49180",
+      "cbsaName": "49180",
+      "countyName": "Forsyth County",
+      "countyFips": "37067",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "49180",
+      "cbsaName": "49180",
+      "countyName": "Stokes County",
+      "countyFips": "37169",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "49180",
+      "cbsaName": "49180",
+      "countyName": "Yadkin County",
+      "countyFips": "37197",
+      "state": "NC",
+      "stateFips": "37"
+    },
+    {
+      "cbsa": "49340",
+      "cbsaName": "49340",
+      "countyName": "Worcester County",
+      "countyFips": "25027",
+      "state": "MA",
+      "stateFips": "25"
+    },
+    {
+      "cbsa": "49660",
+      "cbsaName": "49660",
+      "countyName": "Mahoning County",
+      "countyFips": "39099",
+      "state": "OH",
+      "stateFips": "39"
+    },
+    {
+      "cbsa": "49660",
+      "cbsaName": "49660",
+      "countyName": "Trumbull County",
+      "countyFips": "39155",
+      "state": "OH",
+      "stateFips": "39"
+    }
+  ]
+}

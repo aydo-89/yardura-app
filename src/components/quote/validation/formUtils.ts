@@ -16,24 +16,54 @@ export function scrollToFirstError(
   if (!firstInvalidKey) return;
 
   const fieldRef = fieldRefs[firstInvalidKey];
-  if (!fieldRef?.current) return;
 
-  // Scroll into view
-  fieldRef.current.scrollIntoView({
-    behavior: "smooth",
-    block: "center",
-    inline: "nearest",
-  });
+  const focusElement = (element: HTMLElement) => {
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "nearest",
+    });
 
-  // Focus the field
-  fieldRef.current.focus();
+    if (typeof element.focus === "function") {
+      const hadTabIndex = element.hasAttribute("tabindex");
+      if (!hadTabIndex) {
+        element.setAttribute("tabindex", "-1");
+      }
+      element.focus({ preventScroll: true });
+      if (!hadTabIndex) {
+        element.addEventListener(
+          "blur",
+          () => element.removeAttribute("tabindex"),
+          { once: true },
+        );
+      }
+    }
+  };
 
-  // If it's an input, select all text for easy replacement
-  if (
-    fieldRef.current.tagName === "INPUT" ||
-    fieldRef.current.tagName === "TEXTAREA"
-  ) {
-    (fieldRef.current as HTMLInputElement).select();
+  if (fieldRef?.current) {
+    focusElement(fieldRef.current);
+    if (
+      fieldRef.current.tagName === "INPUT" ||
+      fieldRef.current.tagName === "TEXTAREA"
+    ) {
+      (fieldRef.current as HTMLInputElement).select();
+    }
+    return;
+  }
+
+  const datasetTarget = document.querySelector<HTMLElement>(
+    `[data-quote-field="${firstInvalidKey}"]`,
+  );
+  if (datasetTarget) {
+    focusElement(datasetTarget);
+    return;
+  }
+
+  const errorMessageTarget = document.querySelector<HTMLElement>(
+    `[data-error-for="${firstInvalidKey}"]`,
+  );
+  if (errorMessageTarget) {
+    focusElement(errorMessageTarget);
   }
 }
 
@@ -69,3 +99,20 @@ export function generateFieldId(fieldName: string, stepId: string): string {
 export function generateErrorId(fieldName: string, stepId: string): string {
   return `quote-${stepId}-${fieldName}-error`;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

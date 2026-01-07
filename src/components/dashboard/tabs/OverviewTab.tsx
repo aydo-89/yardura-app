@@ -1,33 +1,47 @@
-// Refactor: extracted from legacy DashboardClientNew; removed mock wellness code and duplicates.
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import AddressAutocomplete from "@/components/AddressAutocomplete";
-import { track } from "@/lib/analytics";
-import { ComingSoonOverlay } from "./WellnessTab/components/ComingSoonOverlay";
+"use client";
+
+import React, { useMemo, useState, useEffect } from "react";
 import {
-  Heart,
   Calendar,
+  CheckCircle,
+  Clock,
+  MapPin,
+  PawPrint,
+  Sparkles,
   TrendingUp,
-  Users,
-  Settings,
+  Leaf,
+  ShieldCheck,
   Share2,
   Copy,
-  CircleAlert,
-  Dog as DogIcon,
+  Heart,
   Trophy,
-  Home,
-  Leaf,
-  User as UserIcon,
-  Droplets,
+  Zap,
+  Dog as DogIcon,
+  ChevronRight,
+  Phone,
+  ArrowRight,
+  CalendarDays,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScheduleSelector } from "@/components/onboarding/ScheduleSelector";
+import { useRouter } from "next/navigation";
 import type {
   User,
   Dog,
   DashboardServiceVisit,
   DashboardDataReading,
+  ServiceSummary,
 } from "../types";
+import {
+  normalizePreferredTimeWindowSlug,
+  resolvePreferredTimeWindowShortLabel,
+  SERVICE_TIME_ZONE,
+} from "@/lib/time-window";
+import { splitInstructions } from "@/lib/instructions";
+import type { DashboardTabValue } from "../Dashboard";
+
+type RescheduleWindow = "morning" | "afternoon" | "flexible";
 
 interface OverviewTabProps {
   user: User;
@@ -48,63 +62,39 @@ interface OverviewTabProps {
   methaneThisMonthLbsEq: number;
   recentInsightsLevel: "WATCH" | "NORMAL";
   referralUrl: string;
-  onOpenProfileForm(): void;
-  onOpenDogForm(): void;
-  forms: {
-    showProfileForm: boolean;
-    showDogForm: boolean;
-    formPhone: string;
-    setFormPhone: (v: string) => void;
-    formAddress: string;
-    setFormAddress: (v: string) => void;
-    formCity: string;
-    setFormCity: (v: string) => void;
-    formZip: string;
-    setFormZip: (v: string) => void;
-    submitProfile: () => Promise<void>;
-    savingProfile: boolean;
-    dogName: string;
-    setDogName: (v: string) => void;
-    dogBreed: string;
-    setDogBreed: (v: string) => void;
-    dogAge: string;
-    setDogAge: (v: string) => void;
-    dogWeight: string;
-    setDogWeight: (v: string) => void;
-    submitDog: () => Promise<void>;
-    savingDog: boolean;
-    setShowProfileForm: (b: boolean) => void;
-    setShowDogForm: (b: boolean) => void;
-  };
-  onCopyReferral(): Promise<void>;
-  onShareReferral(): Promise<void>;
+  serviceSummary: ServiceSummary | null;
+  onCopyReferral: () => Promise<void>;
+  onShareReferral: () => Promise<void>;
+  onNavigateTab: (tab: DashboardTabValue) => void;
 }
 
-function ReportsList({ orgId }: { orgId: string }) {
-  const now = new Date();
-  const months: string[] = [];
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const label = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    months.push(label);
-  }
-  return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {months.map((m) => (
-        <a
-          key={m}
-          className="border rounded-lg p-3 flex items-center justify-between hover:bg-accent-soft"
-          href={`/api/reports/monthly?orgId=${encodeURIComponent(orgId)}&month=${m}`}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => track("report_download", { month: m, orgId })}
-        >
-          <span className="text-sm">{m}</span>
-          <span className="text-accent text-xs underline">Download</span>
-        </a>
-      ))}
-    </div>
-  );
+const formatter = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: SERVICE_TIME_ZONE,
+});
+
+const dayFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  timeZone: SERVICE_TIME_ZONE,
+});
+
+const shortDayFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  timeZone: SERVICE_TIME_ZONE,
+});
+
+function toTitle(value?: string | null) {
+  if (!value) return "—";
+  return value
+    .toLowerCase()
+    .split(/[_-]|\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function formatLbsFromGrams(totalGrams: number): string {
@@ -120,630 +110,663 @@ export default function OverviewTab(props: OverviewTabProps) {
     serviceVisits,
     profilePercent,
     profileFields,
-    lastReadingAt,
     nextServiceAt,
     daysUntilNext,
     serviceStreak,
     last7DaysCount,
-    last30DaysCount,
-    avgWeight30G,
     gramsThisMonth,
     totalGrams,
-    methaneThisMonthLbsEq,
     recentInsightsLevel,
     referralUrl,
-    onOpenProfileForm,
-    onOpenDogForm,
-    forms,
+    serviceSummary,
     onCopyReferral,
     onShareReferral,
+    onNavigateTab,
   } = props;
 
   const [copied, setCopied] = useState(false);
-  const [showWellnessOverlay, setShowWellnessOverlay] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState<string | undefined>(undefined);
+  const [rescheduleWindow, setRescheduleWindow] = useState<RescheduleWindow>("morning");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const router = useRouter();
 
-  const handleCopy = async () => {
-    await onCopyReferral();
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
+  // Find the upcoming scheduled visit for rescheduling
+  const upcomingScheduledVisit = useMemo(() => {
+    const now = Date.now();
+    const scheduled = serviceVisits
+      .filter((v) => v.status === "SCHEDULED" && new Date(v.scheduledDate).getTime() >= now)
+      .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+    return scheduled[0] ?? null;
+  }, [serviceVisits]);
 
-  const handleJoinWellnessWaitlist = async (email: string) => {
+  const canReschedule = !!upcomingScheduledVisit;
+
+  // Initialize reschedule date when modal opens
+  useEffect(() => {
+    if (rescheduleOpen && upcomingScheduledVisit) {
+      setRescheduleDate(upcomingScheduledVisit.scheduledDate);
+      const windowSlug = normalizePreferredTimeWindowSlug(
+        upcomingScheduledVisit.preferredTimeWindowSlug ??
+          serviceSummary?.preferredTimeWindowSlug ??
+          user.preferredTimeWindowSlug ??
+          null
+      );
+      setRescheduleWindow((windowSlug as RescheduleWindow) || "morning");
+    }
+  }, [rescheduleOpen, upcomingScheduledVisit, serviceSummary, user]);
+
+  const handleReschedule = async () => {
+    if (!upcomingScheduledVisit?.id || !rescheduleDate) {
+      setActionError("Select a new visit date before confirming.");
+      return;
+    }
+    setActionLoading(true);
+    setActionError(null);
     try {
-      // Send to your backend API
-      const response = await fetch("/api/waitlist/wellness-insights", {
+      const response = await fetch("/api/schedule/request", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          feature: "wellness-insights",
-          timestamp: new Date().toISOString(),
+          visitId: upcomingScheduledVisit.id,
+          action: "reschedule",
+          nextVisitAt: rescheduleDate,
+          preferredWindow: rescheduleWindow,
         }),
       });
-
       if (!response.ok) {
-        throw new Error("Failed to join waitlist");
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Unable to reschedule right now.");
       }
-
-      const result = await response.json();
-
-      // You could also send analytics events here
-      console.log("Successfully joined wellness waitlist:", result);
-    } catch (error) {
-      console.error("Error joining wellness waitlist:", error);
-
-      // Fallback: Store locally if API fails
-      const waitlistData = {
-        email,
-        feature: "wellness-insights",
-        timestamp: new Date().toISOString(),
-        offline: true, // Mark as offline submission
-      };
-
-      // Store in localStorage as fallback
-      const existingWaitlist = JSON.parse(
-        localStorage.getItem("yardura_waitlist") || "[]",
-      );
-      existingWaitlist.push(waitlistData);
-      localStorage.setItem(
-        "yardura_waitlist",
-        JSON.stringify(existingWaitlist),
-      );
-
-      console.log("Stored wellness waitlist signup locally:", waitlistData);
+      setRescheduleOpen(false);
+      router.refresh();
+    } catch (error: any) {
+      setActionError(error?.message ?? "Unable to reschedule right now.");
+    } finally {
+      setActionLoading(false);
     }
-
-    // Show success message to user
-    setTimeout(() => {
-      alert(
-        `Thank you for joining the wellness waitlist! We'll notify you at ${email} when advanced wellness insights are available.`,
-      );
-    }, 500);
   };
 
+  const derivedDogsCount = Math.max(dogs.length, user.dogsCount ?? 0);
+  const nextVisitIso = serviceSummary?.nextVisitDate ?? serviceSummary?.firstVisitDate ?? null;
+  const summaryNextService = useMemo(() => {
+    if (nextServiceAt) return nextServiceAt;
+    if (!nextVisitIso) return null;
+    const parsed = new Date(nextVisitIso);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [nextServiceAt, nextVisitIso]);
+
+  const serviceAddress = [user.address, user.city, user.zipCode]
+    .filter(Boolean)
+    .join(", ");
+
+  const frequencyLabel = toTitle(serviceSummary?.frequency ?? user.serviceFrequency ?? undefined);
+  const yardLabel = toTitle(serviceSummary?.yardSize ?? user.yardSize ?? undefined);
+  const preferredTimeWindowSlug = normalizePreferredTimeWindowSlug(
+    serviceSummary?.preferredTimeWindowSlug ??
+      user.preferredTimeWindowSlug ??
+      null,
+  );
+  const preferredTimeWindowShortLabel = resolvePreferredTimeWindowShortLabel(
+    preferredTimeWindowSlug,
+    serviceSummary?.preferredTimeWindow ?? user.preferredTime ?? null,
+  );
+  const preferredTimeWindowLabel = preferredTimeWindowShortLabel
+    ? `${preferredTimeWindowShortLabel} window`
+    : null;
+
+  const overviewInstructions = useMemo(
+    () => splitInstructions(serviceSummary?.specialInstructions),
+    [serviceSummary?.specialInstructions],
+  );
+
+  const missingFields = profileFields.filter(([, ok]) => !ok).map(([label]) => label);
+  const missingFieldLabels = missingFields.map((field) =>
+    field === "At least 1 dog profile" ? "Add a pup profile" : field,
+  );
+  const showProfileReminder = missingFields.length > 0 && profilePercent < 100;
+
+  const completedVisits = useMemo(
+    () => serviceVisits.filter((visit) => visit.status === "COMPLETED").length,
+    [serviceVisits],
+  );
+
+  const upcomingVisits = useMemo(() => {
+    const now = Date.now();
+    return serviceVisits
+      .filter((visit) =>
+        ["SCHEDULED", "IN_PROGRESS"].includes(visit.status) &&
+        new Date(visit.scheduledDate).getTime() >= now,
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.scheduledDate).getTime() -
+          new Date(b.scheduledDate).getTime(),
+      )
+      .slice(0, 4);
+  }, [serviceVisits]);
+
+  const handleCopyReferral = async () => {
+    await onCopyReferral();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const firstName = (user.name || "")?.split(" ")[0] || "there";
+  const lbsDivertedAllTime = formatLbsFromGrams(totalGrams);
+  const normalizedDivertMode = serviceSummary?.divertMode?.toLowerCase() ?? null;
+  const hasComposting =
+    normalizedDivertMode != null &&
+    !["none", "takeaway"].includes(normalizedDivertMode);
+
+  // Generate countdown display
+  const countdownDisplay = useMemo(() => {
+    if (daysUntilNext == null) return { number: "—", label: "scheduling" };
+    if (daysUntilNext <= 0) return { number: "Today", label: "We're coming!" };
+    if (daysUntilNext === 1) return { number: "1", label: "day away" };
+    return { number: String(daysUntilNext), label: "days away" };
+  }, [daysUntilNext]);
+
+  const quickStats = [
+    {
+      icon: Trophy,
+      label: "Service Streak",
+      value: `${serviceStreak} visits`,
+      color: "coral",
+      tab: "services" as const,
+    },
+    {
+      icon: TrendingUp,
+      label: "This Week",
+      value: `${last7DaysCount} pickups`,
+      color: "mint",
+      tab: "services" as const,
+    },
+    hasComposting
+      ? {
+          icon: Leaf,
+          label: "Total Diverted",
+          value: `${lbsDivertedAllTime} lbs`,
+          color: "evergreen",
+          tab: "eco" as const,
+        }
+      : {
+          icon: CheckCircle,
+          label: "Total Pickups",
+          value: `${completedVisits} visits`,
+          color: "evergreen",
+          tab: "services" as const,
+        },
+    {
+      icon: PawPrint,
+      label: "Household",
+      value: `${derivedDogsCount} ${derivedDogsCount === 1 ? "dog" : "dogs"}`,
+      color: "coral",
+      tab: "profile" as const,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Call to Action for First-Time Users */}
-      {serviceVisits.length === 0 && (
-        <Card className="border-accent/20 bg-gradient-to-r from-accent/5 to-accent/10">
-          <CardContent className="p-6">
-            <div className="text-center space-y-4">
-              <div className="flex justify-center">
-                <div className="rounded-full bg-accent/10 p-3">
-                  <DogIcon className="size-8 text-accent" />
+    <div className="space-y-8">
+      {/* ====== HERO: Next Visit Card ====== */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-graphite via-graphite-soft to-graphite dark:from-graphite-soft dark:via-graphite dark:to-graphite-soft p-1">
+        <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-graphite via-graphite-soft to-graphite dark:from-[#25292f] dark:via-[#1e2227] dark:to-[#25292f] p-8 md:p-10">
+          {/* Ambient glow effects */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-coral/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-mint/8 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+          
+          <div className="relative z-10">
+            {/* Top badge */}
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-1.5 mb-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-mint"></span>
+              </span>
+              <span className="text-xs font-semibold tracking-wide text-white/80 uppercase">
+                Next scheduled visit
+              </span>
+                </div>
+
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+              {/* Left: Date & Countdown */}
+              <div className="space-y-6 max-w-2xl">
+                {/* THE BIG DATE */}
+                <div>
+                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-bold text-white tracking-tight leading-none">
+                    {summaryNextService ? dayFormatter.format(summaryNextService) : "Coming Soon"}
+                  </h1>
+                  <p className="mt-3 text-xl md:text-2xl text-white/60 font-medium">
+                    {summaryNextService ? formatter.format(summaryNextService) : "Your first service is being scheduled"}
+                  </p>
+                </div>
+
+                {/* Arrival Window */}
+                <div className="flex flex-wrap items-center gap-4 text-white/70">
+                  {preferredTimeWindowLabel && (
+                    <div className="flex items-center gap-2 bg-white/5 rounded-xl px-4 py-2.5">
+                      <Clock className="size-5 text-mint" />
+                      <span className="font-medium">{preferredTimeWindowLabel}</span>
+                  </div>
+                  )}
+                  {serviceAddress && (
+                    <div className="flex items-center gap-2 bg-white/5 rounded-xl px-4 py-2.5">
+                      <MapPin className="size-5 text-coral" />
+                      <span className="font-medium truncate max-w-[200px] md:max-w-none">{serviceAddress}</span>
+                    </div>
+                  )}
+              </div>
+
+                {/* Quick Actions */}
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button
+                    onClick={() => onNavigateTab("services")}
+                    className="bg-coral hover:bg-coral-ink text-white rounded-xl px-6 h-12 text-base font-semibold shadow-lg shadow-coral/25 transition-all hover:shadow-xl hover:shadow-coral/30 hover:-translate-y-0.5"
+                  >
+                    <span className="flex items-center gap-2">
+                      View Schedule
+                      <ArrowRight className="size-4" />
+                    </span>
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (canReschedule) {
+                        setActionError(null);
+                        setRescheduleOpen(true);
+                      } else {
+                        // Fallback to call if no scheduled visit
+                        window.location.href = "tel:+18774179273";
+                      }
+                    }}
+                    variant="outline"
+                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:border-white/40 hover:text-white rounded-xl px-6 h-12 text-base font-semibold backdrop-blur-sm transition-all"
+                  >
+                    <CalendarDays className="size-4 mr-2" />
+                    {canReschedule ? "Reschedule" : "Call to Schedule"}
+                  </Button>
                 </div>
               </div>
-              <div>
-                <h3 className="text-xl font-semibold text-ink mb-2">
-                  {user.stripeCustomerId
-                    ? "Ready to Schedule Your First Service? 🐾"
-                    : "Welcome to Yardura! 🐾"}
-                </h3>
-                <p className="text-slate-600 mb-4">
-                  {user.stripeCustomerId
-                    ? "Your account is all set up! Schedule your first sustainable yard service and unlock free pet wellness insights."
-                    : "Get your yard cleaned sustainably while gaining valuable wellness insights for your pets. Every service includes free health monitoring technology."}
-                </p>
+
+              {/* Right: Countdown Circle */}
+              <div className="flex-shrink-0">
+                <div className="relative w-44 h-44 md:w-52 md:h-52">
+                  {/* Outer ring */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-coral/20 to-mint/20 p-1">
+                    <div className="w-full h-full rounded-full bg-[#1a1d22] flex flex-col items-center justify-center">
+                      <span className="text-5xl md:text-6xl font-heading font-bold text-white">
+                        {countdownDisplay.number}
+                      </span>
+                      <span className="text-sm md:text-base text-white/50 font-medium mt-1">
+                        {countdownDisplay.label}
+                      </span>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                {user.stripeCustomerId ? (
-                  <>
-                    <Button size="lg" className="bg-accent hover:bg-accent/90">
-                      <Calendar className="size-4 mr-2" />
-                      Schedule Your First Service
-                    </Button>
-                    <Button size="lg" variant="outline">
-                      <Heart className="size-4 mr-2" />
-                      Learn About Wellness Insights
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button size="lg" className="bg-accent hover:bg-accent/90">
-                      <Heart className="size-4 mr-2" />
-                      Start Free Trial
-                    </Button>
-                    <Button size="lg" variant="outline">
-                      <Calendar className="size-4 mr-2" />
-                      Schedule One-Time Service
-                    </Button>
-                  </>
-                )}
+            </div>
+                </div>
               </div>
-              <p className="text-xs text-slate-500">
-                💚 Environmentally friendly • 🐕 Pet wellness included • ✨
-                Professional service
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ====== QUICK STATS BAR ====== */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {quickStats.map((stat) => {
+          const colorClasses = {
+            coral: "bg-coral/10 text-coral",
+            mint: "bg-mint/10 text-mint",
+            evergreen: "bg-evergreen/10 text-evergreen-500 dark:text-mint",
+          }[stat.color];
+
+          return (
+            <button
+              key={stat.label}
+              type="button"
+              onClick={() => onNavigateTab(stat.tab)}
+              className="group relative overflow-hidden rounded-2xl bg-white dark:bg-white/5 border border-graphite/5 dark:border-white/10 p-5 text-left hover:shadow-lg hover:shadow-graphite/5 dark:hover:shadow-black/20 transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-[11px] uppercase tracking-widest text-graphite/50 dark:text-white/50 font-semibold">
+                    {stat.label}
+                  </p>
+                  <p className="text-2xl font-heading font-bold text-graphite dark:text-white">
+                    {stat.value}
+                  </p>
+                </div>
+                <div className={`flex size-11 items-center justify-center rounded-xl ${colorClasses}`}>
+                  <stat.icon className="size-5" />
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </section>
+
+      {/* ====== PROFILE COMPLETION NUDGE ====== */}
+      {showProfileReminder && (
+        <section className="relative overflow-hidden rounded-2xl border border-coral/20 dark:border-coral/30 bg-gradient-to-r from-coral/5 via-white to-mint/5 dark:from-coral/10 dark:via-white/5 dark:to-mint/10 p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-xl">
+              <div className="flex items-center gap-2">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-coral/10">
+                  <Sparkles className="size-4 text-coral" />
+                </div>
+                <span className="text-sm font-semibold text-coral">Almost there!</span>
+              </div>
+              <h3 className="text-xl font-heading font-bold text-graphite dark:text-white">
+                Complete your profile to unlock wellness insights
+              </h3>
+              <p className="text-sm text-graphite/60 dark:text-white/60">
+                Here is what is still needed to finish your profile:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {missingFieldLabels.map((field) => (
+                  <span
+                    key={field}
+                    className="inline-flex items-center rounded-full border border-graphite/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-3 py-1 text-xs font-semibold text-graphite/80 dark:text-white/80"
+                  >
+                    {field}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-graphite/50 dark:text-white/50">
+                You can add pups in your profile. For address or contact updates, use Account settings.
               </p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex flex-col gap-3 min-w-[200px]">
+              {/* Progress bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-graphite/50 dark:text-white/50 font-medium">Progress</span>
+                  <span className="font-bold text-graphite dark:text-white">{profilePercent}%</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-graphite/5 dark:bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-coral to-mint transition-all duration-700"
+                    style={{ width: `${Math.min(profilePercent, 100)}%` }}
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => onNavigateTab("profile")}
+                className="bg-graphite hover:bg-graphite-soft dark:bg-white dark:text-graphite dark:hover:bg-white/90 text-white rounded-xl h-11 font-semibold"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  Review Checklist
+                  <ChevronRight className="size-4" />
+                </span>
+              </Button>
+            </div>
+          </div>
+        </section>
       )}
 
-      {/* Above-the-fold KPIs */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 auto-rows-fr items-stretch gap-6">
-        {/* Next Service */}
-        <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Next Service</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
-              {nextServiceAt
-                ? nextServiceAt.toLocaleDateString()
-                : "Not scheduled"}
-            </div>
-            <p className="text-xs text-muted mt-1">
-              {daysUntilNext
-                ? `${daysUntilNext} days away`
-                : "Schedule your next pickup"}
-            </p>
-            {nextServiceAt && (
-              <div className="mt-2 text-xs text-blue-600">
-                {nextServiceAt.toLocaleDateString(undefined, {
-                  weekday: "long",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Activity Summary */}
-        <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activity</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">This week:</span>
-                <span className="font-bold text-slate-900">
-                  {last7DaysCount}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">This month:</span>
-                <span className="font-bold text-slate-900">
-                  {last30DaysCount}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Avg weight:</span>
-                <span className="font-bold text-slate-900">
-                  {avgWeight30G != null
-                    ? `${(avgWeight30G as number).toFixed(1)}g`
-                    : "—"}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Eco Impact */}
-        <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Eco Impact</CardTitle>
-            <Leaf className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Diverted:</span>
-                <span className="font-bold text-green-700">
-                  {formatLbsFromGrams(gramsThisMonth)} lbs
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Methane saved:</span>
-                <span className="font-bold text-green-700">
-                  {methaneThisMonthLbsEq.toFixed(1)} ft³
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Total diverted:</span>
-                <span className="font-bold text-slate-900">
-                  {formatLbsFromGrams(totalGrams)} lbs
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pet Wellness */}
-        <Card
-          className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden cursor-pointer"
-          onClick={() => setShowWellnessOverlay(true)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pet Wellness</CardTitle>
-            <Heart className="h-4 w-4 text-pink-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {/* Coming Soon Badge */}
-              <div className="flex items-center gap-2">
-                <div className="px-2 py-1 bg-gradient-to-r from-teal-50 to-blue-50 rounded-full border border-teal-200">
-                  <span className="text-xs font-medium text-teal-700">
-                    Coming Soon
-                  </span>
-                </div>
-                <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></div>
-              </div>
-
-              {/* Feature Teaser */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-slate-900">
-                  Advanced Pet Wellness Insights
-                </h4>
-                <div className="space-y-1 text-xs text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1 h-1 bg-teal-400 rounded-full"></span>
-                    <span>AI-powered stool analysis</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-1 h-1 bg-teal-400 rounded-full"></span>
-                    <span>Health trend monitoring</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-1 h-1 bg-teal-400 rounded-full"></span>
-                    <span>Early issue detection</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Call to Action */}
-              <div className="pt-2 border-t border-slate-100">
-                <div className="text-xs text-slate-500 mb-1">
-                  Ready for advanced wellness insights
-                </div>
-                <div className="text-xs text-blue-600 font-medium">
-                  Click to join the waitlist →
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Service Streak */}
-        <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Service Streak
-            </CardTitle>
-            <Trophy className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
-              {serviceStreak}
-            </div>
-            <p className="text-xs text-muted mt-1">
-              {serviceStreak === 1 ? "service" : "services"} in a row
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Button
-              className="h-20 flex flex-col gap-2"
-              variant="outline"
-              onClick={() =>
-                track("dashboard_quick_action", { action: "schedule_service" })
-              }
+      {/* ====== TWO-COLUMN: Service Details + Wellness ====== */}
+      <section className="grid gap-6 lg:grid-cols-5">
+        {/* Service Summary - Takes 3 columns */}
+        <div className="lg:col-span-3 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-heading font-bold text-graphite dark:text-white">Your Service Plan</h2>
+            <button
+              onClick={() => onNavigateTab("billing")}
+              className="text-sm text-coral hover:text-coral-ink font-medium flex items-center gap-1 transition-colors"
             >
-              <Calendar className="size-6" />
-              <span>Schedule Service</span>
-            </Button>
-            <Button
-              className="h-20 flex flex-col gap-2"
-              variant="outline"
-              onClick={() =>
-                track("dashboard_quick_action", { action: "add_dog" })
-              }
-            >
-              <DogIcon className="size-6" />
-              <span>Add Dog</span>
-            </Button>
-            <Button
-              className="h-20 flex flex-col gap-2"
-              variant="outline"
-              onClick={() =>
-                track("dashboard_quick_action", {
-                  action: "view_health_insights",
-                })
-              }
-            >
-              <Heart className="size-6" />
-              <span>View Health Insights</span>
-            </Button>
+              Plan details
+              <ChevronRight className="size-4" />
+            </button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Onboarding: Profile & Dog inline forms; hides when complete */}
-      {(profilePercent < 100 || dogs.length === 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CircleAlert className="size-5 text-accent" />
-              Complete your profile to unlock weekly signals
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium text-ink">
-                      Profile completeness
-                    </div>
-                    <div className="text-sm text-muted">{profilePercent}%</div>
-                  </div>
-                  <div className="relative w-full bg-slate-100 rounded-full h-4 overflow-hidden border-2 border-slate-200">
-                    <div
-                      className="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-1000 ease-out relative"
-                      style={{ width: `${profilePercent}%` }}
-                    >
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-white text-xs animate-pulse">
-                          🐾
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      className="absolute top-1/2 transform -translate-y-1/2 transition-all duration-1000 ease-out text-sm"
-                      style={{ left: `calc(${profilePercent}% - 8px)` }}
-                    >
-                      🐶
-                    </div>
-                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-xs">
-                      🏁
-                    </div>
-                  </div>
+          
+          <div className="rounded-2xl border border-graphite/5 dark:border-white/10 bg-white dark:bg-white/5 p-6 space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex items-center gap-4">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-coral/10 text-coral">
+                  <Calendar className="size-5" />
                 </div>
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-graphite/45 dark:text-white/50 font-semibold">Frequency</p>
+                  <p className="text-base font-semibold text-graphite dark:text-white">{frequencyLabel || "Weekly"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-mint/10 text-mint">
+                  <PawPrint className="size-5" />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-graphite/45 dark:text-white/50 font-semibold">Coverage</p>
+                  <p className="text-base font-semibold text-graphite dark:text-white">
+                    {derivedDogsCount} {derivedDogsCount === 1 ? "dog" : "dogs"} · {yardLabel || "Standard yard"}
+                    </p>
+                </div>
+              </div>
+            </div>
 
-                <ul className="grid sm:grid-cols-2 gap-2">
-                  {profileFields.map(([label, ok]: [string, boolean]) => (
-                    <li key={label} className="flex items-center gap-2 text-sm">
-                      {ok ? (
-                        <span className="text-lg animate-bounce">🐾</span>
-                      ) : (
-                        <span className="text-lg opacity-50">⭕</span>
-                      )}
-                      <span
-                        className={
-                          ok ? "text-slate-600 line-through" : "text-slate-700"
-                        }
-                      >
-                        {label}
-                      </span>
+            {overviewInstructions.length > 0 && (
+              <div className="rounded-xl bg-slate-50 dark:bg-white/5 border border-graphite/5 dark:border-white/10 p-4">
+                <p className="text-xs uppercase tracking-widest text-graphite/45 dark:text-white/50 font-semibold mb-2">Notes for crew</p>
+                <ul className="space-y-1">
+                  {overviewInstructions.slice(0, 2).map((line) => (
+                    <li key={line} className="text-sm text-graphite/70 dark:text-white/70 flex items-start gap-2">
+                      <span className="text-coral mt-1">•</span>
+                      <span>{line}</span>
                     </li>
                   ))}
                 </ul>
-
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={onOpenProfileForm}>
-                    {forms.showProfileForm
-                      ? "Close Profile Form"
-                      : "Update Profile"}
-                  </Button>
-                  <Button variant="outline" onClick={onOpenDogForm}>
-                    {forms.showDogForm ? "Close Dog Form" : "Add Dog Profile"}
-                  </Button>
-                </div>
-
-                {forms.showProfileForm && (
-                  <div className="mt-4 space-y-3 p-4 border rounded-xl">
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium mb-1">
-                          Phone
-                        </label>
-                        <Input
-                          value={forms.formPhone}
-                          onChange={(e) => forms.setFormPhone(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium mb-1">
-                          ZIP
-                        </label>
-                        <Input
-                          value={forms.formZip}
-                          onChange={(e) => forms.setFormZip(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1">
-                        Address
-                      </label>
-                      <AddressAutocomplete
-                        value={forms.formAddress}
-                        onChange={forms.setFormAddress}
-                        onSelect={(addr) => {
-                          if (addr.formattedAddress)
-                            forms.setFormAddress(addr.formattedAddress);
-                          if (addr.city) forms.setFormCity(addr.city || "");
-                          if (addr.postalCode)
-                            forms.setFormZip(addr.postalCode || "");
-                        }}
-                      />
-                    </div>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium mb-1">
-                          City
-                        </label>
-                        <Input
-                          value={forms.formCity}
-                          onChange={(e) => forms.setFormCity(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button
-                          onClick={forms.submitProfile}
-                          disabled={forms.savingProfile}
-                        >
-                          {forms.savingProfile ? "Saving…" : "Save Profile"}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {forms.showDogForm && (
-                  <div className="mt-4 space-y-3 p-4 border rounded-xl">
-                    <div>
-                      <label className="block text-xs font-medium mb-1">
-                        Dog Name *
-                      </label>
-                      <Input
-                        value={forms.dogName}
-                        onChange={(e) => forms.setDogName(e.target.value)}
-                      />
-                    </div>
-                    <div className="grid sm:grid-cols-3 gap-3">
-                      <div className="sm:col-span-2">
-                        <label className="block text-xs font-medium mb-1">
-                          Breed
-                        </label>
-                        <select
-                          className="w-full border rounded-md p-2"
-                          value={forms.dogBreed}
-                          onChange={(e) => forms.setDogBreed(e.target.value)}
-                        >
-                          <option value="">Select breed</option>
-                          <option value="Mixed Breed">Mixed Breed</option>
-                          <option value="Labrador Retriever">
-                            Labrador Retriever
-                          </option>
-                          <option value="Golden Retriever">
-                            Golden Retriever
-                          </option>
-                          <option value="German Shepherd">
-                            German Shepherd
-                          </option>
-                          <option value="French Bulldog">French Bulldog</option>
-                          <option value="Bulldog">Bulldog</option>
-                          <option value="Poodle">Poodle</option>
-                          <option value="Beagle">Beagle</option>
-                          <option value="Rottweiler">Rottweiler</option>
-                          <option value="Yorkshire Terrier">
-                            Yorkshire Terrier
-                          </option>
-                          <option value="Dachshund">Dachshund</option>
-                          <option value="Boxer">Boxer</option>
-                          <option value="Australian Shepherd">
-                            Australian Shepherd
-                          </option>
-                          <option value="Cavalier King Charles Spaniel">
-                            Cavalier King Charles Spaniel
-                          </option>
-                          <option value="Shih Tzu">Shih Tzu</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium mb-1">
-                          Age
-                        </label>
-                        <Input
-                          value={forms.dogAge}
-                          onChange={(e) => forms.setDogAge(e.target.value)}
-                          type="number"
-                          min="0"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid sm:grid-cols-3 gap-3 items-end">
-                      <div>
-                        <label className="block text-xs font-medium mb-1">
-                          Weight (lbs)
-                        </label>
-                        <Input
-                          value={forms.dogWeight}
-                          onChange={(e) => forms.setDogWeight(e.target.value)}
-                          type="number"
-                          min="0"
-                        />
-                      </div>
-                      <div className="sm:col-span-2 flex justify-end">
-                        <Button
-                          onClick={forms.submitDog}
-                          disabled={forms.savingDog || !forms.dogName.trim()}
-                        >
-                          {forms.savingDog ? "Saving…" : "Save Dog"}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
+            )}
+          </div>
+        </div>
 
-              {/* Referral Incentives */}
-              <div className="p-4 rounded-xl bg-accent-soft border border-accent/20 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="size-4 text-accent" />
-                  <div className="text-sm font-medium text-ink">
-                    Referral rewards
-                  </div>
-                </div>
-                <div className="text-sm text-slate-700 mb-3">
-                  Get a free visit for every referral.
-                </div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <input
-                    readOnly
-                    value={referralUrl}
-                    className="min-w-0 flex-1 px-3 py-2 rounded-lg border border-accent/20 text-sm"
-                    aria-label="Your referral link"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handleCopy}
-                      aria-label="Copy referral link"
-                    >
-                      <Copy className="size-4 mr-2" />{" "}
-                      {copied ? "Copied" : "Copy"}
-                    </Button>
-                    <Button
-                      onClick={onShareReferral}
-                      aria-label="Share referral link"
-                    >
-                      <Share2 className="size-4 mr-2" /> Share
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="mt-6 text-xs text-muted">
-        Wellness signals are informational only and not veterinary advice.
+        {/* Wellness Snapshot - Takes 2 columns */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-heading font-bold text-graphite dark:text-white">Wellness Status</h2>
+            <button
+              onClick={() => onNavigateTab("wellness")}
+              className="text-sm text-coral hover:text-coral-ink font-medium flex items-center gap-1 transition-colors"
+            >
+              Details
+              <ChevronRight className="size-4" />
+            </button>
       </div>
 
-      {/* Coming Soon Overlay for Wellness Insights */}
-      {showWellnessOverlay && (
-        <ComingSoonOverlay
-          onJoinWaitlist={handleJoinWellnessWaitlist}
-          onClose={() => setShowWellnessOverlay(false)}
-          closable={true}
-        />
-      )}
+          <div className="rounded-2xl border border-graphite/5 dark:border-white/10 bg-white dark:bg-white/5 p-6 h-[calc(100%-40px)] flex flex-col justify-between">
+            <div className="space-y-4">
+              {/* Status badge */}
+              <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${
+                recentInsightsLevel === "WATCH"
+                  ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                  : "bg-mint/10 text-mint"
+              }`}>
+                {recentInsightsLevel === "WATCH" ? (
+                  <Heart className="size-4" />
+                ) : (
+                  <ShieldCheck className="size-4" />
+                )}
+                <span className="text-sm font-semibold">
+                  {recentInsightsLevel === "WATCH" ? "Monitoring trends" : "All Clear"}
+                </span>
+              </div>
+
+              <p className="text-graphite/60 dark:text-white/60 text-sm">
+                {recentInsightsLevel === "WATCH"
+                  ? "We noticed something worth watching. Check the wellness tab for details."
+                  : "Your pup's metrics look great. Keep up the good work!"}
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-graphite/5 dark:border-white/10 mt-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-graphite/50 dark:text-white/50">Service streak</span>
+                <span className="font-semibold text-graphite dark:text-white">{serviceStreak} consecutive visits</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ====== UPCOMING VISITS ====== */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-heading font-bold text-graphite dark:text-white">Upcoming Visits</h2>
+          <button
+            onClick={() => onNavigateTab("services")}
+            className="text-sm text-coral hover:text-coral-ink font-medium flex items-center gap-1 transition-colors"
+          >
+            View full schedule
+            <ChevronRight className="size-4" />
+          </button>
+      </div>
+
+        <div className="rounded-2xl border border-graphite/5 dark:border-white/10 bg-white dark:bg-white/5 divide-y divide-graphite/5 dark:divide-white/10">
+          {upcomingVisits.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="mx-auto size-16 rounded-2xl bg-slate-100 dark:bg-white/10 flex items-center justify-center mb-4">
+                <Calendar className="size-7 text-graphite/30 dark:text-white/30" />
+              </div>
+              <p className="text-graphite/50 dark:text-white/50 text-sm">
+                Your next visits will appear here as soon as they are scheduled.
+              </p>
+              </div>
+            ) : (
+              upcomingVisits.map((visit) => {
+                const visitDate = new Date(visit.scheduledDate);
+                const status = visit.status.toLowerCase();
+                const statusLabel = toTitle(visit.status);
+
+                return (
+                <div key={visit.id} className="flex items-center justify-between p-5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className={`flex size-11 items-center justify-center rounded-xl ${
+                      status === "completed"
+                        ? "bg-mint/10 text-mint"
+                        : status === "in_progress"
+                          ? "bg-amber-100/70 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                          : "bg-coral/10 text-coral"
+                    }`}>
+                      {status === "completed" ? <CheckCircle className="size-5" /> : <Calendar className="size-5" />}
+                      </div>
+                      <div>
+                      <p className="font-semibold text-graphite dark:text-white">
+                        {shortDayFormatter.format(visitDate)}
+                        </p>
+                      <p className="text-xs text-graphite/50 dark:text-white/50">{toTitle(visit.serviceType)}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                      status === "completed"
+                        ? "bg-mint/10 text-mint"
+                        : status === "scheduled"
+                          ? "bg-coral/10 text-coral"
+                          : status === "in_progress"
+                            ? "bg-amber-100/70 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                            : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                    }`}>
+                      <span className="size-1.5 rounded-full bg-current" />
+                      {status === "scheduled" ? "Upcoming" : statusLabel}
+                    </span>
+                  </div>
+                  </div>
+                );
+              })
+            )}
+        </div>
+      </section>
+
+      {/* ====== QUICK ACTIONS GRID ====== */}
+      <section className="grid gap-4 md:grid-cols-2">
+        {/* Referral Card */}
+        <button
+          onClick={handleCopyReferral}
+          className="group text-left rounded-2xl border border-coral/15 dark:border-coral/30 bg-gradient-to-br from-coral/5 to-transparent dark:from-coral/10 dark:to-transparent p-6 hover:shadow-lg hover:shadow-coral/5 dark:hover:shadow-coral/10 transition-all duration-300 hover:-translate-y-0.5"
+        >
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-coral/10 text-coral group-hover:scale-110 transition-transform">
+              {copied ? <CheckCircle className="size-5" /> : <Copy className="size-5" />}
+            </div>
+            <ChevronRight className="size-5 text-coral/50 group-hover:text-coral group-hover:translate-x-1 transition-all" />
+          </div>
+          <h3 className="text-base font-heading font-bold text-graphite dark:text-white mb-1">
+            {copied ? "Link Copied!" : "Share with Neighbors"}
+          </h3>
+          <p className="text-sm text-graphite/60 dark:text-white/60">
+            Earn free cleanups when friends sign up using your referral link.
+          </p>
+        </button>
+
+        {/* Eco Impact Card */}
+        <button
+          onClick={() => onNavigateTab("eco")}
+          className="group text-left rounded-2xl border border-evergreen/15 dark:border-mint/30 bg-gradient-to-br from-evergreen/5 to-transparent dark:from-mint/10 dark:to-transparent p-6 hover:shadow-lg hover:shadow-evergreen/5 dark:hover:shadow-mint/10 transition-all duration-300 hover:-translate-y-0.5"
+        >
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-evergreen/10 dark:bg-mint/10 text-evergreen-500 dark:text-mint group-hover:scale-110 transition-transform">
+              <Leaf className="size-5" />
+            </div>
+            <ChevronRight className="size-5 text-evergreen/50 dark:text-mint/50 group-hover:text-evergreen-500 dark:group-hover:text-mint group-hover:translate-x-1 transition-all" />
+          </div>
+          <h3 className="text-base font-heading font-bold text-graphite dark:text-white mb-1">
+            {hasComposting ? "Your Eco Impact" : "Unlock Compost Impact"}
+          </h3>
+          <p className="text-sm text-graphite/60 dark:text-white/60">
+            {hasComposting
+              ? `${lbsDivertedAllTime} lbs diverted from landfills. See your full environmental impact.`
+              : "Add compost routing to track diversion and see your environmental impact."}
+          </p>
+        </button>
+      </section>
+
+      {/* Reschedule Dialog */}
+      <Dialog
+        open={rescheduleOpen}
+        onOpenChange={(value) => {
+          if (!actionLoading) {
+            setActionError(null);
+            setRescheduleOpen(value);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white text-graphite dark:bg-slate-900 dark:text-slate-50 sm:max-w-5xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-heading font-bold text-graphite dark:text-white">
+              Reschedule Your Visit
+            </DialogTitle>
+          </DialogHeader>
+          <ScheduleSelector
+            zipCode={user.zipCode ?? ""}
+            frequency={
+              (serviceSummary?.frequency ?? user.serviceFrequency ?? "weekly") as any
+            }
+            weekendUpgrade={Boolean(serviceSummary?.weekendUpgrade)}
+            selectedDate={rescheduleDate}
+            onDateSelected={setRescheduleDate}
+            selectedWindow={rescheduleWindow}
+            onWindowSelected={(window) => setRescheduleWindow(window)}
+            mode="reschedule"
+          />
+          {actionError && (
+            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/30 dark:text-red-400 rounded-lg px-4 py-2">{actionError}</p>
+          )}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setRescheduleOpen(false)}
+              disabled={actionLoading}
+              className="rounded-xl dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReschedule}
+              disabled={actionLoading}
+              className="bg-mint hover:bg-mint/90 text-white rounded-xl"
+            >
+              {actionLoading ? "Saving..." : "Confirm Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

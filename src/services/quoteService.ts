@@ -14,12 +14,12 @@ export class QuoteService {
         businessType: quoteData.businessType,
         serviceFrequency: quoteData.serviceFrequency,
         address: quoteData.address,
-        addOns: quoteData.addOns,
+        addOns: quoteData.addOns as any,
         lastCleanedBucket: quoteData.lastCleanedBucket,
         initialClean: quoteData.initialClean,
       };
 
-      const pricing = await calculatePrice(quoteInput);
+      const pricing: any = await calculatePrice(quoteInput);
 
       return {
         basePrice: (pricing as any).breakdown?.basePrice,
@@ -34,8 +34,8 @@ export class QuoteService {
             ]
           : [],
         totalPrice: pricing.total,
-        requiresCustomQuote: pricing.requiresCustomQuote || false,
-        commercialMessage: (pricing as any).commercialMessage,
+        requiresCustomQuote: Boolean(pricing.requiresCustomQuote),
+        commercialMessage: pricing.commercialMessage,
       };
     } catch (error) {
       console.error("Error calculating pricing:", error);

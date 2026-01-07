@@ -1,540 +1,632 @@
 "use client";
 
-import { useRef, useState } from "react";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useMotionValue,
-  useSpring,
-} from "framer-motion";
-import {
-  Leaf,
-  Shield,
-  ShieldCheck,
-  Sparkles,
-  MapPin,
-  Users,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, CheckCircle, Copy, Leaf, Mail, MapPin, Phone, Shield, Sparkles, Twitter, Users, WandSparkles } from "lucide-react";
 
-import Reveal from "@/components/Reveal";
-import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
-import { splitHeadline, dur, ease, spring } from "@/lib/motion/presets";
+import { Button } from "@/components/ui/button";
+import AppStoreButtons from "@/components/wellness/AppStoreButtons";
 import { track } from "@/lib/analytics";
+import type { ZipEligibilityResult, DensityClassification } from "@/lib/zip-eligibility";
+import { buildTileMessaging } from "@/lib/marketplace/tile-readiness";
+import type { ServiceTileStatus } from "@prisma/client";
+import { useTheme } from "@/components/theme/ThemeProvider";
+
+const ritualMoments = [
+  {
+    title: "Gate & hazard check",
+    copy: "We text when we’re en route, secure the gate, and start a figure-eight sweep while flagging anything unsafe in the yard.",
+  },
+  {
+    title: "Scoop, flag, tidy",
+    copy: "Every zone gets a tight figure-eight pattern while we double-bag, capture stool health notes, place bags neatly in your bin or haul them away, tidy paths + patios, and send a photo of the latched gate before we leave.",
+  },
+  {
+    title: "Wellness insight",
+    copy: "We log color, consistency, and content. If something looks unusual, we flag it in your recap—images are available on request (never pushed by default).",
+  },
+];
+
+const testimonial = {
+  quote:
+    "I’m not the type to analyze my dog’s poop, so when they texted me about blood streaks I wouldn’t have seen, it was a wake up call. We booked the vet that afternoon and caught an ulcer early. That’s the kind of scoop crew I want.",
+  author: "Jess & Milo · St. Louis Park",
+};
+
+const HERO_BACKGROUNDS = {
+  light: {
+    desktop: { src: "/hero_backgrounds/aussie_teal_left_light.jpeg", alt: "Australian shepherd enjoying a bright yard" },
+    mobile: { src: "/hero_backgrounds/aussie_teal_left_light.jpeg", alt: "Australian shepherd enjoying a bright yard" },
+  },
+  dark: {
+    desktop: { src: "/hero_backgrounds/aussie_teal_left_dark.jpeg", alt: "Australian shepherd in a calm evening yard" },
+    mobile: { src: "/hero_backgrounds/aussie_teal_left_dark.jpeg", alt: "Australian shepherd in a calm evening yard" },
+  },
+} as const;
+
+type CityInfo = {
+  city: string;
+  state: string;
+};
+
+type HeroZipResult = {
+  valid: boolean;
+  message: string;
+  detail?: string;
+  estimatedDelivery?: string | null;
+  tileSlug?: string | null;
+  tileStatus?: ServiceTileStatus | null;
+  activationEligible?: boolean | null;
+  advisories?: string[];
+  cityInfo?: CityInfo | null;
+  densityInfo?: DensityClassification | null;
+};
+
+const TILE_STATUS_LABELS: Record<ServiceTileStatus, string> = {
+  LIVE: "Live",
+  WAITLIST: "Waitlist",
+  DRAFT: "In planning",
+  SUSPENDED: "Temporarily paused",
+};
+
+function describeTileStatus(status?: ServiceTileStatus | null) {
+  if (!status) return "";
+  return TILE_STATUS_LABELS[status] ?? status;
+}
 
 export default function Hero() {
-  const heroRef = useRef<HTMLElement>(null);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const [isHovered, setIsHovered] = useState(false);
+  const [zipCode, setZipCode] = useState("");
+  const [isCheckingZip, setIsCheckingZip] = useState(false);
+  const [zipResult, setZipResult] = useState<HeroZipResult | null>(null);
+  const zipInputRef = useRef<HTMLInputElement | null>(null);
+  const { theme } = useTheme();
+  
+  // Waitlist form state
+  const [showWaitlistForm, setShowWaitlistForm] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistPhone, setWaitlistPhone] = useState("");
+  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  const [waitlistCount, setWaitlistCount] = useState(0);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
+  const heroBackground = useMemo(() => {
+    const mode = theme === "dark" ? "dark" : "light";
+    return HERO_BACKGROUNDS[mode];
+  }, [theme]);
 
-  const { prefersReducedMotion } = useReducedMotionSafe();
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
-  // Parallax transforms for background elements
-  const blob1Y = useTransform(scrollYProgress, [0, 1], [0, -50]);
-  const blob2Y = useTransform(scrollYProgress, [0, 1], [0, -30]);
-  const blob3Y = useTransform(scrollYProgress, [0, 1], [0, -70]);
+  const overlayStyle = useMemo(() => {
+    if (theme === "dark") {
+      return "linear-gradient(155deg, rgba(8,16,12,0.55) 0%, rgba(10,20,15,0.45) 50%, rgba(12,24,18,0.35) 100%)";
+    }
+    return "linear-gradient(155deg, rgba(7,11,8,0.24) 0%, rgba(10,16,12,0.22) 50%, rgba(12,18,14,0.2) 100%)";
+  }, [theme]);
+  const zipDisabled = zipCode.length !== 5 || isCheckingZip;
 
-  // Magnetic hover effect
-  const buttonX = useSpring(
-    useTransform(mouseX, [0, 1920], [-3, 3]),
-    spring.soft,
-  );
-  const buttonY = useSpring(
-    useTransform(mouseY, [0, 1080], [-3, 3]),
-    spring.soft,
-  );
+  const checkZipCode = useCallback(async () => {
+    if (!zipCode.trim() || zipCode.length !== 5) {
+      setZipResult({ valid: false, message: "Please enter a valid 5-digit ZIP" });
+      return;
+    }
 
-  // Handle mouse movement for magnetic effect
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isHovered) return;
-    mouseX.set(e.clientX);
-    mouseY.set(e.clientY);
-  };
+    setIsCheckingZip(true);
+    setZipResult(null);
+    setShowWaitlistForm(false);
+    setWaitlistSuccess(false);
+    setWaitlistError(null);
+
+    try {
+      const response = await fetch(`/api/zip-eligibility?zipCode=${zipCode.trim()}`);
+      const data: ZipEligibilityResult = await response.json();
+      const tile = data.tile ?? null;
+      const tileMessaging = buildTileMessaging(data);
+      
+      // Extract city info
+      const cityInfo = data.cityInfo ?? null;
+      const densityInfo = data.densityClassification ?? null;
+
+      const result: HeroZipResult = {
+        valid: data.eligible,
+        message: tileMessaging.headline,
+        detail: tileMessaging.detail,
+        estimatedDelivery: data.estimatedDelivery ?? null,
+        tileSlug: tile?.slug ?? null,
+        tileStatus: tile?.status ?? null,
+        activationEligible: tile?.activationEligible ?? null,
+        advisories: tileMessaging.advisories,
+        cityInfo,
+        densityInfo,
+      };
+      
+      setZipResult(result);
+      
+      // Show waitlist form only if not eligible (zone not serviceable)
+      // If eligible, show the CTA button to get a quote regardless of tile status
+      if (!data.eligible) {
+        setShowWaitlistForm(true);
+      }
+      
+      track("zip_check", {
+        zipCode,
+        eligible: data.eligible,
+        city: cityInfo?.city ?? null,
+        tileStatus: tile?.status ?? null,
+      });
+    } catch (error) {
+      console.error("ZIP check error", error);
+      setZipResult({ valid: false, message: "We couldn't check that ZIP. Try again." });
+    } finally {
+      setIsCheckingZip(false);
+    }
+  }, [zipCode]);
+  
+  // Waitlist submit handler
+  const handleWaitlistSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waitlistEmail.trim() || !zipResult?.cityInfo) return;
+    
+    setIsSubmittingWaitlist(true);
+    setWaitlistError(null);
+    
+    try {
+      const cityName = zipResult.cityInfo.city;
+      const stateName = zipResult.cityInfo.state;
+      const placeId = `zip-${zipCode}-${cityName.toLowerCase().replace(/\s+/g, "-")}-${stateName.toLowerCase()}`;
+      
+      const response = await fetch("/api/cities/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          placeId,
+          city: cityName,
+          state: stateName,
+          email: waitlistEmail.trim(),
+          phone: waitlistPhone.trim() || undefined,
+          population: zipResult.densityInfo?.population || undefined,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to join waitlist");
+      }
+      
+      const data = await response.json();
+      setWaitlistCount(data.waitlistCount || 1);
+      setWaitlistSuccess(true);
+      setShowWaitlistForm(false);
+      
+      track("waitlist_signup", {
+        source: "hero_zip_check",
+        zipCode,
+        city: cityName,
+        tileSlug: zipResult.tileSlug ?? null,
+      });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong";
+      setWaitlistError(errorMessage);
+    } finally {
+      setIsSubmittingWaitlist(false);
+    }
+  }, [waitlistEmail, waitlistPhone, zipCode, zipResult]);
+  
+  // Share URL for waitlist success
+  const shareUrl = typeof window !== "undefined" && zipResult?.cityInfo
+    ? `${window.location.origin}/city?search=${encodeURIComponent(zipResult.cityInfo.city)}`
+    : "";
+    
+  const handleCopyLink = useCallback(() => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [shareUrl]);
+
+  const zipCTA = useMemo(() => {
+    // Show CTA if eligible (based on zone check) - allow quotes even for WAITLIST tiles
+    // The tile status is informational but shouldn't block customers from getting quotes
+    if (!zipResult || !zipResult.valid) return null;
+    return `/quote?zipCode=${zipCode}&skipZipCheck=true&resume=0`;
+  }, [zipResult, zipCode]);
+
+  const handleHowItWorksClick = useCallback(() => {
+    track("cta_hero_how_it_works");
+    const section = document.getElementById("how-it-works");
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const backgroundBase = theme === "dark" ? "#050b08" : "#f8f5ee";
+  const separatorColor = backgroundBase;
 
   return (
     <section
-      ref={heroRef}
-      className="min-h-screen gradient-hero-bg relative overflow-hidden flex items-center"
+      id="hero"
+      className="relative overflow-hidden text-white"
+      style={{ backgroundColor: backgroundBase }}
     >
-      {/* Professional World's First Banner */}
-      <motion.div
-        className="absolute top-0 left-0 right-0 z-50 mt-24 hidden md:block"
-        initial={{ opacity: 0, y: -15, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 1, ease: "easeOut" }}
-      >
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-white/98 via-slate-50/95 to-white/98 backdrop-blur-xl rounded-2xl border-2 border-slate-200/80 shadow-2xl px-10 py-5 ring-2 ring-slate-300/40">
-            <div className="flex items-center justify-center gap-6">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-3 h-3 bg-gradient-to-r from-green-600 to-green-700 rounded-full shadow-sm"></div>
-                  <div className="absolute inset-0 w-3 h-3 bg-gradient-to-r from-green-600 to-green-700 rounded-full animate-pulse opacity-60"></div>
-                </div>
-                <span className="text-base font-black text-slate-900 tracking-wide uppercase">
-                  World's First
-                </span>
-              </div>
-              <div className="h-5 w-px bg-slate-400/80"></div>
-              <span className="text-base text-slate-800 font-semibold tracking-wide">
-                Pet Waste Health Monitoring & Removal Service
-              </span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-      {/* Modern geometric background pattern */}
-      <div className="absolute inset-0 opacity-8">
-        <div
-          className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml,%3Csvg%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22%237BB369%22%20fill-opacity%3D%220.15%22%3E%3Ccircle%20cx%3D%2260%22%20cy%3D%2260%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"
-          style={{
-            animation: prefersReducedMotion ? "none" : "pulse 20s infinite",
-          }}
-        />
+      <div className="absolute inset-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={(isMobile ? heroBackground.mobile.src : heroBackground.desktop.src) || "hero-bg"}
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, ease: "easeInOut" }}
+          >
+            <Image
+              src={isMobile ? heroBackground.mobile.src : heroBackground.desktop.src}
+              alt={isMobile ? heroBackground.mobile.alt : heroBackground.desktop.alt}
+              fill
+              priority
+              className="object-cover"
+              style={{ objectPosition: "40% center" }}
+              sizes="100vw"
+            />
+            <div
+              className="absolute inset-0"
+              style={{ background: overlayStyle }}
+            />
+          </motion.div>
+        </AnimatePresence>
       </div>
-
-      {/* Enhanced floating gradient orbs with better positioning */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute top-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-green-700/30 to-green-600/40 rounded-full blur-3xl"
-          style={{
-            y: prefersReducedMotion ? 0 : blob1Y,
-            opacity: 0.7,
-          }}
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 180, 360],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-gradient-to-br from-green-700/35 to-green-600/25 rounded-full blur-3xl"
-          style={{
-            y: prefersReducedMotion ? 0 : blob2Y,
-            opacity: 0.5,
-          }}
-          animate={{
-            scale: [1.1, 1, 1.1],
-            rotate: [360, 180, 0],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/3 w-72 h-72 bg-gradient-to-br from-green-700/25 to-green-600/35 rounded-full blur-2xl"
-          style={{
-            y: prefersReducedMotion ? 0 : blob3Y,
-            opacity: 0.4,
-          }}
-          animate={{
-            scale: [1, 1.3, 1],
-            x: [-30, 30, -30],
-            y: [-10, 10, -10],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute top-3/4 right-1/3 w-56 h-56 bg-gradient-to-br from-green-700/30 to-green-600/25 rounded-full blur-xl"
-          animate={{
-            scale: [0.8, 1.1, 0.8],
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
-
       <div
-        className="container py-16 md:py-20 grid lg:grid-cols-2 gap-12 items-start relative z-10"
-        onMouseMove={handleMouseMove}
-      >
-        <Reveal>
-          <div className="lg:pr-8">
-            {/* Enhanced headline with better typography and no awkward wrapping */}
-            <motion.div
-              className="text-responsive-4xl font-black leading-[1.1] tracking-tight text-slate-900 mb-2 mt-24"
-              variants={splitHeadline.container}
-              initial="initial"
-              animate="animate"
-            >
-              <motion.span
-                className="block leading-[1.1]"
-                variants={splitHeadline.line}
-              >
-                Clean yard.
-              </motion.span>
-              <motion.span
-                className="block leading-[1.1] bg-gradient-to-r from-green-800 to-green-600 bg-clip-text text-transparent"
-                variants={splitHeadline.line}
-              >
-                Smarter insights.
-              </motion.span>
-              <motion.span
-                className="block text-slate-700 font-bold"
-                variants={splitHeadline.line}
-                transition={{ delay: 0.1 }}
-              >
-                Less landfill.
-              </motion.span>
-            </motion.div>
+        className="pointer-events-none absolute inset-x-0 -bottom-12 z-0 h-16"
+        style={{
+          background: `linear-gradient(to bottom, transparent, ${separatorColor})`,
+        }}
+      />
 
-            {/* Lawngevity Tagline */}
-            <motion.div
-              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/80 border border-green-700/20 shadow-sm backdrop-blur-sm"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              <span className="font-extrabold text-base md:text-lg">
-                <span className="text-green-700">Lawn</span>
-                <span className="text-slate-900">gevity</span>
-              </span>
-              <span className="text-slate-500">•</span>
-              <span className="text-slate-800 font-semibold">Clean Yards</span>
-              <span className="text-slate-500">•</span>
-              <span className="text-slate-800 font-semibold">Healthy Pets</span>
-            </motion.div>
+      <div className="relative z-10 mx-auto flex min-h-[84vh] max-w-5xl flex-col items-center justify-center gap-7 px-6 pb-16 pt-24 text-center text-white drop-shadow-[0_20px_45px_rgba(0,0,0,0.65)] lg:pt-36">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/20 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-white/85 backdrop-blur">
+          <Sparkles className="h-4 w-4 text-[#f3a433]" />
+          Clean yard • Wellness insights included
+        </div>
 
-            {/* Enhanced description with better spacing and readability */}
-            <motion.p
-              className="mt-8 text-responsive-lg leading-relaxed text-slate-600 max-w-2xl text-balance"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-            >
-              <span className="font-semibold text-green-700">
-                The world's first intelligent pet stool monitoring & removal
-                service.
-              </span>{" "}
-              We combine professional weekly scooping with advanced{" "}
-              <span className="text-green-600 font-semibold">
-                AI-powered health insights
-              </span>{" "}
-              to keep your Twin Cities yard pristine while monitoring your dog's
-              wellness—catching potential health issues before they become
-              problems.
-            </motion.p>
+        <h1 className="max-w-4xl font-serif text-[clamp(3.1rem,6.2vw,6.1rem)] leading-[0.95] text-balance">
+          Poop pickup, handled.
+        </h1>
 
-            {/* Coming soon badge with modern styling */}
-            <motion.div
-              className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-700/50 to-green-600/30 border border-green-700/20 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-            >
-              <Sparkles className="size-4 text-green-600" />
-              <span className="text-sm font-semibold text-slate-800">
-                AI Health Monitoring Coming Soon
-              </span>
-            </motion.div>
+        <p className="max-w-3xl text-lg leading-relaxed text-white/88">
+          Clean yard + pet wellness insights—recaps after every visit so you can spot changes early without inspecting.
+        </p>
 
-            {/* Enhanced service area with modern styling */}
-            <motion.div
-              className="mt-8 flex items-center gap-4 p-5 bg-white/80 backdrop-blur-md border border-green-700/20 rounded-3xl shadow-card hover:shadow-floating transition-all duration-300 hover:scale-[1.02]"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-            >
-              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-700/10 to-green-600/15 rounded-2xl shadow-sm">
-                <MapPin className="size-6 text-green-600" />
-              </div>
-              <div>
-                <div className="text-base font-bold text-slate-900">
-                  Currently Serving
-                </div>
-                <div className="text-sm text-slate-600">
-                  South Minneapolis • Richfield • Edina • Bloomington
-                </div>
-              </div>
-            </motion.div>
+        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Button
+            asChild
+            className="h-12 rounded-full bg-[#f3a433] px-8 text-base font-semibold text-black shadow-[0_20px_45px_rgba(243,164,51,0.45)] hover:bg-[#f5b249]"
+          >
+            <Link href="/quote" onClick={() => track("cta_hero_get_quote")}>
+              Get my quote <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 rounded-full border-white/55 bg-white/90 px-6 text-base font-semibold text-[#1c1209] shadow-[0_12px_30px_rgba(0,0,0,0.2)] hover:bg-white dark:border-white dark:bg-transparent dark:text-white dark:hover:bg-white/15"
+            type="button"
+            onClick={handleHowItWorksClick}
+          >
+            How it works
+          </Button>
+        </div>
 
-            {/* Enhanced CTAs with modern design */}
-            <motion.div
-              className="mt-12 flex flex-col sm:flex-row gap-4"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.6 }}
-              onHoverStart={() => setIsHovered(true)}
-              onHoverEnd={() => setIsHovered(false)}
-            >
-              <motion.a
-                href="/quote?businessId=yardura"
-                data-analytics="cta_hero_get_quote"
-                className="btn-cta-primary group"
-                style={{
-                  x: prefersReducedMotion ? 0 : buttonX,
-                  y: prefersReducedMotion ? 0 : buttonY,
-                }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                transition={spring.snappy}
-                onClick={() => track("cta_hero_get_quote")}
-              >
-                <span className="flex items-center gap-2">
-                  Get My Quote
-                  <span className="text-xl group-hover:translate-x-1 transition-transform duration-200">
-                    →
-                  </span>
-                </span>
-              </motion.a>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/70">
+            Prefer to start with the free app?
+          </p>
+          <AppStoreButtons compact className="items-center justify-center" />
+          <Link
+            href="/wellness"
+            className="text-xs font-semibold uppercase tracking-[0.32em] text-white/75 hover:text-white"
+          >
+            See wellness app features
+          </Link>
+        </div>
 
-              <motion.a
-                href="#services"
-                data-analytics="hero_how_it_works"
-                className="btn-cta-ghost px-8 py-4 rounded-2xl font-semibold text-lg text-slate-700 hover:text-slate-800"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                transition={spring.snappy}
-                onClick={() => track("cta_hero_how_it_works")}
-              >
-                How it works
-              </motion.a>
-            </motion.div>
-
-            {/* Enhanced trust indicators with modern pill design */}
-            <motion.div
-              className="mt-10 mb-16 flex flex-wrap gap-3"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.6 }}
-            >
-              <div className="flex items-center gap-2 px-4 py-2 bg-green-100/50 border border-green-700/20 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
-                <ShieldCheck className="size-4 text-green-600" />
-                <span className="text-sm font-semibold text-slate-800">
-                  No contracts
-                </span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-green-100/50 border border-green-700/20 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
-                <Sparkles className="size-4 text-green-600" />
-                <span className="text-sm font-semibold text-slate-800">
-                  Early warning alerts
-                </span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-green-100/50 border border-green-700/20 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
-                <Leaf className="size-4 text-green-700" />
-                <span className="text-sm font-semibold text-slate-800">
-                  Eco composting
-                </span>
-              </div>
-            </motion.div>
+        <div className="mt-1 flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-white/80">
+          <div className="inline-flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Gate secured + photo proof
           </div>
-        </Reveal>
-
-        <Reveal delay={0.2}>
-          <div className="relative mt-32">
-            {/* Enhanced image container - larger and better proportioned */}
-            <div className="relative rounded-3xl bg-white/50 backdrop-blur-md border border-white/80 shadow-3xl p-6 overflow-visible interactive-hover">
-              <div className="rounded-2xl overflow-hidden bg-white shadow-floating">
-                <video
-                  src="/hero-video.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-[450px] md:h-[550px] object-cover"
-                  poster="/modern_yard.png" // Fallback image while loading
-                />
-              </div>
-
-              {/* Floating stats card - better positioned */}
-              <motion.div
-                className="absolute -bottom-6 -left-6 bg-white/95 backdrop-blur-md rounded-3xl border border-green-700/20 shadow-floating p-5 z-10 interactive-hover"
-                initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 1, duration: 0.6 }}
-                whileHover={{ scale: 1.05, y: -2 }}
-              >
-                <div className="text-center min-w-[180px]">
-                  <div className="text-xs text-green-700 font-medium mb-1">
-                    Up to
-                  </div>
-                  <div className="text-gradient text-4xl font-black mb-1">
-                    250+ lbs
-                  </div>
-                  <div className="text-sm text-green-700 font-semibold leading-tight">
-                    kept out of landfill
-                  </div>
-                  <div className="text-xs text-green-600 font-medium">
-                    per dog per year
-                  </div>
-                  <div className="mt-3 flex items-center justify-center gap-2 px-3 py-1 bg-gradient-to-r from-green-700/30 to-green-600/40 border border-green-700/20 rounded-full">
-                    <Leaf className="size-3 text-green-700" />
-                    <span className="text-xs text-green-700 font-bold">
-                      Eco mission!
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Enhanced satisfaction guarantee badge */}
-              <motion.div
-                className="absolute -top-4 -right-4 bg-gradient-to-br from-green-800 to-green-700 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-floating border-2 border-white/60 backdrop-blur-sm z-10 interactive-hover"
-                initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                transition={{ delay: 1.2, duration: 0.6 }}
-                whileHover={{ scale: 1.05, rotate: 2, y: -2 }}
-              >
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="size-4" />
-                  <div className="flex flex-col leading-none">
-                    <span className="text-xs font-medium opacity-90">100%</span>
-                    <span className="text-sm font-bold">Satisfaction</span>
-                    <span className="text-xs font-medium opacity-90">
-                      Guarantee
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Pre-launch badge - better positioned to avoid overlap */}
-              <motion.div
-                className="absolute top-1/3 -right-6 bg-white/95 backdrop-blur-md rounded-3xl border border-green-700/20 shadow-floating p-4 z-10 interactive-hover"
-                initial={{ opacity: 0, x: 20, scale: 0.9 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ delay: 1.4, duration: 0.6 }}
-                whileHover={{ scale: 1.05, x: -2 }}
-              >
-                <div className="text-center min-w-[120px]">
-                  <div className="text-gradient-subtle text-sm font-bold mb-1">
-                    Wellness Insights
-                  </div>
-                  <div className="text-green-700 text-sm font-bold mb-2">
-                    Coming Soon
-                  </div>
-                  <div className="text-xs text-slate-600 font-semibold">
-                    Twin Cities
-                  </div>
-                  <div className="mt-2 px-3 py-1 bg-gradient-to-r from-green-700/10 to-green-600/15 border border-green-700/20 rounded-full">
-                    <div className="text-xs text-green-700 font-bold">2026</div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Service Highlights - Fill space below video */}
-            <motion.div
-              className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.6, duration: 0.6 }}
-            >
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-green-700/20 shadow-lg p-4 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl">
-                    <ShieldCheck className="size-5 text-green-700" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">
-                      Weekly Service
-                    </div>
-                    <div className="text-xs text-slate-600">
-                      Consistent, reliable maintenance
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-green-700/20 shadow-lg p-4 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl">
-                    <Leaf className="size-5 text-green-700" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">
-                      Eco-Friendly
-                    </div>
-                    <div className="text-xs text-slate-600">
-                      Sustainable composting process
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-green-700/20 shadow-lg p-4 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl">
-                    <MapPin className="size-5 text-green-700" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">
-                      Local Service
-                    </div>
-                    <div className="text-xs text-slate-600">
-                      Twin Cities focused, fast response
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-green-700/20 shadow-lg p-4 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl">
-                    <Sparkles className="size-5 text-green-700" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">
-                      Smart Insights
-                    </div>
-                    <div className="text-xs text-slate-600">
-                      AI-powered health monitoring
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+          <div className="inline-flex items-center gap-2">
+            <WandSparkles className="h-4 w-4" />
+            Tidy sweep, every zone
           </div>
-        </Reveal>
+          <div className="inline-flex items-center gap-2">
+            <Leaf className="h-4 w-4" />
+            Deodorize / haul‑away / compost add‑ons
+          </div>
+        </div>
+
       </div>
 
-      {/* Enhanced bottom trust bar with modern design */}
-      <motion.div
-        className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-green-700/20 shadow-card"
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.4, duration: 0.8 }}
-      >
-        <div className="container py-8">
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm">
-            <div className="flex items-center gap-3 text-slate-700 hover:text-green-700 transition-colors duration-300">
-              <div className="w-3 h-3 bg-green-700 rounded-full shadow-sm"></div>
-              <span className="font-semibold">Licensed & Insured</span>
+      <div className="relative z-10 mx-auto max-w-6xl px-6 pb-16">
+        <div className="rounded-[40px] border border-white/15 bg-black/35 p-8 shadow-[0_50px_110px_rgba(0,0,0,0.35)] backdrop-blur">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.1fr)_380px]">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-[0.4em] text-white/70">What you get each visit</p>
+              <h2 className="mt-2 font-serif text-[clamp(2rem,3.5vw,3.1rem)] leading-tight text-white">
+                Clean yard. Gate photo. Recap link.
+              </h2>
+              <div className="mt-6 grid gap-6 md:grid-cols-3">
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">
+                    Arrival text + gate secured
+                  </p>
+                  <p className="text-sm leading-relaxed text-white/75">
+                    We text on the way, secure the gate, and do a consistent sweep.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">
+                    Full-yard sweep + tidy finish
+                  </p>
+                  <p className="text-sm leading-relaxed text-white/75">
+                    Double-bagged cleanup, hazards flagged, and a latched-gate photo before we leave.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">
+                    Pet wellness insights
+                  </p>
+                  <p className="text-sm leading-relaxed text-white/75">
+                    Color • Consistency • Content notes delivered in your recap link.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-slate-700 hover:text-green-700 transition-colors duration-300">
-              <div className="w-3 h-3 bg-green-700 rounded-full shadow-sm"></div>
-              <span className="font-semibold">Eco-friendly Service</span>
+
+            <div className="space-y-6 min-w-0">
+              <div className="relative overflow-hidden rounded-[28px] border border-white/15 bg-black/40 shadow-[0_28px_60px_rgba(0,0,0,0.35)]">
+                <Image
+                  src="/employee/truck_wrapped_scooper.png"
+                  alt="InsightScoop scooper truck"
+                  width={640}
+                  height={420}
+                  className="h-44 w-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                <div className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-white/85">
+                  Local scoopers, routed daily
+                </div>
+              </div>
+              <div
+                id="zip-check"
+                className="rounded-[28px] border border-white/15 bg-black/40 p-6 shadow-[0_30px_70px_rgba(0,0,0,0.35)]"
+              >
+                <p className="text-xs uppercase tracking-[0.4em] text-white/70">Check your ZIP</p>
+                <p className="mt-2 text-base text-white/85">
+                  Enter your ZIP to see availability and get a fast quote.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/15 bg-black/30 px-3 py-2 sm:flex-nowrap">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    placeholder="Enter ZIP"
+                    value={zipCode}
+                    ref={zipInputRef}
+                    onChange={(event) => {
+                      const value = event.target.value.replace(/\D/g, "");
+                      setZipCode(value);
+                      if (zipResult) setZipResult(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") checkZipCode();
+                    }}
+                    className="flex-1 min-w-[120px] bg-transparent text-base font-semibold text-white outline-none placeholder:text-white/55"
+                  />
+                  <Button
+                    onClick={checkZipCode}
+                    disabled={zipDisabled}
+                    className="min-w-[110px] rounded-xl bg-white px-5 text-[#1c1209] hover:bg-white/90 disabled:cursor-not-allowed w-full sm:w-auto"
+                  >
+                    {isCheckingZip ? "Checking…" : "Check"}
+                  </Button>
+                </div>
+                {/* Result Display */}
+                <AnimatePresence mode="wait">
+                  {zipResult && !waitlistSuccess && (
+                    <motion.div
+                      key="result"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className={`mt-4 rounded-2xl border px-4 py-3 ${
+                        zipResult.valid
+                          ? "border-emerald-400/30 bg-emerald-500/20"
+                          : "border-amber-400/30 bg-amber-500/20"
+                      }`}
+                    >
+                      {/* City & Zone Info */}
+                      {zipResult.cityInfo && (
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold text-white">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {zipResult.cityInfo.city}, {zipResult.cityInfo.state}
+                          </span>
+                          {zipResult.densityInfo?.zoneName && (
+                            <span className="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/80">
+                              {zipResult.densityInfo.zoneName}
+                              {zipResult.densityInfo.populationDensity && (
+                                <span className="ml-1 text-white/60">
+                                  • {zipResult.densityInfo.populationDensity.toLocaleString()}/sq mi
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Status Message */}
+                      <div className="flex items-center gap-2">
+                        {zipResult.valid ? (
+                          <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                        ) : (
+                          <Users className="h-5 w-5 text-amber-400 flex-shrink-0" />
+                        )}
+                        <p className="text-sm font-semibold text-white">{zipResult.message}</p>
+                      </div>
+                      
+                      {zipResult.detail && (
+                        <p className="mt-1 text-xs text-white/70">{zipResult.detail}</p>
+                      )}
+                      
+                      {/* CTA for eligible ZIP */}
+                      {zipCTA && (
+                        <div className="mt-3">
+                          <Button asChild className="rounded-full bg-[#f3a433] text-black hover:bg-[#f5b249]">
+                            <Link href={zipCTA}>
+                              Get my quote <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                  
+                  {/* Waitlist Form */}
+                  {showWaitlistForm && zipResult && !zipResult.valid && !waitlistSuccess && (
+                    <motion.form
+                      key="waitlist-form"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      onSubmit={handleWaitlistSubmit}
+                      className="mt-4 space-y-3 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4"
+                    >
+                      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                        <Mail className="h-4 w-4 text-amber-400" />
+                        Join the waitlist — be first to know!
+                      </div>
+                      <p className="text-xs text-white/70">
+                        Your signup helps us prioritize launching in {zipResult.cityInfo?.city || "your area"}.
+                      </p>
+                      
+                      <div className="space-y-2">
+                        <input
+                          type="email"
+                          required
+                          placeholder="Your email"
+                          value={waitlistEmail}
+                          onChange={(e) => setWaitlistEmail(e.target.value)}
+                          className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-2.5 text-sm text-white placeholder:text-white/50 focus:border-amber-400/50 focus:outline-none"
+                        />
+                        <input
+                          type="tel"
+                          placeholder="Phone (optional, for SMS updates)"
+                          value={waitlistPhone}
+                          onChange={(e) => setWaitlistPhone(e.target.value)}
+                          className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-2.5 text-sm text-white placeholder:text-white/50 focus:border-amber-400/50 focus:outline-none"
+                        />
+                      </div>
+                      
+                      {waitlistError && (
+                        <p className="text-xs text-red-400">{waitlistError}</p>
+                      )}
+                      
+                      <Button
+                        type="submit"
+                        disabled={isSubmittingWaitlist || !waitlistEmail.trim()}
+                        className="w-full rounded-xl bg-amber-400 text-slate-900 font-semibold hover:bg-amber-300 disabled:opacity-50"
+                      >
+                        {isSubmittingWaitlist ? "Joining..." : "Join the waitlist"}
+                      </Button>
+                    </motion.form>
+                  )}
+                  
+                  {/* Waitlist Success */}
+                  {waitlistSuccess && zipResult && (
+                    <motion.div
+                      key="waitlist-success"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="mt-4 rounded-2xl border border-emerald-400/30 bg-emerald-500/20 p-4 text-center"
+                    >
+                      <CheckCircle className="mx-auto h-8 w-8 text-emerald-400 mb-2" />
+                      <p className="text-sm font-semibold text-white">You&apos;re on the list!</p>
+                      <p className="mt-1 text-xs text-white/70">
+                        {waitlistCount} {waitlistCount === 1 ? "person has" : "people have"} signed up for {zipResult.cityInfo?.city || "this area"}.
+                      </p>
+                      
+                      {/* Share buttons */}
+                      <div className="mt-3 flex flex-wrap justify-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyLink}
+                          className="rounded-full border-white/20 bg-white/10 text-white text-xs hover:bg-white/20"
+                        >
+                          {copied ? <CheckCircle className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                          {copied ? "Copied!" : "Copy link"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="rounded-full border-white/20 bg-white/10 text-white text-xs hover:bg-white/20"
+                        >
+                          <a
+                            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just signed up for @InsightScoop in ${zipResult.cityInfo?.city || "my city"}! Help us launch by joining the waitlist:`)}&url=${encodeURIComponent(shareUrl)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Twitter className="h-3.5 w-3.5 mr-1" />
+                            Share
+                          </a>
+                        </Button>
+                      </div>
+                      
+                      {/* Scooper CTA */}
+                      <div className="mt-3 pt-3 border-t border-white/10">
+                        <p className="text-xs text-white/60 mb-2">Want to help launch faster?</p>
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full border-brand-coral/40 text-brand-coral hover:bg-brand-coral/10"
+                        >
+                          <Link href="/scooper">
+                            Become a scooper — earn $20-30/hr*
+                          </Link>
+                        </Button>
+                        <p className="mt-1 text-[10px] text-white/40">*Based on avg. yards/hour</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-slate-700 hover:text-green-700 transition-colors duration-300">
-              <div className="w-3 h-3 bg-green-700 rounded-full shadow-sm"></div>
-              <span className="font-semibold">Smart Health Insights</span>
-            </div>
-            <div className="flex items-center gap-3 text-slate-700 hover:text-green-700 transition-colors duration-300">
-              <div className="w-3 h-3 bg-green-700 rounded-full shadow-sm"></div>
-              <span className="font-semibold">Twin Cities Local</span>
+          </div>
+
+          <div className="mt-8 rounded-[28px] border border-white/15 bg-black/35 p-7 shadow-[0_30px_60px_rgba(0,0,0,0.3)]">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <p className="text-lg font-serif leading-relaxed text-white md:text-xl">
+                “{testimonial.quote}”
+              </p>
+              <p className="text-xs uppercase tracking-[0.35em] text-white/70 md:text-right">
+                {testimonial.author}
+              </p>
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }

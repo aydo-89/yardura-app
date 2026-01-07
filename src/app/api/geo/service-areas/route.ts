@@ -12,74 +12,13 @@ import {
   simplifyForRender,
   unionFeatures,
 } from "@/lib/geo";
-import { readFileSync } from "fs";
-import { join } from "path";
 import * as turf from "@turf/turf";
+import { getSiteUrl } from "@/lib/env";
+import { getCitiesForZip } from "@/lib/zip-data";
+import { properCapitalize } from "@/lib/geo/normalize";
 
 // Cache for place polygons and clipped results to improve performance
 const placeCache = new Map<string, any>();
-
-// Path to real ZIP code data
-const ZIP_DATA_PATH = join(process.cwd(), "src", "lib", "zip-city-data.csv");
-
-// Cache for parsed ZIP data
-let zipDataCache: {
-  cities: Map<string, string[]>;
-  counties: Map<string, string[]>;
-} | null = null;
-
-// Load ZIP data from CSV file (copied from pmtiles.ts)
-function loadZipData(): {
-  cities: Map<string, string[]>;
-  counties: Map<string, string[]>;
-} {
-  if (zipDataCache) {
-    return zipDataCache;
-  }
-
-  console.log("Loading ZIP code database...");
-  const csvData = readFileSync(ZIP_DATA_PATH, "utf-8");
-  const lines = csvData.split("\n").slice(1); // Skip header
-
-  const cities = new Map<string, string[]>();
-  const counties = new Map<string, string[]>();
-
-  for (const line of lines) {
-    if (!line.trim()) continue;
-
-    const [stateFips, stateName, stateAbbr, zipcode, county, city] =
-      line.split(",");
-
-    if (zipcode && stateAbbr) {
-      const zip = zipcode.trim();
-      const state = stateAbbr.trim();
-
-      // Index by city
-      if (city) {
-        const cityKey = `${city.toLowerCase().trim()},${state}`;
-        if (!cities.has(cityKey)) {
-          cities.set(cityKey, []);
-        }
-        cities.get(cityKey)!.push(zip);
-      }
-
-      // Index by county
-      if (county) {
-        const countyKey = `${county.toLowerCase().trim()},${state}`;
-        if (!counties.has(countyKey)) {
-          counties.set(countyKey, []);
-        }
-        counties.get(countyKey)!.push(zip);
-      }
-    }
-  }
-
-  zipDataCache = { cities, counties };
-  console.log(
-    `Loaded ZIP data for ${cities.size} cities and ${counties.size} counties`,
-  );
-  return zipDataCache;
-}
 
 export async function GET(req: NextRequest) {
   try {
@@ -128,46 +67,21 @@ export async function GET(req: NextRequest) {
     // If we have city/state grouping (not implemented yet), use it
     // For now, create a single group for all ZIPs
     if (allZips.size > 0) {
-      // Load ZIP to city mapping to properly group ZIPs
-      const { cities, counties } = loadZipData();
       const cityGroups = new Map<string, string[]>();
 
-      // Group ZIPs by their actual cities
       for (const zip of allZips) {
-        let foundCity = false;
+        const matches = getCitiesForZip(zip);
 
-        // Check cities first
-        for (const [cityKey, cityZips] of cities.entries()) {
-          if (cityZips.includes(zip)) {
-            const [city, state] = cityKey.split(",");
-            const groupKey = `${city}, ${state}`;
+        if (matches.length) {
+          matches.forEach(({ city, state }) => {
+            const capitalizedCity = properCapitalize(city);
+            const groupKey = `${capitalizedCity}, ${state}`;
             if (!cityGroups.has(groupKey)) {
               cityGroups.set(groupKey, []);
             }
             cityGroups.get(groupKey)!.push(zip);
-            foundCity = true;
-            break;
-          }
-        }
-
-        // If not found in cities, check counties
-        if (!foundCity) {
-          for (const [countyKey, countyZips] of counties.entries()) {
-            if (countyZips.includes(zip)) {
-              const [county, state] = countyKey.split(",");
-              const groupKey = `${county} County, ${state}`;
-              if (!cityGroups.has(groupKey)) {
-                cityGroups.set(groupKey, []);
-              }
-              cityGroups.get(groupKey)!.push(zip);
-              foundCity = true;
-              break;
-            }
-          }
-        }
-
-        // If still not found, add to unknown group
-        if (!foundCity) {
+          });
+        } else {
           const unknownKey = "Unknown Location";
           if (!cityGroups.has(unknownKey)) {
             cityGroups.set(unknownKey, []);
@@ -206,26 +120,13 @@ export async function GET(req: NextRequest) {
           { city: string; state: string }
         >();
 
-        // Load the ZIP data to find which cities contain these ZIPs
-        const { cities, counties } = loadZipData();
-
-        // Create reverse lookup from ZIP to city/state
-        for (const [cityKey, zips] of cities) {
-          const [city, state] = cityKey.split(",");
-          for (const zip of zips) {
-            if (allZips.has(zip)) {
-              zipToLocation.set(zip, { city, state });
-            }
-          }
-        }
-
-        // Also check counties
-        for (const [countyKey, zips] of counties) {
-          const [county, state] = countyKey.split(",");
-          for (const zip of zips) {
-            if (allZips.has(zip) && !zipToLocation.has(zip)) {
-              zipToLocation.set(zip, { city: county, state });
-            }
+        for (const zip of allZips) {
+          const matches = getCitiesForZip(zip);
+          if (matches.length) {
+            zipToLocation.set(zip, {
+              city: properCapitalize(matches[0].city),
+              state: matches[0].state,
+            });
           }
         }
 
@@ -332,7 +233,7 @@ export async function POST(request: NextRequest) {
       case "search-zips":
         // Forward to the new ZIP search API
         const zipSearchResponse = await fetch(
-          `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/geo/zip-search`,
+          `${getSiteUrl()}/api/geo/zip-search`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

@@ -3,7 +3,15 @@ import { calculatePrice } from "@/lib/priceEstimator";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid or empty request body" },
+        { status: 400 }
+      );
+    }
 
     const {
       dogs,
@@ -20,6 +28,7 @@ export async function POST(request: NextRequest) {
       zoneMultiplier,
       areasToClean,
       businessId,
+      weekendUpgrade,
     } = body;
 
     // Call the pricing calculation with business-specific config
@@ -38,6 +47,7 @@ export async function POST(request: NextRequest) {
       zoneMultiplier,
       areasToClean,
       businessId,
+      weekendUpgrade,
     });
 
     return NextResponse.json(result);

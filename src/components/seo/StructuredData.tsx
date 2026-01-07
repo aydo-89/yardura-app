@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { SITE_DOMAIN, BRAND } from "@/lib/seo/config";
 
 interface ArticleData {
   title: string;
@@ -20,7 +21,7 @@ interface ServiceData {
 }
 
 interface StructuredDataProps {
-  type?: "homepage" | "quote" | "service" | "article";
+  type?: "homepage" | "quote" | "service" | "article" | "city" | "neighborhood";
   data?: ArticleData | ServiceData | Record<string, unknown>;
 }
 
@@ -28,19 +29,19 @@ export default function StructuredData({
   type = "homepage",
   data,
 }: StructuredDataProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
 
   const getStructuredData = () => {
     // Enhanced LocalBusiness schema with comprehensive local data
     const localBusinessData = {
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
-      name: "Yardura",
+      name: BRAND.name,
       description:
         "Tech-enabled, eco-friendly dog waste removal with smart health insights. Serving Minneapolis, Richfield, Edina & Bloomington.",
-      url: "https://www.yardura.com",
-      telephone: "+18889159273",
-      email: "hello@yardura.com",
+      url: SITE_DOMAIN,
+      telephone: BRAND.supportPhone,
+      email: BRAND.supportEmail,
       address: {
         "@type": "PostalAddress",
         addressLocality: "Minneapolis",
@@ -77,12 +78,12 @@ export default function StructuredData({
       ],
       openingHours: "Mo-Fr 08:00-18:00",
       priceRange: "$$",
-      image: "https://www.yardura.com/modern_yard.png",
-      logo: "https://www.yardura.com/logo.png",
+      image: `${SITE_DOMAIN}/modern_yard.png`,
+      logo: `${SITE_DOMAIN}/logo.png`,
       sameAs: [
-        "https://www.facebook.com/yardura",
-        "https://www.instagram.com/yardura",
-        "https://www.linkedin.com/company/yardura",
+        "https://www.facebook.com/insightscoop",
+        "https://www.instagram.com/insightscoop",
+        "https://www.linkedin.com/company/insightscoop",
       ],
       hasOfferCatalog: {
         "@type": "OfferCatalog",
@@ -160,17 +161,17 @@ export default function StructuredData({
     const websiteData = {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      name: "Yardura",
-      url: "https://www.yardura.com",
+      name: BRAND.name,
+      url: SITE_DOMAIN,
       description:
         "Minneapolis dog waste removal with eco-friendly disposal and AI health insights",
       publisher: {
         "@type": "LocalBusiness",
-        name: "Yardura",
+        name: BRAND.name,
       },
       potentialAction: {
         "@type": "SearchAction",
-        target: "https://www.yardura.com/search?q={search_term_string}",
+        target: `${SITE_DOMAIN}/search?q={search_term_string}`,
         "query-input": "required name=search_term_string",
       },
       inLanguage: "en-US",
@@ -180,23 +181,23 @@ export default function StructuredData({
     const organizationData = {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "Yardura",
-      url: "https://www.yardura.com",
-      logo: "https://www.yardura.com/logo.png",
+      name: BRAND.name,
+      url: SITE_DOMAIN,
+      logo: `${SITE_DOMAIN}/logo.png`,
       description:
         "Tech-enabled, eco-friendly dog waste removal service in Minneapolis",
-      foundingDate: "2024",
+      foundingDate: BRAND.launchYear,
       contactPoint: {
         "@type": "ContactPoint",
-        telephone: "+18889159273",
+        telephone: BRAND.supportPhone,
         contactType: "customer service",
         areaServed: ["US-MN"],
         availableLanguage: "English",
       },
       sameAs: [
-        "https://www.facebook.com/yardura",
-        "https://www.instagram.com/yardura",
-        "https://www.linkedin.com/company/yardura",
+        "https://www.facebook.com/insightscoop",
+        "https://www.instagram.com/insightscoop",
+        "https://www.linkedin.com/company/insightscoop",
       ],
     };
 
@@ -211,7 +212,7 @@ export default function StructuredData({
                 "@type": "ListItem",
                 position: 1,
                 name: "Home",
-                item: "https://www.yardura.com",
+                item: SITE_DOMAIN,
               },
               {
                 "@type": "ListItem",
@@ -223,8 +224,8 @@ export default function StructuredData({
                       ? "Health Insights"
                       : pathname === "/facts"
                         ? "Service Facts"
-                        : pathname.replace("/", "").replace("-", " "),
-                item: `https://www.yardura.com${pathname}`,
+                        : pathname?.replace("/", "").replace("-", " "),
+                item: `${SITE_DOMAIN}${pathname}`,
               },
             ],
           }
@@ -266,7 +267,7 @@ export default function StructuredData({
                 name: "What are your AI health insights?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Our 3 C's analysis tracks Color, Consistency, and Content changes in your dog's waste. This helps identify potential health issues early. All insights are informational only and do not constitute veterinary advice.",
+                  text: "Our stool health analysis tracks color, consistency, and content changes in your dog's waste. This helps identify potential health issues early. All insights are informational only and do not constitute veterinary advice.",
                 },
               },
               {
@@ -293,14 +294,14 @@ export default function StructuredData({
               "Professional insights on dog health and waste analysis",
             author: {
               "@type": "Person",
-              name: (data as ArticleData)?.author || "Yardura Team",
+              name: (data as ArticleData)?.author || `${BRAND.name} Team`,
             },
             publisher: {
               "@type": "Organization",
-              name: "Yardura",
+              name: BRAND.name,
               logo: {
                 "@type": "ImageObject",
-                url: "https://www.yardura.com/logo.png",
+                url: `${SITE_DOMAIN}/logo.png`,
               },
             },
             datePublished:
@@ -313,7 +314,7 @@ export default function StructuredData({
               "2024-01-15",
             mainEntityOfPage: {
               "@type": "WebPage",
-              "@id": `https://www.yardura.com${pathname}`,
+              "@id": `${SITE_DOMAIN}${pathname}`,
             },
           }
         : null;

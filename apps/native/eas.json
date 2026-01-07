@@ -1,0 +1,50 @@
+{
+  "cli": {
+    "version": ">= 16.28.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://www.getinsightscoop.com",
+        "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCos6ZLi5Cg0U1qpraxI0QlQCjPW-5LjxU",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "development-local": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "http://localhost:3000"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://www.getinsightscoop.com",
+        "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCos6ZLi5Cg0U1qpraxI0QlQCjPW-5LjxU",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://www.getinsightscoop.com",
+        "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCos6ZLi5Cg0U1qpraxI0QlQCjPW-5LjxU"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

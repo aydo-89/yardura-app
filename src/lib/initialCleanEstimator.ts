@@ -67,6 +67,8 @@ export interface InitialCleanEstimate {
     additionalAreaCost: number;
     floorCents: number;
     finalAmount: number;
+    zoneMultiplier: number;
+    totalBeforeZone: number;
   };
 }
 
@@ -93,6 +95,7 @@ export async function calculateInitialClean(
     other?: string;
   } = {},
   businessId: string = "yardura",
+  zoneMultiplier: number = 1,
 ): Promise<InitialCleanEstimate> {
   // Get business config to access configurable buckets
   const businessConfig = await getBusinessConfig(businessId);
@@ -120,13 +123,47 @@ export async function calculateInitialClean(
   const additionalAreaCost = additionalAreas * 500; // $5 per additional area in cents
 
   // Total including areas
-  const totalBaseAmount = bucketApplied + additionalAreaCost;
+  const totalBeforeZone = bucketApplied + additionalAreaCost;
+  const zonedAmount = Math.round(totalBeforeZone * zoneMultiplier);
 
-  // Apply floor price
-  const finalAmount = Math.max(
-    Math.round(totalBaseAmount),
-    bucketConfig.floorPriceCents,
-  );
+  const rawFloorCents =
+    bucketConfig.floorPriceCents ?? bucketConfig.floorCents ?? 0;
+
+  const baselineTier =
+    businessConfig.basePricing.tiers.find((tier) => tier.dogCount === 1) ||
+    businessConfig.basePricing.tiers[0];
+
+  const baselineYardConfig =
+    businessConfig.basePricing.yardSizes.find(
+      (yard) => yard.size === "small" && yard.enabled,
+    ) ||
+    businessConfig.basePricing.yardSizes.find(
+      (yard) => yard.size === "medium" && yard.enabled,
+    ) ||
+    businessConfig.basePricing.yardSizes[0];
+
+  const baselinePerVisitCents = baselineTier
+    ? Math.round(
+        baselineTier.basePriceCents * (baselineYardConfig?.multiplier ?? 1),
+      )
+    : 0;
+
+  let scaledFloorBeforeZone = rawFloorCents;
+
+  const shouldScaleFloor = !['7', '14'].includes(bucket);
+
+  if (shouldScaleFloor && rawFloorCents > 0 && baselinePerVisitCents > 0) {
+    const ratio = perVisitCents / baselinePerVisitCents;
+    const safeRatio = Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
+    const scaled = Math.round(rawFloorCents * safeRatio);
+    scaledFloorBeforeZone = Math.max(rawFloorCents, scaled);
+  }
+
+  scaledFloorBeforeZone += additionalAreaCost;
+
+  const floor = Math.round(scaledFloorBeforeZone * zoneMultiplier);
+
+  const finalAmount = Math.max(zonedAmount, floor || 0);
 
   return {
     initialCleanCents: finalAmount,
@@ -137,7 +174,9 @@ export async function calculateInitialClean(
       bucketMultiplier: bucketConfig.multiplier,
       additionalAreas,
       additionalAreaCost,
-      floorCents: bucketConfig.floorPriceCents,
+      floorCents: scaledFloorBeforeZone,
+      zoneMultiplier,
+      totalBeforeZone,
       finalAmount,
     },
   };
@@ -171,5 +210,5 @@ export function getBucketLabel(
 
 // Validate bucket
 export function isValidBucket(bucket: string): bucket is CleanupBucket {
-  return ["7", "14", "30", "60", "90", "999"].includes(bucket);
+  return ["7", "14", "30", "42", "60", "90", "999"].includes(bucket);
 }

@@ -8,19 +8,35 @@ import { z } from "zod";
 const envSchema = z.object({
   // Database (optional for client-side)
   DATABASE_URL: z.string().url().optional(),
+  DATABASE_POOLER_URL: z.string().url().optional(),
   POSTGRES_DATABASE_URL: z.string().url().optional(),
 
   // NextAuth (optional for client-side)
   NEXTAUTH_SECRET: z.string().min(1).optional(),
   NEXTAUTH_URL: z.string().url().optional(),
+  NEXTAUTH_COOKIE_DOMAIN: z.string().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+
+  // OpenAI
+  OPENAI_API_KEY: z.string().optional(),
 
   // Stripe (optional for client-side)
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
 
+  // RevenueCat (optional for client-side)
+  REVENUECAT_WEBHOOK_SECRET: z.string().min(1).optional(),
+  REVENUECAT_PREMIUM_ENTITLEMENT_ID: z.string().min(1).optional(),
+  // RevenueCat Secret API Key (server-side only; never expose to clients)
+  REVENUECAT_SECRET_API_KEY: z.string().min(1).optional(),
+
   // Google Maps (optional for now)
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional(),
+  GOOGLE_MAPS_API_KEY: z.string().optional(),
+  GOOGLE_MAPS_SERVER_API_KEY: z.string().optional(),
+  GOOGLE_MAPS_BROWSER_API_KEY: z.string().optional(),
 
   // Google Auth
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -73,6 +89,33 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+
+  // Twilio (optional; SMS fall back to console when missing)
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
+  TWILIO_FROM_NUMBER: z.string().optional(),
+  TWILIO_PHONE_NUMBER: z.string().optional(),
+  TWILIO_YARDURA_SID: z.string().optional(),
+  TWILIO_YARDURA_SECRET: z.string().optional(),
+  TWILIO_VOICE_WEBHOOK_AUTH: z.string().optional(),
+  TWILIO_VOICE_STATUS_AUTH: z.string().optional(),
+
+  // Voice agent providers
+  GROQ_API_KEY: z.string().optional(),
+  CEREBRAS_API_KEY: z.string().optional(),
+  DEEPGRAM_API_KEY: z.string().optional(),
+  CARTESIA_API_KEY: z.string().optional(),
+  ELEVENLABS_API_KEY: z.string().optional(),
+  VAPI_API_KEY: z.string().optional(),
+  VAPI_PHONE_NUMBER_ID: z.string().optional(),
+  VOICE_AGENT_JWT_SECRET: z.string().optional(),
+  VOICE_AGENT_STREAM_BASE_URL: z.string().optional(),
+  VOICE_AGENT_KNOWLEDGE_PATH: z.string().optional(),
+  VOICE_AGENT_DEFAULT_LOCALE: z.string().optional(),
+  VOICE_AGENT_PRIMARY_MODEL: z.string().optional(),
+  VOICE_AGENT_FALLBACK_MODEL: z.string().optional(),
+  VOICE_AGENT_WEBHOOK_BASE_URL: z.string().url().optional(),
 });
 
 // Parse and validate environment variables
@@ -91,11 +134,16 @@ try {
   // For missing required fields, try partial parsing with defaults
   try {
     const partialEnv = envSchema.partial().parse(process.env);
+    const fallbackDatabaseUrl =
+      partialEnv.DATABASE_URL ||
+      partialEnv.DATABASE_POOLER_URL ||
+      partialEnv.POSTGRES_DATABASE_URL ||
+      "postgresql://localhost:5432/yardura";
+
     validatedEnv = envSchema.parse({
       ...partialEnv,
       // Provide defaults for required fields
-      DATABASE_URL:
-        partialEnv.DATABASE_URL || "postgresql://localhost:5432/yardura",
+      DATABASE_URL: fallbackDatabaseUrl,
       NEXTAUTH_SECRET: partialEnv.NEXTAUTH_SECRET || "development-secret-key",
       STRIPE_SECRET_KEY: partialEnv.STRIPE_SECRET_KEY || "sk_test_default",
       STRIPE_PUBLISHABLE_KEY:
@@ -120,6 +168,37 @@ try {
 // Export validated environment
 export { validatedEnv as env };
 
+const DEFAULT_DATABASE_URL = "postgresql://localhost:5432/yardura";
+const DEFAULT_SITE_URL =
+  validatedEnv.NODE_ENV === "production"
+    ? "https://www.getinsightscoop.com"
+    : "http://localhost:3000";
+
+const supabaseProjectRef =
+  extractSupabaseProjectRef(validatedEnv.NEXT_PUBLIC_SUPABASE_URL) ??
+  extractSupabaseProjectRef(validatedEnv.DATABASE_URL) ??
+  extractSupabaseProjectRef(validatedEnv.POSTGRES_DATABASE_URL);
+
+export const databaseConfig = {
+  get poolerUrl(): string {
+    const candidate =
+      validatedEnv.DATABASE_POOLER_URL ||
+      validatedEnv.DATABASE_URL ||
+      validatedEnv.POSTGRES_DATABASE_URL ||
+      DEFAULT_DATABASE_URL;
+
+    return normalizeSupabasePoolerUrl(candidate, supabaseProjectRef);
+  },
+  get directUrl(): string {
+    return (
+      validatedEnv.POSTGRES_DATABASE_URL ||
+      validatedEnv.DATABASE_URL ||
+      validatedEnv.DATABASE_POOLER_URL ||
+      DEFAULT_DATABASE_URL
+    );
+  },
+};
+
 // Helper functions for commonly used values
 export const config = {
   // ZIP processing
@@ -142,8 +221,29 @@ export const config = {
   },
 
   // Google Maps
+  get googleMapsServerApiKey(): string | undefined {
+    return (
+      validatedEnv.GOOGLE_MAPS_SERVER_API_KEY ||
+      validatedEnv.GOOGLE_MAPS_API_KEY ||
+      validatedEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    );
+  },
+
+  get googleMapsBrowserApiKey(): string | undefined {
+    return (
+      validatedEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+      validatedEnv.GOOGLE_MAPS_BROWSER_API_KEY ||
+      validatedEnv.GOOGLE_MAPS_API_KEY
+    );
+  },
+
   get googleMapsApiKey(): string | undefined {
-    return validatedEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    return (
+      validatedEnv.GOOGLE_MAPS_SERVER_API_KEY ||
+      validatedEnv.GOOGLE_MAPS_API_KEY ||
+      validatedEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+      validatedEnv.GOOGLE_MAPS_BROWSER_API_KEY
+    );
   },
 
   // ZIP API
@@ -157,6 +257,46 @@ export const config = {
     );
   },
 };
+
+export function getSiteUrl(): string {
+  const candidates = [
+    validatedEnv.NEXTAUTH_URL,
+    validatedEnv.NEXT_PUBLIC_APP_URL,
+    validatedEnv.NEXT_PUBLIC_SITE_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : undefined,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+
+    try {
+      const url = new URL(candidate);
+      const hostname = url.hostname.toLowerCase();
+
+      if (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname.endsWith(".local")
+      ) {
+        continue;
+      }
+
+      if (url.protocol !== "https:") {
+        url.protocol = "https:";
+      }
+
+      return url.toString();
+    } catch {
+      continue;
+    }
+  }
+
+  return DEFAULT_SITE_URL;
+}
 
 // Email configuration helper
 export function getEmailConfig() {
@@ -196,4 +336,69 @@ export function getEmailConfig() {
 export function isAdminEmail(email: string): boolean {
   // Simple check - could be enhanced
   return email.endsWith("@yardura.com") || email.endsWith("@admin.yardura.com");
+}
+
+function extractSupabaseProjectRef(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+
+    const directMatch = host.match(/^([a-z0-9]{15,})\.supabase\.[a-z.]+$/);
+    if (directMatch) {
+      return directMatch[1];
+    }
+
+    const dbMatch = host.match(/^db\.([a-z0-9]{15,})\.supabase\.[a-z.]+$/);
+    if (dbMatch) {
+      return dbMatch[1];
+    }
+  } catch {
+    // ignore parse errors
+  }
+
+  return undefined;
+}
+
+function normalizeSupabasePoolerUrl(
+  url: string,
+  projectRef: string | undefined,
+): string {
+  if (!projectRef) return url;
+
+  try {
+    const parsed = new URL(url);
+
+    if (!parsed.hostname.includes("pooler.supabase.com")) {
+      return url;
+    }
+
+    const username = parsed.username;
+
+    if (!username || username.includes(".")) {
+      // Still ensure pooler-friendly params even if username is already scoped
+      const params = parsed.searchParams;
+      if (!params.has("pgbouncer")) params.set("pgbouncer", "true");
+      // Supabase pooler + Prisma can stall if too many concurrent connections are opened.
+      // Keep this small for tiny droplets.
+      if (!params.has("connection_limit")) params.set("connection_limit", "5");
+      if (!params.has("pool_timeout")) params.set("pool_timeout", "10");
+      if (!params.has("connect_timeout")) params.set("connect_timeout", "5");
+      parsed.search = params.toString();
+      return parsed.toString();
+    }
+
+    parsed.username = `${username}.${projectRef}`;
+
+    const params = parsed.searchParams;
+    if (!params.has("pgbouncer")) params.set("pgbouncer", "true");
+    if (!params.has("connection_limit")) params.set("connection_limit", "5");
+    if (!params.has("pool_timeout")) params.set("pool_timeout", "10");
+    if (!params.has("connect_timeout")) params.set("connect_timeout", "5");
+    parsed.search = params.toString();
+    return parsed.toString();
+  } catch {
+    return url;
+  }
 }

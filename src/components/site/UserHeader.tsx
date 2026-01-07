@@ -1,451 +1,587 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import {
-  motion,
-  AnimatePresence,
-  useScroll,
-  useTransform,
-} from "framer-motion";
-import {
-  User,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Home,
-  BarChart3,
-  CreditCard,
-  MapPin,
-  Bell,
-  ChevronDown,
-  Shield,
-} from "lucide-react";
-import { useSession, signOut } from "next-auth/react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
+import {
+  Menu,
+  X,
+  LogOut,
+  PhoneCall,
+  Shield,
+  Moon,
+  Sun,
+  ChevronDown,
+} from "lucide-react";
 
-interface UserHeaderProps {
-  className?: string;
-}
+import { useTheme } from "@/components/theme/ThemeProvider";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  getNavigationForRole,
+  type RoleNavItem,
+} from "@/lib/navigation/role-navigation";
+import {
+  ROLE_DISPLAY_NAME,
+  extractActiveRole,
+  extractUserRoles,
+  getDefaultRedirectForRole,
+} from "@/lib/auth/roles";
+import type { AppUserRole } from "@/lib/auth/roles";
 
-type UserMenuItem = {
-  href: string;
-  label: string;
-  icon: any;
-  description?: string;
-};
+const MAX_PRIMARY_LINKS = 6;
 
-const userMenuItems: UserMenuItem[] = [
-  {
-    href: "/dashboard",
-    label: "Dashboard",
-    icon: Home,
-    description: "View your service overview",
-  },
-  {
-    href: "/account",
-    label: "Account Settings",
-    icon: Settings,
-    description: "Manage your profile and preferences",
-  },
-  {
-    href: "/dashboard#billing",
-    label: "Billing & Payments",
-    icon: CreditCard,
-    description: "View invoices and payment methods",
-  },
-  {
-    href: "/city",
-    label: "Service Areas",
-    icon: MapPin,
-    description: "Explore available service locations",
-  },
-];
-
-export default function UserHeader({ className }: UserHeaderProps) {
-  const { data: session, status } = useSession();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+export default function UserHeader({ className }: { className?: string }) {
+  const { data: session, status, update } = useSession();
+  const pathname = usePathname();
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
-  const lastScrollY = useRef(0);
+  const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [switchingRole, setSwitchingRole] = useState<AppUserRole | null>(null);
+  const [roleSwitchError, setRoleSwitchError] = useState<string | null>(null);
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
 
-  // Debug logging
-  console.log("UserHeader session:", {
-    status,
-    user: session?.user,
-    isAdmin: (session as any)?.isAdmin,
-  });
-
-  const { scrollY } = useScroll();
-  const headerHeight = useTransform(scrollY, [0, 100], [80, 64]); // 80px to 64px
-  const logoScale = useTransform(scrollY, [0, 100], [1, 0.9]);
-  const taglineOpacity = useTransform(scrollY, [0, 50], [1, 0]);
-
-  // Handle scroll-based state changes
   useEffect(() => {
-    const updateScrollState = () => {
-      const currentScrollY = window.scrollY;
-      const diff = currentScrollY - lastScrollY.current;
-      lastScrollY.current = currentScrollY;
-
-      // Update scrolled state
-      setIsScrolled(currentScrollY > 50);
-    };
-
-    const throttledUpdate = () => {
-      requestAnimationFrame(updateScrollState);
-    };
-
-    window.addEventListener("scroll", throttledUpdate, { passive: true });
-    return () => window.removeEventListener("scroll", throttledUpdate);
+    const handleScroll = () => setIsScrolled(window.scrollY > 24);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isMenuOpen || isUserMenuOpen) {
-        const target = event.target as HTMLElement;
-        if (!target.closest(".user-header-menu")) {
-          setIsMenuOpen(false);
-          setIsUserMenuOpen(false);
-        }
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isMenuOpen, isUserMenuOpen]);
-
-  const handleLogout = async () => {
-    try {
-      await signOut({ callbackUrl: "/" });
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
-  const user = session?.user;
-  const userRole = (session as any)?.userRole;
-  const isAdmin = (session as any)?.isAdmin;
+  const headerSurface = isDark
+    ? "bg-gradient-to-r from-slate-950/95 via-slate-950/90 to-slate-900/85 border-white/10"
+    : "bg-gradient-to-r from-white/95 via-white/92 to-emerald-50/85 border-slate-200/60";
+  const pillSurface = isDark
+    ? "border-white/10 bg-slate-900/60"
+    : "border-slate-200/70 bg-white/80";
 
   if (status === "loading") {
     return (
       <header
         className={cn(
-          "w-full bg-white/95 backdrop-blur-sm border-b border-slate-200/60",
+          "sticky top-0 z-40 backdrop-blur",
+          headerSurface,
           className,
         )}
       >
-        <div className="container mx-auto px-4 h-16 flex items-center justify-center">
-          <div className="animate-pulse bg-slate-200 h-8 w-32 rounded"></div>
+        <div className="container h-16 flex items-center justify-center">
+          <div className={cn("h-8 w-32 animate-pulse rounded", isDark ? "bg-slate-800" : "bg-slate-200")} />
         </div>
       </header>
     );
   }
 
-  if (!user) {
+  if (!session?.user) {
     return null;
   }
 
+  const user = session.user;
+  const activeRole = extractActiveRole(session);
+  const availableRoles = extractUserRoles(session);
+  const navRole = useMemo<AppUserRole | null>(() => {
+    if (pathname?.startsWith("/admin")) {
+      return activeRole === "OWNER" ? "OWNER" : "ADMIN";
+    }
+    if (pathname?.startsWith("/field-tech")) {
+      return "TECH";
+    }
+    if (pathname?.startsWith("/dashboard")) {
+      return "CUSTOMER";
+    }
+    return activeRole;
+  }, [activeRole, pathname]);
+  const isCustomer = navRole === "CUSTOMER";
+  const navConfig = getNavigationForRole(navRole);
+  const extendedNavConfig = navConfig.extendedNav ?? [];
+
+  const primaryNav = useMemo(() => {
+    if (isCustomer) return [] as RoleNavItem[];
+    const base = navConfig.primaryNav.map((item) => ({ ...item }));
+    if (activeRole === "OWNER" && user.email === "ayden@yardura.com") {
+      base.push({
+        href: "/admin/god-mode",
+        label: "God mode",
+        icon: Shield,
+        description: "Advanced diagnostics",
+      });
+    }
+    return base;
+  }, [isCustomer, navConfig.primaryNav, activeRole, user.email]);
+
+  const visiblePrimaryNav = useMemo(() => {
+    if (isCustomer) return [] as RoleNavItem[];
+    return primaryNav.slice(0, MAX_PRIMARY_LINKS);
+  }, [isCustomer, primaryNav]);
+
+  const overflowPrimaryNav = useMemo(() => {
+    if (isCustomer) return [] as RoleNavItem[];
+    return primaryNav.slice(MAX_PRIMARY_LINKS);
+  }, [isCustomer, primaryNav]);
+
+  const extendedNav = useMemo(() => {
+    if (isCustomer) return [] as RoleNavItem[];
+    return [...overflowPrimaryNav, ...extendedNavConfig].map((item) => ({ ...item }));
+  }, [extendedNavConfig, overflowPrimaryNav, isCustomer]);
+
+  const accountNav = navConfig.accountNav.map((item) => ({ ...item }));
+
+  const handleRoleChange = useCallback(
+    async (nextRole: AppUserRole) => {
+      if (!session?.user || nextRole === activeRole) {
+        setIsAccountOpen(false);
+        return;
+      }
+
+      try {
+        setRoleSwitchError(null);
+        setSwitchingRole(nextRole);
+        await update?.({ activeRole: nextRole });
+        setIsAccountOpen(false);
+
+        if (nextRole === "CUSTOMER") {
+          router.replace("/dashboard");
+        } else {
+          router.replace(getDefaultRedirectForRole(nextRole));
+        }
+      } catch (error) {
+        console.error("[UserHeader] Failed to switch roles", error);
+        setRoleSwitchError("We couldn't switch roles right now. Try again.");
+      } finally {
+        setSwitchingRole(null);
+      }
+    },
+    [activeRole, router, session?.user, update],
+  );
+
+  const combinedNav: RoleNavItem[] = [];
+  const seen = new Set<string>();
+  if (!isCustomer) {
+    [...visiblePrimaryNav, ...extendedNav, ...accountNav].forEach((item) => {
+      if (seen.has(item.href)) return;
+      seen.add(item.href);
+      combinedNav.push(item);
+    });
+  }
+
+  const hasExtendedNav = extendedNav.length > 0;
+  const inExtendedNav = hasExtendedNav
+    ? extendedNav.some((item) => pathname?.startsWith(item.href))
+    : false;
+
+  const handleLogout = async () => {
+    setIsAccountOpen(false);
+    setIsNavOpen(false);
+
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.clear();
+        localStorage.removeItem("quote-session-id");
+        if ("caches" in window) {
+          caches
+            .keys()
+            .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+            .catch((cacheError) => {
+              console.warn("Failed to clear caches", cacheError);
+            });
+        }
+      } catch (storageError) {
+        console.warn("Failed to clear local session state", storageError);
+      }
+    }
+
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+      }).catch((error) => {
+        console.warn("Custom logout cookie clear failed", error);
+      });
+
+      await signOut({
+        callbackUrl: `/?logout=${Date.now()}`,
+        redirect: true,
+      });
+    } catch (error) {
+      console.error("Logout error", error);
+      if (typeof window !== "undefined") {
+        window.location.href = `/?logout=${Date.now()}`;
+      }
+    }
+  };
+
+  useEffect(() => {
+    setIsMoreOpen(false);
+  }, [pathname]);
+
+  const initials = user.name
+    ? user.name
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : user.email?.[0]?.toUpperCase() ?? "U";
+
   return (
-    <motion.header
+    <header
       className={cn(
-        "w-full bg-white/95 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-50 transition-all duration-300",
+        "sticky top-0 z-50 border-b backdrop-blur supports-[backdrop-filter]:bg-opacity-85 transition-shadow",
+        headerSurface,
+        isScrolled
+          ? isDark
+            ? "shadow-[0_25px_60px_-35px_rgba(16,185,129,0.5)]"
+            : "shadow-[0_30px_55px_-35px_rgba(15,118,110,0.35)]"
+          : "shadow-none",
         className,
       )}
-      style={{ height: headerHeight }}
     >
-      <div className="container mx-auto px-4">
-        <motion.div
-          className="flex items-center justify-between"
-          style={{ height: headerHeight }}
-        >
-          {/* Logo and Brand */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <motion.div className="relative" style={{ scale: logoScale }}>
-              <Image
-                src="/yeller_icon_centered.png"
-                alt="Yeller logo"
-                width={40}
-                height={40}
-                className="rounded-lg shadow-sm group-hover:shadow-md transition-shadow duration-200 transform scale-125"
-              />
-              {isAdmin && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full border-2 border-white flex items-center justify-center">
-                  <Shield className="w-2.5 h-2.5 text-white" />
-                </div>
-              )}
-            </motion.div>
-            <motion.div
-              className="hidden sm:block overflow-hidden"
-              animate={{
-                width: isScrolled ? "auto" : "auto",
-                opacity: 1,
-              }}
-              transition={{ duration: 0.3 }}
-            >
-              <motion.div
-                className="font-black text-xl bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight"
-                animate={{
-                  fontSize: isScrolled ? "1.125rem" : "1.25rem", // 18px to 20px
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                Yeller
-              </motion.div>
-              <motion.div
-                className="text-xs text-slate-500 -mt-0.5 leading-tight flex items-center gap-1"
-                style={{ opacity: taglineOpacity }}
-                animate={{
-                  height: isScrolled ? 0 : "auto",
-                  marginTop: isScrolled ? 0 : "-2px",
-                }}
-                transition={{ duration: 0.3 }}
-              >
+      <div className="container flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/brand/insightscoop-logo-horizontal.png"
+              alt="InsightScoop logo"
+              width={160}
+              height={48}
+              className="h-9 w-auto object-contain"
+              priority
+            />
+            <div className="hidden lg:flex flex-col whitespace-nowrap text-[10px] text-muted-foreground tracking-wide leading-tight">
+              <span className="inline-flex items-center gap-1">
                 <span>by Yardura</span>
-                <img
+                <Image
                   src="/yardura-logo.png"
                   alt="Yardura"
-                  className="h-4 w-4 rounded-sm object-contain"
+                  width={12}
+                  height={12}
+                  className="h-3 w-3 rounded-sm object-contain"
                 />
-                {isAdmin ? "Admin Portal" : "My Services"}
-              </motion.div>
-            </motion.div>
+              </span>
+            </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            {userMenuItems.map((item) => (
-              <Link
+          <div className="flex items-center gap-2 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              aria-label="Toggle color theme"
+              className={cn(
+                "inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-sm transition",
+                isDark
+                  ? "bg-slate-900/80 text-slate-200 hover:border-emerald-400"
+                  : "bg-white/80 text-slate-600 shadow-sm hover:border-emerald-300 hover:text-emerald-600",
+              )}
+            >
+              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={() => setIsAccountOpen((open) => !open)}
+              className={cn(
+                "inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
+                isDark ? "bg-slate-800 text-white" : "bg-slate-900 text-white",
+              )}
+              aria-label="Open account menu"
+            >
+              {initials}
+            </button>
+            {!isCustomer && combinedNav.length > 0 ? (
+              <button
+                onClick={() => setIsNavOpen((open) => !open)}
+                className={cn(
+                  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
+                  isDark
+                    ? "border-white/10 text-slate-200 hover:bg-white/10"
+                    : "border-slate-200/70 text-slate-600 hover:bg-emerald-50",
+                )}
+                aria-label="Toggle navigation"
+              >
+                {isNavOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {visiblePrimaryNav.length > 0 ? (
+          <nav className="hidden lg:flex items-center justify-center">
+            <div className={cn("flex items-center gap-1 rounded-full border px-1.5 py-1 shadow-sm", pillSurface)}>
+              {visiblePrimaryNav.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition",
+                    pathname?.startsWith(item.href)
+                      ? isDark
+                        ? "bg-emerald-500/20 text-emerald-200"
+                        : "bg-white text-emerald-700 shadow-sm"
+                      : isDark
+                        ? "text-slate-300 hover:text-white"
+                        : "text-slate-600 hover:text-slate-900",
+                  )}
+                >
+                  {item.icon ? <item.icon className="h-4 w-4" /> : null}
+                  {item.label}
+                </Link>
+              ))}
+              {hasExtendedNav ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsMoreOpen((open) => !open)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
+                      inExtendedNav || isMoreOpen
+                        ? isDark
+                          ? "bg-emerald-500/20 text-emerald-200"
+                          : "bg-white text-emerald-700 shadow-sm"
+                        : isDark
+                          ? "text-slate-300 hover:text-white"
+                          : "text-slate-600 hover:text-slate-900",
+                    )}
+                    aria-haspopup="menu"
+                    aria-expanded={isMoreOpen}
+                  >
+                    More
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform",
+                        isMoreOpen ? "-scale-y-100" : "scale-y-100",
+                      )}
+                    />
+                  </button>
+                  {isMoreOpen ? (
+                    <div
+                      className={cn(
+                        "absolute right-0 top-[calc(100%+12px)] z-40 w-72 rounded-3xl border p-4 shadow-2xl backdrop-blur",
+                        isDark
+                          ? "border-white/10 bg-slate-950/95"
+                          : "border-slate-200/70 bg-white/95",
+                      )}
+                    >
+                      <div className="space-y-1">
+                        {extendedNav.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                              "flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition",
+                              pathname?.startsWith(item.href)
+                                ? isDark
+                                  ? "bg-white/10 text-white"
+                                  : "bg-emerald-50 text-emerald-700"
+                                : isDark
+                                  ? "text-slate-300 hover:bg-white/10 hover:text-white"
+                                  : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700",
+                            )}
+                            onClick={() => setIsMoreOpen(false)}
+                          >
+                            {item.icon ? (
+                              <item.icon
+                                className={cn(
+                                  "h-4 w-4",
+                                  pathname?.startsWith(item.href)
+                                    ? isDark
+                                      ? "text-emerald-200"
+                                      : "text-emerald-600"
+                                    : isDark
+                                      ? "text-slate-400"
+                                      : "text-slate-400",
+                                )}
+                              />
+                            ) : null}
+                            <div className="flex-1">
+                              <p className="font-semibold leading-tight">{item.label}</p>
+                              {item.description ? (
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {item.description}
+                                </p>
+                              ) : null}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </nav>
+        ) : null}
+
+        <div className="hidden items-center gap-3 lg:flex">
+          <Button
+            asChild
+            size="sm"
+            variant="ghost"
+            className={cn(
+              "gap-2",
+              isDark ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900",
+            )}
+          >
+            <a href="tel:+18774179273">
+              <PhoneCall className="size-4" />
+              1-877-417-YARD
+            </a>
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            aria-label="Toggle color theme"
+            className={cn(
+              "inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-sm transition",
+              isDark
+                ? "bg-slate-900/80 text-slate-200 hover:border-emerald-400"
+                : "bg-white/80 text-slate-600 shadow-sm hover:border-emerald-300 hover:text-emerald-600",
+            )}
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+
+          <button
+            onClick={() => setIsAccountOpen((open) => !open)}
+            className={cn(
+              "inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
+              isDark ? "bg-slate-800 text-white" : "bg-slate-900 text-white",
+            )}
+            aria-label="Open account menu"
+          >
+            {initials}
+          </button>
+        </div>
+      </div>
+
+      {isAccountOpen ? (
+        <div className="absolute right-6 top-[calc(100%+12px)] z-40 w-full max-w-xs overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-5 shadow-2xl backdrop-blur dark:border-white/10 dark:bg-slate-950/95 lg:right-8">
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                Signed in as
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
+                {user.name ?? user.email}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{navConfig.displayName}</p>
+            </div>
+
+            <div className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 dark:border-white/10 dark:bg-slate-900/60">
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">Appearance</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Toggle dark mode</p>
+              </div>
+              <Switch
+                checked={isDark}
+                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                className="data-[state=checked]:bg-emerald-400"
+              />
+            </div>
+
+            {availableRoles.length > 1 ? (
+              <div className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 dark:border-white/10 dark:bg-slate-900/60">
+                <div className="mb-3">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Working view</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Switch between admin, field, or customer experiences.</p>
+                </div>
+                <div className="space-y-2">
+                  {availableRoles.map((roleOption) => {
+                    const isActiveRole = roleOption === activeRole;
+                    const isSwitching = switchingRole === roleOption;
+                    return (
+                      <button
+                        key={roleOption}
+                        type="button"
+                        disabled={isActiveRole || isSwitching}
+                        onClick={() => handleRoleChange(roleOption)}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm font-semibold transition",
+                          isActiveRole
+                            ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-400/70 dark:bg-emerald-500/10 dark:text-emerald-200"
+                            : "border-slate-200/70 text-slate-600 hover:border-emerald-300 hover:text-emerald-700 dark:border-white/10 dark:text-slate-300 dark:hover:border-emerald-400/70 dark:hover:text-white",
+                          isSwitching ? "opacity-60" : undefined,
+                        )}
+                      >
+                        <span>{ROLE_DISPLAY_NAME[roleOption]}</span>
+                        <span className="text-xs">
+                          {isActiveRole
+                            ? "Active"
+                            : isSwitching
+                              ? "Switching…"
+                              : "Switch"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {roleSwitchError ? (
+                  <p className="mt-2 text-xs text-red-500 dark:text-red-400/90">{roleSwitchError}</p>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="space-y-2">
+              {accountNav.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                  onClick={() => setIsAccountOpen(false)}
+                >
+                  {item.icon ? <item.icon className="h-4 w-4" /> : null}
+                  {item.label}
+                </Link>
+              ))}
+              <button
+                onClick={handleLogout}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {!isCustomer && isNavOpen && combinedNav.length > 0 && (
+        <div className={cn("border-t bg-white/98 backdrop-blur dark:bg-slate-950/95", isDark ? "border-white/10" : "border-slate-200/60")}
+          aria-label="Mobile navigation"
+        >
+          <div className="space-y-1 px-4 py-3">
+            {combinedNav.map((item) => (
+              <a
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all duration-200 group"
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-4 py-2 transition",
+                  isDark ? "hover:bg-white/10" : "hover:bg-emerald-50",
+                )}
+                onClick={() => setIsNavOpen(false)}
               >
-                <item.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                {item.label}
-              </Link>
-            ))}
-
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-all duration-200 group"
-              >
-                <Shield className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                Admin Panel
-              </Link>
-            )}
-          </nav>
-
-          {/* User Menu */}
-          <div className="flex items-center gap-3 user-header-menu">
-            {/* Quick Actions */}
-            <div className="hidden sm:flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-slate-600 hover:text-brand-600 hover:bg-brand-50"
-              >
-                <Bell className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* User Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors duration-200 group"
-              >
-                <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {user.name?.charAt(0)?.toUpperCase() ||
-                    user.email?.charAt(0)?.toUpperCase() ||
-                    "U"}
-                </div>
-                <div className="hidden sm:block text-left">
-                  <div className="text-sm font-medium text-slate-900 group-hover:text-brand-600 transition-colors">
-                    {user.name || "User"}
-                  </div>
-                  <div className="text-xs text-slate-500 flex items-center gap-1">
-                    {isAdmin && <Shield className="w-3 h-3 text-amber-500" />}
-                    {userRole === "ADMIN" ? "Administrator" : "Customer"}
-                  </div>
-                </div>
-                <ChevronDown
+                {item.icon ? (
+                  <item.icon className={cn("size-4", isDark ? "text-emerald-200" : "text-emerald-600")} />
+                ) : (
+                  <div className={cn("size-2 rounded-full", isDark ? "bg-slate-400" : "bg-emerald-400/80")} />
+                )}
+                <span
                   className={cn(
-                    "w-4 h-4 text-slate-400 transition-transform duration-200",
-                    isUserMenuOpen && "rotate-180",
+                    "text-sm font-medium",
+                    isDark ? "text-slate-100" : "text-slate-700",
                   )}
-                />
-              </button>
-
-              {/* User Dropdown Menu */}
-              <AnimatePresence>
-                {isUserMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200/60 overflow-hidden z-50"
-                  >
-                    <div className="p-4 border-b border-slate-100">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {user.name?.charAt(0)?.toUpperCase() ||
-                            user.email?.charAt(0)?.toUpperCase() ||
-                            "U"}
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900">
-                            {user.name || "User"}
-                          </div>
-                          <div className="text-sm text-slate-500">
-                            {user.email}
-                          </div>
-                          {isAdmin && (
-                            <div className="text-xs text-amber-600 font-medium flex items-center gap-1 mt-1">
-                              <Shield className="w-3 h-3" />
-                              Administrator
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="py-2">
-                      {userMenuItems.map((item, index) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:text-brand-600 transition-colors duration-200 group"
-                        >
-                          <item.icon className="w-4 h-4 text-slate-400 group-hover:text-brand-500 transition-colors" />
-                          <div>
-                            <div className="font-medium">{item.label}</div>
-                            {item.description && (
-                              <div className="text-xs text-slate-500 mt-0.5">
-                                {item.description}
-                              </div>
-                            )}
-                          </div>
-                        </Link>
-                      ))}
-
-                      {isAdmin && (
-                        <Link
-                          href="/admin"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 text-sm text-amber-700 hover:bg-amber-50 hover:text-amber-800 transition-colors duration-200 group"
-                        >
-                          <Shield className="w-4 h-4 text-amber-500 group-hover:text-amber-600 transition-colors" />
-                          <div>
-                            <div className="font-medium">Admin Panel</div>
-                            <div className="text-xs text-amber-600 mt-0.5">
-                              Manage system settings
-                            </div>
-                          </div>
-                        </Link>
-                      )}
-
-                      <div className="border-t border-slate-100 mt-2 pt-2">
-                        <button
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            handleLogout();
-                          }}
-                          className="flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200 w-full text-left group"
-                        >
-                          <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">Sign Out</span>
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors duration-200"
-            >
-              {isMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </button>
+                >
+                  {item.label}
+                </span>
+              </a>
+            ))}
           </div>
-        </motion.div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-slate-200/60 bg-white/95 backdrop-blur-sm"
-            >
-              <div className="py-4 space-y-2">
-                {userMenuItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 hover:text-brand-600 transition-colors duration-200"
-                  >
-                    <item.icon className="w-5 h-5 text-slate-400" />
-                    <div>
-                      <div className="font-medium">{item.label}</div>
-                      {item.description && (
-                        <div className="text-sm text-slate-500">
-                          {item.description}
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-
-                {isAdmin && (
-                  <Link
-                    href="/admin"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-amber-700 hover:bg-amber-50 hover:text-amber-800 transition-colors duration-200"
-                  >
-                    <Shield className="w-5 h-5 text-amber-500" />
-                    <div>
-                      <div className="font-medium">Admin Panel</div>
-                      <div className="text-sm text-amber-600">
-                        Manage system settings
-                      </div>
-                    </div>
-                  </Link>
-                )}
-
-                <div className="border-t border-slate-200 pt-2 mt-4">
-                  <button
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      handleLogout();
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200 w-full text-left"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    <span className="font-medium">Sign Out</span>
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.header>
+        </div>
+      )}
+    </header>
   );
 }

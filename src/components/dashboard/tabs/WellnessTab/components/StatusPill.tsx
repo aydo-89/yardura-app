@@ -1,5 +1,6 @@
 import React from "react";
 import { CheckCircle, Eye, AlertTriangle } from "lucide-react";
+import { withAlpha } from "@/shared/brand";
 import {
   wellnessTheme,
   type WellnessSimpleStatus,
@@ -35,7 +36,7 @@ const statusConfig = {
     icon: CheckCircle,
     label: "All good",
     bgColor: wellnessTheme.colors.green,
-    textColor: wellnessTheme.slate800,
+    textColor: "#F4FFFB",
   },
   monitor: {
     icon: Eye,
@@ -70,12 +71,23 @@ export const StatusPill: React.FC<StatusPillProps> = ({
     md: "size-4",
   };
 
+  const backgroundColor =
+    mappedStatus === "good"
+      ? withAlpha(config.bgColor, 0.38)
+      : withAlpha(config.bgColor, 0.22);
+
+  const borderColor =
+    mappedStatus === "good"
+      ? withAlpha(config.bgColor, 0.6)
+      : withAlpha(config.bgColor, 0.35);
+
   return (
     <div
-      className={`inline-flex items-center gap-1.5 rounded-full font-medium ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full font-medium border ${sizeClasses[size]} ${className}`}
       style={{
-        backgroundColor: `${config.bgColor}20`,
+        backgroundColor,
         color: config.textColor,
+        borderColor,
       }}
     >
       <Icon className={iconSizeClasses[size]} aria-hidden="true" />

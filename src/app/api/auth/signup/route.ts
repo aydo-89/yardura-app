@@ -1,25 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/database-access";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { UserRole } from "@prisma/client";
-
-const prisma = getDb();
+import { normalizeEmailOrThrow } from "@/lib/auth/email-normalizer";
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password, name } = await request.json();
 
-    // Validate required fields
-    if (!email || !password) {
+    let normalizedEmail: string;
+    try {
+      normalizedEmail = normalizeEmailOrThrow(email);
+    } catch {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "A valid email is required" },
         { status: 400 },
       );
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    if (!password) {
+      return NextResponse.json(
+        { error: "Password is required" },
+        { status: 400 },
+      );
+    }
+
+    // Check if user already exists (case-insensitive)
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: normalizedEmail,
+          mode: "insensitive",
+        },
+      },
     });
 
     if (existingUser) {
@@ -32,35 +45,74 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create a personal organization for the user
-    const orgName = `${name || email.split("@")[0]}'s Yardura Service`;
-    const orgSlug = `${email.split("@")[0]}-${Date.now()}`.toLowerCase();
+    const emailPrefix = normalizedEmail.split("@")[0];
 
+    // Create a personal organization for the user
     const organization = await prisma.org.create({
       data: {
-        name: orgName,
-        slug: orgSlug,
+        name: `${name || emailPrefix}'s Yardura Service`,
+        slug: `${emailPrefix}-${Date.now()}`.toLowerCase(),
       },
     });
 
     // Create the user account with organization association
     const user = await prisma.user.create({
       data: {
-        name: name || email.split("@")[0], // Use email prefix if no name provided
-        email,
+        name: name || emailPrefix, // Use email prefix if no name provided
+        email: normalizedEmail,
         role: UserRole.CUSTOMER,
-        orgId: organization.id, // Associate user with their organization
-        // Create a direct password account
+        roles: [UserRole.CUSTOMER],
+        orgId: organization.id,
         accounts: {
           create: {
             type: "credentials",
             provider: "credentials",
-            providerAccountId: email,
+            providerAccountId: normalizedEmail,
             access_token: hashedPassword,
           },
         },
       },
     });
+
+    // If an inbound lead exists with a sales rep assignment, carry it forward
+    const latestLeadWithRep = await prisma.lead.findFirst({
+      where: {
+        email: { equals: normalizedEmail, mode: "insensitive" },
+        salesRepId: { not: null },
+      },
+      orderBy: { submittedAt: "desc" },
+      select: { id: true, salesRepId: true },
+    });
+
+    if (latestLeadWithRep?.salesRepId) {
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { salesRepId: latestLeadWithRep.salesRepId },
+        });
+
+        const existingCustomer = await prisma.customer.findFirst({
+          where: { email: { equals: normalizedEmail, mode: "insensitive" } },
+          select: { id: true },
+        });
+
+        if (existingCustomer) {
+          await prisma.lead.update({
+            where: { id: latestLeadWithRep.id },
+            data: {
+              status: "WON",
+              convertedAt: new Date(),
+              convertedToCustomerId: existingCustomer.id,
+            },
+          });
+        }
+      } catch (error) {
+        console.warn(
+          "signup: unable to propagate sales rep assignment",
+          error,
+        );
+      }
+    }
 
     return NextResponse.json({
       message: "Account created successfully",

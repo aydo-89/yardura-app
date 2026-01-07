@@ -1,19 +1,19 @@
 // Shared wellness types and constants
-export const TONE_GREEN = "#10B981";
-export const TONE_AMBER = "#F59E0B";
-export const TONE_RED = "#EF4444";
+export const TONE_GREEN = "#19B4A3";
+export const TONE_AMBER = "#FFC24D";
+export const TONE_RED = "#F3645B";
 
 export const COLOR_HEX = {
-  normal: "#8B5A3C",
-  yellow: "#FCD34D",
-  red: "#EF4444",
-  black: "#1F2937",
+  normal: "#B07749",
+  yellow: "#FFC24D",
+  red: "#F3645B",
+  black: "#1B1E23",
 } as const;
 
 export const CONS_HEX = {
-  normal: "#10B981",
-  soft: "#F59E0B",
-  dry: "#EF4444",
+  normal: "#19B4A3",
+  soft: "#FFC24D",
+  dry: "#F3645B",
 } as const;
 
 export const wellnessTheme = {
@@ -21,19 +21,23 @@ export const wellnessTheme = {
     green: TONE_GREEN,
     amber: TONE_AMBER,
     red: TONE_RED,
-    teal: "#0EA5E9",
-    yellow: "#FCD34D",
-    orange: "#F97316",
-    blue: "#3B82F6",
+    mint: "#19B4A3",
+    gold: "#FFC24D",
+    coral: "#F3645B",
+    evergreen: "#204B36",
+    teal: "#19B4A3",
+    yellow: "#FFC24D",
+    orange: "#FF7A45",
+    blue: "#204B36",
   },
-  slate800: "#1E293B",
+  slate800: "#1B1E23",
   gradients: {
-    good: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
-    monitor: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
-    attention: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
+    good: "linear-gradient(135deg, #19B4A3 0%, #0F786F 100%)",
+    monitor: "linear-gradient(135deg, #FFC24D 0%, #E5A324 100%)",
+    attention: "linear-gradient(135deg, #F3645B 0%, #C43D37 100%)",
   },
-  slate50: "#F8FAFC",
-  slate200: "#E2E8F0",
+  slate50: "#FAF7F1",
+  slate200: "#E5DED0",
   radiusLg: "12px",
   cardShadow:
     "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
@@ -94,8 +98,18 @@ export interface DataReading {
   consistency: ConsistencyStatsWindow;
   color?: string; // Legacy single color property for backward compatibility
   weight?: number; // Optional weight property
+  volume?: number; // Optional total deposits captured for this reading
+  consistencyLabel?: string; // Optional single consistency descriptor for legacy data
+  contentLabel?: string; // Optional content descriptor (3rd C)
   issues: string[];
   imageUrl?: string;
+  source?: "OWNER" | "PRO";
+  dogName?: string;
+  hydrationScore?: number;
+  firmnessScale?: number;
+  indicator?: "watch" | "monitor" | "vet_now";
+  summary?: string;
+  whatThisCouldMean?: string;
 }
 
 export interface ServiceVisit {
@@ -240,10 +254,34 @@ export function calculateWellnessScore(
   readings: any[],
   weeks: number = 4,
 ): { colorScore: number; consistencyScore: number; overallScore: number } {
-  // Simple implementation - would need more sophisticated logic in production
-  const colorScore = Math.random() * 3; // Mock score
-  const consistencyScore = Math.random() * 0.5; // Mock score
-  const overallScore = (colorScore + consistencyScore * 10) / 2;
+  const recent = Array.isArray(readings) ? readings.slice(0, weeks * 10) : [];
+  if (recent.length === 0) {
+    return { colorScore: 0, consistencyScore: 0, overallScore: 0 };
+  }
+
+  let colorIssues = 0;
+  let softIssues = 0;
+
+  recent.forEach((reading: any) => {
+    const color = typeof reading?.color === "string" ? reading.color.toLowerCase() : "";
+    if (["yellow", "red", "black", "dark", "light", "mixed"].includes(color)) {
+      colorIssues += 1;
+    }
+
+    const consistency = typeof reading?.consistencyLabel === "string"
+      ? reading.consistencyLabel.toLowerCase()
+      : typeof reading?.consistency === "string"
+        ? reading.consistency.toLowerCase()
+        : "";
+    if (["soft", "loose", "watery", "mucous", "greasy"].includes(consistency)) {
+      softIssues += 1;
+    }
+  });
+
+  const total = recent.length;
+  const colorScore = (colorIssues / total) * 3;
+  const consistencyScore = softIssues / total;
+  const overallScore = Math.max(0, 1 - (colorScore / 3) * 0.6 - consistencyScore * 0.4);
 
   return { colorScore, consistencyScore, overallScore };
 }
@@ -252,6 +290,13 @@ export function shouldShowParasiteWarning(
   readings: any[],
   weeks: number = 4,
 ): boolean {
-  // Mock implementation - would check for patterns indicating parasites
-  return Math.random() > 0.8; // 20% chance of showing warning
+  const recent = Array.isArray(readings) ? readings.slice(0, weeks * 10) : [];
+  return recent.some((reading: any) => {
+    const issues = Array.isArray(reading?.issues) ? reading.issues : [];
+    return issues.some(
+      (issue: unknown) =>
+        typeof issue === "string" &&
+        /parasite|worm|mucous|mucus/i.test(issue),
+    );
+  });
 }

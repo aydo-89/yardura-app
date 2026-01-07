@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 import { env } from "../../../lib/env";
 import { uploadImage } from "../../../lib/supabase-admin";
 import { addSampleScoreJob } from "../../../lib/queue";

@@ -12,7 +12,8 @@
  * - production: Only essential seed data
  */
 
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient, AvailabilityWindow, Frequency } = require("@prisma/client");
+const bcrypt = require("bcrypt");
 
 const prisma = new PrismaClient();
 
@@ -64,6 +65,15 @@ const DEMO_USERS = [
     zipCode: "55415",
     role: "SALES_REP",
   },
+  {
+    email: "jordan.scooper@example.com",
+    name: "Jordan Thompson",
+    phone: "+1-612-555-0150",
+    address: "789 Field Tech Lane",
+    city: "Minneapolis",
+    zipCode: "55410",
+    role: "TECH",
+  },
 ];
 
 const DEMO_DOGS = [
@@ -92,6 +102,174 @@ const SAMPLE_NOTES = [
   "Regular maintenance visit",
 ];
 
+const DEFAULT_ORG = {
+  id: "yardura",
+  name: "InsightScoop",
+  slug: "yardura",
+};
+
+const CITY_TILE_MAP = {
+  minneapolis: [
+    "minneapolis-central",
+    "minneapolis-south",
+    "minneapolis-lakes-southwest",
+    "minneapolis-north",
+  ],
+  bloomington: ["bloomington-east", "bloomington-west"],
+  "brooklyn park": ["brooklyn-park-south", "brooklyn-park-north"],
+  "maple grove": ["maple-grove-arbor", "maple-grove-northwest"],
+  edina: ["edina-north", "edina-south"],
+  richfield: ["richfield-core"],
+  "eden prairie": ["eden-prairie-north", "eden-prairie-south"],
+  plymouth: ["plymouth-east", "plymouth-west"],
+  minnetonka: ["minnetonka-east", "minnetonka-west"],
+  "brooklyn center": ["brooklyn-center-core"],
+  champlin: ["champlin-mississippi"],
+  crystal: ["crystal-central"],
+  hopkins: ["hopkins-downtown"],
+  "st. louis park": ["st-louis-park-core"],
+  "st louis park": ["st-louis-park-core"],
+  "st. anthony": ["st-anthony-northeast"],
+  "st anthony": ["st-anthony-northeast"],
+  mound: ["mound-westonka"],
+  wayzata: ["wayzata-downtown"],
+  orono: ["orono-northshore"],
+  shorewood: ["shorewood-south"],
+  "tonka bay": ["tonka-bay-marina"],
+  excelsior: ["excelsior-downtown"],
+  deephaven: ["deephaven-lakeside"],
+  greenfield: ["greenfield-rural"],
+  corcoran: ["corcoran-pioneer"],
+  medina: ["medina-hamel"],
+  rogers: ["rogers-gateway"],
+  hanover: ["hanover-southfork"],
+  dayton: ["dayton-river"],
+  loretto: ["loretto-hamlet"],
+  "maple plain": ["maple-plain-trail"],
+  independence: ["independence-pioneer"],
+  minnetrista: ["minnetrista-northshore"],
+  woodland: ["woodland-peninsula"],
+};
+
+const SERVICE_TILE_SEEDS = [
+  {
+    slug: "minneapolis-central",
+    name: "Minneapolis – Central & Northeast",
+    minCertifiedScoopers: 4,
+    minCustomerUnits: 60,
+    serviceWindows: [
+      { weekday: 1, window: "AM", maxStops: 60 },
+      { weekday: 4, window: "PM", maxStops: 60 },
+    ],
+  },
+  {
+    slug: "minneapolis-south",
+    name: "Minneapolis – South & Nokomis",
+    minCertifiedScoopers: 4,
+    minCustomerUnits: 58,
+    serviceWindows: [
+      { weekday: 2, window: "AM", maxStops: 58 },
+      { weekday: 5, window: "PM", maxStops: 58 },
+    ],
+  },
+  {
+    slug: "bloomington-east",
+    name: "Bloomington – East River",
+    minCertifiedScoopers: 3,
+    minCustomerUnits: 45,
+    serviceWindows: [
+      { weekday: 1, window: "AM", maxStops: 45 },
+      { weekday: 4, window: "PM", maxStops: 45 },
+    ],
+  },
+  {
+    slug: "brooklyn-park-south",
+    name: "Brooklyn Park – Zane & 85th",
+    minCertifiedScoopers: 3,
+    minCustomerUnits: 40,
+    serviceWindows: [
+      { weekday: 2, window: "AM", maxStops: 40 },
+      { weekday: 5, window: "PM", maxStops: 40 },
+    ],
+  },
+  {
+    slug: "maple-grove-arbor",
+    name: "Maple Grove – Arbor Lakes",
+    minCertifiedScoopers: 3,
+    minCustomerUnits: 40,
+    serviceWindows: [
+      { weekday: 3, window: "AM", maxStops: 40 },
+      { weekday: 6, window: "AM", maxStops: 28 },
+    ],
+  },
+  {
+    slug: "edina-north",
+    name: "Edina – 50th & France",
+    minCertifiedScoopers: 3,
+    minCustomerUnits: 32,
+    serviceWindows: [
+      { weekday: 1, window: "AM", maxStops: 32 },
+      { weekday: 4, window: "PM", maxStops: 32 },
+    ],
+  },
+];
+
+const DEFAULT_COMP_SCHEDULES = [
+  {
+    frequency: "DAILY",
+    baseRateCents: 550,
+    haulAwayBonusCents: 300,
+    sharePercent: 0.45,
+  },
+  {
+    frequency: "TWICE_WEEKLY",
+    baseRateCents: 950,
+    haulAwayBonusCents: 300,
+    sharePercent: 0.45,
+  },
+  {
+    frequency: "WEEKLY",
+    baseRateCents: 1200,
+    haulAwayBonusCents: 400,
+    sharePercent: 0.45,
+  },
+  {
+    frequency: "BI_WEEKLY",
+    baseRateCents: 1600,
+    haulAwayBonusCents: 400,
+    sharePercent: 0.45,
+  },
+  {
+    frequency: "MONTHLY",
+    baseRateCents: 2200,
+    haulAwayBonusCents: 500,
+    sharePercent: 0.5,
+  },
+  {
+    frequency: "ONE_TIME",
+    baseRateCents: 4500,
+    haulAwayBonusCents: 700,
+    sharePercent: 0.5,
+  },
+];
+
+const DEMO_SCOOPERS = [
+  {
+    email: "jordan.scooper@example.com",
+    name: "Jordan Scooper",
+    phone: "+1-612-555-0201",
+    vehicleDetail: "2019 Ford Transit",
+    tiles: ["minneapolis-central", "edina-north"],
+  },
+  {
+    email: "ivy.cleaner@example.com",
+    name: "Ivy Cleaner",
+    phone: "+1-612-555-0202",
+    vehicleDetail: "2021 Toyota Rav4",
+    tiles: ["bloomington-east", "maple-grove-arbor"],
+  },
+];
+
 // =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
@@ -106,7 +284,33 @@ function getRandomDate(start, end) {
   );
 }
 
-function generateServiceVisits(userId, dogCount) {
+async function resolveSeedTile(orgId, city) {
+  const normalizedCity = (city || "").trim().toLowerCase();
+  const prioritySlugs = CITY_TILE_MAP[normalizedCity] || [];
+
+  for (const slug of prioritySlugs) {
+    const found = await prisma.serviceTile.findFirst({
+      where: { orgId, slug },
+      select: { id: true, slug: true },
+    });
+    if (found) return found;
+  }
+
+  const liveTile = await prisma.serviceTile.findFirst({
+    where: { orgId, status: { in: ["LIVE", "WAITLIST"] } },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, slug: true },
+  });
+  if (liveTile) return liveTile;
+
+  return prisma.serviceTile.findFirst({
+    where: { orgId },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, slug: true },
+  });
+}
+
+function generateServiceVisits({ orgId, userId, dogCount, tileIds }) {
   const visits = [];
   const now = new Date();
   const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
@@ -121,8 +325,13 @@ function generateServiceVisits(userId, dogCount) {
       ? new Date(scheduledDate.getTime() + Math.random() * 2 * 60 * 60 * 1000)
       : null;
 
+    const tileId = tileIds?.length ? getRandomElement(tileIds) : null;
+    const revenueCents = Math.floor(Math.random() * 1200) + 1800; // $18-$30
+
     visits.push({
+      orgId,
       userId,
+      tileId,
       scheduledDate,
       completedDate,
       status: isCompleted
@@ -134,10 +343,189 @@ function generateServiceVisits(userId, dogCount) {
       notes: Math.random() > 0.7 ? getRandomElement(SAMPLE_NOTES) : null,
       deodorize: Math.random() > 0.6,
       litterService: Math.random() > 0.8,
+      revenueCents,
     });
   }
 
   return visits.sort((a, b) => b.scheduledDate - a.scheduledDate);
+}
+
+async function ensureOrg() {
+  const org = await prisma.org.upsert({
+    where: { id: DEFAULT_ORG.id },
+    update: {
+      name: DEFAULT_ORG.name,
+      slug: DEFAULT_ORG.slug,
+    },
+    create: {
+      id: DEFAULT_ORG.id,
+      name: DEFAULT_ORG.name,
+      slug: DEFAULT_ORG.slug,
+    },
+  });
+  return org;
+}
+
+async function seedServiceTilesForOrg(orgId) {
+  const createdTiles = [];
+  for (const tile of SERVICE_TILE_SEEDS) {
+    const record = await prisma.serviceTile.upsert({
+      where: {
+        orgId_slug: {
+          orgId,
+          slug: tile.slug,
+        },
+      },
+      update: {
+        name: tile.name,
+        status: "WAITLIST",
+        minCertifiedScoopers: tile.minCertifiedScoopers,
+        minCustomerUnits: tile.minCustomerUnits,
+        serviceWindows: tile.serviceWindows,
+      },
+      create: {
+        orgId,
+        slug: tile.slug,
+        name: tile.name,
+        status: "WAITLIST",
+        minCertifiedScoopers: tile.minCertifiedScoopers,
+        minCustomerUnits: tile.minCustomerUnits,
+        serviceWindows: tile.serviceWindows,
+      },
+    });
+    createdTiles.push(record);
+  }
+  console.log(`\n🗺️  Seeded ${createdTiles.length} service tiles`);
+  return createdTiles;
+}
+
+async function seedCompSchedules(orgId) {
+  for (const config of DEFAULT_COMP_SCHEDULES) {
+    const existing = await prisma.visitCompSchedule.findFirst({
+      where: {
+        orgId,
+        frequency: config.frequency,
+      },
+      orderBy: { effectiveFrom: "desc" },
+    });
+
+    if (existing) {
+      await prisma.visitCompSchedule.update({
+        where: { id: existing.id },
+        data: {
+          baseRateCents: config.baseRateCents,
+          haulAwayBonusCents: config.haulAwayBonusCents ?? 0,
+          certificationMatrix: {
+            defaultSharePercent: config.sharePercent ?? 0.45,
+          },
+        },
+      });
+    } else {
+      await prisma.visitCompSchedule.create({
+        data: {
+          orgId,
+          frequency: config.frequency,
+          baseRateCents: config.baseRateCents,
+          haulAwayBonusCents: config.haulAwayBonusCents ?? 0,
+          ecoDiversionBonusCents: 200,
+          effectiveFrom: new Date("2024-01-01T00:00:00Z"),
+          isDefault: true,
+          certificationMatrix: {
+            defaultSharePercent: config.sharePercent ?? 0.45,
+          },
+        },
+      });
+    }
+  }
+  console.log("💵 Compensation schedules ensured");
+}
+
+async function seedScoopers(orgId, tiles) {
+  console.log("\n🧑‍🔧 Seeding scooper contractors...");
+  const scooperProfiles = [];
+
+  for (const scooper of DEMO_SCOOPERS) {
+    const user = await prisma.user.upsert({
+      where: { email: scooper.email },
+      update: {
+        name: scooper.name,
+        role: "TECH",
+        phone: scooper.phone,
+        orgId,
+      },
+      create: {
+        email: scooper.email,
+        name: scooper.name,
+        role: "TECH",
+        phone: scooper.phone,
+        orgId,
+      },
+    });
+
+    const profile = await prisma.scooperProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        orgId,
+        status: "CERTIFIED",
+        backgroundCheckStatus: "PASSED",
+        vehicleVerified: true,
+        vehicleDetail: scooper.vehicleDetail,
+      },
+      create: {
+        orgId,
+        userId: user.id,
+        status: "CERTIFIED",
+        backgroundCheckStatus: "PASSED",
+        vehicleVerified: true,
+        vehicleDetail: scooper.vehicleDetail,
+      },
+    });
+
+    await prisma.scooperCertification.upsert({
+      where: {
+        scooperId_type: {
+          scooperId: profile.id,
+          type: "BIN_DROP",
+        },
+      },
+      update: {
+        status: "ACTIVE",
+        issuedAt: new Date(),
+      },
+      create: {
+        orgId,
+        scooperId: profile.id,
+        type: "BIN_DROP",
+        status: "ACTIVE",
+        issuedAt: new Date(),
+      },
+    });
+
+    await prisma.scooperAvailability.deleteMany({
+      where: { scooperId: profile.id },
+    });
+
+    const tileLookup = new Map(tiles.map((tile) => [tile.slug, tile]));
+    for (const slug of scooper.tiles) {
+      const tile = tileLookup.get(slug);
+      if (!tile) continue;
+      await prisma.scooperAvailability.create({
+        data: {
+          orgId,
+          scooperId: profile.id,
+          tileId: tile.id,
+          weekday: 1,
+          window: "AM",
+          maxStops: 24,
+        },
+      });
+    }
+
+    scooperProfiles.push({ profile, user });
+    console.log(`  ✅ Scooper ready: ${scooper.name}`);
+  }
+
+  return scooperProfiles;
 }
 
 function generateDataReadings(serviceVisitId, dogsServiced) {
@@ -172,7 +560,7 @@ function generateDataReadings(serviceVisitId, dogsServiced) {
 // SEEDING FUNCTIONS
 // =============================================================================
 
-async function seedUsers() {
+async function seedUsers(orgId) {
   console.log("👥 Seeding users...");
 
   const usersToCreate = isProduction ? DEMO_USERS.slice(0, 1) : DEMO_USERS;
@@ -182,8 +570,14 @@ async function seedUsers() {
     try {
       const user = await prisma.user.upsert({
         where: { email: userData.email },
-        update: userData,
-        create: userData,
+        update: {
+          ...userData,
+          orgId,
+        },
+        create: {
+          ...userData,
+          orgId,
+        },
       });
       createdUsers.push(user);
       console.log(`  ✅ Created user: ${user.name} (${user.email})`);
@@ -198,7 +592,87 @@ async function seedUsers() {
   return createdUsers;
 }
 
-async function seedDogs(users) {
+async function seedTechCredentials(users) {
+  console.log("\n🔑 Seeding tech credentials...");
+  
+  const techUsers = users.filter((u) => u.role === "TECH");
+  
+  for (const user of techUsers) {
+    try {
+      const hashedPassword = await bcrypt.hash("yardura25!", 10);
+      
+      await prisma.account.deleteMany({
+        where: {
+          userId: user.id,
+          provider: "credentials",
+        },
+      });
+      
+      await prisma.account.create({
+        data: {
+          userId: user.id,
+          type: "credentials",
+          provider: "credentials",
+          providerAccountId: user.id,
+          access_token: hashedPassword,
+        },
+      });
+      
+      console.log(`  ✅ Added credentials for ${user.email} (password: yardura25!)`);
+    } catch (error) {
+      console.error(`  ❌ Failed to add credentials for ${user.email}:`, error.message);
+    }
+  }
+}
+
+async function seedCustomers(users, orgId) {
+  console.log("\n📇 Seeding customers...");
+  const customers = [];
+
+  for (const user of users.filter((u) => u.role === "CUSTOMER")) {
+    const tile = await resolveSeedTile(orgId, user.city);
+
+    let customer = await prisma.customer.findFirst({
+      where: { userId: user.id },
+    });
+
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: {
+          orgId,
+          userId: user.id,
+          name: user.name || user.email || "Household",
+          email: user.email,
+          phone: user.phone,
+          addressLine1: user.address || "123 Demo St",
+          city: user.city || "Minneapolis",
+          state: user.state || "MN",
+          zip: user.zipCode || "55401",
+        },
+      });
+    } else {
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          email: user.email || customer.email,
+          phone: user.phone || customer.phone,
+          addressLine1: user.address || customer.addressLine1,
+          city: user.city || customer.city,
+          state: user.state || customer.state,
+          zip: user.zipCode || customer.zip,
+        },
+      });
+      customer = await prisma.customer.findUnique({ where: { id: customer.id } });
+    }
+
+    customers.push({ user, customer, tile });
+    console.log(`  ✅ Customer ready: ${customer.name}`);
+  }
+
+  return customers;
+}
+
+async function seedDogs(users, orgId) {
   console.log("\n🐕 Seeding dogs...");
 
   const createdDogs = [];
@@ -215,6 +689,7 @@ async function seedDogs(users) {
           data: {
             ...dogData,
             userId: user.id,
+            orgId,
           },
         });
         userDogs.push(dog);
@@ -233,38 +708,201 @@ async function seedDogs(users) {
   return createdDogs;
 }
 
-async function seedServiceVisits(users) {
+async function seedServiceVisits(customers, org, tiles, scooperProfiles) {
   console.log("\n📅 Seeding service visits...");
 
-  const customerUsers = users.filter((u) => u.role === "CUSTOMER");
   const createdVisits = [];
+  const availableScoopers = scooperProfiles?.map((entry) => entry.user) ?? [];
 
-  for (const user of customerUsers) {
-    const userDogs = await prisma.dog.findMany({
-      where: { userId: user.id },
+  for (const entry of customers) {
+    const { customer, tile } = entry;
+    const perVisitCents = Math.floor(Math.random() * 1200) + 1800; // $18-$30
+    const frequency = getRandomElement([
+      Frequency.WEEKLY,
+      Frequency.BI_WEEKLY,
+      Frequency.TWICE_WEEKLY,
+    ]);
+
+    const job = await prisma.job.create({
+      data: {
+        orgId: org.id,
+        customerId: customer.id,
+        frequency,
+        tileId: tile?.id ?? null,
+        perVisitRevenueCents: perVisitCents,
+        status: "ACTIVE",
+      },
     });
 
-    const visits = generateServiceVisits(user.id, userDogs.length);
+    const visitCount = Math.floor(Math.random() * 4) + 6;
+    const visitsPast = Math.floor(visitCount / 2);
+    const daysBetween = frequency === Frequency.WEEKLY ? 7 : frequency === Frequency.TWICE_WEEKLY ? 3 : 14;
 
-    for (const visitData of visits) {
+    for (let index = 0; index < visitCount; index++) {
+      const scheduledDate = new Date();
+      scheduledDate.setDate(scheduledDate.getDate() - (visitCount - index) * daysBetween);
+      scheduledDate.setHours(9, 0, 0, 0);
+
+      const isPast = index < visitsPast;
+      const assignedScooper =
+        availableScoopers.length && Math.random() > 0.5
+          ? getRandomElement(availableScoopers)
+          : null;
+
       try {
         const visit = await prisma.serviceVisit.create({
-          data: visitData,
+          data: {
+            orgId: org.id,
+            customerId: customer.id,
+            jobId: job.id,
+            userId: customer.userId,
+            scheduledDate,
+            completedDate: isPast ? new Date(scheduledDate.getTime() + 60 * 60 * 1000) : null,
+            status: isPast ? "COMPLETED" : "SCHEDULED",
+            serviceType: frequency === Frequency.ONE_TIME ? "ONE_TIME" : "REGULAR",
+            yardSize: "MEDIUM",
+            dogsServiced: Math.floor(Math.random() * 2) + 1,
+            assignedToId: assignedScooper ? assignedScooper.id : null,
+            tileId: tile?.id ?? null,
+            revenueCents: perVisitCents,
+            metadata: {
+              seeded: true,
+            },
+          },
         });
+
         createdVisits.push(visit);
-        console.log(
-          `  ✅ Created service visit for ${user.name} on ${visit.scheduledDate.toDateString()}`,
-        );
       } catch (error) {
         console.error(
-          `  ❌ Failed to create service visit for ${user.name}:`,
+          `  ❌ Failed to create visit for ${customer.name}:`,
           error.message,
         );
       }
     }
+
+    const nextVisit = await prisma.serviceVisit.findFirst({
+      where: {
+        jobId: job.id,
+        status: "SCHEDULED",
+      },
+      orderBy: { scheduledDate: "asc" },
+    });
+
+    await prisma.job.update({
+      where: { id: job.id },
+      data: {
+        nextVisitAt: nextVisit ? nextVisit.scheduledDate : null,
+        dayOfWeek: nextVisit ? nextVisit.scheduledDate.getDay() : null,
+      },
+    });
   }
 
   return createdVisits;
+}
+
+async function seedRouteShifts(org, tiles) {
+  console.log("\n🗓️  Seeding route shifts...");
+
+  const tileLookup = new Map(tiles.map((tile) => [tile.id, tile]));
+
+  const upcomingVisits = await prisma.serviceVisit.findMany({
+    where: {
+      orgId: org.id,
+      status: "SCHEDULED",
+      tileId: { not: null },
+      routeShiftId: null,
+      scheduledDate: { gte: new Date() },
+    },
+    orderBy: { scheduledDate: "asc" },
+    select: {
+      id: true,
+      tileId: true,
+      scheduledDate: true,
+    },
+  });
+
+  const grouped = new Map();
+  for (const visit of upcomingVisits) {
+    if (!visit.tileId) continue;
+    if (!grouped.has(visit.tileId)) grouped.set(visit.tileId, []);
+    grouped.get(visit.tileId).push(visit);
+  }
+
+  const createdShifts = [];
+  for (const [tileId, visits] of grouped.entries()) {
+    const selected = visits.slice(0, Math.min(5, visits.length));
+    if (!selected.length) continue;
+
+    const serviceDate = new Date(selected[0].scheduledDate);
+
+    const shift = await prisma.routeShift.create({
+      data: {
+        orgId: org.id,
+        tileId,
+        serviceDate,
+        scheduledWindow: AvailabilityWindow.AM,
+        status: "PLANNED",
+        plannedStops: selected.length,
+        primary: true,
+      },
+    });
+
+    await prisma.serviceVisit.updateMany({
+      where: { id: { in: selected.map((visit) => visit.id) } },
+      data: { routeShiftId: shift.id },
+    });
+
+    createdShifts.push(shift);
+  }
+
+  console.log(`  ✅ Created ${createdShifts.length} route shifts`);
+  return createdShifts;
+}
+
+async function seedVisitOffersForTiles(orgId, tileIds) {
+  console.log("\n📣 Publishing visit offers...");
+  let total = 0;
+
+  for (const tileId of tileIds) {
+    const visits = await prisma.serviceVisit.findMany({
+      where: {
+        orgId,
+        tileId,
+        status: "SCHEDULED",
+        assignedToId: null,
+        scheduledDate: { gte: new Date() },
+      },
+      select: { id: true, metadata: true, scheduledDate: true },
+      take: 20,
+    });
+
+    for (const visit of visits) {
+      const existing = await prisma.visitOffer.findFirst({
+        where: {
+          serviceVisitId: visit.id,
+          status: { in: ["PENDING", "ACCEPTED"] },
+        },
+      });
+
+      if (existing) continue;
+
+      await prisma.visitOffer.create({
+        data: {
+          orgId,
+          serviceVisitId: visit.id,
+          tileId,
+          status: "PENDING",
+          priority: 0,
+          dispatchStrategy: "seed-demo",
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+          metadata: visit.metadata ?? {},
+        },
+      });
+      total++;
+    }
+  }
+
+  console.log(`  ✅ Created ${total} visit offers`);
 }
 
 async function seedDataReadings(serviceVisits) {
@@ -519,21 +1157,58 @@ async function main() {
     // Clear existing data in development (not in production)
     if (!isProduction) {
       console.log("🧹 Clearing existing demo data...");
-      await prisma.commission.deleteMany();
-      await prisma.dataReading.deleteMany();
-      await prisma.serviceVisit.deleteMany();
-      await prisma.dog.deleteMany();
-      await prisma.user.deleteMany({
-        where: { email: { in: DEMO_USERS.map((u) => u.email) } },
-      });
+      // Delete in reverse dependency order (with safe checks)
+      const deleteIfExists = async (model, modelName) => {
+        try {
+          if (model && model.deleteMany) {
+            await model.deleteMany();
+          }
+        } catch (error) {
+          console.log(`  ⚠️  Could not delete ${modelName}: ${error.message}`);
+        }
+      };
+
+      await deleteIfExists(prisma.visitOffer, "VisitOffer");
+      await deleteIfExists(prisma.routeStop, "RouteStop");
+      await deleteIfExists(prisma.routeShift, "RouteShift");
+      await deleteIfExists(prisma.visitPayout, "VisitPayout");
+      await deleteIfExists(prisma.ledgerEntry, "LedgerEntry");
+      await deleteIfExists(prisma.commission, "Commission");
+      await deleteIfExists(prisma.dataReading, "DataReading");
+      await deleteIfExists(prisma.serviceVisit, "ServiceVisit");
+      await deleteIfExists(prisma.job, "Job");
+      await deleteIfExists(prisma.customer, "Customer");
+      await deleteIfExists(prisma.dog, "Dog");
+      await deleteIfExists(prisma.territoryAssignment, "TerritoryAssignment");
+      await deleteIfExists(prisma.scooperDevice, "ScooperDevice");
+      await deleteIfExists(prisma.scooperAvailability, "ScooperAvailability");
+      await deleteIfExists(prisma.scooperProfile, "ScooperProfile");
+      
+      try {
+        await prisma.user.deleteMany({
+          where: { email: { in: DEMO_USERS.map((u) => u.email) } },
+        });
+      } catch (error) {
+        console.log(`  ⚠️  Could not delete demo users: ${error.message}`);
+      }
+      
       console.log("  ✅ Cleared existing demo data");
     }
 
     // Seed data in order
-    const users = await seedUsers();
-    const dogs = await seedDogs(users);
+    const org = await ensureOrg();
+    const tiles = await seedServiceTilesForOrg(org.id);
+    await seedCompSchedules(org.id);
+
+    const users = await seedUsers(org.id);
+    await seedTechCredentials(users);
+    const customers = await seedCustomers(users, org.id);
+    const dogs = await seedDogs(users, org.id);
+    const scooperProfiles = await seedScoopers(org.id, tiles);
     await seedGlobalStats();
-    const serviceVisits = await seedServiceVisits(users);
+    const serviceVisits = await seedServiceVisits(customers, org, tiles, scooperProfiles);
+    const routeShifts = await seedRouteShifts(org, tiles);
+    await seedVisitOffersForTiles(org.id, tiles.map((tile) => tile.id));
     const dataReadingsCount = await seedDataReadings(serviceVisits);
     const commissionsCount = await seedCommissions(users, serviceVisits);
 
@@ -548,9 +1223,11 @@ async function main() {
     console.log("=".repeat(50));
     console.log(`Environment: ${environment}`);
     console.log(`Users: ${users.length}`);
+    console.log(`Customers: ${customers.length}`);
     console.log(`Dogs: ${dogs.length}`);
     console.log(`Service Visits: ${serviceVisits.length}`);
     console.log(`Data Readings: ${dataReadingsCount}`);
+    console.log(`Route Shifts: ${routeShifts.length}`);
     console.log(`Commissions: ${commissionsCount}`);
     console.log("=".repeat(50));
 
@@ -559,6 +1236,9 @@ async function main() {
       console.log("   Customer: demo@yardura.com");
       console.log("   Sales Rep: sales@yardura.com");
       console.log("   (Use any password for testing)");
+      console.log("");
+      console.log("   Field Tech: jordan.scooper@example.com");
+      console.log("   Password: yardura25!");
     }
   } catch (error) {
     console.error("\n❌ Seeding failed:", error);
@@ -581,4 +1261,12 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { main, seedUsers, seedDogs, seedServiceVisits };
+module.exports = {
+  main,
+  seedUsers,
+  seedCustomers,
+  seedDogs,
+  seedServiceVisits,
+  seedRouteShifts,
+  seedVisitOffersForTiles,
+};

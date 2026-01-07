@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+
 import { stripe } from "@/lib/stripe";
-import { db } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import {
+  syncInvoiceWithLedger,
+  handleInvoicePaid,
+  handleInvoicePaymentFailed,
+} from "@/lib/billing/invoices";
+import {
+  handleSubscriptionUpdate,
+  handleSubscriptionCancellation,
+  handleWellnessSubscriptionUpdate,
+} from "@/lib/stripe/webhook-handlers";
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -32,20 +44,31 @@ export async function POST(request: NextRequest) {
         await handlePaymentFailure(event.data.object);
         break;
 
+      case "invoice.upcoming":
+        await handleInvoiceUpcoming(event.data.object as Stripe.Invoice);
+        break;
+
       case "invoice.payment_succeeded":
-        await handleInvoicePaymentSuccess(event.data.object);
+        await handleInvoicePaymentSuccess(event.data.object as Stripe.Invoice);
         break;
 
       case "invoice.payment_failed":
-        await handleInvoicePaymentFailure(event.data.object);
+        await handleInvoicePaymentFailure(event.data.object as Stripe.Invoice);
         break;
 
       case "customer.subscription.updated":
         await handleSubscriptionUpdate(event.data.object);
+        await handleWellnessSubscriptionUpdate(event.data.object);
+        break;
+
+      case "customer.subscription.created":
+        await handleSubscriptionUpdate(event.data.object);
+        await handleWellnessSubscriptionUpdate(event.data.object);
         break;
 
       case "customer.subscription.deleted":
         await handleSubscriptionCancellation(event.data.object);
+        await handleWellnessSubscriptionUpdate(event.data.object);
         break;
 
       case "customer.updated": {
@@ -88,80 +111,101 @@ export async function POST(request: NextRequest) {
 }
 
 async function handlePaymentSuccess(paymentIntent: any) {
-  const { visit_id, customer_id } = paymentIntent.metadata;
+  const metadata = paymentIntent.metadata ?? {};
+  const visitId = metadata.visit_id as string | undefined;
+  if (!visitId) return;
 
-  if (visit_id && customer_id) {
-    // Update service visit with successful payment
-    await db.updateServiceVisit(visit_id, {
-      stripePaymentIntentId: paymentIntent.id,
-      status: "completed",
-      completedDate: new Date(),
-    });
+  const visit = await prisma.serviceVisit.findUnique({
+    where: { id: visitId },
+    select: { metadata: true },
+  });
 
-    // Activate customer if this was their first payment
-    const customer = await db.getCustomer(customer_id);
-    if (customer && customer.status === "pending") {
-      await db.updateCustomer(customer_id, { status: "active" });
-    }
+  if (!visit) return;
 
-    console.log(
-      `Payment successful for visit ${visit_id}, customer ${customer_id}`,
-    );
-  }
+  const existingMeta =
+    visit.metadata && typeof visit.metadata === "object" && !Array.isArray(visit.metadata)
+      ? (visit.metadata as Record<string, unknown>)
+      : {};
+
+  const nextMetadata = {
+    ...existingMeta,
+    stripePaymentIntentId: paymentIntent.id,
+    stripePaymentStatus: "succeeded",
+    stripePaymentUpdatedAt: new Date().toISOString(),
+  } as Record<string, unknown>;
+
+  await prisma.serviceVisit.update({
+    where: { id: visitId },
+    data: {
+      metadata: nextMetadata as Prisma.InputJsonValue,
+    },
+  });
 }
 
 async function handlePaymentFailure(paymentIntent: any) {
-  const { visit_id, customer_id } = paymentIntent.metadata;
+  const metadata = paymentIntent.metadata ?? {};
+  const visitId = metadata.visit_id as string | undefined;
+  if (!visitId) return;
 
-  if (visit_id) {
-    // Mark visit as having payment issues
-    await db.updateServiceVisit(visit_id, {
-      notes: `Payment failed: ${paymentIntent.last_payment_error?.message || "Unknown error"}`,
+  const visit = await prisma.serviceVisit.findUnique({
+    where: { id: visitId },
+    select: { metadata: true },
+  });
+
+  if (!visit) return;
+
+  const existingMeta =
+    visit.metadata && typeof visit.metadata === "object" && !Array.isArray(visit.metadata)
+      ? (visit.metadata as Record<string, unknown>)
+      : {};
+
+  const nextMetadata = {
+    ...existingMeta,
+    stripePaymentIntentId: paymentIntent.id,
+    stripePaymentStatus: "failed",
+    stripePaymentError: paymentIntent.last_payment_error?.message ?? "Unknown error",
+    stripePaymentUpdatedAt: new Date().toISOString(),
+  } as Record<string, unknown>;
+
+  await prisma.serviceVisit.update({
+    where: { id: visitId },
+    data: {
+      metadata: nextMetadata as Prisma.InputJsonValue,
+    },
+  });
+}
+
+async function handleInvoiceUpcoming(invoice: Stripe.Invoice) {
+  try {
+    await syncInvoiceWithLedger(invoice);
+  } catch (error) {
+    console.error("invoice.upcoming ledger sync failed", {
+      invoiceId: invoice.id,
+      error,
     });
-
-    console.log(
-      `Payment failed for visit ${visit_id}, customer ${customer_id}`,
-    );
   }
 }
 
-async function handleInvoicePaymentSuccess(invoice: any) {
+async function handleInvoicePaymentSuccess(invoice: Stripe.Invoice) {
   console.log(`Invoice payment succeeded: ${invoice.id}`);
-
-  // You can add additional logic here for invoice-specific handling
-  // For example, updating subscription status or sending confirmation emails
-}
-
-async function handleInvoicePaymentFailure(invoice: any) {
-  console.log(`Invoice payment failed: ${invoice.id}`);
-
-  // Handle failed invoice payments
-  // This might involve pausing service or contacting the customer
-}
-
-async function handleSubscriptionUpdate(subscription: any) {
-  const customer = await db.getCustomerByStripeId(subscription.customer);
-
-  if (customer) {
-    // Update customer status based on subscription status
-    let status: "active" | "paused" | "cancelled" = "active";
-
-    if (subscription.status === "canceled") {
-      status = "cancelled";
-    } else if (subscription.status === "past_due") {
-      status = "paused";
-    }
-
-    await db.updateCustomer(customer.id, { status });
-    console.log(`Subscription updated for customer ${customer.id}: ${status}`);
+  try {
+    await handleInvoicePaid(invoice);
+  } catch (error) {
+    console.error("invoice.payment_succeeded handling failed", {
+      invoiceId: invoice.id,
+      error,
+    });
   }
 }
 
-async function handleSubscriptionCancellation(subscription: any) {
-  const customer = await db.getCustomerByStripeId(subscription.customer);
-
-  if (customer) {
-    await db.updateCustomer(customer.id, { status: "cancelled" });
-    console.log(`Subscription cancelled for customer ${customer.id}`);
+async function handleInvoicePaymentFailure(invoice: Stripe.Invoice) {
+  console.log(`Invoice payment failed: ${invoice.id}`);
+  try {
+    await handleInvoicePaymentFailed(invoice);
+  } catch (error) {
+    console.error("invoice.payment_failed handling failed", {
+      invoiceId: invoice.id,
+      error,
+    });
   }
 }

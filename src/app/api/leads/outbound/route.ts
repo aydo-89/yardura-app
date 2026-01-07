@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
+import { resolveApiAuth } from "@/lib/auth/api-auth";
 import { prisma } from "@/lib/prisma";
+import { getTileRepository } from "@/lib/tiles/repository";
+import type { ServiceTileStatus } from "@prisma/client";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -11,6 +12,10 @@ const createLeadSchema = z.object({
   lastName: z.string().optional(),
   email: z.string().email().optional(),
   phone: z.string().optional(),
+  dogs: z.union([z.number(), z.string()]).optional(),
+  yardSize: z.string().optional(),
+  frequency: z.string().optional(),
+  specialInstructions: z.string().optional(),
   address: z
     .object({
       line1: z.string().optional(),
@@ -46,10 +51,6 @@ const createLeadSchema = z.object({
 
 function forbidden(message = "Unauthorized") {
   return NextResponse.json({ ok: false, error: message }, { status: 403 });
-}
-
-function getRole(session: any): string | undefined {
-  return session?.userRole || session?.role;
 }
 
 function toStageColor(stage?: string | null) {
@@ -103,14 +104,14 @@ function extractLeadMetadata(pricingBreakdown: unknown) {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await resolveApiAuth(req);
+    if (!auth?.userId) {
       return forbidden();
     }
 
-    const role = getRole(session as any);
-    const userId = (session.user as any)?.id;
-    const orgId = (session.user as any)?.orgId;
+    const role = auth.role;
+    const userId = auth.userId;
+    const orgId = auth.orgId;
 
     if (!orgId) {
       return NextResponse.json(
@@ -131,12 +132,18 @@ export async function GET(req: NextRequest) {
     const leadType = searchParams.get("leadType") || "outbound";
     const search = searchParams.get("search") || undefined;
     const nextActionBefore = searchParams.get("nextActionBefore") || undefined;
+    const includeConverted = searchParams.get("includeConverted") === "true";
     const includeCadence = searchParams.get("includeCadence") === "true";
 
     const where: any = {
       orgId,
       leadType,
     };
+
+    if (!includeConverted) {
+      where.convertedToCustomerId = null;
+      where.status = { not: "WON" };
+    }
 
     if (pipelineStage) {
       where.pipelineStage = pipelineStage;
@@ -184,12 +191,14 @@ export async function GET(req: NextRequest) {
         lastActivity: true,
         cadenceEnrollments: includeCadence
           ? {
-              where: { status: "active" },
+              where: { status: { in: ["active", "paused"] } },
+              orderBy: { startedAt: "desc" },
               select: {
                 id: true,
                 cadenceId: true,
                 nextRunAt: true,
                 status: true,
+                cadence: { select: { id: true, name: true } },
               },
             }
           : false,
@@ -204,19 +213,86 @@ export async function GET(req: NextRequest) {
 
     const now = Date.now();
 
-    const mapped = leads.map((lead) => {
+    const usePostgisTiles = process.env.ENABLE_POSTGIS_TILES === "true";
+    const tileRepository = usePostgisTiles ? getTileRepository() : null;
+    const tileCache = new Map<string, { slug: string; status: ServiceTileStatus }>();
+
+    const mapped = await Promise.all(
+      leads.map(async (lead) => {
+        const rawLocation = lead.lastActivity?.location as
+          | { type?: string; coordinates?: unknown; accuracy?: unknown }
+          | undefined;
+      let lastActivityLocation: {
+        lat: number;
+        lng: number;
+        accuracy?: number | null;
+      } | null = null;
+
+      if (
+        rawLocation &&
+        rawLocation.type === "Point" &&
+        Array.isArray(rawLocation.coordinates) &&
+        rawLocation.coordinates.length >= 2
+      ) {
+        const [lng, lat] = rawLocation.coordinates as Array<number>;
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          lastActivityLocation = {
+            lat,
+            lng,
+            accuracy:
+              typeof rawLocation.accuracy === "number"
+                ? rawLocation.accuracy
+                : null,
+          };
+        }
+      }
+
       const metadata = extractLeadMetadata(lead.pricingBreakdown);
       const owner = lead.owner ?? lead.salesRep ?? null;
       const slaMinutes = lead.nextActionAt
         ? Math.round((lead.nextActionAt.getTime() - now) / 60000)
         : null;
 
-      return {
-        id: lead.id,
-        firstName: lead.firstName,
-        lastName: lead.lastName,
+        let serviceArea: {
+          slug: string;
+          status: ServiceTileStatus;
+        } | null = null;
+
+        if (tileRepository && lead.zipCode) {
+          const cacheKey = lead.zipCode;
+          if (tileCache.has(cacheKey)) {
+            serviceArea = tileCache.get(cacheKey)!;
+          } else {
+            try {
+              const tile = await tileRepository.findTileByZip(orgId, cacheKey, {
+                metricsLimit: 1,
+              });
+              if (tile) {
+                serviceArea = {
+                  slug: tile.tile.slug,
+                  status: tile.tile.status,
+                };
+                tileCache.set(cacheKey, serviceArea);
+              } else {
+                tileCache.set(cacheKey, null as any);
+              }
+            } catch (error) {
+              console.error("lead tile lookup failed", error);
+              tileCache.set(cacheKey, null as any);
+            }
+          }
+          if ((tileCache.get(cacheKey) as any) === null) {
+            serviceArea = null;
+          }
+        }
+
+        return {
+          id: lead.id,
+          firstName: lead.firstName,
+          lastName: lead.lastName,
         email: lead.email,
         phone: lead.phone,
+        dogs: lead.dogs,
         leadType: lead.leadType,
         pipelineStage: lead.pipelineStage,
         stageColor: toStageColor(lead.pipelineStage),
@@ -233,21 +309,25 @@ export async function GET(req: NextRequest) {
               id: lead.lastActivity.id,
               type: lead.lastActivity.type,
               result: lead.lastActivity.result,
+              notes: lead.lastActivity.notes,
               occurredAt: lead.lastActivity.occurredAt,
+              location: lastActivityLocation,
             }
           : null,
-        submittedAt: lead.submittedAt,
-        lastActivityAt: lead.lastActivityAt,
-        nextActionAt: lead.nextActionAt,
-        nextActionSlaMinutes: slaMinutes,
-        preferredStartDate: metadata.preferredStartDate,
-        preferredContactMethods: metadata.preferredContactMethods,
-        howDidYouHear: metadata.howDidYouHear ?? lead.referralSource,
-        cadenceEnrollments: includeCadence
-          ? lead.cadenceEnrollments
-          : undefined,
-      };
-    });
+          submittedAt: lead.submittedAt,
+          lastActivityAt: lead.lastActivityAt,
+          nextActionAt: lead.nextActionAt,
+          nextActionSlaMinutes: slaMinutes,
+          preferredStartDate: metadata.preferredStartDate,
+          preferredContactMethods: metadata.preferredContactMethods,
+          howDidYouHear: metadata.howDidYouHear ?? lead.referralSource,
+          cadenceEnrollments: includeCadence
+            ? lead.cadenceEnrollments
+            : undefined,
+          serviceArea,
+        };
+      }),
+    );
 
     return NextResponse.json({
       ok: true,
@@ -267,14 +347,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await resolveApiAuth(req);
+    if (!auth?.userId) {
       return forbidden();
     }
 
-    const role = getRole(session as any);
-    const orgId = (session.user as any)?.orgId;
-    const sessionUserId = (session.user as any)?.id;
+    const role = auth.role;
+    const orgId = auth.orgId;
+    const sessionUserId = auth.userId;
 
     if (!orgId) {
       return NextResponse.json(
@@ -319,6 +399,32 @@ export async function POST(req: NextRequest) {
     const email =
       parsed.email ?? `outbound-${crypto.randomUUID()}@leads.yardura`;
 
+    let dogsValue: number | null = null;
+    if (typeof parsed.dogs === "number") {
+      if (Number.isFinite(parsed.dogs)) {
+        dogsValue = Math.max(0, Math.round(parsed.dogs));
+      }
+    } else if (typeof parsed.dogs === "string") {
+      const numeric = Number.parseInt(parsed.dogs, 10);
+      if (!Number.isNaN(numeric)) {
+        dogsValue = Math.max(0, numeric);
+      }
+    }
+
+    const yardSizeValue =
+      parsed.yardSize && parsed.yardSize !== "__unset"
+        ? parsed.yardSize
+        : undefined;
+
+    const frequencyValue =
+      parsed.frequency && parsed.frequency !== "__unset"
+        ? parsed.frequency
+        : undefined;
+
+    const specialInstructionsValue = parsed.specialInstructions
+      ? parsed.specialInstructions.trim()
+      : "";
+
     const leadData = {
       orgId,
       firstName: parsed.firstName,
@@ -339,6 +445,13 @@ export async function POST(req: NextRequest) {
       zipCode: parsed.address?.zip,
       latitude: parsed.address?.latitude,
       longitude: parsed.address?.longitude,
+      dogs: dogsValue ?? undefined,
+      yardSize: yardSizeValue,
+      frequency: frequencyValue,
+      specialInstructions:
+        specialInstructionsValue.length > 0
+          ? specialInstructionsValue
+          : undefined,
       lastActivityAt: parsed.initialActivity?.occurredAt
         ? new Date(parsed.initialActivity.occurredAt)
         : undefined,

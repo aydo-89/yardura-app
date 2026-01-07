@@ -1,9 +1,10 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/framermotion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "./StatusPill";
 import { wellnessTheme, type WellnessComputed } from "@/shared/wellness";
+import { brandColors, withAlpha } from "@/shared/brand";
 
 interface WellnessHeaderProps {
   wellnessData: WellnessComputed;
@@ -17,9 +18,14 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
   onNavigateToSection,
 }) => {
   const { latestStatus, latestCopy } = wellnessData;
+  const latestWeek = wellnessData.weekly[0];
+  const depositsThisWeek = latestWeek?.deposits ?? 0;
+  const monitorWeeks = wellnessData.weekly.filter((week) => week.status === "monitor").length;
+  const attentionWeeks = wellnessData.weekly.filter((week) => week.status === "attention").length;
+  const healthyWeeks = wellnessData.weekly.filter((week) => week.status === "good").length;
 
   // Identify concerning issues for navigation
-  const concerningIssues = [];
+  const concerningIssues: Array<{ label: string; sectionId: string; icon: string }> = [];
 
   // Check for color issues - use same logic as ColorAnalysis component
   const totalColorSamples =
@@ -120,73 +126,100 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <Card
-        className="border-0 shadow-sm"
-        style={{
-          backgroundColor: "white",
-          borderRadius: wellnessTheme.radiusLg,
-        }}
-      >
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between gap-6">
-            {/* Status Section - Just the Chip */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <StatusPill status={latestStatus} size="md" />
-                <p className="text-slate-600 text-sm leading-relaxed mb-2">
+      {/* Using a div with explicit backgrounds instead of Card to avoid default styles */}
+      <div className="relative overflow-hidden rounded-xl border border-graphite/20 dark:border-white/10 bg-gradient-to-br from-graphite via-graphite-soft to-graphite dark:from-[#25292f] dark:via-[#1e2227] dark:to-[#25292f] shadow-lg">
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-mint-500/15 to-transparent" />
+        <div className="relative flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between">
+          <div className="flex-1 space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
+              <span className="size-1.5 rounded-full bg-mint" />
+              Wellness status
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <StatusPill status={latestStatus} size="md" />
+              <div>
+                <p className="text-xl font-heading font-semibold text-white">
+                  {latestCopy.title}
+                </p>
+                <p className="max-w-xl text-sm text-white/70">
                   {latestCopy.subtitle}
                 </p>
               </div>
-
-              {/* Compact Advice List */}
-              {latestCopy.advice.length > 0 && (
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {latestCopy.advice.map((advice, index) => (
-                    <span key={index} className="text-xs text-slate-500">
-                      {advice}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Navigation Links for Concerning Issues */}
-              {concerningIssues.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-200">
-                  <div className="text-xs text-slate-600 mb-2 font-medium">
-                    Review concerns:
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {concerningIssues.map((issue, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleNavigate(issue.sectionId)}
-                        className="inline-flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-md transition-colors"
-                      >
-                        <span>{issue.icon}</span>
-                        <span>{issue.label}</span>
-                        <span className="text-slate-400">→</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="flex items-center gap-3 px-4 py-2 rounded-2xl border shadow-md shadow-black/20 bg-gradient-to-r from-mint/40 to-evergreen/60 border-mint/40">
+                <div className="size-3 rounded-full animate-pulse shadow-sm bg-mint"></div>
+                <span className="text-sm font-semibold text-white">
+                  3C baseline stable · Dashboard preview
+                </span>
+              </div>
             </div>
 
-            {/* CTA Section - More Compact */}
-            <div className="flex items-center gap-3">
+            {latestCopy.advice.length > 0 && (
+              <div className="grid gap-2 rounded-2xl border border-white/12 bg-white/8 p-4 text-xs text-white/80">
+                {latestCopy.advice.map((advice, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <span className="mt-0.5 text-mint">•</span>
+                    <span>{advice}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {concerningIssues.length > 0 && (
+              <div className="rounded-2xl border border-coral/32 bg-coral/12 px-4 py-3 text-xs text-white/80">
+                <div className="mb-2 font-semibold text-white">Review these sections</div>
+                <div className="flex flex-wrap gap-2">
+                  {concerningIssues.map((issue, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleNavigate(issue.sectionId)}
+                      className="inline-flex items-center gap-1 rounded-full bg-white/12 px-3 py-1 text-white/90 shadow-sm transition-all hover:bg-white/20"
+                    >
+                      <span>{issue.icon}</span>
+                      <span>{issue.label}</span>
+                      <span className="text-white/60">→</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="w-full max-w-xs space-y-4">
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between rounded-2xl border border-white/16 bg-white/8 px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.2em] text-white/65">
+                  Deposits this week
+                </div>
+                <div className="text-lg font-heading font-semibold text-white">
+                  {depositsThisWeek}
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-2xl border border-mint/42 bg-mint/16 px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.2em] text-white/70">
+                  Weeks to monitor
+                </div>
+                <div className="text-lg font-heading font-semibold text-white">
+                  {monitorWeeks + attentionWeeks}
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-2xl border border-coral/40 bg-coral/14 px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.2em] text-white/70">
+                  Healthy streak
+                </div>
+                <div className="text-lg font-heading font-semibold text-white">
+                  {healthyWeeks} wks
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
               <Button
                 onClick={onExport}
                 variant="outline"
-                size="sm"
-                className="text-xs"
-                style={{
-                  borderColor: wellnessTheme.slate200,
-                  borderRadius: wellnessTheme.radiusLg,
-                }}
+                className="flex-1 border-white/25 bg-white/10 text-white hover:bg-white/18 hover:text-white"
               >
-                Export
+                Export report
               </Button>
-
               {latestCopy.cta && (
                 <motion.div
                   initial={{ scale: 0.95 }}
@@ -195,30 +228,19 @@ export const WellnessHeader: React.FC<WellnessHeaderProps> = ({
                 >
                   <Button
                     asChild
+                    className="bg-coral hover:bg-coral-ink text-white"
                     size="sm"
-                    className="text-xs font-medium"
-                    style={{
-                      backgroundColor:
-                        latestStatus === "attention"
-                          ? wellnessTheme.colors.red
-                          : wellnessTheme.colors.teal,
-                      borderRadius: wellnessTheme.radiusLg,
-                    }}
                   >
-                    <a
-                      href={latestCopy.cta.href}
-                      className="inline-flex items-center justify-center gap-1.5 text-white"
-                    >
-                      {latestCopy.cta.label}
-                      <span className="text-xs">→</span>
+                    <a href={latestCopy.cta.href || "#"}>
+                      {latestCopy.cta.text || latestCopy.cta.label}
                     </a>
                   </Button>
                 </motion.div>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 };

@@ -45,3 +45,7 @@ export {
   validateCoverage,
 } from "./coverage";
 export type { CoverageStats } from "./coverage";
+
+// Repository interfaces
+export { getZipRepository, resetZipRepository } from "./zip-repository";
+export type { ZipRepository } from "./zip-repository";

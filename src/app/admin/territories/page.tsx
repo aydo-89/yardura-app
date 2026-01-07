@@ -78,7 +78,6 @@ export default function TerritoriesPage() {
     let disposed = false;
 
     (async () => {
-      await import("maplibre-gl/dist/maplibre-gl.css");
       const maplibreModule = await import("maplibre-gl");
       const maplibre = maplibreModule.default ?? maplibreModule;
 

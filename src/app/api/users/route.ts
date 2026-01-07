@@ -14,16 +14,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { address, city, zipCode, phone } = await request.json();
+    const { address, city, zipCode, phone, name } = await request.json();
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        address: true,
+        city: true,
+        zipCode: true,
+        phone: true,
+      },
+    });
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     // Update user profile
     const user = await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        address,
-        city,
-        zipCode,
-        phone,
+        address: address ?? existingUser.address,
+        city: city ?? existingUser.city,
+        zipCode: zipCode ?? existingUser.zipCode,
+        phone: phone ?? existingUser.phone,
+        name: name ?? existingUser.name,
       },
       select: {
         id: true,
@@ -38,7 +56,13 @@ export async function POST(request: NextRequest) {
 
     // Send signup notification email
     try {
-      if (process.env.RESEND_API_KEY) {
+      const shouldSendSignupEmail =
+        Boolean(process.env.RESEND_API_KEY) &&
+        !existingUser.address &&
+        !existingUser.phone &&
+        (address || phone);
+
+      if (shouldSendSignupEmail) {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const envTo =
           process.env.CONTACT_TO_EMAIL ||
@@ -48,9 +72,9 @@ export async function POST(request: NextRequest) {
           .map((e) => e.trim())
           .filter(Boolean);
         await resend.emails.send({
-          from: "Yardura <notifications@yardura.com>",
+          from: "InsightScoop <notifications@yardura.com>",
           to: recipients,
-          subject: "New Yardura Signup",
+          subject: "New InsightScoop Signup",
           text: `New user signup\n\nName: ${user.name || ""}\nEmail: ${user.email}\nPhone: ${user.phone || phone || ""}\nAddress: ${user.address || address || ""}, ${user.city || city || ""} ${user.zipCode || zipCode || ""}`,
         });
       }
