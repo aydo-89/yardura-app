@@ -36,7 +36,9 @@ yarn-error.*
 
 # Firebase config (contains API keys)
 google-services.json
+google-services.*.json
 GoogleService-Info.plist
+GoogleService-Info.*.plist
 
 # typescript
 *.tsbuildinfo
