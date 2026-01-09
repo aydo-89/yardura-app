@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -12,6 +12,13 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiRequest } from '@/lib/api/client';
 import { API_BASE_URL } from '@/lib/config';
 import type { WellnessSampleDetail } from '@/lib/api/types';
+
+const goBackToSamples = () => {
+  router.replace({
+    pathname: '/(app)/(customer)/wellness',
+    params: { tab: 'samples' },
+  } as Href);
+};
 
 type ParsedAnalysis = {
   color?: string;
@@ -177,7 +184,7 @@ export default function WellnessSampleScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable onPress={goBackToSamples} style={styles.backButton}>
             <FontAwesome name="chevron-left" size={16} color={palette.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: palette.text }]}>Sample details</Text>
@@ -365,7 +372,7 @@ export default function WellnessSampleScreen() {
             ) : null}
 
             <View style={styles.footerRow}>
-              <Button title="Back to wellness" variant="secondary" onPress={() => router.back()} />
+              <Button title="Back to samples" variant="secondary" onPress={goBackToSamples} />
             </View>
           </View>
         ) : null}

@@ -82,6 +82,39 @@ interface AdminCustomer {
   };
 }
 
+interface FreePetOwner {
+  id: string;
+  orgId: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    createdAt: string;
+  } | null;
+  dogs: Array<{
+    id: string;
+    name: string;
+    breed: string | null;
+  }>;
+  _count: {
+    dogs: number;
+    wellnessCaptures: number;
+    wellnessReminders: number;
+    wellnessWalks: number;
+  };
+  usage: {
+    scansThisMonth: number;
+    chatsThisMonth: number;
+    foodScansThisMonth: number;
+  };
+}
+
 const OWNER_EMAIL = "ayden@yardura.com";
 
 type InternalRole = "ADMIN" | "OWNER" | "SALES_REP" | "TECH" | "CUSTOMER";
@@ -142,8 +175,10 @@ export default function GodModePage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
+  const [freePetOwners, setFreePetOwners] = useState<FreePetOwner[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [customersLoading, setCustomersLoading] = useState(true);
+  const [freePetOwnersLoading, setFreePetOwnersLoading] = useState(true);
   const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
   const [rolesTarget, setRolesTarget] = useState<User | null>(null);
   const [rolesDraft, setRolesDraft] = useState<InternalRole[]>([]);
@@ -156,6 +191,7 @@ export default function GodModePage() {
   const [inviting, setInviting] = useState(false);
   const [deletingCustomerId, setDeletingCustomerId] = useState<string | null>(null);
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [freePetOwnerSearchTerm, setFreePetOwnerSearchTerm] = useState("");
 
   // Only allow the owner/super admin
   const isGodModeUser = session?.user?.email === OWNER_EMAIL;
@@ -170,6 +206,7 @@ export default function GodModePage() {
 
     fetchUsers();
     fetchCustomers();
+    fetchFreePetOwners();
   }, [session, status, router, isGodModeUser]);
 
   const fetchUsers = async () => {
@@ -203,6 +240,24 @@ export default function GodModePage() {
       toast.error("Failed to load customers");
     } finally {
       setCustomersLoading(false);
+    }
+  };
+
+  const fetchFreePetOwners = async () => {
+    setFreePetOwnersLoading(true);
+    try {
+      const response = await fetch("/api/admin/customers/free");
+      if (response.ok) {
+        const data = await response.json();
+        setFreePetOwners(data.customers ?? []);
+      } else {
+        toast.error("Failed to load free pet owners");
+      }
+    } catch (error) {
+      console.error("Failed to fetch free pet owners:", error);
+      toast.error("Failed to load free pet owners");
+    } finally {
+      setFreePetOwnersLoading(false);
     }
   };
 
@@ -512,7 +567,31 @@ export default function GodModePage() {
     });
   }, [customers, customerSearchTerm]);
 
-  if (status === "loading" || usersLoading || customersLoading) {
+  const filteredFreePetOwners = useMemo(() => {
+    const term = freePetOwnerSearchTerm.trim().toLowerCase();
+    if (!term) return freePetOwners;
+
+    return freePetOwners.filter((owner) => {
+      const fields = [
+        owner.name,
+        owner.email,
+        owner.phone,
+        owner.city,
+        owner.state,
+        owner.id,
+        owner.user?.email,
+        owner.user?.name,
+      ];
+
+      if (fields.some((value) => (value ?? "").toLowerCase().includes(term))) {
+        return true;
+      }
+
+      return owner.dogs.some((dog) => dog.name.toLowerCase().includes(term));
+    });
+  }, [freePetOwners, freePetOwnerSearchTerm]);
+
+  if (status === "loading" || usersLoading || customersLoading || freePetOwnersLoading) {
     return (
       <div className="admin-surface flex min-h-screen items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-accent"></div>
@@ -639,6 +718,12 @@ export default function GodModePage() {
               className="admin-pill-tab flex-1"
             >
               Customers
+            </TabsTrigger>
+            <TabsTrigger
+              value="free-owners"
+              className="admin-pill-tab flex-1"
+            >
+              Free Pet Owners
             </TabsTrigger>
           </TabsList>
 
@@ -880,6 +965,129 @@ export default function GodModePage() {
                             {customerSearchTerm.trim()
                               ? "No customers matched your search."
                               : "No customers available."}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="free-owners" className="space-y-6">
+            <Card className="admin-card">
+              <CardHeader className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <CardTitle>Free pet owners</CardTitle>
+                  <CardDescription>
+                    Users with no active scooping subscription using the free wellness tier.
+                    {freePetOwnerSearchTerm.trim()
+                      ? ` Showing ${filteredFreePetOwners.length} match${
+                          filteredFreePetOwners.length === 1 ? "" : "es"
+                        }.`
+                      : ` ${freePetOwners.length} total.`}
+                  </CardDescription>
+                </div>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[20rem] sm:flex-row sm:items-center">
+                  <div className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm focus-within:border-slate-400 dark:border-slate-700 dark:bg-slate-900">
+                    <Search className="h-4 w-4 text-slate-400 dark:text-slate-500" aria-hidden="true" />
+                    <Input
+                      value={freePetOwnerSearchTerm}
+                      onChange={(event) => setFreePetOwnerSearchTerm(event.target.value)}
+                      placeholder="Search by name, email, city, or dog name"
+                      className="border-0 px-0 shadow-none focus-visible:ring-0"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      void fetchFreePetOwners();
+                    }}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Owner</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Pets</TableHead>
+                        <TableHead>Activity</TableHead>
+                        <TableHead>This Month</TableHead>
+                        <TableHead>Created</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredFreePetOwners.length ? (
+                        filteredFreePetOwners.map((owner) => (
+                          <TableRow key={owner.id}>
+                            <TableCell>
+                              <div className="font-medium text-slate-900 dark:text-slate-100">
+                                {owner.name || owner.user?.name || "Untitled"}
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400">
+                                {owner.email || owner.user?.email || "—"}
+                              </div>
+                              {owner.phone ? (
+                                <div className="text-xs text-slate-400 dark:text-slate-500">{owner.phone}</div>
+                              ) : null}
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                              {owner.city && owner.state ? (
+                                <div>{owner.city}, {owner.state}</div>
+                              ) : (
+                                <span className="text-xs text-slate-400">No location</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {owner.dogs.length ? (
+                                <div className="flex flex-col gap-1">
+                                  {owner.dogs.slice(0, 3).map((dog) => (
+                                    <div key={dog.id} className="text-sm text-slate-600 dark:text-slate-300">
+                                      {dog.name}
+                                      {dog.breed ? (
+                                        <span className="ml-1 text-xs text-slate-400">({dog.breed})</span>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                  {owner.dogs.length > 3 ? (
+                                    <span className="text-xs text-slate-400">+{owner.dogs.length - 3} more</span>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400 dark:text-slate-500">No pets</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-500 dark:text-slate-400">
+                              <div className="flex flex-col gap-1">
+                                <span>{owner._count.wellnessCaptures} scans</span>
+                                <span>{owner._count.wellnessWalks} walks</span>
+                                <span>{owner._count.wellnessReminders} reminders</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-500 dark:text-slate-400">
+                              <div className="flex flex-col gap-1">
+                                <span>{owner.usage.scansThisMonth} scans</span>
+                                <span>{owner.usage.chatsThisMonth} chats</span>
+                                <span>{owner.usage.foodScansThisMonth} food scans</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-500 dark:text-slate-400">
+                              {new Date(owner.createdAt).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                            {freePetOwnerSearchTerm.trim()
+                              ? "No free pet owners matched your search."
+                              : "No free pet owners found."}
                           </TableCell>
                         </TableRow>
                       )}

@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { router, type Href } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import Screen from '@/components/ui/Screen';
@@ -21,8 +21,20 @@ export default function CustomerWellness() {
   const { session } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const params = useLocalSearchParams();
 
   const [activeTab, setActiveTab] = useState<TabType>('Overview');
+
+  // Handle tab parameter from navigation (e.g., returning from sample details)
+  useEffect(() => {
+    const tabParam = params.tab;
+    if (typeof tabParam === 'string') {
+      const normalizedTab = tabParam.charAt(0).toUpperCase() + tabParam.slice(1).toLowerCase();
+      if (TABS.includes(normalizedTab as TabType)) {
+        setActiveTab(normalizedTab as TabType);
+      }
+    }
+  }, [params.tab]);
 
   const {
     reports,
@@ -50,7 +62,7 @@ export default function CustomerWellness() {
   const handleSamplePress = (reading: WellnessReading) => {
     router.push({
       pathname: '/(app)/(customer)/wellness-sample',
-      params: { id: reading.id },
+      params: { id: reading.id, source: reading.source ?? 'PRO' },
     } as Href);
   };
 

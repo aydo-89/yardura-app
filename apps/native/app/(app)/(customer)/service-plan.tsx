@@ -530,8 +530,8 @@ export default function CustomerServicePlanScreen() {
         {/* Deodorizing Section */}
         <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
           <View style={styles.cardHeader}>
-            <View style={[styles.cardIcon, { backgroundColor: `${Colors.brand.lavender}15` }]}>
-              <FontAwesome name="magic" size={16} color={Colors.brand.lavender} />
+            <View style={[styles.cardIcon, { backgroundColor: `${Colors.brand.coral}15` }]}>
+              <FontAwesome name="magic" size={16} color={Colors.brand.coral} />
             </View>
             <View style={styles.cardTitleWrap}>
               <Text style={[styles.cardTitle, { color: palette.text }]}>Deodorizing</Text>
