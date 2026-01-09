@@ -159,7 +159,8 @@ export async function GET(request: NextRequest) {
         },
         take: 5,
       }),
-      prisma.customerWellnessReport.findMany({
+      // Get recent weekly wellness reports
+      prisma.weeklyWellnessReport.findMany({
         where: { customerId: customer.id },
         select: {
           symptomTags: true,
@@ -168,7 +169,6 @@ export async function GET(request: NextRequest) {
           energy: true,
           vomiting: true,
           diarrhea: true,
-          medsGiven: true,
           noIssues: true,
           weekStart: true,
         },
@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
       prisma.serviceVisit.findFirst({
         where: {
           job: { customerId: customer.id },
-          status: { in: ['SCHEDULED', 'CONFIRMED'] },
+          status: 'SCHEDULED',
           scheduledDate: { gte: new Date() },
         },
         select: {
@@ -206,17 +206,18 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { scheduledDate: 'asc' },
       }),
-      prisma.customerWellnessDailyCheckIn.findMany({
+      // Additional weekly reports for check-in context
+      prisma.weeklyWellnessReport.findMany({
         where: { customerId: customer.id },
         select: {
           appetite: true,
           energy: true,
-          waterIntake: true,
+          hydration: true,
           vomiting: true,
           diarrhea: true,
-          loggedAt: true,
+          weekStart: true,
         },
-        orderBy: { loggedAt: 'desc' },
+        orderBy: { weekStart: 'desc' },
         take: 7,
       }),
     ]);
@@ -227,7 +228,7 @@ export async function GET(request: NextRequest) {
       name: customer.name,
       location: customer.city && customer.state ? `${customer.city}, ${customer.state}` : null,
     },
-    dogs: dogs.map((d) => ({
+    dogs: dogs.map((d: typeof dogs[number]) => ({
       name: d.name,
       breed: d.breed,
       age: d.age,
@@ -238,7 +239,7 @@ export async function GET(request: NextRequest) {
       hasVet: Boolean(d.vetName || d.vetClinic),
     })),
     recentHealth: {
-      reports: recentReports.map((r) => ({
+      reports: recentReports.map((r: typeof recentReports[number]) => ({
         symptoms: r.symptomTags,
         appetite: r.appetite,
         hydration: r.hydration,
@@ -246,8 +247,9 @@ export async function GET(request: NextRequest) {
         vomiting: r.vomiting,
         diarrhea: r.diarrhea,
         noIssues: r.noIssues,
+        date: r.weekStart,
       })),
-      captures: recentCaptures.map((c) => {
+      captures: recentCaptures.map((c: typeof recentCaptures[number]) => {
         const result = c.analysisResult as Record<string, unknown> | null;
         return {
           indicator: result?.indicator ?? null,
@@ -256,15 +258,16 @@ export async function GET(request: NextRequest) {
           date: c.capturedAt,
         };
       }),
-      checkIns: recentCheckIns.map((c) => ({
+      checkIns: recentCheckIns.map((c: typeof recentCheckIns[number]) => ({
         appetite: c.appetite,
         energy: c.energy,
-        water: c.waterIntake,
+        hydration: c.hydration,
         vomiting: c.vomiting,
         diarrhea: c.diarrhea,
+        date: c.weekStart,
       })),
     },
-    reminders: reminders.map((r) => ({
+    reminders: reminders.map((r: typeof reminders[number]) => ({
       title: r.title,
       category: r.category,
       dueAt: r.nextDueAt,

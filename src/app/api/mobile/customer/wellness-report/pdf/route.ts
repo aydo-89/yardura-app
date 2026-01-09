@@ -771,7 +771,7 @@ export async function GET(request: NextRequest) {
             : '';
 
           // Truncate long replies
-          const cleanReply = reply.replace(/\s+/g, ' ').trim();
+          const cleanReply = (reply ?? '').replace(/\s+/g, ' ').trim();
           const shortReply = cleanReply.length > 200 ? cleanReply.slice(0, 200) + '...' : cleanReply;
 
           const risk = chat.riskLevel ||
