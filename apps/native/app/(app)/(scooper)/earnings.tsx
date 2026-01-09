@@ -4,7 +4,6 @@ import {
   Linking,
   Pressable,
   ScrollView,
-  Switch,
   StyleSheet,
   Text,
   View,
@@ -15,7 +14,10 @@ import { FontAwesome } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 
 import Button from '@/components/ui/Button';
+import ChoiceChip from '@/components/ui/ChoiceChip';
 import Screen from '@/components/ui/Screen';
+import Switch from '@/components/ui/ThemedSwitch';
+import EarningsHero from '@/components/scooper/EarningsHero';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -63,6 +65,7 @@ export default function ScooperEarnings() {
   const [withdrawalsError, setWithdrawalsError] = useState<string | null>(null);
   const [requestLoading, setRequestLoading] = useState(false);
   const [autoPayoutEnabled, setAutoPayoutEnabled] = useState(true);
+  const [activeTab, setActiveTab] = useState<'history' | 'withdrawals'>('history');
   const autoPayoutTrackOff = colorScheme === 'dark' ? '#334155' : '#CBD5E1';
 
   const loadEarnings = useCallback(async () => {
@@ -171,20 +174,21 @@ export default function ScooperEarnings() {
     ? backgroundStatus.toLowerCase().replace(/_/g, ' ')
     : null;
 
+  // Muted, subtle status tones instead of bright colors
   const resolveStatusTone = (status: ScooperPayout['status']) => {
     switch (status) {
       case 'READY':
-        return { background: Colors.brand.mint, text: '#FFFFFF' };
+        return { background: `${Colors.brand.mint}20`, text: Colors.brand.mint };
       case 'PENDING':
       case 'PENDING_REVIEW':
-        return { background: Colors.brand.gold, text: Colors.brand.graphite };
+        return { background: `${Colors.brand.gold}20`, text: Colors.brand.gold };
       case 'RELEASED':
       case 'CLEARED':
-        return { background: palette.tint, text: '#FFFFFF' };
+        return { background: `${palette.tint}20`, text: palette.tint };
       case 'CANCELLED':
-        return { background: palette.danger, text: '#FFFFFF' };
+        return { background: `${palette.danger}20`, text: palette.danger };
       default:
-        return { background: palette.tint, text: '#FFFFFF' };
+        return { background: `${palette.muted}20`, text: palette.muted };
     }
   };
 
@@ -192,22 +196,22 @@ export default function ScooperEarnings() {
     const normalized = status.toUpperCase();
     switch (normalized) {
       case 'REQUESTED':
-        return { background: Colors.brand.evergreen, text: '#FFFFFF' };
+        return { background: `${Colors.brand.evergreen}20`, text: Colors.brand.evergreen };
       case 'PENDING':
       case 'IN_REVIEW':
-        return { background: Colors.brand.gold, text: Colors.brand.graphite };
+        return { background: `${Colors.brand.gold}20`, text: Colors.brand.gold };
       case 'APPROVED':
       case 'READY':
-        return { background: Colors.brand.mint, text: '#FFFFFF' };
+        return { background: `${Colors.brand.mint}20`, text: Colors.brand.mint };
       case 'PAID':
       case 'RELEASED':
       case 'CLEARED':
-        return { background: palette.tint, text: '#FFFFFF' };
+        return { background: `${palette.tint}20`, text: palette.tint };
       case 'REJECTED':
       case 'CANCELLED':
-        return { background: palette.danger, text: '#FFFFFF' };
+        return { background: `${palette.danger}20`, text: palette.danger };
       default:
-        return { background: palette.tint, text: '#FFFFFF' };
+        return { background: `${palette.muted}20`, text: palette.muted };
     }
   };
 
@@ -233,7 +237,7 @@ export default function ScooperEarnings() {
 
   const payoutMessage = useMemo(() => {
     if (!payoutAccount?.accountId) {
-      return 'Add a bank account or debit card to receive weekly payouts.';
+      return 'Add a bank account or debit card via Stripe Express to receive payouts.';
     }
     if (payoutAccount.payoutsEnabled) {
       return 'Weekly payouts release every Friday once visits are approved.';
@@ -241,15 +245,22 @@ export default function ScooperEarnings() {
     if (payoutAccount.detailsSubmitted) {
       return 'Stripe is verifying your details. We will release payouts once enabled.';
     }
-    return 'Finish Stripe onboarding to enable payouts.';
+    return 'Finish Stripe Express onboarding to enable payouts.';
+  }, [payoutAccount]);
+
+  const payoutHelper = useMemo(() => {
+    if (payoutAccount?.payoutsEnabled) {
+      return 'Manage your payout method in Stripe Express.';
+    }
+    return 'You will be taken to Stripe Express. If asked to sign in, use the email on your scooper profile.';
   }, [payoutAccount]);
 
   const payoutActionLabel = useMemo(() => {
     if (payoutLinkLoading) return 'Opening Stripe...';
-    if (!payoutAccount?.accountId) return 'Set up payouts';
-    if (payoutAccount.payoutsEnabled) return 'Update payout method';
-    if (payoutAccount.detailsSubmitted) return 'Check verification';
-    return 'Finish setup';
+    if (!payoutAccount?.accountId) return 'Set up in Stripe Express';
+    if (payoutAccount.payoutsEnabled) return 'Update in Stripe Express';
+    if (payoutAccount.detailsSubmitted) return 'Check Stripe status';
+    return 'Finish in Stripe Express';
   }, [payoutAccount, payoutLinkLoading]);
 
   const resolvePayoutSetupError = (err: unknown) => {
@@ -353,7 +364,7 @@ export default function ScooperEarnings() {
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.pageHeader}>
           <Text style={[styles.kicker, { color: palette.muted }]}>Earnings</Text>
           <Text style={[styles.title, { color: palette.text }]}>Payouts</Text>
@@ -389,54 +400,80 @@ export default function ScooperEarnings() {
           </View>
         ) : null}
 
-        <View
-          style={[
-            styles.card,
-            cardShadowStyle,
-            styles.payoutCard,
-            { backgroundColor: palette.card, borderColor: cardBorder },
-          ]}
-        >
-          <View style={styles.payoutRow}>
-            <View style={styles.payoutTitleRow}>
-              <View style={[styles.payoutIcon, { backgroundColor: palette.border }]}>
-                <FontAwesome name="bank" size={16} color={palette.text} />
+        {/* Payout Method Card - Compact when enabled, expanded when setup needed */}
+        {payoutReady ? (
+          <View
+            style={[
+              styles.payoutCompactCard,
+              cardShadowStyle,
+              { backgroundColor: palette.card, borderColor: cardBorder },
+            ]}
+          >
+            <View style={[styles.payoutCompactIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+              <FontAwesome name="check-circle" size={16} color={Colors.brand.mint} />
+            </View>
+            <View style={styles.payoutCompactMeta}>
+              <Text style={[styles.payoutCompactTitle, { color: palette.text }]}>Payouts enabled</Text>
+              <Text style={[styles.payoutCompactSubtitle, { color: palette.muted }]}>
+                Weekly releases • Fridays
+              </Text>
+            </View>
+            <Pressable
+              onPress={handlePayoutSetup}
+              disabled={payoutLinkLoading}
+              style={({ pressed }) => [
+                styles.payoutCompactAction,
+                { backgroundColor: pressed ? `${palette.tint}15` : 'transparent' },
+              ]}
+            >
+              <Text style={[styles.payoutCompactActionText, { color: palette.tint }]}>
+                {payoutLinkLoading ? 'Opening...' : 'Manage'}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.card,
+              cardShadowStyle,
+              styles.payoutCard,
+              { backgroundColor: palette.card, borderColor: cardBorder },
+            ]}
+          >
+            <View style={styles.payoutRow}>
+              <View style={styles.payoutTitleRow}>
+                <View style={[styles.payoutIcon, { backgroundColor: `${Colors.brand.gold}20` }]}>
+                  <FontAwesome name="bank" size={16} color={Colors.brand.gold} />
+                </View>
+                <View style={styles.payoutCopy}>
+                  <Text style={[styles.cardTitle, { color: palette.text }]}>Set up payouts</Text>
+                  <Text style={[styles.cardBody, { color: palette.muted }]}>
+                    {payoutLoading ? 'Loading...' : payoutMessage}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.payoutCopy}>
-                <Text style={[styles.cardTitle, { color: palette.text }]}>Payout method</Text>
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  {payoutLoading ? 'Loading payout status...' : payoutMessage}
+              <View
+                style={[
+                  styles.payoutBadge,
+                  { borderColor: payoutBadge.tone, backgroundColor: `${payoutBadge.tone}22` },
+                ]}
+              >
+                <Text style={[styles.payoutBadgeText, { color: payoutBadge.tone }]}>
+                  {payoutBadge.label}
                 </Text>
               </View>
             </View>
-            <View
-              style={[
-                styles.payoutBadge,
-                { borderColor: payoutBadge.tone, backgroundColor: `${payoutBadge.tone}22` },
-              ]}
-            >
-              <Text style={[styles.payoutBadgeText, { color: payoutBadge.tone }]}>
-                {payoutBadge.label}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.payoutActionRow}>
-            <Text style={[styles.payoutMeta, { color: palette.muted }]}>
-              Weekly releases • Friday
-            </Text>
             <Button
               title={payoutActionLabel}
               onPress={handlePayoutSetup}
               disabled={payoutLoading || payoutLinkLoading}
-              variant={payoutAccount?.payoutsEnabled ? 'secondary' : 'cta'}
-              style={styles.payoutActionButton}
-              labelStyle={styles.payoutActionLabel}
+              variant="cta"
             />
+            {payoutError ? (
+              <Text style={[styles.cardBody, { color: palette.danger }]}>{payoutError}</Text>
+            ) : null}
           </View>
-          {payoutError ? (
-            <Text style={[styles.cardBody, { color: palette.danger }]}>{payoutError}</Text>
-          ) : null}
-        </View>
+        )}
 
         {loading ? (
           <View style={styles.inlineRow}>
@@ -447,75 +484,23 @@ export default function ScooperEarnings() {
           <Text style={[styles.cardBody, { color: palette.danger }]}>{error}</Text>
         ) : summary ? (
           <>
-            <View
-              style={[
-                styles.card,
-                cardShadowStyle,
-                styles.summaryCard,
-                { backgroundColor: summaryBg },
-              ]}
-            >
-              <View
-                style={[styles.summaryAccent, { backgroundColor: palette.tint }]}
-              />
-              <View style={styles.summaryHeader}>
-                <View style={[styles.summaryIconWrap, { backgroundColor: `${palette.tint}22` }]}>
-                  <FontAwesome name="line-chart" size={16} color={palette.tint} />
-                </View>
-                <View style={styles.summaryHeaderCopy}>
-                  <Text style={[styles.cardTitle, { color: palette.text }]}>Earnings snapshot</Text>
-                  <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                    Updated {new Date(summary.generatedAt).toLocaleString()}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.summaryStats}>
-                <View
-                  style={[
-                    styles.summaryStatCard,
-                    { backgroundColor: summaryStatBg, borderColor: summaryStatBorder },
-                  ]}
-                >
-                  <Text style={[styles.summaryStatLabel, { color: palette.muted }]}>
-                    Pending review
-                  </Text>
-                  <Text style={[styles.summaryStatValue, { color: palette.text }]}>
-                    ${payoutLabel?.pending ?? '—'}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.summaryStatCard,
-                    { backgroundColor: summaryStatBg, borderColor: summaryStatBorder },
-                  ]}
-                >
-                  <Text style={[styles.summaryStatLabel, { color: palette.muted }]}>Earned</Text>
-                  <Text style={[styles.summaryStatValue, { color: palette.text }]}>
-                    ${payoutLabel?.earned ?? '—'}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.summaryStatCard,
-                    { backgroundColor: summaryStatBg, borderColor: summaryStatBorder },
-                  ]}
-                >
-                  <Text style={[styles.summaryStatLabel, { color: palette.muted }]}>Paid this month</Text>
-                  <Text style={[styles.summaryStatValue, { color: palette.text }]}>
-                    ${payoutLabel?.paid ?? '—'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.summaryFooter}>
-                <Text style={[styles.summaryMeta, { color: palette.muted }]}>
-                  Lifetime earned ${payoutLabel?.lifetime ?? '—'} • Tips ${payoutLabel?.tipsLifetime ?? '—'}
-                </Text>
-                <Text style={[styles.summaryMeta, { color: palette.muted }]}>
-                  Tips this month ${payoutLabel?.tipsMonth ?? '—'}
-                </Text>
-              </View>
-            </View>
+            {/* Earnings Hero */}
+            <EarningsHero
+              earnedAmountCents={earnedAmountCents}
+              pendingAmountCents={pendingAmountCents}
+              lifetimeEarnedCents={summary.summary.lifetimeEarnedCents}
+              tipsMonthCents={summary.summary.tipsMonthCents ?? 0}
+              payoutsEnabled={payoutReady}
+              autoPayoutEnabled={autoPayoutValue}
+              palette={palette}
+              colorScheme={colorScheme}
+              onWithdraw={handleRequestWithdrawal}
+              onSetupPayouts={!payoutReady ? handlePayoutSetup : undefined}
+              withdrawLoading={requestLoading}
+              withdrawDisabled={!canRequestWithdrawal}
+            />
 
+            {/* Auto Payout Toggle */}
             <View
               style={[
                 styles.card,
@@ -523,22 +508,11 @@ export default function ScooperEarnings() {
                 { backgroundColor: palette.card, borderColor: cardBorder },
               ]}
             >
-              <View style={styles.rowBetween}>
-                <View>
-                  <Text style={[styles.cardTitle, { color: palette.text }]}>Earned balance</Text>
-                  <Text style={[styles.cardBody, { color: palette.muted }]}>
-                    Ready to withdraw after QA approval.
-                  </Text>
-                </View>
-                <Text style={[styles.amountText, { color: palette.text }]}>
-                  ${(earnedAmountCents / 100).toFixed(2)}
-                </Text>
-              </View>
               <View style={styles.autoRow}>
                 <View style={styles.autoCopy}>
                   <Text style={[styles.cardBody, { color: palette.text }]}>Auto cashout</Text>
                   <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                    Release earned payouts every Friday.
+                    Release earned payouts every Friday
                   </Text>
                 </View>
                 <Switch
@@ -555,158 +529,174 @@ export default function ScooperEarnings() {
                   Set up payouts to enable auto cashout.
                 </Text>
               ) : null}
-              <View style={styles.autoFooter}>
-                <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                  Available: ${(earnedAmountCents / 100).toFixed(2)} • Pending review: ${(pendingAmountCents / 100).toFixed(2)}
-                </Text>
-                <Button
-                  title={requestLoading ? 'Requesting...' : 'Request withdrawal'}
-                  onPress={handleRequestWithdrawal}
-                  disabled={!canRequestWithdrawal || requestLoading}
-                  variant="secondary"
-                  style={styles.requestButton}
-                  labelStyle={styles.requestLabel}
-                />
-              </View>
-              {!payoutReady ? (
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  Add a payout method before requesting a withdrawal.
-                </Text>
-              ) : null}
-              {withdrawalsError ? (
-                <Text style={[styles.cardBody, { color: palette.danger }]}>{withdrawalsError}</Text>
-              ) : null}
             </View>
 
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: palette.text }]}>
-                Withdrawal requests
-              </Text>
-              <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
-                Track requests submitted for approval.
-              </Text>
+            {/* Tab Bar */}
+            <View style={styles.tabRow}>
+              <ChoiceChip
+                label={`History (${summary.payouts.length})`}
+                selected={activeTab === 'history'}
+                onPress={() => setActiveTab('history')}
+              />
+              <ChoiceChip
+                label={`Withdrawals (${withdrawals.length})`}
+                selected={activeTab === 'withdrawals'}
+                onPress={() => setActiveTab('withdrawals')}
+              />
             </View>
-            {withdrawalsLoading ? (
-              <View style={styles.inlineRow}>
-                <ActivityIndicator size="small" color={palette.tint} />
-                <Text style={[styles.cardBody, { color: palette.muted }]}>Loading requests...</Text>
-              </View>
-            ) : withdrawals.length === 0 ? (
-              <View
-                style={[
-                  styles.card,
-                  cardShadowStyle,
-                  { backgroundColor: palette.card, borderColor: cardBorder },
-                ]}
-              >
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  No withdrawal requests yet.
-                </Text>
-              </View>
-            ) : (
-              withdrawals.map((request) => {
-                const requestTone = resolveRequestTone(request.status);
-                return (
+
+            {/* Withdrawals Tab */}
+            {activeTab === 'withdrawals' ? (
+              <>
+                {withdrawalsLoading ? (
+                  <View style={styles.inlineRow}>
+                    <ActivityIndicator size="small" color={palette.tint} />
+                    <Text style={[styles.cardBody, { color: palette.muted }]}>Loading requests...</Text>
+                  </View>
+                ) : withdrawals.length === 0 ? (
                   <View
-                    key={request.id}
                     style={[
                       styles.card,
                       cardShadowStyle,
                       { backgroundColor: palette.card, borderColor: cardBorder },
                     ]}
                   >
-                    <View style={styles.rowBetween}>
-                      <View>
-                        <Text style={[styles.cardTitle, { color: palette.text }]}>
-                          ${(request.amountCents / 100).toFixed(2)}
-                        </Text>
-                        <Text style={[styles.cardBody, { color: palette.muted }]}>
-                          {request.payoutCount} payout{request.payoutCount === 1 ? '' : 's'} • Requested {new Date(request.requestedAt).toLocaleDateString()}
-                        </Text>
-                      </View>
-                      <View style={[styles.statusPill, { backgroundColor: requestTone.background }]}>
-                        <Text style={[styles.statusPillText, { color: requestTone.text }]}>
-                          {request.status
-                            .split('_')
-                            .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-                            .join(' ')}
-                        </Text>
-                      </View>
-                    </View>
-                    {request.paidAt ? (
-                      <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                        Paid {new Date(request.paidAt).toLocaleDateString()}
+                    <View style={styles.emptyState}>
+                      <FontAwesome name="inbox" size={24} color={palette.muted} />
+                      <Text style={[styles.cardBody, { color: palette.muted }]}>
+                        No withdrawal requests yet
                       </Text>
-                    ) : null}
+                    </View>
                   </View>
-                );
-              })
-            )}
+                ) : (
+                  withdrawals.map((request) => {
+                    const requestTone = resolveRequestTone(request.status);
+                    return (
+                      <View
+                        key={request.id}
+                        style={[
+                          styles.card,
+                          cardShadowStyle,
+                          { backgroundColor: palette.card, borderColor: cardBorder },
+                        ]}
+                      >
+                        <View style={styles.rowBetween}>
+                          <View>
+                            <Text style={[styles.cardTitle, { color: palette.text }]}>
+                              ${(request.amountCents / 100).toFixed(2)}
+                            </Text>
+                            <Text style={[styles.cardBody, { color: palette.muted }]}>
+                              {request.payoutCount} payout{request.payoutCount === 1 ? '' : 's'} • {new Date(request.requestedAt).toLocaleDateString()}
+                            </Text>
+                          </View>
+                          <View style={[styles.statusPill, { backgroundColor: requestTone.background }]}>
+                            <Text style={[styles.statusPillText, { color: requestTone.text }]}>
+                              {request.status
+                                .split('_')
+                                .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+                                .join(' ')}
+                            </Text>
+                          </View>
+                        </View>
+                        {request.paidAt ? (
+                          <Text style={[styles.cardMeta, { color: palette.muted }]}>
+                            Paid {new Date(request.paidAt).toLocaleDateString()}
+                          </Text>
+                        ) : null}
+                      </View>
+                    );
+                  })
+                )}
+                {withdrawalsError ? (
+                  <Text style={[styles.cardBody, { color: palette.danger }]}>{withdrawalsError}</Text>
+                ) : null}
+              </>
+            ) : null}
 
-            {summary.payouts.length === 0 ? (
-              <View
-                style={[
-                  styles.card,
-                  cardShadowStyle,
-                  { backgroundColor: palette.card, borderColor: cardBorder },
-                ]}
-              >
-                <Text style={[styles.cardTitle, { color: palette.text }]}>No payouts yet</Text>
-                <Text style={[styles.cardBody, { color: palette.muted }]}
-                >Complete visits to start earning payouts.</Text>
-              </View>
-            ) : (
-              summary.payouts.map((payout) => {
-                const visitDate = payout.serviceVisit?.scheduledDate
-                  ? parseDateInput(payout.serviceVisit.scheduledDate).toLocaleDateString()
-                  : 'Visit';
-                const customer = payout.serviceVisit?.customer?.name ?? 'Customer';
-                const statusLabel = STATUS_LABELS[payout.status] ?? payout.status;
-                const statusTone = resolveStatusTone(payout.status);
-                return (
-                  <Pressable
-                    key={payout.id}
-                    onPress={() =>
-                      router.push(`/(app)/(scooper)/earnings/${payout.id}`)
-                    }
-                    style={({ pressed }) => [
-                      styles.card,
-                      cardShadowStyle,
-                      { backgroundColor: palette.card, borderColor: cardBorder },
-                      pressed && styles.cardPressed,
-                    ]}
-                  >
-                    <View style={styles.rowBetween}>
-                      <View>
-                        <Text style={[styles.cardTitle, { color: palette.text }]}>
-                          {customer}
-                        </Text>
-                        <Text style={[styles.cardBody, { color: palette.muted }]}
-                        >{visitDate}</Text>
-                      </View>
-                      <View style={[styles.statusPill, { backgroundColor: statusTone.background }]}>
-                        <Text style={[styles.statusPillText, { color: statusTone.text }]}>
-                          {statusLabel}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.amountText, { color: palette.text }]}>
-                      ${(payout.totalAmountCents / 100).toFixed(2)}
+            {/* History Tab */}
+            {activeTab === 'history' ? (
+              summary.payouts.length === 0 ? (
+                <View
+                  style={[
+                    styles.card,
+                    cardShadowStyle,
+                    { backgroundColor: palette.card, borderColor: cardBorder },
+                  ]}
+                >
+                  <View style={styles.emptyState}>
+                    <FontAwesome name="history" size={24} color={palette.muted} />
+                    <Text style={[styles.cardBody, { color: palette.muted }]}>
+                      Complete visits to start earning
                     </Text>
-                    <View style={styles.rowBetween}>
-                      <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                        Includes base + bonuses + mileage
-                        {payout.tipsAmountCents > 0
-                          ? ` • Tip +$${(payout.tipsAmountCents / 100).toFixed(2)}`
-                          : ''}
-                        .
-                      </Text>
-                      <Text style={[styles.detailCta, { color: palette.tint }]}>Details</Text>
-                    </View>
-                  </Pressable>
-                );
-              })
-            )}
+                  </View>
+                </View>
+              ) : (
+                summary.payouts.map((payout) => {
+                  const visitDate = payout.serviceVisit?.scheduledDate
+                    ? parseDateInput(payout.serviceVisit.scheduledDate).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : 'Visit';
+                  const customer = payout.serviceVisit?.customer?.name ?? 'Customer';
+                  const statusLabel = STATUS_LABELS[payout.status] ?? payout.status;
+                  const statusTone = resolveStatusTone(payout.status);
+                  const hasTip = payout.tipsAmountCents > 0;
+                  return (
+                    <Pressable
+                      key={payout.id}
+                      onPress={() => router.push(`/(app)/(scooper)/earnings/${payout.id}`)}
+                      style={({ pressed }) => [
+                        styles.payoutItemCard,
+                        cardShadowStyle,
+                        { backgroundColor: palette.card, borderColor: cardBorder },
+                        pressed && styles.cardPressed,
+                      ]}
+                    >
+                      <View style={styles.payoutItemHeader}>
+                        <View style={[styles.payoutItemIcon, { backgroundColor: `${palette.tint}15` }]}>
+                          <FontAwesome name="calendar-check-o" size={16} color={palette.tint} />
+                        </View>
+                        <View style={styles.payoutItemMeta}>
+                          <Text style={[styles.payoutItemCustomer, { color: palette.text }]}>
+                            {customer}
+                          </Text>
+                          <Text style={[styles.payoutItemDate, { color: palette.muted }]}>
+                            {visitDate}
+                          </Text>
+                        </View>
+                        <View style={[styles.statusPill, { backgroundColor: statusTone.background }]}>
+                          <Text style={[styles.statusPillText, { color: statusTone.text }]}>
+                            {statusLabel}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={[styles.payoutItemDivider, { backgroundColor: palette.border }]} />
+                      <View style={styles.payoutItemFooter}>
+                        <View style={styles.payoutItemAmounts}>
+                          <Text style={[styles.payoutItemTotal, { color: palette.text }]}>
+                            ${(payout.totalAmountCents / 100).toFixed(2)}
+                          </Text>
+                          {hasTip ? (
+                            <View style={[styles.tipBadge, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                              <FontAwesome name="heart" size={10} color={Colors.brand.mint} />
+                              <Text style={[styles.tipBadgeText, { color: Colors.brand.mint }]}>
+                                +${(payout.tipsAmountCents / 100).toFixed(2)} tip
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <View style={styles.payoutItemCta}>
+                          <Text style={[styles.detailCta, { color: palette.tint }]}>Details</Text>
+                          <FontAwesome name="chevron-right" size={10} color={palette.tint} />
+                        </View>
+                      </View>
+                    </Pressable>
+                  );
+                })
+              )
+            ) : null}
           </>
         ) : null}
       </ScrollView>
@@ -715,21 +705,23 @@ export default function ScooperEarnings() {
 }
 
 const styles = StyleSheet.create({
-  pageHeader: {
-    marginBottom: 18,
-    gap: 6,
+  scrollContent: {
+    paddingBottom: 32,
+    gap: 14,
   },
-  sectionHeader: {
-    marginTop: 8,
-    marginBottom: 8,
+  pageHeader: {
     gap: 4,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+  tabRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
   },
-  sectionSubtitle: {
-    fontSize: 12,
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 24,
   },
   kicker: {
     fontSize: 12,
@@ -750,20 +742,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     gap: 10,
-  },
-  summaryCard: {
-    borderWidth: 0,
-    paddingTop: 20,
-    overflow: 'hidden',
-  },
-  summaryAccent: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    height: 4,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
   },
   cardShadow: {
     shadowColor: '#0F172A',
@@ -806,49 +784,6 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  summaryIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  summaryHeaderCopy: {
-    flex: 1,
-  },
-  summaryStats: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  summaryStatCard: {
-    flex: 1,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  summaryStatLabel: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  summaryStatValue: {
-    marginTop: 4,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  summaryMeta: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  summaryFooter: {
-    paddingTop: 2,
-  },
   rowBetween: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -864,21 +799,6 @@ const styles = StyleSheet.create({
   autoCopy: {
     flex: 1,
     gap: 4,
-  },
-  autoFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  requestButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-  },
-  requestLabel: {
-    fontSize: 13,
   },
   statusPill: {
     borderRadius: 999,
@@ -952,5 +872,109 @@ const styles = StyleSheet.create({
   },
   payoutActionLabel: {
     fontSize: 13,
+  },
+  payoutHelper: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  payoutItemCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+  },
+  payoutItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  payoutItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payoutItemMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  payoutItemCustomer: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  payoutItemDate: {
+    fontSize: 12,
+  },
+  payoutItemDivider: {
+    height: 1,
+    marginHorizontal: -14,
+    marginVertical: 0,
+  },
+  payoutItemFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  payoutItemAmounts: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  payoutItemTotal: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  tipBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  tipBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  payoutItemCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  payoutCompactCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    gap: 12,
+  },
+  payoutCompactIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payoutCompactMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  payoutCompactTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  payoutCompactSubtitle: {
+    fontSize: 12,
+  },
+  payoutCompactAction: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  payoutCompactActionText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

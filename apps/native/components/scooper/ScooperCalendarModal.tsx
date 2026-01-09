@@ -18,6 +18,14 @@ import { parseDateInput } from '@/lib/dates';
 
 type CalendarMetric = 'visits' | 'payout' | 'drive';
 
+/**
+ * Calendar display mode:
+ * - 'view_schedule': Default calendar view (jobs screen) - no comparison overlay
+ * - 'compare_offer': Shows "+X" badges for potential offer being considered
+ * - 'view_customer': Highlights customer's visits without +X badges (already added)
+ */
+export type CalendarMode = 'view_schedule' | 'compare_offer' | 'view_customer';
+
 type CalendarDaySummary = {
   date: Date;
   dateKey: string;
@@ -35,6 +43,13 @@ type ScooperCalendarModalProps = {
   compareVisits?: ScooperRouteVisit[];
   compareLabel?: string;
   compareColor?: string;
+  /**
+   * Controls how the calendar displays comparison data:
+   * - 'view_schedule': No comparison overlay (default for jobs screen)
+   * - 'compare_offer': Shows "+X" badges for the potential offer
+   * - 'view_customer': Highlights customer's visits without +X (already added)
+   */
+  mode?: CalendarMode;
   title?: string;
   subtitle?: string;
   loading?: boolean;
@@ -184,6 +199,7 @@ export default function ScooperCalendarModal({
   compareVisits = [],
   compareLabel = 'Proposed',
   compareColor = Colors.brand.coral,
+  mode = 'view_schedule',
   title,
   subtitle,
   loading = false,
@@ -231,6 +247,14 @@ export default function ScooperCalendarModal({
         summary.driveMeters += visit.travelFromPrevious.distanceMeters ?? 0;
         summary.driveSeconds += visit.travelFromPrevious.durationSeconds ?? 0;
       }
+      if (visit.travelFromHome) {
+        summary.driveMeters += visit.travelFromHome.distanceMeters ?? 0;
+        summary.driveSeconds += visit.travelFromHome.durationSeconds ?? 0;
+      }
+      if (visit.travelToHome) {
+        summary.driveMeters += visit.travelToHome.distanceMeters ?? 0;
+        summary.driveSeconds += visit.travelToHome.durationSeconds ?? 0;
+      }
       summary.visits.push(visit);
       map.set(key, summary);
     });
@@ -257,6 +281,18 @@ export default function ScooperCalendarModal({
         } as CalendarDaySummary);
       summary.visitCount += 1;
       summary.payoutCents += resolveVisitPayoutCents(visit);
+      if (visit.travelFromPrevious) {
+        summary.driveMeters += visit.travelFromPrevious.distanceMeters ?? 0;
+        summary.driveSeconds += visit.travelFromPrevious.durationSeconds ?? 0;
+      }
+      if (visit.travelFromHome) {
+        summary.driveMeters += visit.travelFromHome.distanceMeters ?? 0;
+        summary.driveSeconds += visit.travelFromHome.durationSeconds ?? 0;
+      }
+      if (visit.travelToHome) {
+        summary.driveMeters += visit.travelToHome.distanceMeters ?? 0;
+        summary.driveSeconds += visit.travelToHome.durationSeconds ?? 0;
+      }
       summary.visits.push(visit);
       map.set(key, summary);
     });
@@ -315,7 +351,7 @@ export default function ScooperCalendarModal({
     calendarMetric === 'payout'
       ? 'Darker = higher payout'
       : calendarMetric === 'drive'
-        ? 'Darker = more driving between stops'
+        ? 'Darker = more total driving'
         : 'Darker = more visits';
 
   const handleMonthChange = (delta: number) => {
@@ -393,7 +429,7 @@ export default function ScooperCalendarModal({
             <Text style={[styles.calendarLegend, { color: palette.muted }]}>
               {calendarLegend}
             </Text>
-            {compareVisits.length > 0 ? (
+            {compareVisits.length > 0 && mode !== 'view_schedule' ? (
               <View style={styles.compareLegendRow}>
                 <View
                   style={[
@@ -402,7 +438,9 @@ export default function ScooperCalendarModal({
                   ]}
                 />
                 <Text style={[styles.calendarLegend, { color: palette.muted }]}>
-                  {compareLabel} stops highlighted
+                  {mode === 'compare_offer'
+                    ? `${compareLabel} stops highlighted (+X if added)`
+                    : `${compareLabel}'s visits highlighted`}
                 </Text>
               </View>
             ) : null}
@@ -442,15 +480,34 @@ export default function ScooperCalendarModal({
                     const baseFill =
                       intensity > 0 ? toRgba(Colors.brand.mint, fillAlpha) : palette.background;
                     const compareCount = compareSummary?.visitCount ?? 0;
-                    const hasCompare = compareCount > 0;
-                    const fillColor =
-                      hasCompare && intensity === 0
-                        ? toRgba(compareTone, 0.18)
-                        : baseFill;
+                    const hasCompareData = compareCount > 0;
+                    // Show +X badge only in compare_offer mode
+                    const showCompareBadge = hasCompareData && mode === 'compare_offer';
+                    // Show highlight color for both compare_offer and view_customer modes
+                    const showCompareHighlight = hasCompareData && mode !== 'view_schedule';
+                    // Blend colors: if both regular visits and compare data, show compare accent
+                    const fillColor = showCompareHighlight
+                      ? intensity > 0
+                        ? toRgba(compareTone, 0.25 + intensity * 0.3) // Blend compare tone with intensity
+                        : toRgba(compareTone, 0.18)
+                      : baseFill;
                     const isSelected = calendarDayKey === key;
                     const isToday = key === todayKey;
-                    const textColor = intensity > 0.6 ? '#FFFFFF' : palette.text;
+                    // Use compare tone for text when highlighted
+                    const textColor = showCompareHighlight
+                      ? compareTone
+                      : intensity > 0.6
+                        ? '#FFFFFF'
+                        : palette.text;
                     const countColor = intensity > 0.6 ? '#FFFFFF' : palette.muted;
+                    // Show compare border when highlighted
+                    const cellBorderColor = showCompareHighlight
+                      ? compareTone
+                      : isSelected
+                        ? palette.tint
+                        : isToday
+                          ? palette.accent
+                          : palette.border;
                     return (
                       <Pressable
                         key={key}
@@ -458,11 +515,8 @@ export default function ScooperCalendarModal({
                         style={({ pressed }) => [
                           styles.calendarCell,
                           {
-                            borderColor: isSelected
-                              ? palette.tint
-                              : isToday
-                                ? palette.accent
-                                : palette.border,
+                            borderColor: cellBorderColor,
+                            borderWidth: showCompareHighlight ? 2 : 1,
                             backgroundColor: isOutsideMonth ? palette.card : fillColor,
                             opacity: isOutsideMonth ? 0.45 : 1,
                           },
@@ -480,7 +534,7 @@ export default function ScooperCalendarModal({
                             {summary.visitCount} stop{summary.visitCount === 1 ? '' : 's'}
                           </Text>
                         ) : null}
-                        {hasCompare ? (
+                        {showCompareBadge ? (
                           <View
                             style={[
                               styles.compareBadge,
@@ -557,7 +611,7 @@ export default function ScooperCalendarModal({
                         </View>
                       </View>
                       <Text style={[styles.calendarDetailNote, { color: palette.muted }]}>
-                        Estimates include mileage + PPE and drive time between stops.
+                        Estimates include mileage + PPE and total drive time (home → stops → home).
                       </Text>
                       {selectedVisits.length ? (
                         <>
@@ -574,17 +628,44 @@ export default function ScooperCalendarModal({
                               const payoutCents = resolveVisitPayoutCents(visit);
                               const payoutLabel =
                                 payoutCents > 0 ? formatCurrencyFromCents(payoutCents) : 'N/A';
+                              // In view_customer mode, highlight if this visit is in the compare set
+                              const isHighlightedVisit =
+                                mode === 'view_customer' &&
+                                compareSelectedVisits.some((cv) => cv.id === visit.id);
                               return (
-                                <View key={visit.id} style={styles.calendarVisitRow}>
+                                <View
+                                  key={visit.id}
+                                  style={[
+                                    styles.calendarVisitRow,
+                                    isHighlightedVisit && {
+                                      backgroundColor: `${compareTone}15`,
+                                      borderRadius: 10,
+                                      marginHorizontal: -8,
+                                      paddingHorizontal: 8,
+                                      borderLeftWidth: 3,
+                                      borderLeftColor: compareTone,
+                                    },
+                                  ]}
+                                >
                                   <View style={styles.calendarVisitInfo}>
-                                    <Text style={[styles.calendarVisitName, { color: palette.text }]}>
+                                    <Text
+                                      style={[
+                                        styles.calendarVisitName,
+                                        { color: isHighlightedVisit ? compareTone : palette.text },
+                                      ]}
+                                    >
                                       {customerName}
                                     </Text>
                                     <Text style={[styles.calendarVisitMeta, { color: palette.muted }]}>
                                       {scheduleLine}
                                     </Text>
                                   </View>
-                                  <Text style={[styles.calendarVisitPayout, { color: mintTone }]}>
+                                  <Text
+                                    style={[
+                                      styles.calendarVisitPayout,
+                                      { color: isHighlightedVisit ? compareTone : mintTone },
+                                    ]}
+                                  >
                                     {payoutLabel}
                                   </Text>
                                 </View>
@@ -593,7 +674,8 @@ export default function ScooperCalendarModal({
                           </View>
                         </>
                       ) : null}
-                      {compareSelectedVisits.length ? (
+                      {/* Only show separate compare section in compare_offer mode (for NEW visits being added) */}
+                      {compareSelectedVisits.length > 0 && mode === 'compare_offer' ? (
                         <>
                           <Text style={[styles.calendarSectionLabel, { color: palette.text }]}>
                             {compareLabel} stops

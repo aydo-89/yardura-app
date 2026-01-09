@@ -55,88 +55,53 @@ const applySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const orgId = await resolveBusinessId(request);
-  const payload = await request.json();
-
-  const parsed = applySchema.safeParse(payload);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "validation_error", details: parsed.error.flatten() },
-      { status: 422 },
-    );
-  }
-
-  const data = parsed.data;
-  const uniqueSlugs = Array.from(new Set(data.availability.map((a) => a.tileSlug)));
-  const applicationDetails: Record<string, unknown> = {
-    source: data.applicationSource ?? "mobile",
-    preferredRadiusMiles: data.preferredRadiusMiles ?? null,
-    availabilityNotes: data.availabilityNotes ?? null,
-    experienceTags: data.experienceTags ?? null,
-    hasReliableTransport: data.hasReliableTransport ?? null,
-    hasSmartphone: data.hasSmartphone ?? null,
-    canLift: data.canLift ?? null,
-    backgroundConsent: data.backgroundConsent ?? null,
-    termsConsent: data.termsConsent ?? null,
-    driversLicenseState: data.driversLicenseState ?? null,
-    driversLicenseLast4: data.driversLicenseLast4 ?? null,
-    emergencyContact: {
-      name: data.emergencyContactName ?? null,
-      phone: data.emergencyContactPhone ?? null,
-      relation: data.emergencyContactRelation ?? null,
-    },
-  };
-
-  const tiles = await prisma.serviceTile.findMany({
-    where: {
-      orgId,
-      slug: { in: uniqueSlugs },
-    },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-    },
-  });
-
-  const ensuredTiles = [...tiles];
-  const tileRepository = getTileRepository();
-  const unresolved: string[] = [];
-
-  for (const slug of uniqueSlugs) {
-    if (ensuredTiles.some((tile) => tile.slug === slug)) continue;
-
-    const repoTile = await tileRepository.getTileBySlug(orgId, slug);
-    if (!repoTile) {
-      unresolved.push(slug);
-      continue;
+  try {
+    const orgId = await resolveBusinessId(request);
+    let payload: unknown;
+    try {
+      payload = await request.json();
+    } catch (jsonErr) {
+      console.error("[scooper-apply] Failed to parse request JSON:", jsonErr);
+      return NextResponse.json(
+        { error: "invalid_json", details: "Request body is not valid JSON" },
+        { status: 400 },
+      );
     }
 
-    const created = await prisma.serviceTile.upsert({
+    const parsed = applySchema.safeParse(payload);
+    if (!parsed.success) {
+      console.warn("[scooper-apply] Validation failed:", parsed.error.flatten());
+      return NextResponse.json(
+        { error: "validation_error", details: parsed.error.flatten() },
+        { status: 422 },
+      );
+    }
+
+    const data = parsed.data;
+    const uniqueSlugs = Array.from(new Set(data.availability.map((a) => a.tileSlug)));
+    const applicationDetails: Record<string, unknown> = {
+      source: data.applicationSource ?? "mobile",
+      preferredRadiusMiles: data.preferredRadiusMiles ?? null,
+      availabilityNotes: data.availabilityNotes ?? null,
+      experienceTags: data.experienceTags ?? null,
+      hasReliableTransport: data.hasReliableTransport ?? null,
+      hasSmartphone: data.hasSmartphone ?? null,
+      canLift: data.canLift ?? null,
+      backgroundConsent: data.backgroundConsent ?? null,
+      termsConsent: data.termsConsent ?? null,
+      driversLicenseState: data.driversLicenseState ?? null,
+      driversLicenseLast4: data.driversLicenseLast4 ?? null,
+      emergencyContact: {
+        name: data.emergencyContactName ?? null,
+        phone: data.emergencyContactPhone ?? null,
+        relation: data.emergencyContactRelation ?? null,
+      },
+    };
+
+    const tiles = await prisma.serviceTile.findMany({
       where: {
-        orgId_slug: { orgId, slug },
-      },
-      update: {
-        name: repoTile.tile.name,
-        status: repoTile.tile.status,
-        minCertifiedScoopers: repoTile.tile.minCertifiedScoopers,
-        minCustomerUnits: repoTile.tile.minCustomerUnits,
-        coverageRadiusMeters: repoTile.tile.coverageRadiusMeters,
-        goLiveDate: repoTile.tile.goLiveDate,
-        notes: repoTile.tile.notes ?? null,
-        territoryId: repoTile.tile.territoryId,
-      },
-      create: {
         orgId,
-        slug,
-        name: repoTile.tile.name,
-        status: repoTile.tile.status,
-        minCertifiedScoopers: repoTile.tile.minCertifiedScoopers,
-        minCustomerUnits: repoTile.tile.minCustomerUnits,
-        coverageRadiusMeters: repoTile.tile.coverageRadiusMeters,
-        goLiveDate: repoTile.tile.goLiveDate,
-        notes: repoTile.tile.notes ?? null,
-        territoryId: repoTile.tile.territoryId,
+        slug: { in: uniqueSlugs },
       },
       select: {
         id: true,
@@ -145,90 +110,144 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    ensuredTiles.push(created);
-  }
+    const ensuredTiles = [...tiles];
+    const tileRepository = getTileRepository();
+    const unresolved: string[] = [];
 
-  if (unresolved.length) {
-    return NextResponse.json(
-      {
-        error: "unknown_tiles",
-        details: `Tiles not found in service catalog for org ${orgId}: ${unresolved.join(", ")}`,
-      },
-      { status: 404 },
-    );
-  }
+    for (const slug of uniqueSlugs) {
+      if (ensuredTiles.some((tile) => tile.slug === slug)) continue;
 
-  const availability = data.availability.map((entry) => {
-    const tile = ensuredTiles.find((t) => t.slug === entry.tileSlug)!;
-    return {
-      tileId: tile.id,
-      weekday: entry.weekday,
-      window: entry.window,
-      maxStops: entry.maxStops,
-    };
-  });
+      const repoTile = await tileRepository.getTileBySlug(orgId, slug);
+      if (!repoTile) {
+        unresolved.push(slug);
+        continue;
+      }
 
-  const profile = await upsertScooperApplicant({
-    orgId,
-    email: data.email,
-    name: data.name,
-    phone: data.phone,
-    vehicleDetail: data.vehicleDetail,
-    insuranceProofUrl: data.insuranceProofUrl,
-    availability,
-    autoApprove: data.autoApprove,
-    homeBaseAddress: data.homeBaseAddress,
-    homeBaseCity: data.homeBaseCity,
-    homeBaseZip: data.homeBaseZip,
-    homeBaseLocation: data.location ? { lat: data.location.lat, lng: data.location.lng } : null,
-    preferredTileSlugs: uniqueSlugs,
-    applicationDetails,
-  });
+      const created = await prisma.serviceTile.upsert({
+        where: {
+          orgId_slug: { orgId, slug },
+        },
+        update: {
+          name: repoTile.tile.name,
+          status: repoTile.tile.status,
+          minCertifiedScoopers: repoTile.tile.minCertifiedScoopers,
+          minCustomerUnits: repoTile.tile.minCustomerUnits,
+          coverageRadiusMeters: repoTile.tile.coverageRadiusMeters,
+          goLiveDate: repoTile.tile.goLiveDate,
+          notes: repoTile.tile.notes ?? null,
+          territoryId: repoTile.tile.territoryId,
+        },
+        create: {
+          orgId,
+          slug,
+          name: repoTile.tile.name,
+          status: repoTile.tile.status,
+          minCertifiedScoopers: repoTile.tile.minCertifiedScoopers,
+          minCustomerUnits: repoTile.tile.minCustomerUnits,
+          coverageRadiusMeters: repoTile.tile.coverageRadiusMeters,
+          goLiveDate: repoTile.tile.goLiveDate,
+          notes: repoTile.tile.notes ?? null,
+          territoryId: repoTile.tile.territoryId,
+        },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+        },
+      });
 
-  const homeBaseLabel = [data.homeBaseAddress, data.homeBaseCity, data.homeBaseZip]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(", ");
+      ensuredTiles.push(created);
+    }
 
-  const adminUsers = await prisma.user.findMany({
-    where: {
+    if (unresolved.length) {
+      return NextResponse.json(
+        {
+          error: "unknown_tiles",
+          details: `Tiles not found in service catalog for org ${orgId}: ${unresolved.join(", ")}`,
+        },
+        { status: 404 },
+      );
+    }
+
+    const availability = data.availability.map((entry) => {
+      const tile = ensuredTiles.find((t) => t.slug === entry.tileSlug)!;
+      return {
+        tileId: tile.id,
+        weekday: entry.weekday,
+        window: entry.window,
+        maxStops: entry.maxStops,
+      };
+    });
+
+    const profile = await upsertScooperApplicant({
       orgId,
-      OR: [
-        { role: { in: [UserRole.ADMIN, UserRole.OWNER, UserRole.SALES_REP] } },
-        { roles: { hasSome: [UserRole.ADMIN, UserRole.OWNER, UserRole.SALES_REP] } },
-      ],
-    },
-    select: { id: true },
-  });
+      email: data.email,
+      name: data.name,
+      phone: data.phone,
+      vehicleDetail: data.vehicleDetail,
+      insuranceProofUrl: data.insuranceProofUrl,
+      availability,
+      autoApprove: data.autoApprove,
+      homeBaseAddress: data.homeBaseAddress,
+      homeBaseCity: data.homeBaseCity,
+      homeBaseZip: data.homeBaseZip,
+      homeBaseLocation: data.location ? { lat: data.location.lat, lng: data.location.lng } : null,
+      preferredTileSlugs: uniqueSlugs,
+      applicationDetails,
+    });
 
-  if (adminUsers.length) {
-    void sendAdminScooperApplicationPush({
-      userIds: adminUsers.map((user) => user.id),
-      applicantName: data.name,
-      homeBase: homeBaseLabel || null,
-    }).catch(() => null);
-  }
+    const homeBaseLabel = [data.homeBaseAddress, data.homeBaseCity, data.homeBaseZip]
+      .map((part) => part?.trim())
+      .filter(Boolean)
+      .join(", ");
 
-  try {
-    const preferredTiles = ensuredTiles
-      .map((tile) => tile.name ?? tile.slug)
-      .filter(Boolean);
+    const adminUsers = await prisma.user.findMany({
+      where: {
+        orgId,
+        OR: [
+          { role: { in: [UserRole.ADMIN, UserRole.OWNER, UserRole.SALES_REP] } },
+          { roles: { hasSome: [UserRole.ADMIN, UserRole.OWNER, UserRole.SALES_REP] } },
+        ],
+      },
+      select: { id: true },
+    });
 
-    await sendScooperApplicationEmail({
-      toEmail: data.email,
-      applicantName: data.name,
-      appliedAt: new Date(),
-      homeBase: homeBaseLabel || null,
-      preferredTiles: preferredTiles.length ? preferredTiles : null,
+    if (adminUsers.length) {
+      void sendAdminScooperApplicationPush({
+        userIds: adminUsers.map((user) => user.id),
+        applicantName: data.name,
+        homeBase: homeBaseLabel || null,
+      }).catch(() => null);
+    }
+
+    try {
+      const preferredTiles = ensuredTiles
+        .map((tile) => tile.name ?? tile.slug)
+        .filter(Boolean);
+
+      await sendScooperApplicationEmail({
+        toEmail: data.email,
+        applicantName: data.name,
+        appliedAt: new Date(),
+        homeBase: homeBaseLabel || null,
+        preferredTiles: preferredTiles.length ? preferredTiles : null,
+      });
+    } catch (emailError) {
+      console.warn("[scooper-apply] Failed to send application email:", emailError);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      profile,
     });
   } catch (error) {
-    console.warn("Failed to send scooper application email", error);
+    console.error("[scooper-apply] Unhandled error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json(
+      { error: "server_error", details: message },
+      { status: 500 },
+    );
   }
-
-  return NextResponse.json({
-    ok: true,
-    profile,
-  });
 }
 
 export const runtime = "nodejs";

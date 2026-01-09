@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getScooperAuth } from '@/lib/auth/scooper';
 import { prisma } from '@/lib/prisma';
 import { query } from '@/lib/geo/postgis';
+import { resolveStorageUrl } from '@/lib/storage';
 
 type ParcelBoundary = {
   parcelId: string;
@@ -13,54 +14,60 @@ type ParcelBoundary = {
 const clampNumber = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-const ENABLE_POSTGIS = process.env.ENABLE_POSTGIS_GEO === 'true';
-const PARCEL_FALLBACK_RADIUS_METERS = 25;
+// Check at runtime (not module load) for scripts using dotenv
+const isPostgisEnabled = () => process.env.ENABLE_POSTGIS_GEO === 'true';
+const PARCEL_FALLBACK_RADIUS_METERS = Number(
+  process.env.POOP_MAP_PARCEL_SEARCH_RADIUS_METERS ?? '60',
+);
 const PARCEL_SNAP_DISTANCE_METERS = 45;
 const PARCEL_FALLBACK_RADIUS_DEGREES = PARCEL_FALLBACK_RADIUS_METERS / 111111;
+// Reduced timeout - with direct connection, queries should be fast
 const PARCEL_QUERY_TIMEOUT_MS = Number(
-  process.env.POOP_MAP_PARCEL_QUERY_TIMEOUT_MS ?? '5000',
-);
-const MAX_ACCURACY_METERS = Number(process.env.POOP_MAP_MAX_ACCURACY_METERS ?? '40');
-const APPROX_FENCE_RADIUS_METERS = Number(
-  process.env.POOP_MAP_APPROX_FENCE_RADIUS_METERS ?? '20',
+  process.env.POOP_MAP_PARCEL_QUERY_TIMEOUT_MS ?? '3000',
 );
 
-const isAccuracyAcceptable = (value: number | null | undefined) => {
-  if (value === null || value === undefined) return true;
-  if (!Number.isFinite(value)) return true;
-  return value <= MAX_ACCURACY_METERS;
-};
-
+/**
+ * Optimized parcel lookup using spatial index.
+ * Uses centroid for faster ordering instead of geom::geography.
+ */
 async function loadParcelBoundary(lat: number, lng: number): Promise<ParcelBoundary | null> {
-  if (!ENABLE_POSTGIS) return null;
-  const sql = `SELECT parcel_id, source, ST_AsGeoJSON(geom) AS geom_geojson
+  if (!isPostgisEnabled()) return null;
+  
+  const sql = `
+    SELECT parcel_id, source, ST_AsGeoJSON(geom) AS geom_geojson
     FROM geo.parcel
-    WHERE geom && ST_Expand(ST_SetSRID(ST_Point($1, $2), 4326), $4)
+    WHERE 
+      geom && ST_Expand(ST_SetSRID(ST_Point($1, $2), 4326), $4)
       AND (
         ST_Contains(geom, ST_SetSRID(ST_Point($1, $2), 4326))
         OR ST_DWithin(
-          geom::geography,
+          centroid::geography,
           ST_SetSRID(ST_Point($1, $2), 4326)::geography,
           $3
         )
       )
     ORDER BY ST_Distance(
-      geom::geography,
-      ST_SetSRID(ST_Point($1, $2), 4326)::geography
+      centroid,
+      ST_SetSRID(ST_Point($1, $2), 4326)
     ) ASC
-    LIMIT 1;`;
+    LIMIT 1`;
 
-  const { rows } = await query(
-    sql,
-    [lng, lat, PARCEL_FALLBACK_RADIUS_METERS, PARCEL_FALLBACK_RADIUS_DEGREES],
-    { timeoutMs: PARCEL_QUERY_TIMEOUT_MS },
-  );
-  if (!rows.length || !rows[0]?.geom_geojson) return null;
-  return {
-    parcelId: rows[0].parcel_id,
-    source: rows[0].source,
-    geometry: JSON.parse(rows[0].geom_geojson),
-  } satisfies ParcelBoundary;
+  try {
+    const { rows } = await query(
+      sql,
+      [lng, lat, PARCEL_FALLBACK_RADIUS_METERS, PARCEL_FALLBACK_RADIUS_DEGREES],
+      { timeoutMs: PARCEL_QUERY_TIMEOUT_MS },
+    );
+    if (!rows.length || !rows[0]?.geom_geojson) return null;
+    return {
+      parcelId: rows[0].parcel_id,
+      source: rows[0].source,
+      geometry: JSON.parse(rows[0].geom_geojson),
+    } satisfies ParcelBoundary;
+  } catch (error) {
+    console.warn('[field-tech/poop-map] Parcel lookup failed:', error);
+    return null;
+  }
 }
 
 async function snapPointsToParcel(
@@ -68,14 +75,17 @@ async function snapPointsToParcel(
   source: string,
   points: Array<{
     id: string;
+    sourceId: string;
     lat: number;
     lng: number;
     accuracy: number | null;
     capturedAt: string;
     source: 'OWNER' | 'PRO';
+    imageUrl?: string | null;
+    visitId?: string | null;
   }>,
 ) {
-  if (!ENABLE_POSTGIS || points.length === 0) return points;
+  if (!isPostgisEnabled() || points.length === 0) return points;
   const ids = points.map((point) => point.id);
   const lats = points.map((point) => point.lat);
   const lngs = points.map((point) => point.lng);
@@ -201,6 +211,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         gpsLng: true,
         gpsAccuracy: true,
         capturedAt: true,
+        storagePath: true,
       },
       orderBy: { capturedAt: 'desc' },
       take: 300,
@@ -222,32 +233,44 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         gpsLng: true,
         gpsAccuracy: true,
         capturedAt: true,
+        storagePath: true,
+        serviceVisitId: true,
       },
       orderBy: { capturedAt: 'desc' },
       take: 300,
     }),
   ]);
 
-  const points = [
-    ...ownerCaptures.map((capture) => ({
+  const ownerPoints = await Promise.all(
+    ownerCaptures.map(async (capture) => ({
       id: `owner-${capture.id}`,
+      sourceId: capture.id,
       lat: capture.gpsLat ?? 0,
       lng: capture.gpsLng ?? 0,
       accuracy: capture.gpsAccuracy ?? null,
       capturedAt: capture.capturedAt.toISOString(),
       source: 'OWNER' as const,
+      imageUrl: await resolveStorageUrl(capture.storagePath),
     })),
-    ...proCaptures.map((capture) => ({
+  );
+
+  const proPoints = await Promise.all(
+    proCaptures.map(async (capture) => ({
       id: `pro-${capture.id}`,
+      sourceId: capture.id,
       lat: capture.gpsLat ?? 0,
       lng: capture.gpsLng ?? 0,
       accuracy: capture.gpsAccuracy ?? null,
       capturedAt: capture.capturedAt.toISOString(),
       source: 'PRO' as const,
+      imageUrl: await resolveStorageUrl(capture.storagePath),
+      visitId: capture.serviceVisitId,
     })),
-  ]
+  );
+
+  const points = [...ownerPoints, ...proPoints]
     .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng))
-    .filter((point) => isAccuracyAcceptable(point.accuracy));
+    .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
 
   const homeLocation =
     typeof visit.customer?.latitude === 'number' && typeof visit.customer?.longitude === 'number'
@@ -257,25 +280,26 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   let parcelBoundary: ParcelBoundary | null = null;
   let snappedPoints = points;
   let parcelAvailability: 'available' | 'missing' | 'unknown' = homeLocation
-    ? 'missing'
+    ? 'unknown'
     : 'unknown';
-  const approxFence = homeLocation
-    ? { ...homeLocation, radiusMeters: APPROX_FENCE_RADIUS_METERS }
-    : null;
-  if (homeLocation) {
-    const boundary = await loadParcelBoundary(homeLocation.lat, homeLocation.lng).catch((error) => {
-      console.warn('poop-map.parcel.load.failed', error);
-      return null;
-    });
-    if (boundary) {
-      parcelBoundary = boundary;
-      parcelAvailability = 'available';
-      try {
-        snappedPoints = await snapPointsToParcel(boundary.parcelId, boundary.source, points);
-      } catch (error) {
-        console.warn('poop-map.parcel.snap.failed', error);
-        snappedPoints = points;
+  if (homeLocation && isPostgisEnabled()) {
+    try {
+      const boundary = await loadParcelBoundary(homeLocation.lat, homeLocation.lng);
+      if (boundary) {
+        parcelBoundary = boundary;
+        parcelAvailability = 'available';
+        try {
+          snappedPoints = await snapPointsToParcel(boundary.parcelId, boundary.source, points) as typeof points;
+        } catch (error) {
+          console.warn('poop-map.parcel.snap.failed', error);
+          snappedPoints = points;
+        }
+      } else {
+        parcelAvailability = 'missing';
       }
+    } catch (error) {
+      console.warn('poop-map.parcel.load.failed', error);
+      parcelAvailability = 'unknown';
     }
   }
 
@@ -286,7 +310,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       homeLocation,
       parcel: parcelBoundary,
       parcelAvailability,
-      approxFence: parcelBoundary ? null : approxFence,
     },
   });
 }

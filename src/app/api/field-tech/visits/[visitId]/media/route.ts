@@ -16,6 +16,7 @@ import {
 } from "@/lib/service-visits/media";
 import { queueMediaAnalysis } from "@/lib/service-visits/media-analysis";
 import { getWeekWindow } from "@/lib/wellness/reports";
+import { fetchWeatherSnapshot } from "@/lib/weather/snapshot";
 import {
   awardScooperPoints,
   SCOOPER_REWARD_EVENT_POINTS,
@@ -133,6 +134,29 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       stoolSampleId,
       stoolSampleView: parsed.data.stoolSampleView,
     });
+
+    if (record.gpsLat !== null && record.gpsLng !== null) {
+      try {
+        const weatherSnapshot = await fetchWeatherSnapshot({
+          lat: record.gpsLat,
+          lng: record.gpsLng,
+          capturedAt: record.capturedAt ?? new Date(),
+          locationSource: "capture_gps",
+        });
+        if (weatherSnapshot) {
+          await prisma.serviceVisitMedia.update({
+            where: { id: record.id },
+            data: {
+              locationMetadata: {
+                weather: weatherSnapshot,
+              },
+            },
+          });
+        }
+      } catch (error) {
+        console.warn("field-tech.media.weather.failed", { mediaId: record.id, error });
+      }
+    }
 
     if (visit.status === ServiceStatus.SCHEDULED) {
       await prisma.serviceVisit.update({

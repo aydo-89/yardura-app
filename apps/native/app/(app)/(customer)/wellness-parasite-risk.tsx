@@ -3,7 +3,6 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 
-import Button from '@/components/ui/Button';
 import Screen from '@/components/ui/Screen';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -23,16 +22,26 @@ type ParasiteRiskPayload = {
 };
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const FULL_MONTH_LABELS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 const RISK_LABELS: Record<ParasiteRiskMonth['fleasTicks'], string> = {
   LOW: 'Low',
   MODERATE: 'Moderate',
   HIGH: 'High',
 };
 
-const riskColor = (risk: ParasiteRiskMonth['fleasTicks']) => {
+const riskColor = (risk: ParasiteRiskMonth['fleasTicks'], palette: typeof Colors.light) => {
   if (risk === 'HIGH') return Colors.brand.coral;
   if (risk === 'MODERATE') return Colors.brand.gold;
   return Colors.brand.mint;
+};
+
+const riskIcon = (risk: ParasiteRiskMonth['fleasTicks']) => {
+  if (risk === 'HIGH') return 'exclamation-triangle';
+  if (risk === 'MODERATE') return 'minus-circle';
+  return 'check-circle';
 };
 
 const formatMonthList = (months: number[]) => {
@@ -119,10 +128,6 @@ export default function WellnessParasiteRiskScreen() {
     [data, selectedMonth],
   );
 
-  const selectedMonthLabel = selectedEntry ? MONTH_LABELS[selectedEntry.month] : '';
-  const selectedFleasTicksLabel = selectedEntry ? RISK_LABELS[selectedEntry.fleasTicks] : 'Low';
-  const selectedHeartwormLabel = selectedEntry ? RISK_LABELS[selectedEntry.heartworm] : 'Low';
-
   const resolveNextDueDate = (months: number[]) => {
     const nextMonth = findNextMonth(months, currentMonth);
     if (nextMonth == null) return null;
@@ -144,6 +149,8 @@ export default function WellnessParasiteRiskScreen() {
       months.length > 0
         ? `High-risk months: ${monthLabel}.`
         : 'Low risk in your region, but prevention can still be helpful.';
+    // Use timestamp to force reminders screen to re-read params
+    const timestamp = Date.now().toString();
     router.push({
       pathname: '/(app)/(customer)/reminders' as any,
       params: {
@@ -151,6 +158,7 @@ export default function WellnessParasiteRiskScreen() {
         prefillCategory: category,
         prefillNotes: notes,
         prefillFrequencyDays: '30',
+        prefillTimestamp: timestamp,
         ...(dueDate ? { prefillDueDate: dueDate } : {}),
       },
     });
@@ -160,176 +168,175 @@ export default function WellnessParasiteRiskScreen() {
     setSelectedMonth(month);
   };
 
+  // Determine current month's risk status for hero display
+  const currentEntry = useMemo(
+    () => data?.calendar.find((entry) => entry.month === currentMonth) ?? null,
+    [data, currentMonth],
+  );
+  const overallRisk = useMemo(() => {
+    if (!currentEntry) return 'LOW' as const;
+    if (currentEntry.fleasTicks === 'HIGH' || currentEntry.heartworm === 'HIGH') return 'HIGH' as const;
+    if (currentEntry.fleasTicks === 'MODERATE' || currentEntry.heartworm === 'MODERATE') return 'MODERATE' as const;
+    return 'LOW' as const;
+  }, [currentEntry]);
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.kicker, { color: palette.muted }]}>Parasite risk calendar</Text>
-          <Text style={[styles.title, { color: palette.text }]}>Seasonal guidance</Text>
-          <Text style={[styles.subtitle, { color: palette.muted }]}>
-            Monthly flea, tick, and heartworm risk based on your region.
-          </Text>
-        </View>
-
-        {loading ? (
-          <View style={styles.inlineRow}>
-            <ActivityIndicator size="small" color={palette.tint} />
-            <Text style={[styles.helperText, { color: palette.muted }]}>Loading calendar...</Text>
-          </View>
-        ) : error ? (
-          <Text style={[styles.helperText, { color: palette.danger }]}>{error}</Text>
-        ) : null}
-
-        {data ? (
-          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <View style={styles.inlineRow}>
-              <FontAwesome name="bug" size={14} color={palette.tint} />
-              <Text style={[styles.sectionTitle, { color: palette.text }]}>
+          <Text style={[styles.kicker, { color: palette.muted }]}>SEASONAL GUIDANCE</Text>
+          <Text style={[styles.title, { color: palette.text }]}>Parasite Risk</Text>
+          {data && (
+            <View style={styles.regionBadge}>
+              <FontAwesome name="map-marker" size={12} color={palette.tint} />
+              <Text style={[styles.regionText, { color: palette.muted }]}>
                 {data.state ? `${data.state} · ${data.regionLabel}` : data.regionLabel}
               </Text>
             </View>
-            <Text style={[styles.helperText, { color: palette.muted }]}>
-              Seasonal guidance based on your region. Tap a month to explore the risk.
+          )}
+        </View>
+
+        {loading ? (
+          <View style={[styles.loadingCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <ActivityIndicator size="small" color={palette.tint} />
+            <Text style={[styles.loadingText, { color: palette.muted }]}>Loading risk data...</Text>
+          </View>
+        ) : error ? (
+          <View style={[styles.errorCard, { backgroundColor: `${palette.danger}10`, borderColor: palette.danger }]}>
+            <FontAwesome name="exclamation-circle" size={16} color={palette.danger} />
+            <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
+          </View>
+        ) : null}
+
+        {/* Current Month Hero Card */}
+        {data && currentEntry ? (
+          <View style={[styles.heroCard, { backgroundColor: `${riskColor(overallRisk, palette)}15`, borderColor: riskColor(overallRisk, palette) }]}>
+            <View style={styles.heroHeader}>
+              <View style={[styles.heroIconWrap, { backgroundColor: `${riskColor(overallRisk, palette)}25` }]}>
+                <FontAwesome name={riskIcon(overallRisk) as any} size={20} color={riskColor(overallRisk, palette)} />
+              </View>
+              <View style={styles.heroTitleWrap}>
+                <Text style={[styles.heroTitle, { color: palette.text }]}>{FULL_MONTH_LABELS[currentMonth]}</Text>
+                <Text style={[styles.heroSubtitle, { color: riskColor(overallRisk, palette) }]}>
+                  {overallRisk === 'HIGH' ? 'High Risk Period' : overallRisk === 'MODERATE' ? 'Moderate Risk' : 'Low Risk Period'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.heroRiskRow}>
+              <View style={styles.heroRiskItem}>
+                <View style={[styles.heroRiskDot, { backgroundColor: riskColor(currentEntry.fleasTicks, palette) }]} />
+                <Text style={[styles.heroRiskLabel, { color: palette.muted }]}>Fleas & Ticks</Text>
+                <Text style={[styles.heroRiskValue, { color: riskColor(currentEntry.fleasTicks, palette) }]}>
+                  {RISK_LABELS[currentEntry.fleasTicks]}
+                </Text>
+              </View>
+              <View style={[styles.heroRiskDivider, { backgroundColor: palette.border }]} />
+              <View style={styles.heroRiskItem}>
+                <View style={[styles.heroRiskDot, { backgroundColor: riskColor(currentEntry.heartworm, palette) }]} />
+                <Text style={[styles.heroRiskLabel, { color: palette.muted }]}>Heartworm</Text>
+                <Text style={[styles.heroRiskValue, { color: riskColor(currentEntry.heartworm, palette) }]}>
+                  {RISK_LABELS[currentEntry.heartworm]}
+                </Text>
+              </View>
+            </View>
+            <Text style={[styles.heroHint, { color: palette.muted }]}>
+              {overallRisk === 'HIGH'
+                ? 'Stay current on preventatives. This is peak parasite season in your area.'
+                : overallRisk === 'MODERATE'
+                  ? 'Keep preventatives on schedule to stay protected.'
+                  : 'Lower activity, but year-round prevention is recommended.'}
             </Text>
           </View>
         ) : null}
 
-        {data && selectedEntry ? (
+        {/* Prevention Reminders Card */}
+        {data ? (
           <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <View style={styles.sectionHeader}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.cardIconWrap, { backgroundColor: `${palette.tint}15` }]}>
+                <FontAwesome name="bell" size={16} color={palette.tint} />
+              </View>
               <View>
-                <Text style={[styles.sectionTitle, { color: palette.text }]}>
-                  {selectedMonthLabel} risk
+                <Text style={[styles.cardTitle, { color: palette.text }]}>Set Prevention Reminders</Text>
+                <Text style={[styles.cardSubtitle, { color: palette.muted }]}>
+                  Get notified when high-risk months approach
                 </Text>
-                <Text style={[styles.helperText, { color: palette.muted }]}>
-                  {currentMonth === selectedEntry.month ? 'Current month' : 'Selected month'}
-                </Text>
-              </View>
-              <View style={styles.inlineRow}>
-                <View
-                  style={[
-                    styles.riskPill,
-                    { backgroundColor: `${riskColor(selectedEntry.fleasTicks)}22`, borderColor: riskColor(selectedEntry.fleasTicks) },
-                  ]}
-                >
-                  <Text style={[styles.riskPillText, { color: riskColor(selectedEntry.fleasTicks) }]}>
-                    F/T {selectedFleasTicksLabel}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.riskPill,
-                    { backgroundColor: `${riskColor(selectedEntry.heartworm)}22`, borderColor: riskColor(selectedEntry.heartworm) },
-                  ]}
-                >
-                  <Text style={[styles.riskPillText, { color: riskColor(selectedEntry.heartworm) }]}>
-                    HW {selectedHeartwormLabel}
-                  </Text>
-                </View>
               </View>
             </View>
-            <Text style={[styles.helperText, { color: palette.muted }]}>
-              {selectedEntry.fleasTicks === 'HIGH' || selectedEntry.heartworm === 'HIGH'
-                ? 'High activity this month. Stay on prevention and keep reminders active.'
-                : selectedEntry.fleasTicks === 'MODERATE' || selectedEntry.heartworm === 'MODERATE'
-                  ? 'Moderate activity. Keep preventatives on schedule.'
-                  : 'Low activity. Reminders help maintain consistency year-round.'}
-            </Text>
+
+            {/* Flea & Tick Section */}
+            <View style={styles.reminderSection}>
+              <View style={styles.reminderHeader}>
+                <FontAwesome name="bug" size={14} color={Colors.brand.coral} />
+                <Text style={[styles.reminderTitle, { color: palette.text }]}>Flea & Tick Prevention</Text>
+              </View>
+              <Text style={[styles.reminderMonths, { color: palette.muted }]}>
+                {riskBuckets.fleasTicks.high.length > 0
+                  ? `High risk: ${formatMonthList(riskBuckets.fleasTicks.high)}`
+                  : 'Low risk year-round in your area'}
+              </Text>
+              <Pressable
+                onPress={() => handleAddReminder('FLEA_TICK')}
+                style={({ pressed }) => [
+                  styles.reminderButton,
+                  { backgroundColor: Colors.brand.coral, opacity: pressed ? 0.85 : 1 },
+                ]}
+              >
+                <FontAwesome name="plus" size={12} color="#FFFFFF" />
+                <Text style={styles.reminderButtonText}>Add Reminder</Text>
+              </Pressable>
+            </View>
+
+            {/* Heartworm Section */}
+            <View style={[styles.reminderSection, { borderTopWidth: 1, borderTopColor: palette.border, paddingTop: 16 }]}>
+              <View style={styles.reminderHeader}>
+                <FontAwesome name="heart" size={14} color={Colors.brand.gold} />
+                <Text style={[styles.reminderTitle, { color: palette.text }]}>Heartworm Prevention</Text>
+              </View>
+              <Text style={[styles.reminderMonths, { color: palette.muted }]}>
+                {riskBuckets.heartworm.high.length > 0
+                  ? `High risk: ${formatMonthList(riskBuckets.heartworm.high)}`
+                  : 'Low risk year-round in your area'}
+              </Text>
+              <Pressable
+                onPress={() => handleAddReminder('HEARTWORM')}
+                style={({ pressed }) => [
+                  styles.reminderButton,
+                  { backgroundColor: Colors.brand.gold, opacity: pressed ? 0.85 : 1 },
+                ]}
+              >
+                <FontAwesome name="plus" size={12} color="#FFFFFF" />
+                <Text style={styles.reminderButtonText}>Add Reminder</Text>
+              </Pressable>
+            </View>
           </View>
         ) : null}
 
+        {/* Year Calendar Grid */}
         {data ? (
           <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>High-risk months</Text>
-            <Text style={[styles.helperText, { color: palette.muted }]}>
-              Tap a month to preview the risk or add a seasonal reminder.
+            <Text style={[styles.cardTitle, { color: palette.text }]}>Year-Round Risk Calendar</Text>
+            <Text style={[styles.cardSubtitle, { color: palette.muted }]}>
+              Tap any month to see detailed risk levels
             </Text>
 
-            <Text style={[styles.riskLabel, { color: palette.muted }]}>Fleas & ticks</Text>
-            <View style={styles.monthChipRow}>
-              {riskBuckets.fleasTicks.high.length === 0 ? (
-                <Text style={[styles.helperText, { color: palette.muted }]}>Low risk all year.</Text>
-              ) : (
-                riskBuckets.fleasTicks.high.map((month) => (
-                  <Pressable
-                    key={`ft-${month}`}
-                    onPress={() => handleSelectMonth(month)}
-                    style={[
-                      styles.monthChip,
-                      {
-                        borderColor: riskColor('HIGH'),
-                        backgroundColor:
-                          selectedMonth === month ? `${riskColor('HIGH')}33` : `${riskColor('HIGH')}1F`,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.monthChipText, { color: riskColor('HIGH') }]}>
-                      {MONTH_LABELS[month]}
-                    </Text>
-                  </Pressable>
-                ))
-              )}
-            </View>
-
-            <Text style={[styles.riskLabel, { color: palette.muted }]}>Heartworm</Text>
-            <View style={styles.monthChipRow}>
-              {riskBuckets.heartworm.high.length === 0 ? (
-                <Text style={[styles.helperText, { color: palette.muted }]}>Low risk all year.</Text>
-              ) : (
-                riskBuckets.heartworm.high.map((month) => (
-                  <Pressable
-                    key={`hw-${month}`}
-                    onPress={() => handleSelectMonth(month)}
-                    style={[
-                      styles.monthChip,
-                      {
-                        borderColor: riskColor('HIGH'),
-                        backgroundColor:
-                          selectedMonth === month ? `${riskColor('HIGH')}33` : `${riskColor('HIGH')}1F`,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.monthChipText, { color: riskColor('HIGH') }]}>
-                      {MONTH_LABELS[month]}
-                    </Text>
-                  </Pressable>
-                ))
-              )}
-            </View>
-
-            <View style={styles.actionRow}>
-              <Button title="Add flea & tick reminder" onPress={() => handleAddReminder('FLEA_TICK')} />
-              <Button
-                title="Add heartworm reminder"
-                onPress={() => handleAddReminder('HEARTWORM')}
-                variant="secondary"
-              />
-            </View>
-          </View>
-        ) : null}
-
-        {data ? (
-          <View style={[styles.legendCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <Text style={[styles.helperText, { color: palette.muted }]}>Risk legend</Text>
+            {/* Legend */}
             <View style={styles.legendRow}>
-              <View style={[styles.legendSwatch, { backgroundColor: riskColor('LOW') }]} />
-              <Text style={[styles.legendText, { color: palette.text }]}>Low</Text>
-              <View style={[styles.legendSwatch, { backgroundColor: riskColor('MODERATE') }]} />
-              <Text style={[styles.legendText, { color: palette.text }]}>Moderate</Text>
-              <View style={[styles.legendSwatch, { backgroundColor: riskColor('HIGH') }]} />
-              <Text style={[styles.legendText, { color: palette.text }]}>High</Text>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendSwatch, { backgroundColor: riskColor('LOW', palette) }]} />
+                <Text style={[styles.legendText, { color: palette.muted }]}>Low</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendSwatch, { backgroundColor: riskColor('MODERATE', palette) }]} />
+                <Text style={[styles.legendText, { color: palette.muted }]}>Moderate</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendSwatch, { backgroundColor: riskColor('HIGH', palette) }]} />
+                <Text style={[styles.legendText, { color: palette.muted }]}>High</Text>
+              </View>
             </View>
-            <Text style={[styles.legendNote, { color: palette.muted }]}>
-              F/T = Fleas & ticks · HW = Heartworm.
-            </Text>
-          </View>
-        ) : null}
 
-        {data ? (
-          <>
-            <Text style={[styles.helperText, { color: palette.muted }]}>
-              Tap a month to compare risk levels.
-            </Text>
             <View style={styles.calendarGrid}>
               {data.calendar.map((entry) => {
                 const isSelected = entry.month === selectedMonth;
@@ -341,34 +348,53 @@ export default function WellnessParasiteRiskScreen() {
                     style={[
                       styles.monthCell,
                       {
-                        backgroundColor: isSelected ? `${palette.tint}12` : palette.card,
+                        backgroundColor: isSelected ? `${palette.tint}12` : 'transparent',
                         borderColor: isSelected ? palette.tint : palette.border,
                       },
                     ]}
                   >
                     <View style={styles.monthHeader}>
-                      <Text style={[styles.monthLabel, { color: palette.text }]}>
+                      <Text style={[styles.monthLabel, { color: isCurrent ? palette.tint : palette.text, fontWeight: isCurrent ? '700' : '600' }]}>
                         {MONTH_LABELS[entry.month]}
                       </Text>
                       {isCurrent ? (
                         <View style={[styles.currentDot, { backgroundColor: palette.tint }]} />
                       ) : null}
                     </View>
-                    <View style={styles.riskStack}>
-                      <View style={styles.riskLine}>
-                        <Text style={[styles.riskTag, { color: palette.muted }]}>F/T</Text>
-                        <View style={[styles.riskBar, { backgroundColor: riskColor(entry.fleasTicks) }]} />
-                      </View>
-                      <View style={styles.riskLine}>
-                        <Text style={[styles.riskTag, { color: palette.muted }]}>HW</Text>
-                        <View style={[styles.riskBar, { backgroundColor: riskColor(entry.heartworm) }]} />
-                      </View>
+                    <View style={styles.riskBarsWrap}>
+                      <View style={[styles.riskBarSmall, { backgroundColor: riskColor(entry.fleasTicks, palette) }]} />
+                      <View style={[styles.riskBarSmall, { backgroundColor: riskColor(entry.heartworm, palette) }]} />
                     </View>
                   </Pressable>
                 );
               })}
             </View>
-          </>
+          </View>
+        ) : null}
+
+        {/* Selected Month Detail */}
+        {data && selectedEntry && selectedMonth !== currentMonth ? (
+          <View style={[styles.detailCard, { backgroundColor: `${palette.tint}08`, borderColor: palette.border }]}>
+            <Text style={[styles.detailTitle, { color: palette.text }]}>{FULL_MONTH_LABELS[selectedMonth]} Risk</Text>
+            <View style={styles.detailRow}>
+              <View style={styles.detailItem}>
+                <Text style={[styles.detailLabel, { color: palette.muted }]}>Fleas & Ticks</Text>
+                <View style={[styles.detailBadge, { backgroundColor: `${riskColor(selectedEntry.fleasTicks, palette)}20` }]}>
+                  <Text style={[styles.detailBadgeText, { color: riskColor(selectedEntry.fleasTicks, palette) }]}>
+                    {RISK_LABELS[selectedEntry.fleasTicks]}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.detailItem}>
+                <Text style={[styles.detailLabel, { color: palette.muted }]}>Heartworm</Text>
+                <View style={[styles.detailBadge, { backgroundColor: `${riskColor(selectedEntry.heartworm, palette)}20` }]}>
+                  <Text style={[styles.detailBadgeText, { color: riskColor(selectedEntry.heartworm, palette) }]}>
+                    {RISK_LABELS[selectedEntry.heartworm]}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
         ) : null}
       </ScrollView>
     </Screen>
@@ -382,145 +408,254 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   header: {
-    gap: 6,
+    gap: 4,
   },
   kicker: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.5,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
   },
-  subtitle: {
-    fontSize: 13,
-  },
-  helperText: {
-    fontSize: 12,
-  },
-  inlineRow: {
+  regionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    marginTop: 4,
+  },
+  regionText: {
+    fontSize: 13,
+  },
+  loadingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 20,
+    borderWidth: 1,
+    borderRadius: 16,
+  },
+  loadingText: {
+    fontSize: 13,
+  },
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 16,
+  },
+  errorText: {
+    fontSize: 13,
+    flex: 1,
+  },
+  heroCard: {
+    borderWidth: 1.5,
+    borderRadius: 20,
+    padding: 18,
+    gap: 16,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  heroIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitleWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  heroTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  heroRiskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroRiskItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  heroRiskDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  heroRiskLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  heroRiskValue: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  heroRiskDivider: {
+    width: 1,
+    height: 40,
+    marginHorizontal: 16,
+  },
+  heroHint: {
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   card: {
     borderWidth: 1,
     borderRadius: 18,
     padding: 16,
-    gap: 8,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 12,
   },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  riskPill: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  cardIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  riskPillText: {
-    fontSize: 11,
+  cardTitle: {
+    fontSize: 16,
     fontWeight: '700',
   },
-  riskLabel: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginTop: 6,
-  },
-  monthChipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  monthChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  monthChipText: {
+  cardSubtitle: {
     fontSize: 12,
-    fontWeight: '600',
+    marginTop: 1,
   },
-  actionRow: {
-    gap: 10,
+  reminderSection: {
+    gap: 8,
     marginTop: 8,
   },
-  legendCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
+  reminderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+  },
+  reminderTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reminderMonths: {
+    fontSize: 12,
+    marginLeft: 22,
+  },
+  reminderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 6,
+  },
+  reminderButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   legendRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 16,
+    paddingVertical: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   legendSwatch: {
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: 3,
   },
   legendText: {
-    fontSize: 12,
-    marginRight: 10,
-  },
-  legendNote: {
     fontSize: 12,
   },
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
+    marginTop: 4,
   },
   monthCell: {
     width: '31%',
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-    gap: 8,
+    borderRadius: 12,
+    padding: 10,
+    gap: 6,
   },
   monthHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  monthLabel: {
+    fontSize: 13,
+  },
   currentDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  monthLabel: {
-    fontSize: 14,
+  riskBarsWrap: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  riskBarSmall: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+  },
+  detailCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+  detailTitle: {
+    fontSize: 15,
     fontWeight: '600',
   },
-  riskStack: {
+  detailRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  detailItem: {
+    flex: 1,
     gap: 6,
   },
-  riskLine: {
-    flexDirection: 'row',
+  detailLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  detailBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    gap: 8,
   },
-  riskTag: {
-    fontSize: 10,
-    width: 28,
-  },
-  riskBar: {
-    flex: 1,
-    height: 8,
-    borderRadius: 6,
+  detailBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

@@ -10,10 +10,13 @@ export interface EmbeddingResult {
  * (Very affordable: $0.02 per 1M tokens)
  */
 export async function generateEmbedding(text: string): Promise<EmbeddingResult> {
-  const apiKey = env.OPENAI_API_KEY;
-  
+  const apiKey =
+    process.env.WELLNESS_CHAT_OPENAI_KEY ??
+    process.env.OPENAI_API_KEY ??
+    env.OPENAI_API_KEY;
+
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is required for generating embeddings");
+    throw new Error("OPENAI_API_KEY or WELLNESS_CHAT_OPENAI_KEY is required for embeddings");
   }
 
   const response = await fetch("https://api.openai.com/v1/embeddings", {
@@ -68,7 +71,6 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 
   return dotProduct / denominator;
 }
-
 
 
 

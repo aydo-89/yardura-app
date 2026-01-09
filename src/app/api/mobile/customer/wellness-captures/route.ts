@@ -9,6 +9,7 @@ import { uploadImage, createSignedUrl } from '@/lib/supabase-admin';
 import { resolveStorageUrl } from '@/lib/storage';
 import { analyzeOwnerCapture } from '@/lib/wellness/owner-analysis';
 import { getCustomerWellnessAccess, incrementWellnessUsage } from '@/lib/wellness/access';
+import { fetchWeatherSnapshot } from '@/lib/weather/snapshot';
 import { MediaAnalysisStatus, Prisma } from '@prisma/client';
 import {
   WELLNESS_ATTRIBUTION,
@@ -297,6 +298,21 @@ export async function POST(request: NextRequest) {
     metadataPayload.privacy = { autoBlur: true };
   }
 
+  const capturedAt = new Date();
+  const weatherLat = gpsLat ?? customer.latitude ?? null;
+  const weatherLng = gpsLng ?? customer.longitude ?? null;
+  if (weatherLat !== null && weatherLng !== null) {
+    const weatherSnapshot = await fetchWeatherSnapshot({
+      lat: weatherLat,
+      lng: weatherLng,
+      capturedAt,
+      locationSource: gpsLat !== null && gpsLng !== null ? 'capture_gps' : 'home_address',
+    });
+    if (weatherSnapshot) {
+      metadataPayload.weather = weatherSnapshot;
+    }
+  }
+
   if (!env.STORAGE_BUCKET) {
     return NextResponse.json({ ok: false, error: 'Storage not configured.' }, { status: 500 });
   }
@@ -332,7 +348,7 @@ export async function POST(request: NextRequest) {
         Object.keys(metadataPayload).length > 0
           ? (metadataPayload as Prisma.InputJsonValue)
           : Prisma.JsonNull,
-      capturedAt: new Date(),
+      capturedAt,
     },
   });
 
@@ -385,6 +401,7 @@ export async function POST(request: NextRequest) {
           notes: updated.notes,
           gpsLat: updated.gpsLat,
           gpsLng: updated.gpsLng,
+          gpsAccuracy: updated.gpsAccuracy,
           consentToShare: updated.consentToShare,
           metadata: updated.metadata,
           imageUrl: await resolveStorageUrl(updated.storagePath),

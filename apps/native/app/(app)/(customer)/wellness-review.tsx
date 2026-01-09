@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Button from '@/components/ui/Button';
 import ChoiceChip from '@/components/ui/ChoiceChip';
 import Screen from '@/components/ui/Screen';
+import Switch from '@/components/ui/ThemedSwitch';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -33,6 +36,13 @@ type DatasetPayload = {
   walks?: unknown[];
 };
 
+type ReportSection = {
+  key: keyof typeof DEFAULT_PDF_INCLUDES;
+  icon: keyof typeof FontAwesome.glyphMap;
+  label: string;
+  description: string;
+};
+
 const REPORT_WINDOW_OPTIONS = [
   { label: '7 days', value: 7 },
   { label: '14 days', value: 14 },
@@ -40,21 +50,36 @@ const REPORT_WINDOW_OPTIONS = [
 ] as const;
 
 const DEFAULT_DATASET_LIMIT = 200;
-const SUMMARY_LABELS: Record<string, string> = {
-  captures: 'Stool photos',
-  proMedia: 'Scooper photos',
-  weeklyReports: 'Weekly check-ins',
-  foodLogs: 'Food & meds logs',
-  reminders: 'Reminders',
-  chatLogs: 'AI chats',
-  weightEntries: 'Weight entries',
-  walks: 'Walks',
+
+const DEFAULT_PDF_INCLUDES = {
+  weekly: true,
+  food: true,
+  images: true,
+  chats: true,
+  walks: true,
+};
+
+const REPORT_SECTIONS: ReportSection[] = [
+  { key: 'weekly', icon: 'calendar-check-o', label: 'Check-ins', description: 'Symptoms & stool summaries' },
+  { key: 'food', icon: 'cutlery', label: 'Food & meds', description: 'Diet and medication logs' },
+  { key: 'images', icon: 'camera', label: 'Photos', description: 'Owner + pro captures' },
+  { key: 'chats', icon: 'comment', label: 'AI chat', description: 'Guidance & insights' },
+  { key: 'walks', icon: 'road', label: 'Walks', description: 'Activity summaries' },
+];
+
+type DataSummaryItem = {
+  key: string;
+  icon: keyof typeof FontAwesome.glyphMap;
+  label: string;
+  count: number;
+  color: string;
 };
 
 export default function WellnessReviewScreen() {
   const { session } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+
   const [dogs, setDogs] = useState<DogSummary[]>([]);
   const [dataset, setDataset] = useState<DatasetPayload | null>(null);
   const [prefs, setPrefs] = useState<WellnessPreferences | null>(null);
@@ -63,16 +88,11 @@ export default function WellnessReviewScreen() {
   const [error, setError] = useState<string | null>(null);
   const [prefsError, setPrefsError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [privacyExpanded, setPrivacyExpanded] = useState(false);
 
   const [dogId, setDogId] = useState<string | null>(null);
   const [pdfDays, setPdfDays] = useState(14);
-  const [pdfIncludes, setPdfIncludes] = useState({
-    weekly: true,
-    food: true,
-    images: true,
-    chats: true,
-    walks: true,
-  });
+  const [pdfIncludes, setPdfIncludes] = useState(DEFAULT_PDF_INCLUDES);
 
   const buildQuery = () => {
     const params = new URLSearchParams();
@@ -157,61 +177,34 @@ export default function WellnessReviewScreen() {
     }
   };
 
-  const datasetCounts = useMemo(() => {
-    if (!dataset) {
-      return {
-        captures: 0,
-        proMedia: 0,
-        weeklyReports: 0,
-        foodLogs: 0,
-        reminders: 0,
-        chatLogs: 0,
-        weightEntries: 0,
-        walks: 0,
-      };
-    }
-    return {
-      captures: dataset.captures?.length ?? 0,
-      proMedia: dataset.proMedia?.length ?? 0,
-      weeklyReports: dataset.weeklyReports?.length ?? 0,
-      foodLogs: dataset.foodLogs?.length ?? 0,
-      reminders: dataset.reminders?.length ?? 0,
-      chatLogs: dataset.chatLogs?.length ?? 0,
-      weightEntries: dataset.weightEntries?.length ?? 0,
-      walks: dataset.walks?.length ?? 0,
-    };
-  }, [dataset]);
-  const summaryColumns = useMemo(() => {
-    const leftKeys = ['captures', 'weeklyReports', 'foodLogs', 'reminders'];
-    const rightKeys = ['proMedia', 'chatLogs', 'walks', 'weightEntries'];
-    const buildEntry = (key: string) => ({
-      key,
-      label: SUMMARY_LABELS[key] ?? key,
-      value: Number.isFinite(datasetCounts[key as keyof typeof datasetCounts])
-        ? Number(datasetCounts[key as keyof typeof datasetCounts])
-        : 0,
-    });
-    return {
-      left: leftKeys.map(buildEntry),
-      right: rightKeys.map(buildEntry),
-    };
-  }, [datasetCounts]);
-  const hasPdfSelection = useMemo(
-    () => Object.values(pdfIncludes).some(Boolean),
-    [pdfIncludes],
-  );
+  const dataSummaryItems: DataSummaryItem[] = useMemo(() => {
+    if (!dataset) return [];
+    return [
+      { key: 'captures', icon: 'camera', label: 'Stool scans', count: dataset.captures?.length ?? 0, color: Colors.brand.coral },
+      { key: 'proMedia', icon: 'paw', label: 'Pro photos', count: dataset.proMedia?.length ?? 0, color: Colors.brand.mint },
+      { key: 'weeklyReports', icon: 'calendar-check-o', label: 'Check-ins', count: dataset.weeklyReports?.length ?? 0, color: Colors.brand.gold },
+      { key: 'foodLogs', icon: 'cutlery', label: 'Food logs', count: dataset.foodLogs?.length ?? 0, color: '#9B59B6' },
+      { key: 'chatLogs', icon: 'comment', label: 'AI chats', count: dataset.chatLogs?.length ?? 0, color: palette.tint },
+      { key: 'walks', icon: 'road', label: 'Walks', count: dataset.walks?.length ?? 0, color: '#3498DB' },
+    ];
+  }, [dataset, palette.tint]);
+
+  const totalDataPoints = useMemo(() => {
+    return dataSummaryItems.reduce((sum, item) => sum + item.count, 0);
+  }, [dataSummaryItems]);
+
+  const selectedSectionCount = useMemo(() => {
+    return Object.values(pdfIncludes).filter(Boolean).length;
+  }, [pdfIncludes]);
+
+  const hasPdfSelection = selectedSectionCount > 0;
 
   const downloadReportPdf = async () => {
     if (!session?.token) return;
     setExporting(true);
     setError(null);
     try {
-      const canShare = await Sharing.isAvailableAsync();
-      if (!canShare) {
-        setError('Sharing is not available on this device.');
-        setExporting(false);
-        return;
-      }
+      const canShare = await Sharing.isAvailableAsync().catch(() => false);
       const daysValue = Math.min(Math.max(pdfDays, 3), 30);
       const query = new URLSearchParams();
       if (dogId) query.set('dogId', dogId);
@@ -222,9 +215,20 @@ export default function WellnessReviewScreen() {
       query.set('includeChats', String(pdfIncludes.chats));
       query.set('includeWalks', String(pdfIncludes.walks));
       const url = `${API_BASE_URL.replace(/\/$/, '')}/api/mobile/customer/wellness-report/pdf?${query.toString()}`;
-      const baseDir = (FileSystem as any).cacheDirectory ?? (FileSystem as any).documentDirectory;
+      const documentDir = FileSystem.documentDirectory ?? null;
+      const cacheDir = FileSystem.cacheDirectory ?? null;
+      const baseDir = documentDir || cacheDir;
       if (!baseDir) {
-        setError('Unable to access local storage on this device.');
+        const shareUrl = await apiRequest<{ url: string }>(
+          `/api/mobile/customer/wellness-report/pdf?${query.toString()}&share=1`,
+          { token: session.token },
+        );
+        const message = `Wellness report (link expires soon): ${shareUrl.url}`;
+        try {
+          await Share.share({ message, url: shareUrl.url, title: 'Wellness report' });
+        } catch {
+          await Linking.openURL(shareUrl.url);
+        }
         setExporting(false);
         return;
       }
@@ -238,7 +242,11 @@ export default function WellnessReviewScreen() {
       const result = await FileSystem.downloadAsync(url, fileUri, {
         headers: { Authorization: `Bearer ${session.token}` },
       });
-      await Sharing.shareAsync(result.uri);
+      if (canShare) {
+        await Sharing.shareAsync(result.uri);
+      } else {
+        await Share.share({ url: result.uri, title: 'Wellness report' });
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to export PDF.';
       setError(message);
@@ -247,220 +255,293 @@ export default function WellnessReviewScreen() {
     }
   };
 
+  const toggleSection = (key: keyof typeof DEFAULT_PDF_INCLUDES) => {
+    setPdfIncludes((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const selectedDogName = dogId ? dogs.find((d) => d.id === dogId)?.name : 'All dogs';
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={[styles.kicker, { color: palette.muted }]}>Review & export</Text>
-          <Text style={[styles.title, { color: palette.text }]}>Share with your vet</Text>
-          <Text style={[styles.subtitle, { color: palette.muted }]}>
-            Review your data and export a shareable report.
-          </Text>
+        {/* Hero Card */}
+        <View style={[styles.heroCard, { backgroundColor: palette.tint }]}>
+          <View style={styles.heroIcon}>
+            <FontAwesome name="file-text-o" size={32} color="#fff" />
+          </View>
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle}>Vet Reports</Text>
+            <Text style={styles.heroSubtitle}>
+              Generate professional wellness reports to share with your veterinarian
+            </Text>
+          </View>
         </View>
 
+        {/* Report Builder Card */}
         <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-          <Text style={[styles.sectionTitle, { color: palette.text }]}>Vet report</Text>
-          <Text style={[styles.helperText, { color: palette.muted }]}>
-            Choose a scope and time window to share a 1-page summary with your vet.
-          </Text>
-          <Text style={[styles.fieldLabel, { color: palette.muted }]}>Dog scope</Text>
-          <View style={styles.chipRow}>
-            <ChoiceChip label="Household" selected={!dogId} onPress={() => setDogId(null)} />
-            {dogs.map((dog) => (
-              <ChoiceChip
-                key={dog.id}
-                label={dog.name}
-                selected={dogId === dog.id}
-                onPress={() => setDogId(dog.id)}
-              />
-            ))}
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIconContainer, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="sliders" size={16} color={palette.tint} />
+            </View>
+            <Text style={[styles.cardTitle, { color: palette.text }]}>Build Your Report</Text>
           </View>
-          <Text style={[styles.fieldLabel, { color: palette.muted }]}>Report period</Text>
-          <View style={styles.chipRow}>
-            {REPORT_WINDOW_OPTIONS.map((option) => (
-              <ChoiceChip
-                key={option.value}
-                label={option.label}
-                selected={pdfDays === option.value}
-                onPress={() => setPdfDays(option.value)}
-              />
-            ))}
-          </View>
-          <Text style={[styles.fieldLabel, { color: palette.muted }]}>Include in report</Text>
-          <View style={styles.toggleStack}>
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleCopy}>
-                <Text style={[styles.helperText, { color: palette.text }]}>Weekly check-ins</Text>
-                <Text style={[styles.helperText, { color: palette.muted }]}>
-                  Symptoms and stool summaries
-                </Text>
-              </View>
-              <Switch
-                value={pdfIncludes.weekly}
-                onValueChange={(value) => setPdfIncludes((prev) => ({ ...prev, weekly: value }))}
-                trackColor={{ false: palette.border, true: palette.tint }}
-                thumbColor={palette.card}
-              />
-            </View>
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleCopy}>
-                <Text style={[styles.helperText, { color: palette.text }]}>Food & meds logs</Text>
-                <Text style={[styles.helperText, { color: palette.muted }]}>
-                  Recent diet notes
-                </Text>
-              </View>
-              <Switch
-                value={pdfIncludes.food}
-                onValueChange={(value) => setPdfIncludes((prev) => ({ ...prev, food: value }))}
-                trackColor={{ false: palette.border, true: palette.tint }}
-                thumbColor={palette.card}
-              />
-            </View>
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleCopy}>
-                <Text style={[styles.helperText, { color: palette.text }]}>Stool images</Text>
-                <Text style={[styles.helperText, { color: palette.muted }]}>
-                  Owner + pro captures
-                </Text>
-              </View>
-              <Switch
-                value={pdfIncludes.images}
-                onValueChange={(value) => setPdfIncludes((prev) => ({ ...prev, images: value }))}
-                trackColor={{ false: palette.border, true: palette.tint }}
-                thumbColor={palette.card}
-              />
-            </View>
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleCopy}>
-                <Text style={[styles.helperText, { color: palette.text }]}>AI chat notes</Text>
-                <Text style={[styles.helperText, { color: palette.muted }]}>
-                  Recent guidance + red flags
-                </Text>
-              </View>
-              <Switch
-                value={pdfIncludes.chats}
-                onValueChange={(value) => setPdfIncludes((prev) => ({ ...prev, chats: value }))}
-                trackColor={{ false: palette.border, true: palette.tint }}
-                thumbColor={palette.card}
-              />
-            </View>
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleCopy}>
-                <Text style={[styles.helperText, { color: palette.text }]}>Walks</Text>
-                <Text style={[styles.helperText, { color: palette.muted }]}>
-                  Distance + time summaries
-                </Text>
-              </View>
-              <Switch
-                value={pdfIncludes.walks}
-                onValueChange={(value) => setPdfIncludes((prev) => ({ ...prev, walks: value }))}
-                trackColor={{ false: palette.border, true: palette.tint }}
-                thumbColor={palette.card}
-              />
+
+          {/* Dog Selector */}
+          <View style={styles.fieldSection}>
+            <Text style={[styles.fieldLabel, { color: palette.muted }]}>SELECT DOG</Text>
+            <View style={styles.chipRow}>
+              <ChoiceChip label="All dogs" selected={!dogId} onPress={() => setDogId(null)} />
+              {dogs.map((dog) => (
+                <ChoiceChip
+                  key={dog.id}
+                  label={dog.name}
+                  selected={dogId === dog.id}
+                  onPress={() => setDogId(dog.id)}
+                />
+              ))}
             </View>
           </View>
+
+          {/* Time Period */}
+          <View style={styles.fieldSection}>
+            <Text style={[styles.fieldLabel, { color: palette.muted }]}>TIME PERIOD</Text>
+            <View style={styles.chipRow}>
+              {REPORT_WINDOW_OPTIONS.map((option) => (
+                <ChoiceChip
+                  key={option.value}
+                  label={option.label}
+                  selected={pdfDays === option.value}
+                  onPress={() => setPdfDays(option.value)}
+                />
+              ))}
+            </View>
+          </View>
+
+          {/* Section Toggles */}
+          <View style={styles.fieldSection}>
+            <Text style={[styles.fieldLabel, { color: palette.muted }]}>INCLUDE SECTIONS</Text>
+            <View style={styles.sectionGrid}>
+              {REPORT_SECTIONS.map((section) => {
+                const isSelected = pdfIncludes[section.key];
+                return (
+                  <Pressable
+                    key={section.key}
+                    onPress={() => toggleSection(section.key)}
+                    style={[
+                      styles.sectionToggle,
+                      {
+                        backgroundColor: isSelected ? `${palette.tint}15` : palette.background,
+                        borderColor: isSelected ? palette.tint : palette.border,
+                      },
+                    ]}
+                  >
+                    <View style={styles.sectionToggleHeader}>
+                      <FontAwesome
+                        name={section.icon}
+                        size={16}
+                        color={isSelected ? palette.tint : palette.muted}
+                      />
+                      {isSelected && (
+                        <FontAwesome name="check-circle" size={14} color={palette.tint} />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.sectionToggleLabel,
+                        { color: isSelected ? palette.text : palette.muted },
+                      ]}
+                    >
+                      {section.label}
+                    </Text>
+                    <Text style={[styles.sectionToggleDesc, { color: palette.muted }]} numberOfLines={1}>
+                      {section.description}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
+        {/* Data Summary Card */}
+        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIconContainer, { backgroundColor: `${Colors.brand.mint}15` }]}>
+              <FontAwesome name="database" size={16} color={Colors.brand.mint} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardTitle, { color: palette.text }]}>Available Data</Text>
+              <Text style={[styles.cardSubtitle, { color: palette.muted }]}>
+                {pdfDays} days • {selectedDogName}
+              </Text>
+            </View>
+            <Pressable onPress={loadDataset} style={styles.refreshButton}>
+              <FontAwesome name="refresh" size={14} color={palette.muted} />
+            </Pressable>
+          </View>
+
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={palette.tint} />
+              <Text style={[styles.loadingText, { color: palette.muted }]}>Gathering data...</Text>
+            </View>
+          ) : error ? (
+            <View style={[styles.errorContainer, { backgroundColor: `${palette.danger}10` }]}>
+              <FontAwesome name="exclamation-circle" size={16} color={palette.danger} />
+              <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
+            </View>
+          ) : (
+            <>
+              {/* Total Badge */}
+              <View style={[styles.totalBadge, { backgroundColor: `${palette.tint}10` }]}>
+                <Text style={[styles.totalValue, { color: palette.tint }]}>{totalDataPoints}</Text>
+                <Text style={[styles.totalLabel, { color: palette.muted }]}>data points available</Text>
+              </View>
+
+              {/* Data Items Grid */}
+              <View style={styles.dataGrid}>
+                {dataSummaryItems.map((item) => (
+                  <View
+                    key={item.key}
+                    style={[styles.dataItem, { borderColor: palette.border }]}
+                  >
+                    <View style={[styles.dataItemIcon, { backgroundColor: `${item.color}15` }]}>
+                      <FontAwesome name={item.icon} size={14} color={item.color} />
+                    </View>
+                    <Text style={[styles.dataItemCount, { color: palette.text }]}>{item.count}</Text>
+                    <Text style={[styles.dataItemLabel, { color: palette.muted }]} numberOfLines={1}>
+                      {item.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* Privacy Controls - Collapsible */}
+        <Pressable
+          onPress={() => setPrivacyExpanded(!privacyExpanded)}
+          style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}
+        >
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIconContainer, { backgroundColor: `${Colors.brand.gold}15` }]}>
+              <FontAwesome name="shield" size={16} color={Colors.brand.gold} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardTitle, { color: palette.text }]}>Privacy Controls</Text>
+              <Text style={[styles.cardSubtitle, { color: palette.muted }]}>
+                Manage data sharing preferences
+              </Text>
+            </View>
+            <FontAwesome
+              name={privacyExpanded ? 'chevron-up' : 'chevron-down'}
+              size={14}
+              color={palette.muted}
+            />
+          </View>
+
+          {privacyExpanded && (
+            <View style={styles.privacyContent}>
+              {prefsLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={palette.tint} />
+                  <Text style={[styles.loadingText, { color: palette.muted }]}>Loading...</Text>
+                </View>
+              ) : prefs ? (
+                <View style={styles.toggleStack}>
+                  <View style={styles.toggleRow}>
+                    <View style={styles.toggleCopy}>
+                      <Text style={[styles.toggleLabel, { color: palette.text }]}>Share notes</Text>
+                      <Text style={[styles.toggleDesc, { color: palette.muted }]}>
+                        Anonymized check-in notes for research
+                      </Text>
+                    </View>
+                    <Switch
+                      value={prefs.shareWellnessNotes}
+                      onValueChange={(value) => updatePrefs({ shareWellnessNotes: value })}
+                      trackColor={{ false: palette.border, true: palette.tint }}
+                      thumbColor={palette.card}
+                    />
+                  </View>
+                  <View style={[styles.divider, { backgroundColor: palette.border }]} />
+                  <View style={styles.toggleRow}>
+                    <View style={styles.toggleCopy}>
+                      <Text style={[styles.toggleLabel, { color: palette.text }]}>Share captures</Text>
+                      <Text style={[styles.toggleDesc, { color: palette.muted }]}>
+                        Anonymized stool photos for AI training
+                      </Text>
+                    </View>
+                    <Switch
+                      value={prefs.shareWellnessCaptures}
+                      onValueChange={(value) => updatePrefs({ shareWellnessCaptures: value })}
+                      trackColor={{ false: palette.border, true: palette.tint }}
+                      thumbColor={palette.card}
+                    />
+                  </View>
+                  <View style={[styles.divider, { backgroundColor: palette.border }]} />
+                  <View style={styles.toggleRow}>
+                    <View style={styles.toggleCopy}>
+                      <Text style={[styles.toggleLabel, { color: palette.text }]}>Auto-blur photos</Text>
+                      <Text style={[styles.toggleDesc, { color: palette.muted }]}>
+                        Hide backgrounds by default in app
+                      </Text>
+                    </View>
+                    <Switch
+                      value={prefs.autoBlurWellnessPhotos}
+                      onValueChange={(value) => updatePrefs({ autoBlurWellnessPhotos: value })}
+                      trackColor={{ false: palette.border, true: palette.tint }}
+                      thumbColor={palette.card}
+                    />
+                  </View>
+                </View>
+              ) : null}
+              {prefsError && (
+                <Text style={[styles.errorText, { color: palette.danger }]}>{prefsError}</Text>
+              )}
+            </View>
+          )}
+        </Pressable>
+
+        {/* Export Section */}
+        <View style={[styles.exportCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+          <View style={styles.exportPreview}>
+            <View style={[styles.exportPreviewIcon, { backgroundColor: `${palette.tint}10` }]}>
+              <FontAwesome name="file-pdf-o" size={24} color={palette.tint} />
+            </View>
+            <View style={styles.exportPreviewInfo}>
+              <Text style={[styles.exportPreviewTitle, { color: palette.text }]}>
+                {selectedDogName} Report
+              </Text>
+              <Text style={[styles.exportPreviewMeta, { color: palette.muted }]}>
+                Last {pdfDays} days • {selectedSectionCount} sections
+              </Text>
+            </View>
+          </View>
+
           <Button
-            title={exporting ? 'Preparing...' : 'Share vet report'}
+            title={exporting ? 'Preparing PDF...' : 'Generate & Share Report'}
             onPress={downloadReportPdf}
             disabled={exporting || !hasPdfSelection}
           />
-          <Text style={[styles.helperText, { color: palette.muted }]}>
-            {hasPdfSelection
-              ? 'Uses the selections above for what gets shared.'
-              : 'Select at least one section to include.'}
-          </Text>
-        </View>
 
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-          <Text style={[styles.sectionTitle, { color: palette.text }]}>What's included</Text>
-          {loading ? (
-            <View style={styles.inlineRow}>
-              <ActivityIndicator size="small" color={palette.tint} />
-              <Text style={[styles.helperText, { color: palette.muted }]}>Gathering data...</Text>
-            </View>
-          ) : error ? (
-            <Text style={[styles.helperText, { color: palette.danger }]}>{error}</Text>
-          ) : (
-            <View style={styles.summaryGrid}>
-              <View style={styles.summaryColumn}>
-                {summaryColumns.left.map((entry) => (
-                  <View key={entry.key} style={[styles.summaryTile, { borderColor: palette.border }]}>
-                    <Text style={[styles.summaryLabel, { color: palette.muted }]}>
-                      {entry.label}
-                    </Text>
-                    <Text style={[styles.summaryValue, { color: palette.text }]}>{entry.value}</Text>
-                  </View>
-                ))}
-              </View>
-              <View style={styles.summaryColumn}>
-                {summaryColumns.right.map((entry) => (
-                  <View key={entry.key} style={[styles.summaryTile, { borderColor: palette.border }]}>
-                    <Text style={[styles.summaryLabel, { color: palette.muted }]}>
-                      {entry.label}
-                    </Text>
-                    <Text style={[styles.summaryValue, { color: palette.text }]}>{entry.value}</Text>
-                  </View>
-                ))}
-              </View>
+          {!hasPdfSelection && (
+            <View style={[styles.warningBanner, { backgroundColor: `${Colors.brand.gold}15` }]}>
+              <FontAwesome name="info-circle" size={14} color={Colors.brand.gold} />
+              <Text style={[styles.warningText, { color: Colors.brand.gold }]}>
+                Select at least one section to include
+              </Text>
             </View>
           )}
         </View>
 
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-          <Text style={[styles.sectionTitle, { color: palette.text }]}>Privacy controls</Text>
-          {prefsLoading ? (
-            <View style={styles.inlineRow}>
-              <ActivityIndicator size="small" color={palette.tint} />
-              <Text style={[styles.helperText, { color: palette.muted }]}>Loading preferences...</Text>
-            </View>
-          ) : prefs ? (
-            <>
-              <View style={styles.toggleRow}>
-                <View style={styles.toggleCopy}>
-                  <Text style={[styles.helperText, { color: palette.text }]}>Share notes</Text>
-                  <Text style={[styles.helperText, { color: palette.muted }]}>Anonymized check-in notes</Text>
-                </View>
-                <Switch
-                  value={prefs.shareWellnessNotes}
-                  onValueChange={(value) => updatePrefs({ shareWellnessNotes: value })}
-                  trackColor={{ false: palette.border, true: palette.tint }}
-                  thumbColor={palette.card}
-                />
-              </View>
-              <View style={styles.toggleRow}>
-                <View style={styles.toggleCopy}>
-                  <Text style={[styles.helperText, { color: palette.text }]}>Share captures</Text>
-                  <Text style={[styles.helperText, { color: palette.muted }]}>Anonymized stool photos</Text>
-                </View>
-                <Switch
-                  value={prefs.shareWellnessCaptures}
-                  onValueChange={(value) => updatePrefs({ shareWellnessCaptures: value })}
-                  trackColor={{ false: palette.border, true: palette.tint }}
-                  thumbColor={palette.card}
-                />
-              </View>
-              <View style={styles.toggleRow}>
-                <View style={styles.toggleCopy}>
-                  <Text style={[styles.helperText, { color: palette.text }]}>Auto-blur photos</Text>
-                  <Text style={[styles.helperText, { color: palette.muted }]}>Hide backgrounds by default</Text>
-                </View>
-                <Switch
-                  value={prefs.autoBlurWellnessPhotos}
-                  onValueChange={(value) => updatePrefs({ autoBlurWellnessPhotos: value })}
-                  trackColor={{ false: palette.border, true: palette.tint }}
-                  thumbColor={palette.card}
-                />
-              </View>
-            </>
-          ) : null}
-          {prefsError ? (
-            <Text style={[styles.helperText, { color: palette.danger }]}>{prefsError}</Text>
-          ) : null}
+        {/* Footer Info */}
+        <View style={styles.footerInfo}>
+          <FontAwesome name="lock" size={12} color={palette.muted} />
+          <Text style={[styles.footerText, { color: palette.muted }]}>
+            Reports are generated securely and not stored on our servers
+          </Text>
         </View>
-
-        <Pressable onPress={loadDataset}>
-          <Text style={[styles.refreshText, { color: palette.muted }]}>Refresh summary</Text>
-        </Pressable>
       </ScrollView>
     </Screen>
   );
@@ -472,35 +553,66 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 16,
   },
-  header: {
-    gap: 6,
+  heroCard: {
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  kicker: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    fontWeight: '600',
+  heroIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  title: {
-    fontSize: 24,
+  heroContent: {
+    flex: 1,
+  },
+  heroTitle: {
+    fontSize: 22,
     fontWeight: '700',
+    color: '#fff',
   },
-  subtitle: {
+  heroSubtitle: {
     fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 4,
   },
   card: {
     borderWidth: 1,
     borderRadius: 18,
     padding: 16,
-    gap: 10,
+    gap: 14,
   },
-  sectionTitle: {
-    fontSize: 15,
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cardIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTitle: {
+    fontSize: 16,
     fontWeight: '600',
   },
-  fieldLabel: {
+  cardSubtitle: {
     fontSize: 12,
-    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  fieldSection: {
+    gap: 10,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '600',
     letterSpacing: 0.8,
   },
   chipRow: {
@@ -508,52 +620,177 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  inlineRow: {
+  sectionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  sectionToggle: {
+    width: '47%',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    gap: 6,
+  },
+  sectionToggleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sectionToggleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sectionToggleDesc: {
+    fontSize: 11,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 20,
+  },
+  loadingText: {
+    fontSize: 13,
+  },
+  errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    padding: 12,
+    borderRadius: 10,
   },
-  helperText: {
+  errorText: {
     fontSize: 12,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  summaryColumn: {
     flex: 1,
+  },
+  totalBadge: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  totalValue: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  totalLabel: {
+    fontSize: 13,
+  },
+  dataGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
-  summaryTile: {
+  dataItem: {
+    width: '31%',
     borderWidth: 1,
     borderRadius: 12,
     padding: 10,
-    gap: 4,
+    alignItems: 'center',
+    gap: 6,
   },
-  summaryLabel: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+  dataItemIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  summaryValue: {
+  dataItemCount: {
     fontSize: 18,
     fontWeight: '700',
   },
+  dataItemLabel: {
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  refreshButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  privacyContent: {
+    paddingTop: 4,
+  },
   toggleStack: {
-    gap: 12,
+    gap: 0,
   },
   toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+    paddingVertical: 10,
   },
   toggleCopy: {
     flex: 1,
     gap: 2,
   },
-  refreshText: {
-    textAlign: 'center',
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  toggleDesc: {
+    fontSize: 11,
+  },
+  divider: {
+    height: 1,
+  },
+  exportCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 16,
+    gap: 14,
+  },
+  exportPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  exportPreviewIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exportPreviewInfo: {
+    flex: 1,
+  },
+  exportPreviewTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  exportPreviewMeta: {
     fontSize: 12,
+    marginTop: 2,
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
+  },
+  warningText: {
+    fontSize: 12,
+    flex: 1,
+  },
+  footerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: 8,
+  },
+  footerText: {
+    fontSize: 11,
+    textAlign: 'center',
   },
 });

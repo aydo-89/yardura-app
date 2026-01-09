@@ -166,6 +166,7 @@ export default function Dashboard(props: DashboardClientProps) {
           stoolSampleId: media.stoolSampleId ?? null,
           stoolSampleView: media.stoolSampleView ?? null,
           assetType: media.assetType,
+          reviewStatus: media.reviewStatus ?? null,
         })),
       ),
     );

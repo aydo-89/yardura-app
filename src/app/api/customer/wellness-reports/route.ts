@@ -75,16 +75,21 @@ const formatReport = (
     report._count && typeof report._count.dailyCheckIns === "number"
       ? report._count.dailyCheckIns
       : null;
-  const flaggedMedia = mediaItems.filter((media: any) =>
-    isWellnessFlaggedMedia(
+  const flaggedMedia = mediaItems.filter((media: any) => {
+    const result =
+      media.analysisResult && typeof media.analysisResult === "object"
+        ? (media.analysisResult as Record<string, unknown>)
+        : null;
+    if (result?.customer_flag_cleared || result?.customer_cleared) return false;
+    return isWellnessFlaggedMedia(
       {
         analysisResult: media.analysisResult,
         visibilityState: media.visibilityState,
         reviewStatus: media.reviewStatus,
       },
       { requireVisible: true },
-    ),
-  );
+    );
+  });
   return {
     id: report.id,
     orgId: report.orgId,

@@ -97,11 +97,14 @@ export default function Eco() {
     return "linear-gradient(150deg, rgba(8,16,12,0.26) 0%, rgba(8,22,14,0.24) 45%, rgba(12,26,18,0.22) 100%)";
   }, [theme]);
 
+  // Dark fallback ensures white text is always readable if image fails to load
+  const fallbackBackground = "linear-gradient(135deg, #1a2820 0%, #0d1a14 50%, #0a100c 100%)";
+
   return (
     <section
       id="eco"
       className="landing-section section-modern relative overflow-hidden"
-      style={{ backgroundColor: theme === "dark" ? "#0a100c" : "#f8f5ee" }}
+      style={{ background: fallbackBackground }}
     >
       <div className="absolute inset-0">
         <Image
@@ -112,6 +115,7 @@ export default function Eco() {
           className="object-cover"
           sizes="100vw"
           style={{ objectPosition: "45% center" }}
+          unoptimized
         />
         <motion.div
           className="absolute inset-0"

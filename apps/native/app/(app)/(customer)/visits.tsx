@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Image,
   Linking,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,8 +14,10 @@ import {
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
+import BottomSheet from '@/components/ui/BottomSheet';
 import Button from '@/components/ui/Button';
 import ChoiceChip from '@/components/ui/ChoiceChip';
+import CollapsibleSection from '@/components/ui/CollapsibleSection';
 import Screen from '@/components/ui/Screen';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -31,20 +32,11 @@ import type { CustomerSummary, CustomerVisit } from '@/lib/api/types';
 type AvailabilityDay = {
   date: string;
   available: boolean;
-  totalCapacity?: number;
-  bookedCount?: number;
-  reason?: string | null;
 };
 
 type ArrivalWindow = 'morning' | 'afternoon' | 'flexible';
 
-type WindowOption = {
-  id: ArrivalWindow;
-  label: string;
-  window: string;
-};
-
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 const toDateKey = (date: Date) => {
   const year = date.getFullYear();
@@ -55,89 +47,74 @@ const toDateKey = (date: Date) => {
 
 const toVisitKey = (value: string) => toDateKey(parseDateInput(value));
 
-const formatDate = (value?: string | null) => {
+const formatDate = (value?: string | null, short = false) => {
   if (!value) return 'Not scheduled';
   const date = parseDateInput(value);
   if (Number.isNaN(date.getTime())) return 'Not scheduled';
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: 'short',
+  return date.toLocaleDateString('en-US', {
+    weekday: short ? undefined : 'short',
     month: 'short',
     day: 'numeric',
-  };
-  return date.toLocaleDateString('en-US', options);
+  });
 };
 
-const formatWindowLabel = (visit: CustomerVisit) => {
-  if (visit.preferredTimeWindow) {
-    const normalized = visit.preferredTimeWindow.toLowerCase();
-    if (normalized.includes('morning')) return 'Morning window';
-    if (normalized.includes('afternoon')) return 'Afternoon window';
-    if (normalized.includes('flex')) return 'Flexible window';
-    return visit.preferredTimeWindow;
-  }
-  if (visit.preferredTimeWindowSlug) {
-    const slug = visit.preferredTimeWindowSlug.replace(/_/g, '-').toLowerCase();
-    if (slug.includes('morning')) return 'Morning window';
-    if (slug.includes('afternoon')) return 'Afternoon window';
-    return 'Flexible window';
-  }
+const formatRelative = (value?: string | null) => {
+  if (!value) return null;
+  const date = parseDateInput(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+  const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff > 1 && diff <= 7) return `In ${diff} days`;
   return null;
 };
-
-const formatCurrencyFromCents = (value: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(value / 100);
 
 const TIP_OPTIONS = [
   { label: 'No tip', value: 0 },
   { label: '$2', value: 200 },
   { label: '$5', value: 500 },
   { label: '$10', value: 1000 },
-  { label: '$15', value: 1500 },
 ] as const;
-const MAX_TIP_CENTS = 5000;
+
+const formatCurrency = (cents: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
 
 export default function CustomerVisits() {
   const { session } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+
   const [visits, setVisits] = useState<CustomerVisit[]>([]);
-  const [customerZip, setCustomerZip] = useState<string | null>(null);
   const [summary, setSummary] = useState<CustomerSummary | null>(null);
+  const [customerZip, setCustomerZip] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [rescheduleOpen, setRescheduleOpen] = useState(false);
-  const [skipOpen, setSkipOpen] = useState(false);
+  // Sheet states
+  const [rescheduleSheet, setRescheduleSheet] = useState(false);
+  const [skipSheet, setSkipSheet] = useState(false);
+  const [ratingSheet, setRatingSheet] = useState(false);
   const [activeVisit, setActiveVisit] = useState<CustomerVisit | null>(null);
+
+  // Reschedule state
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
-  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedWindow, setSelectedWindow] = useState<ArrivalWindow>('flexible');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [ratingOpen, setRatingOpen] = useState(false);
-  const [ratingVisit, setRatingVisit] = useState<CustomerVisit | null>(null);
+
+  // Rating state
   const [ratingScore, setRatingScore] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
-  const [ratingTipCents, setRatingTipCents] = useState(0);
-  const [ratingCustomTip, setRatingCustomTip] = useState('');
+  const [ratingTip, setRatingTip] = useState(0);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
-  const [ratingError, setRatingError] = useState<string | null>(null);
 
   const contactCopy = useMemo(() => getContactCopy(summary?.contact), [summary?.contact]);
-
-  const windowOptions = useMemo<WindowOption[]>(
-    () => [
-      { id: 'morning', label: 'Morning', window: '8:00 - 12:00' },
-      { id: 'afternoon', label: 'Afternoon', window: '12:00 - 4:00' },
-      { id: 'flexible', label: 'Flexible', window: contactCopy.etaLabel },
-    ],
-    [contactCopy.etaLabel],
-  );
 
   const maybeRedirectToSetup = useCallback((err: unknown) => {
     if (isCustomerSetupRequired(err)) {
@@ -163,57 +140,41 @@ export default function CustomerVisits() {
       setCustomerZip(summaryPayload.customer?.zip ?? null);
     } catch (err) {
       if (maybeRedirectToSetup(err)) return;
-      const message = err instanceof Error ? err.message : 'Unable to load visits.';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'Unable to load visits.');
     } finally {
       setLoading(false);
     }
   }, [maybeRedirectToSetup, session?.token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData]),
-  );
+  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   const todayKey = toDateKey(new Date());
+
   const upcomingVisits = useMemo(() => {
     return visits
-      .filter(
-        (visit) =>
-          visit.status === 'SCHEDULED' &&
-          toVisitKey(visit.scheduledDate) >= todayKey,
-      )
-      .sort(
-        (a, b) =>
-          parseDateInput(a.scheduledDate).getTime() -
-          parseDateInput(b.scheduledDate).getTime(),
-      );
+      .filter((v) => v.status === 'SCHEDULED' && toVisitKey(v.scheduledDate) >= todayKey)
+      .sort((a, b) => parseDateInput(a.scheduledDate).getTime() - parseDateInput(b.scheduledDate).getTime());
   }, [todayKey, visits]);
 
   const pastVisits = useMemo(() => {
     return visits
-      .filter((visit) => toVisitKey(visit.scheduledDate) < todayKey)
-      .sort(
-        (a, b) =>
-          parseDateInput(b.scheduledDate).getTime() -
-          parseDateInput(a.scheduledDate).getTime(),
-      );
+      .filter((v) => toVisitKey(v.scheduledDate) < todayKey)
+      .sort((a, b) => parseDateInput(b.scheduledDate).getTime() - parseDateInput(a.scheduledDate).getTime());
   }, [todayKey, visits]);
 
-  const availabilityMap = useMemo(() => {
-    const map = new Map<string, AvailabilityDay>();
-    availability.forEach((entry) => {
-      map.set(entry.date, entry);
-    });
-    return map;
-  }, [availability]);
+  const unratedVisits = useMemo(() => {
+    return pastVisits.filter((v) => v.status === 'COMPLETED' && !v.rating);
+  }, [pastVisits]);
 
+  const primaryVisit = upcomingVisits[0] ?? null;
+  const hasService = summary?.wellnessAccess?.hasActiveService ?? false;
+  const showTimeline = hasService || visits.length > 0;
+
+  // Calendar data for reschedule
+  const availabilityMap = useMemo(() => new Map(availability.map((a) => [a.date, a])), [availability]);
   const calendarDays = useMemo(() => {
-    if (availability.length === 0) return [] as Date[];
-    const sorted = [...availability]
-      .map((entry) => entry.date)
-      .sort();
+    if (availability.length === 0) return [];
+    const sorted = [...availability].map((e) => e.date).sort();
     const first = parseDateInput(sorted[0]);
     const last = parseDateInput(sorted[sorted.length - 1]);
     const start = new Date(first);
@@ -229,105 +190,59 @@ export default function CustomerVisits() {
     return days;
   }, [availability]);
 
-  const openReschedule = (visit: CustomerVisit) => {
-    setActiveVisit(visit);
-    setRescheduleOpen(true);
-    setActionError(null);
-  };
-
-  const openSkip = (visit: CustomerVisit) => {
-    setActiveVisit(visit);
-    setSkipOpen(true);
-    setActionError(null);
-  };
-
-  const openRating = (visit: CustomerVisit) => {
-    setRatingVisit(visit);
-    setRatingScore(visit.rating?.score ?? 0);
-    setRatingComment(visit.rating?.comment ?? '');
-    setRatingTipCents(0);
-    setRatingCustomTip('');
-    setRatingError(null);
-    setRatingOpen(true);
-  };
-
-  const closeRating = () => {
-    setRatingOpen(false);
-    setRatingVisit(null);
-    setRatingScore(0);
-    setRatingComment('');
-    setRatingTipCents(0);
-    setRatingCustomTip('');
-    setRatingError(null);
-  };
-
-  const handleSelectTip = (value: number) => {
-    setRatingTipCents(value);
-    setRatingCustomTip('');
-  };
-
-  const handleCustomTipChange = (value: string) => {
-    setRatingCustomTip(value);
-    const numeric = Number(value.replace(/[^0-9.]/g, ''));
-    if (!Number.isFinite(numeric)) {
-      setRatingTipCents(0);
-      return;
-    }
-    const cents = Math.min(Math.round(numeric * 100), MAX_TIP_CENTS);
-    setRatingTipCents(cents);
-  };
-
   const loadAvailability = useCallback(async () => {
-    if (!customerZip) {
-      setAvailabilityError('Add a service address to unlock rescheduling.');
-      return;
-    }
+    if (!customerZip) return;
     setAvailabilityLoading(true);
-    setAvailabilityError(null);
+    setActionError(null);
     try {
       const data = await apiRequest<{ availability: AvailabilityDay[] }>(
         `/api/schedule/availability?zipCode=${encodeURIComponent(customerZip)}&days=30`,
       );
-      const list = data.availability ?? [];
-      setAvailability(list);
-      const firstAvailable = list.find((entry) => entry.available);
-      if (firstAvailable) {
-        setSelectedDate(firstAvailable.date);
-      }
+      setAvailability(data.availability ?? []);
+      const first = data.availability?.find((a) => a.available);
+      if (first) setSelectedDate(first.date);
     } catch (err) {
-      if (maybeRedirectToSetup(err)) return;
-      const message = err instanceof Error ? err.message : 'Unable to load availability.';
-      setAvailabilityError(message);
+      setActionError(err instanceof Error ? err.message : 'Unable to load availability.');
     } finally {
       setAvailabilityLoading(false);
     }
-  }, [customerZip, maybeRedirectToSetup]);
+  }, [customerZip]);
+
+  const openReschedule = (visit: CustomerVisit) => {
+    setActiveVisit(visit);
+    setActionError(null);
+    setRescheduleSheet(true);
+    if (availability.length === 0) loadAvailability();
+  };
+
+  const openSkip = (visit: CustomerVisit) => {
+    setActiveVisit(visit);
+    setActionError(null);
+    setSkipSheet(true);
+  };
+
+  const openRating = (visit: CustomerVisit) => {
+    setActiveVisit(visit);
+    setRatingScore(visit.rating?.score ?? 0);
+    setRatingComment('');
+    setRatingTip(0);
+    setRatingSheet(true);
+  };
 
   const handleReschedule = async () => {
-    if (!activeVisit) return;
-    if (!selectedDate) {
-      setActionError('Select a new date to reschedule.');
-      return;
-    }
+    if (!activeVisit || !selectedDate) return;
     setActionLoading(true);
     setActionError(null);
     try {
       await apiRequest('/api/schedule/request', {
         method: 'POST',
-        token: session?.token ?? undefined,
-        body: {
-          visitId: activeVisit.id,
-          action: 'reschedule',
-          nextVisitAt: selectedDate,
-          preferredWindow: selectedWindow,
-        },
+        token: session?.token,
+        body: { visitId: activeVisit.id, action: 'reschedule', nextVisitAt: selectedDate, preferredWindow: selectedWindow },
       });
-      setRescheduleOpen(false);
-      await loadData();
+      setRescheduleSheet(false);
+      loadData();
     } catch (err) {
-      if (maybeRedirectToSetup(err)) return;
-      const message = err instanceof Error ? err.message : 'Unable to reschedule right now.';
-      setActionError(message);
+      setActionError(err instanceof Error ? err.message : 'Unable to reschedule.');
     } finally {
       setActionLoading(false);
     }
@@ -340,567 +255,396 @@ export default function CustomerVisits() {
     try {
       await apiRequest('/api/schedule/request', {
         method: 'POST',
-        token: session?.token ?? undefined,
-        body: {
-          visitId: activeVisit.id,
-          action: 'skip',
-        },
+        token: session?.token,
+        body: { visitId: activeVisit.id, action: 'skip' },
       });
-      setSkipOpen(false);
-      await loadData();
+      setSkipSheet(false);
+      loadData();
     } catch (err) {
-      if (maybeRedirectToSetup(err)) return;
-      const message = err instanceof Error ? err.message : 'Unable to skip right now.';
-      setActionError(message);
+      setActionError(err instanceof Error ? err.message : 'Unable to skip.');
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleSubmitRating = async () => {
-    if (!ratingVisit || ratingScore <= 0) return;
+    if (!activeVisit || ratingScore <= 0) return;
     setRatingSubmitting(true);
-    setRatingError(null);
     try {
-      await apiRequest(`/api/mobile/customer/visits/${ratingVisit.id}/rating`, {
+      await apiRequest(`/api/mobile/customer/visits/${activeVisit.id}/rating`, {
         method: 'POST',
-        token: session?.token ?? undefined,
-        body: {
-          score: ratingScore,
-          comment: ratingComment.trim() ? ratingComment.trim() : null,
-          tipCents: ratingTipCents,
-        },
+        token: session?.token,
+        body: { score: ratingScore, comment: ratingComment.trim() || null, tipCents: ratingTip },
       });
-      closeRating();
-      await loadData();
+      setRatingSheet(false);
+      loadData();
     } catch (err) {
-      if (maybeRedirectToSetup(err)) return;
-      const message = err instanceof Error ? err.message : 'Unable to submit rating.';
-      setRatingError(message);
+      setActionError(err instanceof Error ? err.message : 'Unable to submit rating.');
     } finally {
       setRatingSubmitting(false);
     }
   };
 
-  const primaryVisit = upcomingVisits[0] ?? null;
-  const heroBackground =
-    colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
-  const access = summary?.wellnessAccess ?? null;
-  const hasService = access?.hasActiveService ?? false;
-  const showServiceTimeline = hasService || visits.length > 0;
-  const scansRemaining = access
-    ? Math.max(0, access.limits.scansPerMonth - access.usage.scansCount)
-    : null;
-  const chatsRemaining = access
-    ? Math.max(0, access.limits.chatsPerMonth - access.usage.chatsCount)
-    : null;
-  const planLabel = access?.tier === 'PREMIUM' ? 'Premium wellness' : 'Free wellness';
-  const scansLabel = access?.tier === 'PREMIUM' ? 'Unlimited' : `${scansRemaining ?? 0}`;
-  const chatsLabel = access?.tier === 'PREMIUM' ? 'Unlimited' : `${chatsRemaining ?? 0}`;
-  const ratingScooper = ratingVisit?.scooper ?? null;
+  const heroBackground = colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Compact hero */}
         <View style={[styles.hero, { backgroundColor: heroBackground }]}>
-          <View
-            style={[
-              styles.heroGlow,
-              { backgroundColor: palette.tint, opacity: colorScheme === 'light' ? 0.25 : 0.4 },
-            ]}
-          />
-          <View
-            style={[
-              styles.heroGlowSecondary,
-              { backgroundColor: palette.accent, opacity: colorScheme === 'light' ? 0.2 : 0.3 },
-            ]}
-          />
-          <Text style={[styles.heroEyebrow, { color: 'rgba(255,255,255,0.65)' }]}>
-            Visits
-          </Text>
-          <Text style={styles.heroTitleText}>Service timeline</Text>
-          <Text style={[styles.heroSubtitle, { color: 'rgba(255,255,255,0.7)' }]}>
-            {showServiceTimeline
-              ? 'Upcoming appointments and recent service history.'
-              : 'Wellness plans, scooping options, and care coverage.'}
-          </Text>
+          <View style={[styles.heroGlow, { backgroundColor: palette.tint, opacity: 0.25 }]} />
+          <Text style={[styles.heroEyebrow, { color: 'rgba(255,255,255,0.65)' }]}>Visits</Text>
+          <Text style={styles.heroTitle}>Service timeline</Text>
         </View>
 
         {loading ? (
-          <View style={styles.inlineRow}>
+          <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color={palette.tint} />
-            <Text style={[styles.cardBody, { color: palette.muted }]}>Loading visits...</Text>
+            <Text style={[styles.loadingText, { color: palette.muted }]}>Loading...</Text>
           </View>
         ) : error ? (
-          <Text style={[styles.cardBody, { color: palette.danger }]}>{error}</Text>
-        ) : !showServiceTimeline ? (
+          <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
+        ) : !showTimeline ? (
+          // No service - show plans
           <View style={styles.section}>
-            <View style={[styles.planCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-              <View style={styles.planHeader}>
-                <View style={styles.planHeaderCopy}>
-                  <Text style={[styles.planTitle, { color: palette.text }]}>{planLabel}</Text>
-                  <Text style={[styles.cardBody, { color: palette.muted }]}>
-                    {access?.tier === 'PREMIUM'
-                      ? 'Unlimited scans + AI chat'
-                      : '5 scans + 12 chats per month'}
-                  </Text>
-                </View>
-                <View style={[styles.planBadge, { backgroundColor: palette.tint }]}>
-                  <Text style={styles.planBadgeText}>
-                    {access?.tier === 'PREMIUM' ? 'Premium' : 'Free'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.planStats}>
-                <View style={[styles.planStat, { borderColor: palette.border }]}>
-                  <Text style={[styles.planStatLabel, { color: palette.muted }]}>Scans left</Text>
-                  <Text style={[styles.planStatValue, { color: palette.text }]}>{scansLabel}</Text>
-                </View>
-                <View style={[styles.planStat, { borderColor: palette.border }]}>
-                  <Text style={[styles.planStatLabel, { color: palette.muted }]}>Chat left</Text>
-                  <Text style={[styles.planStatValue, { color: palette.text }]}>{chatsLabel}</Text>
-                </View>
-              </View>
-              <Text style={[styles.cardBody, { color: palette.muted }]}>
-                Sign up for scooping by 4/30/26 to unlock a free year of premium insights.
-              </Text>
-              <Button
-                title={access?.tier === 'PREMIUM' ? 'Manage wellness' : 'Upgrade wellness'}
-                onPress={() => router.push('/(app)/(customer)/wellness-upgrade' as any)}
-              />
-            </View>
-
-            <View style={[styles.planCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-              <View style={styles.planHeader}>
-                <View style={styles.planHeaderCopy}>
-                  <Text style={[styles.planTitle, { color: palette.text }]}>Scooping service</Text>
-                  <Text style={[styles.cardBody, { color: palette.muted }]}>
-                    Pro-verified cleanup with auto-capture wellness timelines.
-                  </Text>
-                </View>
-                <FontAwesome name="paw" size={20} color={palette.tint} />
-              </View>
-              <View style={styles.planList}>
-                <Text style={[styles.planBullet, { color: palette.muted }]}>• Auto-capture stool samples</Text>
-                <Text style={[styles.planBullet, { color: palette.muted }]}>• Consistent visit cadence</Text>
-                <Text style={[styles.planBullet, { color: palette.muted }]}>• Vet-ready reporting</Text>
-              </View>
-              <Button title="Get scooping quote" onPress={() => Linking.openURL(`${API_BASE_URL}/quote`)} />
-            </View>
-          </View>
-        ) : primaryVisit ? (
-          <View style={[styles.heroCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-          >
-            <Text style={[styles.heroTitle, { color: palette.text }]}>Next visit</Text>
-            <Text style={[styles.heroDate, { color: palette.text }]}>
-              {formatDate(primaryVisit.scheduledDate)}
-            </Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}
+            <Pressable
+              style={[styles.planCard, { backgroundColor: palette.card, borderColor: palette.border }]}
+              onPress={() => Linking.openURL(`${API_BASE_URL}/quote`)}
             >
-              {primaryVisit.serviceType?.toLowerCase() ?? 'service'} • {primaryVisit.status.toLowerCase()}
-            </Text>
-            {formatWindowLabel(primaryVisit) ? (
-              <Text style={[styles.cardBody, { color: palette.muted }]}>
-                {formatWindowLabel(primaryVisit)}
-              </Text>
-            ) : null}
-            <View style={styles.heroActions}>
-              <Button title="Reschedule" onPress={() => openReschedule(primaryVisit)} />
-              <Button title="Skip" onPress={() => openSkip(primaryVisit)} variant="secondary" />
-            </View>
+              <View style={styles.planRow}>
+                <FontAwesome name="paw" size={24} color={palette.tint} />
+                <View style={styles.planContent}>
+                  <Text style={[styles.planTitle, { color: palette.text }]}>Get scooping service</Text>
+                  <Text style={[styles.planSubtitle, { color: palette.muted }]}>
+                    Pro cleanup with auto-capture wellness tracking
+                  </Text>
+                </View>
+                <FontAwesome name="chevron-right" size={14} color={palette.muted} />
+              </View>
+            </Pressable>
           </View>
         ) : (
-          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}
-          >
-            <Text style={[styles.cardTitle, { color: palette.text }]}>No visits yet</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}
-            >
-              Book scooping to unlock pro-verified wellness capture.
-            </Text>
-            <Button title="Start scooping service" onPress={() => Linking.openURL(`${API_BASE_URL}/quote`)} />
-          </View>
-        )}
-
-        {hasService ? (
-          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Service plan & add-ons</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Update dogs, yard areas, and service add-ons for future visits.
-            </Text>
-            <Button title="Manage plan" onPress={() => router.push('/(app)/(customer)/service-plan' as any)} />
-          </View>
-        ) : null}
-
-        <View style={styles.section}>
-          <Pressable
-            onPress={() => router.push('/(app)/(customer)/wellness-poop-map' as any)}
-            style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}
-          >
-            <View style={styles.inlineRow}>
-              <FontAwesome name="map-marker" size={16} color={palette.tint} />
-              <Text style={[styles.cardTitle, { color: palette.text }]}>Poop map</Text>
-            </View>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              See yard hotspots to focus scooping and track patterns over time.
-            </Text>
-          </Pressable>
-        </View>
-
-        {showServiceTimeline && upcomingVisits.length > 1 ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Upcoming</Text>
-            {upcomingVisits.slice(1).map((visit) => (
-              <View
-                key={visit.id}
-                style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}
+          <>
+            {/* Unrated visits prompt */}
+            {unratedVisits.length > 0 && (
+              <Pressable
+                style={[styles.alertBanner, { backgroundColor: `${palette.tint}15`, borderColor: palette.tint }]}
+                onPress={() => openRating(unratedVisits[0])}
               >
-                <Text style={[styles.cardTitle, { color: palette.text }]}>
-                  {formatDate(visit.scheduledDate)}
+                <FontAwesome name="star-o" size={16} color={palette.tint} />
+                <Text style={[styles.alertText, { color: palette.text }]}>
+                  Rate your last visit and earn care credits
                 </Text>
-                <Text style={[styles.cardBody, { color: palette.muted }]}
-                >
-                  {visit.serviceType?.toLowerCase() ?? 'service'} • {visit.status.toLowerCase()}
-                </Text>
-                {formatWindowLabel(visit) ? (
-                  <Text style={[styles.cardBody, { color: palette.muted }]}>
-                    {formatWindowLabel(visit)}
-                  </Text>
-                ) : null}
-                <View style={styles.visitActions}>
-                  <Pressable
-                    style={[styles.visitActionChip, { borderColor: palette.border }]}
-                    onPress={() => openReschedule(visit)}
-                  >
-                    <Text style={[styles.visitActionText, { color: palette.text }]}>
-                      Reschedule
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.visitActionChip, { borderColor: palette.border }]}
-                    onPress={() => openSkip(visit)}
-                  >
-                    <Text style={[styles.visitActionText, { color: palette.danger }]}>
-                      Skip
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {showServiceTimeline && pastVisits.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Recent visits</Text>
-            {pastVisits.slice(0, 6).map((visit) => (
-              <View
-                key={visit.id}
-                style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}
-              >
-                <Text style={[styles.cardTitle, { color: palette.text }]}>
-                  {formatDate(visit.scheduledDate)}
-                </Text>
-                <Text style={[styles.cardBody, { color: palette.muted }]}
-                >
-                  {visit.status.toLowerCase()} • {visit.serviceType?.toLowerCase() ?? 'service'}
-                </Text>
-                <Text style={[styles.cardBody, { color: palette.muted }]}
-                >
-                  Samples: {visit.insightscoopCount} • Flagged: {visit.flaggedMediaCount}
-                </Text>
-                {visit.insight?.wellnessFlag ? (
-                  <Text style={[styles.cardBody, { color: palette.danger }]}
-                  >
-                    Wellness alert: {visit.insight.flagReason ?? 'Needs review'}
-                  </Text>
-                ) : null}
-                {visit.rating ? (
-                  <Text style={[styles.cardBody, { color: palette.muted }]}>
-                    Rated {visit.rating.score}/5
-                  </Text>
-                ) : visit.status === 'COMPLETED' ? (
-                  <View style={styles.ratingAction}>
-                    <Button title="Rate visit" onPress={() => openRating(visit)} />
-                  </View>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        ) : null}
-      </ScrollView>
-
-      <Modal
-        visible={rescheduleOpen}
-        animationType="slide"
-        transparent
-        onShow={() => {
-          if (!availability.length) {
-            loadAvailability();
-          }
-        }}
-        onRequestClose={() => setRescheduleOpen(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.modalCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: palette.text }]}>Reschedule visit</Text>
-              <Pressable onPress={() => setRescheduleOpen(false)}>
-                <Text style={[styles.modalClose, { color: palette.muted }]}>Close</Text>
+                <FontAwesome name="chevron-right" size={12} color={palette.tint} />
               </Pressable>
-            </View>
-
-            {availabilityLoading ? (
-              <View style={styles.inlineRow}>
-                <ActivityIndicator size="small" color={palette.tint} />
-                <Text style={[styles.cardBody, { color: palette.muted }]}>Loading availability...</Text>
-              </View>
-            ) : availabilityError ? (
-              <Text style={[styles.cardBody, { color: palette.danger }]}>{availabilityError}</Text>
-            ) : (
-              <>
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  Select a new date and preferred window. {contactCopy.confirmLabel}
-                </Text>
-                <View style={styles.calendarHeader}>
-                  {DAY_LABELS.map((label) => (
-                    <Text key={label} style={[styles.calendarLabel, { color: palette.muted }]}
-                    >
-                      {label}
-                    </Text>
-                  ))}
-                </View>
-                <View style={styles.calendarGrid}>
-                  {calendarDays.map((date) => {
-                    const key = toDateKey(date);
-                    const entry = availabilityMap.get(key);
-                    const available = entry?.available ?? false;
-                    const isSelected = selectedDate === key;
-                    const isToday = key === todayKey;
-                    return (
-                      <Pressable
-                        key={key}
-                        disabled={!available}
-                        onPress={() => available && setSelectedDate(key)}
-                        style={({ pressed }) => [
-                          styles.calendarCell,
-                          {
-                            borderColor: isSelected
-                              ? palette.tint
-                              : isToday
-                                ? palette.accent
-                                : palette.border,
-                            backgroundColor: isSelected
-                              ? palette.tint
-                              : available
-                                ? palette.background
-                                : palette.card,
-                            opacity: available ? 1 : 0.4,
-                          },
-                          pressed && available ? { opacity: 0.7 } : null,
-                        ]}
-                      >
-                        <Text
-                          style={{
-                            color: isSelected ? '#FFFFFF' : palette.text,
-                            fontWeight: '600',
-                          }}
-                        >
-                          {date.getDate()}
-                        </Text>
-                        {isToday ? (
-                          <View style={[styles.todayDot, { backgroundColor: palette.accent }]} />
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-
-                <Text style={[styles.inputLabel, { color: palette.text }]}>Preferred window</Text>
-                <View style={styles.rowWrap}>
-                  {windowOptions.map((option) => (
-                    <ChoiceChip
-                      key={option.id}
-                      label={option.label}
-                      selected={selectedWindow === option.id}
-                      onPress={() => setSelectedWindow(option.id)}
-                    />
-                  ))}
-                </View>
-                {selectedDate ? (
-                  <Text style={[styles.cardBody, { color: palette.muted }]}>
-                    Selected: {formatDate(selectedDate)} • {windowOptions.find((option) => option.id === selectedWindow)?.window}
-                  </Text>
-                ) : null}
-              </>
             )}
 
-            {actionError ? (
-              <Text style={[styles.error, { color: palette.danger }]}>{actionError}</Text>
-            ) : null}
-
-            <View style={styles.modalActions}>
-              <Button
-                title={actionLoading ? 'Submitting...' : 'Submit request'}
-                onPress={handleReschedule}
-                disabled={actionLoading || !selectedDate}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={skipOpen}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setSkipOpen(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.modalCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-          >
-            <Text style={[styles.modalTitle, { color: palette.text }]}>Skip this visit?</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}
-            >
-              We will remove this visit from the schedule. You can reschedule anytime.
-            </Text>
-            {actionError ? (
-              <Text style={[styles.error, { color: palette.danger }]}>{actionError}</Text>
-            ) : null}
-            <View style={styles.modalActionsRow}>
-              <Button title="Keep visit" onPress={() => setSkipOpen(false)} variant="secondary" />
-              <Button
-                title={actionLoading ? 'Skipping...' : 'Skip visit'}
-                onPress={handleSkip}
-                disabled={actionLoading}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={ratingOpen}
-        animationType="fade"
-        transparent
-        onRequestClose={closeRating}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.modalCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: palette.text }]}>Rate this visit</Text>
-              <Pressable onPress={closeRating}>
-                <Text style={[styles.modalClose, { color: palette.muted }]}>Close</Text>
-              </Pressable>
-            </View>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Share feedback and earn care credits for completed visits.
-            </Text>
-            {ratingScooper ? (
-              <View style={styles.scooperRow}>
-                {ratingScooper.photoUrl ? (
-                  <Image source={{ uri: ratingScooper.photoUrl }} style={styles.scooperAvatar} />
-                ) : (
-                  <View style={[styles.scooperAvatar, { backgroundColor: palette.border }]}>
-                    <Text style={[styles.scooperInitials, { color: palette.text }]}>
-                      {ratingScooper.name
-                        .split(' ')
-                        .map((part) => part[0])
-                        .join('')
-                        .slice(0, 2)
-                        .toUpperCase()}
+            {/* Primary visit card */}
+            {primaryVisit ? (
+              <View style={[styles.nextVisitCard, { backgroundColor: palette.card, borderColor: palette.tint }]}>
+                <View style={styles.nextVisitHeader}>
+                  <View>
+                    <Text style={[styles.nextVisitLabel, { color: palette.muted }]}>Next visit</Text>
+                    <Text style={[styles.nextVisitDate, { color: palette.text }]}>
+                      {formatDate(primaryVisit.scheduledDate)}
+                    </Text>
+                    {formatRelative(primaryVisit.scheduledDate) && (
+                      <View style={[styles.relativeBadge, { backgroundColor: palette.tint }]}>
+                        <Text style={styles.relativeBadgeText}>
+                          {formatRelative(primaryVisit.scheduledDate)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.nextVisitMeta}>
+                    <Text style={[styles.metaText, { color: palette.muted }]}>
+                      {primaryVisit.serviceType?.toLowerCase() ?? 'scooping'}
                     </Text>
                   </View>
-                )}
-                <View style={styles.scooperMeta}>
-                  <Text style={[styles.scooperName, { color: palette.text }]}>
-                    {ratingScooper.name}
-                  </Text>
-                  <Text style={[styles.scooperSubtext, { color: palette.muted }]}>
-                    {ratingScooper.avgRating
-                      ? `${ratingScooper.avgRating.toFixed(1)} ★ (${ratingScooper.ratingCount ?? 0} ratings)`
-                      : 'New scooper'}
-                  </Text>
-                  <Text style={[styles.scooperSubtext, { color: palette.muted }]}>
-                    {ratingScooper.completedVisits} visits completed
-                  </Text>
+                </View>
+                <View style={styles.inlineActions}>
+                  <Pressable
+                    style={[styles.inlineAction, { borderColor: palette.border }]}
+                    onPress={() => openReschedule(primaryVisit)}
+                  >
+                    <FontAwesome name="calendar" size={12} color={palette.tint} />
+                    <Text style={[styles.inlineActionText, { color: palette.text }]}>Reschedule</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.inlineAction, { borderColor: palette.border }]}
+                    onPress={() => openSkip(primaryVisit)}
+                  >
+                    <FontAwesome name="times" size={12} color={palette.danger} />
+                    <Text style={[styles.inlineActionText, { color: palette.danger }]}>Skip</Text>
+                  </Pressable>
                 </View>
               </View>
-            ) : null}
-            <View style={styles.ratingStars}>
-              {Array.from({ length: 5 }).map((_, index) => {
-                const value = index + 1;
-                const isActive = ratingScore >= value;
-                return (
-                  <Pressable key={value} onPress={() => setRatingScore(value)} style={styles.starButton}>
-                    <Text style={[styles.starText, { color: isActive ? palette.tint : palette.muted }]}>★</Text>
-                  </Pressable>
-                );
-              })}
+            ) : (
+              <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                <Text style={[styles.emptyText, { color: palette.muted }]}>No upcoming visits scheduled.</Text>
+                <Button title="Schedule now" onPress={() => Linking.openURL(`${API_BASE_URL}/quote`)} />
+              </View>
+            )}
+
+            {/* Timeline for upcoming visits */}
+            {upcomingVisits.length > 1 && (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: palette.text }]}>Upcoming</Text>
+                <View style={styles.timeline}>
+                  {upcomingVisits.slice(1, 6).map((visit, index) => (
+                    <Pressable
+                      key={visit.id}
+                      style={styles.timelineItem}
+                      onPress={() => openReschedule(visit)}
+                    >
+                      <View style={styles.timelineLeft}>
+                        <View style={[styles.timelineDot, { backgroundColor: palette.tint }]} />
+                        {index < upcomingVisits.length - 2 && (
+                          <View style={[styles.timelineLine, { backgroundColor: palette.border }]} />
+                        )}
+                      </View>
+                      <View style={[styles.timelineContent, { borderColor: palette.border }]}>
+                        <Text style={[styles.timelineDate, { color: palette.text }]}>
+                          {formatDate(visit.scheduledDate, true)}
+                        </Text>
+                        <Text style={[styles.timelineMeta, { color: palette.muted }]}>
+                          {visit.serviceType?.toLowerCase() ?? 'scooping'}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Past visits - collapsible */}
+            {pastVisits.length > 0 && (
+              <View style={styles.section}>
+                <CollapsibleSection
+                  title={`Past visits (${pastVisits.length})`}
+                  defaultOpen={false}
+                >
+                  {pastVisits.slice(0, 5).map((visit) => (
+                    <View
+                      key={visit.id}
+                      style={[styles.pastVisitCard, { backgroundColor: palette.card, borderColor: palette.border }]}
+                    >
+                      <View style={styles.pastVisitHeader}>
+                        <Text style={[styles.pastVisitDate, { color: palette.text }]}>
+                          {formatDate(visit.scheduledDate)}
+                        </Text>
+                        <View style={[styles.statusPill, { borderColor: palette.border }]}>
+                          <Text style={[styles.statusText, { color: palette.muted }]}>
+                            {visit.status.toLowerCase()}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.pastVisitMeta}>
+                        <Text style={[styles.metaText, { color: palette.muted }]}>
+                          Samples: {visit.insightscoopCount ?? 0}
+                        </Text>
+                        {visit.flaggedMediaCount > 0 && (
+                          <Text style={[styles.metaText, { color: Colors.brand.gold }]}>
+                            Flags: {visit.flaggedMediaCount}
+                          </Text>
+                        )}
+                      </View>
+                      {visit.status === 'COMPLETED' && !visit.rating && (
+                        <Pressable
+                          style={[styles.rateLink, { borderColor: palette.tint }]}
+                          onPress={() => openRating(visit)}
+                        >
+                          <Text style={[styles.rateLinkText, { color: palette.tint }]}>Rate this visit</Text>
+                        </Pressable>
+                      )}
+                      {visit.rating && (
+                        <Text style={[styles.ratedText, { color: palette.muted }]}>
+                          Rated {visit.rating.score}/5
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </CollapsibleSection>
+              </View>
+            )}
+
+            {/* Quick links */}
+            <View style={styles.section}>
+              <Pressable
+                style={[styles.linkCard, { borderColor: palette.border }]}
+                onPress={() => router.push('/(app)/(customer)/wellness-poop-map' as any)}
+              >
+                <FontAwesome name="map-marker" size={16} color={palette.tint} />
+                <Text style={[styles.linkText, { color: palette.text }]}>View poop map</Text>
+                <FontAwesome name="chevron-right" size={12} color={palette.muted} />
+              </Pressable>
+              {hasService && (
+                <Pressable
+                  style={[styles.linkCard, { borderColor: palette.border }]}
+                  onPress={() => router.push('/(app)/(customer)/service-plan' as any)}
+                >
+                  <FontAwesome name="cog" size={16} color={palette.tint} />
+                  <Text style={[styles.linkText, { color: palette.text }]}>Manage service plan</Text>
+                  <FontAwesome name="chevron-right" size={12} color={palette.muted} />
+                </Pressable>
+              )}
             </View>
-            <TextInput
-              style={[
-                styles.ratingInput,
-                { borderColor: palette.border, color: palette.text },
-              ]}
-              placeholder="Optional note"
-              placeholderTextColor={palette.muted}
-              value={ratingComment}
-              onChangeText={setRatingComment}
-              multiline
-              numberOfLines={3}
+          </>
+        )}
+      </ScrollView>
+
+      {/* Reschedule sheet */}
+      <BottomSheet visible={rescheduleSheet} onClose={() => setRescheduleSheet(false)} snapPoints={[0.7]}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={[styles.sheetTitle, { color: palette.text }]}>Reschedule visit</Text>
+          <Text style={[styles.sheetSubtitle, { color: palette.muted }]}>
+            Pick a new date. {contactCopy.confirmLabel}
+          </Text>
+
+          {availabilityLoading ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator size="small" color={palette.tint} />
+              <Text style={[styles.loadingText, { color: palette.muted }]}>Loading...</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.calendarHeader}>
+                {DAY_LABELS.map((label) => (
+                  <Text key={label} style={[styles.calendarLabel, { color: palette.muted }]}>{label}</Text>
+                ))}
+              </View>
+              <View style={styles.calendarGrid}>
+                {calendarDays.map((date) => {
+                  const key = toDateKey(date);
+                  const entry = availabilityMap.get(key);
+                  const available = entry?.available ?? false;
+                  const isSelected = selectedDate === key;
+                  const isToday = key === todayKey;
+                  return (
+                    <Pressable
+                      key={key}
+                      disabled={!available}
+                      onPress={() => setSelectedDate(key)}
+                      style={[
+                        styles.calendarCell,
+                        {
+                          borderColor: isSelected ? palette.tint : isToday ? palette.accent : palette.border,
+                          backgroundColor: isSelected ? palette.tint : palette.background,
+                          opacity: available ? 1 : 0.3,
+                        },
+                      ]}
+                    >
+                      <Text style={{ color: isSelected ? '#FFF' : palette.text, fontWeight: '600' }}>
+                        {date.getDate()}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={[styles.label, { color: palette.muted }]}>Preferred window</Text>
+              <View style={styles.chipRow}>
+                <ChoiceChip label="Morning" selected={selectedWindow === 'morning'} onPress={() => setSelectedWindow('morning')} />
+                <ChoiceChip label="Afternoon" selected={selectedWindow === 'afternoon'} onPress={() => setSelectedWindow('afternoon')} />
+                <ChoiceChip label="Flexible" selected={selectedWindow === 'flexible'} onPress={() => setSelectedWindow('flexible')} />
+              </View>
+            </>
+          )}
+
+          {actionError && <Text style={[styles.errorText, { color: palette.danger }]}>{actionError}</Text>}
+
+          <View style={styles.sheetActions}>
+            <Button
+              title={actionLoading ? 'Submitting...' : 'Confirm reschedule'}
+              onPress={handleReschedule}
+              disabled={actionLoading || !selectedDate}
             />
-            <Text style={[styles.inputLabel, { color: palette.text }]}>
-              Add a tip (optional)
-            </Text>
-            <View style={styles.rowWrap}>
-              {TIP_OPTIONS.map((option) => (
-                <ChoiceChip
-                  key={option.value}
-                  label={option.label}
-                  selected={ratingTipCents === option.value && ratingCustomTip.length === 0}
-                  onPress={() => handleSelectTip(option.value)}
-                />
-              ))}
-            </View>
-            <View style={styles.tipInputRow}>
-              <TextInput
-                style={[
-                  styles.tipInput,
-                  { borderColor: palette.border, color: palette.text },
-                ]}
-                placeholder="$ Custom amount"
-                placeholderTextColor={palette.muted}
-                value={ratingCustomTip}
-                onChangeText={handleCustomTipChange}
-                keyboardType="decimal-pad"
-              />
-              <Text style={[styles.tipPreview, { color: palette.muted }]}>
-                {ratingTipCents > 0 ? formatCurrencyFromCents(ratingTipCents) : '—'}
-              </Text>
-            </View>
-            <Text style={[styles.tipHelper, { color: palette.muted }]}>
-              Tips go 100% to your scooper.
-            </Text>
-            {ratingError ? (
-              <Text style={[styles.error, { color: palette.danger }]}>{ratingError}</Text>
-            ) : null}
-            <View style={styles.modalActionsRow}>
-              <Button title="Cancel" onPress={closeRating} variant="secondary" />
-              <Button
-                title={ratingSubmitting ? 'Submitting...' : 'Submit rating'}
-                onPress={handleSubmitRating}
-                disabled={ratingSubmitting || ratingScore <= 0}
-              />
-            </View>
           </View>
+        </ScrollView>
+      </BottomSheet>
+
+      {/* Skip sheet */}
+      <BottomSheet visible={skipSheet} onClose={() => setSkipSheet(false)} snapPoints={[0.35]}>
+        <Text style={[styles.sheetTitle, { color: palette.text }]}>Skip this visit?</Text>
+        <Text style={[styles.sheetSubtitle, { color: palette.muted }]}>
+          This removes the visit from your schedule. You can reschedule anytime.
+        </Text>
+        {actionError && <Text style={[styles.errorText, { color: palette.danger }]}>{actionError}</Text>}
+        <View style={styles.sheetActionsRow}>
+          <Button title="Keep visit" variant="secondary" onPress={() => setSkipSheet(false)} style={styles.halfButton} />
+          <Button title={actionLoading ? 'Skipping...' : 'Skip'} onPress={handleSkip} disabled={actionLoading} style={styles.halfButton} />
         </View>
-      </Modal>
+      </BottomSheet>
+
+      {/* Rating sheet */}
+      <BottomSheet visible={ratingSheet} onClose={() => setRatingSheet(false)} snapPoints={[0.65]}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={[styles.sheetTitle, { color: palette.text }]}>Rate this visit</Text>
+
+          {activeVisit?.scooper && (
+            <View style={styles.scooperRow}>
+              {activeVisit.scooper.photoUrl ? (
+                <Image source={{ uri: activeVisit.scooper.photoUrl }} style={styles.scooperAvatar} />
+              ) : (
+                <View style={[styles.scooperAvatar, { backgroundColor: palette.border }]}>
+                  <Text style={[styles.scooperInitials, { color: palette.text }]}>
+                    {activeVisit.scooper.name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View>
+                <Text style={[styles.scooperName, { color: palette.text }]}>{activeVisit.scooper.name}</Text>
+                <Text style={[styles.metaText, { color: palette.muted }]}>
+                  {activeVisit.scooper.completedVisits} visits completed
+                </Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.starsRow}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <Pressable key={value} onPress={() => setRatingScore(value)} style={styles.starButton}>
+                <Text style={[styles.starText, { color: ratingScore >= value ? palette.tint : palette.muted }]}>★</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <TextInput
+            style={[styles.commentInput, { borderColor: palette.border, color: palette.text }]}
+            placeholder="Add a note (optional)"
+            placeholderTextColor={palette.muted}
+            value={ratingComment}
+            onChangeText={setRatingComment}
+            multiline
+          />
+
+          <Text style={[styles.label, { color: palette.muted }]}>Add a tip (optional)</Text>
+          <View style={styles.chipRow}>
+            {TIP_OPTIONS.map((opt) => (
+              <ChoiceChip key={opt.value} label={opt.label} selected={ratingTip === opt.value} onPress={() => setRatingTip(opt.value)} />
+            ))}
+          </View>
+          {ratingTip > 0 && (
+            <Text style={[styles.tipNote, { color: palette.muted }]}>
+              {formatCurrency(ratingTip)} goes 100% to your scooper
+            </Text>
+          )}
+
+          <View style={styles.sheetActions}>
+            <Button
+              title={ratingSubmitting ? 'Submitting...' : 'Submit rating'}
+              onPress={handleSubmitRating}
+              disabled={ratingSubmitting || ratingScore <= 0}
+            />
+          </View>
+        </ScrollView>
+      </BottomSheet>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: { paddingBottom: 40 },
   hero: {
     borderRadius: 24,
     padding: 20,
@@ -909,307 +653,208 @@ const styles = StyleSheet.create({
   },
   heroGlow: {
     position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    top: -120,
-    right: -80,
-  },
-  heroGlowSecondary: {
-    position: 'absolute',
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    bottom: -80,
-    left: -40,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    top: -100,
+    right: -60,
   },
   heroEyebrow: {
     fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
-  heroTitleText: {
-    marginTop: 10,
-    fontSize: 24,
+  heroTitle: {
+    marginTop: 8,
+    fontSize: 22,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  heroSubtitle: {
-    marginTop: 6,
-    fontSize: 14,
-  },
-  section: {
-    marginTop: 18,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-  planCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 18,
-    gap: 12,
-    marginBottom: 14,
-  },
-  planHeader: {
+  loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16 },
+  loadingText: { fontSize: 14 },
+  errorText: { fontSize: 14, padding: 16 },
+  section: { marginBottom: 20 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 12 },
+  alertBanner: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  alertText: { flex: 1, fontSize: 14 },
+  nextVisitCard: {
+    borderRadius: 18,
+    borderWidth: 2,
+    padding: 18,
+    marginBottom: 18,
+  },
+  nextVisitHeader: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    alignItems: 'flex-start',
   },
-  planHeaderCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
-  },
-  planTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  planBadge: {
-    borderRadius: 999,
+  nextVisitLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  nextVisitDate: { fontSize: 20, fontWeight: '700', marginTop: 4 },
+  nextVisitMeta: { alignItems: 'flex-end' },
+  relativeBadge: {
+    marginTop: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    borderRadius: 999,
   },
-  planBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  relativeBadgeText: { color: '#FFF', fontSize: 11, fontWeight: '600' },
+  metaText: { fontSize: 13 },
+  inlineActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
   },
-  planStats: {
+  inlineAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  inlineActionText: { fontSize: 13, fontWeight: '500' },
+  emptyCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 20,
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 18,
+  },
+  emptyText: { fontSize: 14 },
+  timeline: { gap: 0 },
+  timelineItem: { flexDirection: 'row', minHeight: 56 },
+  timelineLeft: { width: 24, alignItems: 'center' },
+  timelineDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6 },
+  timelineLine: { width: 2, flex: 1, marginTop: 4 },
+  timelineContent: {
+    flex: 1,
+    borderBottomWidth: 1,
+    paddingBottom: 12,
+    marginLeft: 8,
+  },
+  timelineDate: { fontSize: 15, fontWeight: '600' },
+  timelineMeta: { fontSize: 12, marginTop: 2 },
+  pastVisitCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 10,
+  },
+  pastVisitHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pastVisitDate: { fontSize: 15, fontWeight: '600' },
+  statusPill: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  statusText: { fontSize: 10, fontWeight: '600', textTransform: 'uppercase' },
+  pastVisitMeta: {
     flexDirection: 'row',
     gap: 12,
+    marginTop: 6,
   },
-  planStat: {
-    flex: 1,
+  rateLink: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+  },
+  rateLinkText: { fontSize: 12, fontWeight: '500' },
+  ratedText: { fontSize: 12, marginTop: 6 },
+  linkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
     borderWidth: 1,
     borderRadius: 14,
-    padding: 12,
+    marginBottom: 10,
   },
-  planStatLabel: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  planStatValue: {
-    marginTop: 6,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  planList: {
-    gap: 6,
-  },
-  planBullet: {
-    fontSize: 12,
-  },
-  card: {
-    borderRadius: 18,
+  linkText: { flex: 1, fontSize: 15, fontWeight: '500' },
+  planCard: {
+    borderRadius: 16,
     borderWidth: 1,
     padding: 16,
     marginBottom: 12,
-    gap: 6,
   },
-  heroCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 20,
-    marginBottom: 18,
-    gap: 6,
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
-  heroTitle: {
-    fontSize: 14,
+  planContent: { flex: 1 },
+  planTitle: { fontSize: 16, fontWeight: '600' },
+  planSubtitle: { fontSize: 13, marginTop: 2 },
+  // Sheet styles
+  sheetTitle: { fontSize: 20, fontWeight: '700', marginBottom: 6 },
+  sheetSubtitle: { fontSize: 14, marginBottom: 16 },
+  sheetActions: { marginTop: 16 },
+  sheetActionsRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  halfButton: { flex: 1 },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  heroDate: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-  heroActions: {
+    letterSpacing: 0.5,
+    marginBottom: 8,
     marginTop: 12,
-    gap: 10,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  cardBody: {
-    fontSize: 14,
-  },
-  visitActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 10,
-  },
-  visitActionChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  visitActionText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  ratingAction: {
-    marginTop: 6,
-  },
-  inlineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 20,
-    gap: 12,
-    maxHeight: '90%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  modalClose: {
-    fontSize: 14,
-  },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginTop: 6,
-  },
-  calendarLabel: {
-    width: '14.2857%',
-    textAlign: 'center',
-    fontSize: 11,
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  calendarHeader: { flexDirection: 'row', marginBottom: 8 },
+  calendarLabel: { width: '14.28%', textAlign: 'center', fontSize: 12, fontWeight: '600' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   calendarCell: {
-    width: '14.2857%',
+    width: '14.28%',
     aspectRatio: 1,
     borderWidth: 1,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
-  },
-  todayDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    position: 'absolute',
-    bottom: 6,
-    left: 6,
-  },
-  rowWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  error: {
-    fontSize: 13,
-  },
-  modalActions: {
-    marginTop: 4,
-  },
-  modalActionsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
-  },
-  ratingStars: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 6,
-  },
-  starButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-  },
-  starText: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  ratingInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 10,
-    marginTop: 8,
-    textAlignVertical: 'top',
-    minHeight: 70,
-    fontSize: 14,
+    marginBottom: 6,
   },
   scooperRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginTop: 4,
+    marginBottom: 16,
   },
   scooperAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scooperInitials: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  scooperMeta: {
-    flex: 1,
-    gap: 2,
-  },
-  scooperName: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  scooperSubtext: {
-    fontSize: 12,
-  },
-  tipInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  tipInput: {
-    flex: 1,
+  scooperInitials: { fontSize: 16, fontWeight: '700' },
+  scooperName: { fontSize: 16, fontWeight: '600' },
+  starsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  starButton: { padding: 4 },
+  starText: { fontSize: 28, fontWeight: '700' },
+  commentInput: {
     borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
+    padding: 12,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    fontSize: 15,
+    marginBottom: 12,
   },
-  tipPreview: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  tipHelper: {
-    fontSize: 12,
-  },
+  tipNote: { fontSize: 12, marginTop: 8 },
 });

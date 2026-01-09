@@ -98,13 +98,14 @@ export default function HowItWorks() {
     return "linear-gradient(155deg, rgba(7,11,8,0.1) 0%, rgba(10,16,12,0.09) 50%, rgba(12,18,14,0.08) 100%)";
   }, [theme]);
 
-  const backgroundColor = theme === "dark" ? "#0a100c" : "#f8f5ee";
+  // Dark fallback ensures white text is always readable if image fails to load
+  const fallbackBackground = "linear-gradient(135deg, #1a2820 0%, #0d1a14 50%, #0a100c 100%)";
 
   return (
     <section
       id="how-it-works"
       className="landing-section section-modern relative overflow-hidden"
-      style={{ backgroundColor }}
+      style={{ background: fallbackBackground }}
     >
       <MotionDiv
         className="pointer-events-none absolute inset-x-0 -top-12 h-16 z-[1]"
@@ -134,6 +135,7 @@ export default function HowItWorks() {
           className="object-cover"
           sizes="100vw"
           style={{ objectPosition: "60% center" }}
+          unoptimized
         />
         <MotionDiv
           className="absolute inset-0"
@@ -201,15 +203,15 @@ export default function HowItWorks() {
                   }}
                 >
                   {step.number === "2" && (
-                    <div className="absolute top-6 right-6 z-20 h-40 w-40 cursor-zoom-in select-none hover:z-30">
-                      <div className="group relative h-full w-full origin-top-right transition-transform duration-300 ease-out hover:scale-[1.9]">
+                    <div className="absolute top-4 right-6 z-20 hidden h-32 w-32 cursor-zoom-in select-none hover:z-30 md:block">
+                      <div className="group relative h-full w-full origin-top-right transition-transform duration-300 ease-out hover:scale-[1.6]">
                         <div className="absolute inset-0 rounded-full border border-white/15 bg-white/10 backdrop-blur-sm shadow-[0_18px_40px_rgba(0,0,0,0.35)] transition-shadow duration-300 group-hover:shadow-[0_26px_70px_rgba(0,0,0,0.55)]" />
                         <Image
                           src="/hero_backgrounds/device_new_transparent.png"
                           alt=""
                           fill
                           className="object-contain p-3 drop-shadow-[0_18px_42px_rgba(0,0,0,0.55)]"
-                          sizes="160px"
+                          sizes="128px"
                         />
                         <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-black/35 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/90 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
                           Patent-pending device
@@ -221,7 +223,7 @@ export default function HowItWorks() {
                     </div>
                   )}
 
-                  <div className={`relative z-10 ${step.number === "2" ? "pr-24" : ""}`}>
+                  <div className={`relative z-10 ${step.number === "2" ? "md:pr-32 lg:pr-36" : ""}`}>
                     <div className="flex items-start gap-4 mb-6">
                       <div
                         className="p-3 rounded-2xl shadow-[0_20px_40px_rgba(3,7,6,0.5)] flex-shrink-0"

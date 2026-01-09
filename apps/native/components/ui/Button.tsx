@@ -13,6 +13,7 @@ type ButtonProps = {
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
+  labelNumberOfLines?: number;
 };
 
 export default function Button({
@@ -22,6 +23,7 @@ export default function Button({
   disabled = false,
   style,
   labelStyle,
+  labelNumberOfLines,
 }: ButtonProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
@@ -63,6 +65,7 @@ export default function Button({
       ]}
     >
       <Text
+        numberOfLines={labelNumberOfLines}
         style={[
           styles.label,
           variant === 'primary' && { color: '#FFFFFF' },

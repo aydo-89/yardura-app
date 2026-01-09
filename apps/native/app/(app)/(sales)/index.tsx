@@ -25,10 +25,13 @@ import { useSales } from '@/lib/sales/SalesProvider';
 import {
   dogPresenceOptions,
   encounterOptions,
+  formatActivityType,
+  formatEncounterLabel,
   formatLeadAddress,
   formatLeadName,
   getLeadCoordinates,
   objectionOptions,
+  parseTagLine,
   pipelineStageOptions,
   stageColorToHex,
 } from '@/lib/sales/utils';
@@ -111,7 +114,13 @@ function LeadCard({
     pipelineStageOptions.find((stage) => stage.value === lead.pipelineStage)?.label
     || lead.pipelineStage
     || 'Unknown';
-  const lastActivity = lead.lastActivity?.result ?? lead.lastActivity?.type ?? null;
+  const lastActivityTags = lead.lastActivity?.notes
+    ? parseTagLine(lead.lastActivity.notes)
+    : {};
+  const lastActivity =
+    formatEncounterLabel(lead.lastActivity?.result ?? lastActivityTags.encounter)
+    ?? formatActivityType(lead.lastActivity?.type)
+    ?? null;
   const lastActivityTime = formatRelativeTime(lead.lastActivity?.occurredAt);
   const nextAction = formatNextAction(lead.nextActionAt);
   const cadenceLabel = lead.cadenceEnrollments?.[0]?.cadence?.name ?? null;

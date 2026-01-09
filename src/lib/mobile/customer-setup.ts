@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import type { AppUserRole } from '@/lib/auth/roles';
+import { normalizeAddressParts } from '@/lib/address/normalize';
 import { prisma } from '@/lib/prisma';
 
 const TEAM_ROLES: AppUserRole[] = ['OWNER', 'ADMIN', 'SALES_REP', 'TECH'];
@@ -34,13 +35,20 @@ export async function buildCustomerSetupResponse(userId: string) {
     },
   });
 
-  const setup: CustomerSetupPrefill = {
-    name: user?.name ?? null,
-    email: user?.email ?? null,
+  const normalizedAddress = normalizeAddressParts({
     addressLine1: user?.address ?? null,
     city: user?.city ?? null,
     state: null,
     zip: user?.zipCode ?? null,
+  });
+
+  const setup: CustomerSetupPrefill = {
+    name: user?.name ?? null,
+    email: user?.email ?? null,
+    addressLine1: normalizedAddress.addressLine1 ?? null,
+    city: normalizedAddress.city ?? null,
+    state: normalizedAddress.state ?? null,
+    zip: normalizedAddress.zip ?? null,
     orgId: user?.orgId ?? null,
   };
 

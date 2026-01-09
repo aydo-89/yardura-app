@@ -225,6 +225,8 @@ export type ScooperRouteVisit = {
   preferredTimeWindowLabel?: string | null;
   routeSequence?: number | null;
   travelFromPrevious?: ScooperRouteSegment | null;
+  travelFromHome?: ScooperRouteSegment | null;
+  travelToHome?: ScooperRouteSegment | null;
   geo?: {
     latitude: number;
     longitude: number;
@@ -317,6 +319,10 @@ export type ScooperVisitMedia = {
   storagePath?: string | null;
   capturedAt?: string | null;
   uploadedAt?: string | null;
+  gpsLat?: number | null;
+  gpsLng?: number | null;
+  gpsAccuracy?: number | null;
+  locationMetadata?: Record<string, unknown> | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   notes?: string | null;
@@ -728,6 +734,19 @@ export type WellnessReadingsPayload = {
   }[];
 };
 
+export type WellnessSampleDetail = {
+  id: string;
+  source: 'OWNER' | 'PRO';
+  capturedAt: string;
+  analysisResult: Record<string, unknown> | null;
+  analysisConfidence?: number | null;
+  analysisModel?: string | null;
+  dogName?: string | null;
+  stoolSampleView?: string | null;
+  reviewStatus?: string | null;
+  imageUrl?: string | null;
+};
+
 export type WellnessCapture = {
   id: string;
   capturedAt: string;
@@ -756,6 +775,7 @@ export type WellnessChatResponse = {
   suggested_actions: string[];
   follow_up_questions: string[];
   disclaimer: string;
+  context_used?: string[];
 };
 
 export type WellnessChatReply = {

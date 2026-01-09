@@ -86,7 +86,7 @@ The assistant is configured in `src/lib/voice/vapi-client.ts`:
   name: "Yardura Commercial Receptionist",
   model: {
     provider: "openai",
-    model: "gpt-4o-mini", // Fast and cost-effective
+    model: "gpt-5-mini", // Fast and cost-effective
     temperature: 0.7,
     maxTokens: 100,
     systemPrompt: "..." // Your conversational prompt

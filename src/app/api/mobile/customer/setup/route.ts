@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { sortRoles, type AppUserRole } from '@/lib/auth/roles';
+import { normalizeAddressParts } from '@/lib/address/normalize';
 import { canSetupCustomer } from '@/lib/mobile/customer-setup';
+import { geocodeAddress } from '@/lib/google/maps';
 import { prisma } from '@/lib/prisma';
 import { verifyMobileToken } from '@/lib/mobile-auth';
 
@@ -74,6 +76,22 @@ export async function POST(request: NextRequest) {
   const orgId = user.orgId ?? payload.orgId ?? 'yardura';
   const email = user.email ?? null;
 
+  // Geocode the address to get lat/lng for poop map and parcel lookup
+  const fullAddress = `${setup.addressLine1}, ${setup.city}, ${setup.state} ${setup.zip}`;
+  let latitude: number | null = null;
+  let longitude: number | null = null;
+  
+  try {
+    const geocodeResult = await geocodeAddress(fullAddress);
+    if (geocodeResult) {
+      latitude = geocodeResult.location.lat;
+      longitude = geocodeResult.location.lng;
+    }
+  } catch (geocodeError) {
+    console.warn('[customer-setup] Geocoding failed:', geocodeError);
+    // Continue without coordinates - poop map will show "add address" but setup still works
+  }
+
   const existingByUser = await prisma.customer.findFirst({
     where: { userId },
   });
@@ -106,6 +124,8 @@ export async function POST(request: NextRequest) {
         state: setup.state.trim(),
         zip: setup.zip.trim(),
         phone: setup.phone ?? customer.phone ?? null,
+        latitude,
+        longitude,
       },
     });
   } else {
@@ -120,6 +140,8 @@ export async function POST(request: NextRequest) {
         state: setup.state.trim(),
         zip: setup.zip.trim(),
         phone: setup.phone ?? null,
+        latitude,
+        longitude,
       },
     });
   }
@@ -149,9 +171,12 @@ export async function POST(request: NextRequest) {
       customer: {
         id: customer.id,
         name: customer.name,
+        addressLine1: customer.addressLine1,
         city: customer.city,
         state: customer.state,
         zip: customer.zip,
+        latitude: customer.latitude,
+        longitude: customer.longitude,
       },
     },
   });
@@ -191,8 +216,24 @@ export async function GET(request: NextRequest) {
         orgId: true,
       },
     }),
-    prisma.customer.findFirst({ where: { userId }, select: { id: true } }),
+    prisma.customer.findFirst({
+      where: { userId },
+      select: {
+        id: true,
+        addressLine1: true,
+        city: true,
+        state: true,
+        zip: true,
+      },
+    }),
   ]);
+
+  const normalizedAddress = normalizeAddressParts({
+    addressLine1: customer?.addressLine1 ?? user?.address ?? null,
+    city: customer?.city ?? user?.city ?? null,
+    state: customer?.state ?? null,
+    zip: customer?.zip ?? user?.zipCode ?? null,
+  });
 
   return NextResponse.json({
     ok: true,
@@ -201,10 +242,10 @@ export async function GET(request: NextRequest) {
       setup: {
         name: user?.name ?? null,
         email: user?.email ?? null,
-        addressLine1: user?.address ?? null,
-        city: user?.city ?? null,
-        state: null,
-        zip: user?.zipCode ?? null,
+        addressLine1: normalizedAddress.addressLine1 ?? null,
+        city: normalizedAddress.city ?? null,
+        state: normalizedAddress.state ?? null,
+        zip: normalizedAddress.zip ?? null,
         orgId: user?.orgId ?? null,
       },
     },

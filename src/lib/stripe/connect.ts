@@ -96,13 +96,16 @@ export async function ensureStripeConnectAccount({
   return account.id;
 }
 
-export async function createStripeConnectAccountLink(accountId: string) {
+export async function createStripeConnectAccountLink(
+  accountId: string,
+  type: "account_onboarding" | "account_update" = "account_onboarding",
+) {
   const baseUrl = getSiteUrl();
   return stripe.accountLinks.create({
     account: accountId,
     refresh_url: `${baseUrl}/mobile/payouts/refresh`,
     return_url: `${baseUrl}/mobile/payouts/return`,
-    type: "account_onboarding",
+    type,
   });
 }
 

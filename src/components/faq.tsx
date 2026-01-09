@@ -41,9 +41,10 @@ const useFaqBackground = () => {
     return "linear-gradient(155deg, rgba(8,16,12,0.34) 0%, rgba(8,20,14,0.32) 50%, rgba(12,22,16,0.3) 100%)";
   }, [theme]);
 
-  const backgroundColor = theme === "dark" ? "#0a100c" : "#f8f5ee";
+  // Dark fallback ensures white text is always readable if image fails to load
+  const fallbackBackground = "linear-gradient(135deg, #1a2820 0%, #0d1a14 50%, #0a100c 100%)";
 
-  return { backgroundSrc, overlayStyle, backgroundColor };
+  return { backgroundSrc, overlayStyle, fallbackBackground };
 };
 
 // FAQ Schema for structured data
@@ -149,7 +150,7 @@ const faqStats = [
 ];
 
 export default function FAQ() {
-  const { backgroundSrc, overlayStyle, backgroundColor } = useFaqBackground();
+  const { backgroundSrc, overlayStyle, fallbackBackground } = useFaqBackground();
 
   const faqItems = [
     {
@@ -295,12 +296,13 @@ export default function FAQ() {
     <section
       id="faq"
       className="landing-section section-modern relative overflow-hidden"
-      style={{ backgroundColor: backgroundColor }}
+      style={{ background: fallbackBackground }}
     >
       <div className="absolute inset-0">
         <Image
           src={backgroundSrc}
           alt="Customer discussing pet care questions outdoors"
+          unoptimized
           fill
           loading="eager"
           className="object-cover"

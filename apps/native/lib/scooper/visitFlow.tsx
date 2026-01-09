@@ -171,7 +171,7 @@ type VisitFlowContextValue = {
   summaryError: string | null;
   generateSummary: () => Promise<void>;
   uploadingType: string | null;
-  uploadMedia: (asset: UploadAsset, options: UploadOptions) => Promise<void>;
+  uploadMedia: (asset: UploadAsset, options: UploadOptions) => Promise<ScooperVisitMedia | null>;
   arrivalSending: boolean;
   sendArrival: (etaMinutes?: number, includePetReminder?: boolean) => Promise<void>;
   notificationChannel: 'SMS' | 'EMAIL';
@@ -308,11 +308,7 @@ function buildSteps(
       label: 'Mount phone',
       description: 'Lock the phone in the mount so it stays stable for captures.',
     },
-    {
-      id: 'test_capture',
-      label: 'Test capture',
-      description: 'Verify the Bluetooth shutter before capturing samples.',
-    },
+    // Note: test_capture is now integrated into capture.tsx as a calibration overlay
     {
       id: 'capture',
       label: 'Capture deposits',
@@ -731,7 +727,9 @@ export function VisitFlowProvider({ visitId, children }: { visitId: string; chil
         case 'setup':
           return setupConfirmed;
         case 'test_capture':
-          return testCaptureConfirmed;
+          // test_capture is now integrated into capture.tsx - always return true
+          // This ensures backward compatibility for any existing URLs
+          return true;
         case 'capture':
           return surfaceInsightMedia.length > 0;
         case 'confirm':
@@ -924,7 +922,7 @@ export function VisitFlowProvider({ visitId, children }: { visitId: string; chil
 
   const uploadMedia = useCallback(
     async (asset: UploadAsset, options: UploadOptions) => {
-      if (!session?.token || !visitId) return;
+      if (!session?.token || !visitId) return null;
       setUploadingType(options.assetType);
       setError(null);
       try {
@@ -974,17 +972,22 @@ export function VisitFlowProvider({ visitId, children }: { visitId: string; chil
         if (options.stoolSampleId) {
           formData.append('stoolSampleId', options.stoolSampleId);
         }
-        await apiUpload(`/api/field-tech/visits/${visitId}/media`, {
-          token: session.token,
-          body: formData,
-        });
+        const response = await apiUpload<{ media?: ScooperVisitMedia }>(
+          `/api/field-tech/visits/${visitId}/media`,
+          {
+            token: session.token,
+            body: formData,
+          },
+        );
         await refreshVisit();
+        return response?.media ?? null;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to upload media.';
         setError(message);
       } finally {
         setUploadingType(null);
       }
+      return null;
     },
     [session?.token, visitId, refreshVisit],
   );

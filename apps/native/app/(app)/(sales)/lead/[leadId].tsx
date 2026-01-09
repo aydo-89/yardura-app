@@ -28,6 +28,9 @@ import {
   buildNotesWithTags,
   buildTagLine,
   encounterOptions,
+  formatActivityType,
+  formatEncounterLabel,
+  parseTagLine,
   formatLeadAddress,
   formatLeadName,
   objectionOptions,
@@ -62,6 +65,49 @@ function normalizePhone(phone?: string | null) {
   if (!phone) return null;
   return phone.replace(/[^\d+]/g, '');
 }
+
+const formatTagToken = (value: string) =>
+  value
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+
+const stripTagLine = (notes?: string | null) => {
+  if (!notes) return null;
+  const clean = notes
+    .split(/\r?\n/)
+    .filter((line) => !line.trim().toLowerCase().startsWith('tags:'))
+    .join('\n')
+    .trim();
+  return clean.length ? clean : null;
+};
+
+const buildActivityBadges = (activity: LeadActivity) => {
+  const tags = parseTagLine(activity.notes);
+  const badges: string[] = [];
+  const encounterLabel = tags.encounter ? formatEncounterLabel(tags.encounter) : null;
+  const dogLabel = tags.dog
+    ? dogPresenceOptions.find((option) => option.value === tags.dog)?.label
+    : null;
+
+  if (encounterLabel) badges.push(encounterLabel);
+  if (dogLabel) badges.push(dogLabel);
+  if (tags.dog_count) badges.push(`Dogs: ${tags.dog_count}`);
+  if (tags.objections) {
+    tags.objections
+      .split('|')
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .forEach((token) => {
+        const label =
+          objectionOptions.find((option) => option.value === token)?.label
+          ?? formatTagToken(token);
+        badges.push(label);
+      });
+  }
+
+  return { badges, encounterLabel };
+};
 
 export default function LeadDetailScreen() {
   const { leadId } = useLocalSearchParams<{ leadId: string }>();
@@ -364,25 +410,65 @@ export default function LeadDetailScreen() {
           {activities.length === 0 ? (
             <Text style={[styles.cardRow, { color: palette.muted }]}>No activity yet.</Text>
           ) : (
-            activities.map((activity) => (
-              <View
-                key={activity.id}
-                style={[styles.activityItem, { borderBottomColor: palette.border }]}
-              >
-                <Text style={[styles.activityTitle, { color: palette.text }]}>
-                  {activity.type} {activity.result ? `- ${activity.result}` : ''}
-                </Text>
-                <Text style={[styles.activityMeta, { color: palette.muted }]}>
-                  {formatDateTime(activity.occurredAt)}{' '}
-                  {activity.user?.name || activity.user?.email || 'Unknown rep'}
-                </Text>
-                {activity.notes ? (
-                  <Text style={[styles.activityNotes, { color: palette.text }]}>
-                    {activity.notes}
+            activities.map((activity) => {
+              const title = formatActivityType(activity.type) ?? 'Activity';
+              const { badges, encounterLabel } = buildActivityBadges(activity);
+              const resultLabel = formatEncounterLabel(activity.result);
+              const subtitle =
+                resultLabel && resultLabel !== encounterLabel ? resultLabel : null;
+              const cleanNotes = stripTagLine(activity.notes);
+
+              return (
+                <View
+                  key={activity.id}
+                  style={[styles.activityItem, { borderBottomColor: palette.border }]}
+                >
+                  <View style={styles.activityHeader}>
+                    <View style={styles.activityTitleRow}>
+                      <View style={[styles.activityIcon, { backgroundColor: palette.tint }]}>
+                        <FontAwesome name="bolt" size={12} color="#ffffff" />
+                      </View>
+                      <View>
+                        <Text style={[styles.activityTitle, { color: palette.text }]}>
+                          {title}
+                        </Text>
+                        {subtitle ? (
+                          <Text style={[styles.activitySubtitle, { color: palette.muted }]}>
+                            {subtitle}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  </View>
+                  <Text style={[styles.activityMeta, { color: palette.muted }]}>
+                    {formatDateTime(activity.occurredAt)}{' '}
+                    {activity.user?.name || activity.user?.email || 'Unknown rep'}
                   </Text>
-                ) : null}
-              </View>
-            ))
+                  {badges.length ? (
+                    <View style={styles.activityTags}>
+                      {badges.map((badge, index) => (
+                        <View
+                          key={`${activity.id}-badge-${index}`}
+                          style={[
+                            styles.activityTag,
+                            { backgroundColor: palette.background, borderColor: palette.border },
+                          ]}
+                        >
+                          <Text style={[styles.activityTagText, { color: palette.text }]}>
+                            {badge}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                  {cleanNotes ? (
+                    <Text style={[styles.activityNotes, { color: palette.text }]}>
+                      {cleanNotes}
+                    </Text>
+                  ) : null}
+                </View>
+              );
+            })
           )}
           {activityHasMore ? (
             <Button
@@ -642,12 +728,50 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 4,
   },
+  activityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  activityTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  activityIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   activityTitle: {
     fontSize: 14,
     fontWeight: '600',
   },
+  activitySubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
   activityMeta: {
     fontSize: 12,
+  },
+  activityTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  activityTag: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  activityTagText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   activityNotes: {
     fontSize: 13,

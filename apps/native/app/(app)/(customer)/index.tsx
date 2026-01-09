@@ -71,6 +71,8 @@ export default function CustomerHome() {
   const [dogsError, setDogsError] = useState<string | null>(null);
   const [weather, setWeather] = useState<WeatherAlertPayload | null>(null);
   const [weatherError, setWeatherError] = useState(false);
+  const [showMoreActions, setShowMoreActions] = useState(false);
+
   const access = summary?.wellnessAccess ?? null;
   const hasService = access?.hasActiveService ?? false;
   const scansRemaining = access
@@ -190,7 +192,7 @@ export default function CustomerHome() {
   const locationLabel =
     summary?.customer?.city && summary?.customer?.state
       ? `${summary.customer.city}, ${summary.customer.state}`
-      : 'Location unavailable';
+      : null;
 
   const formatDate = (value?: string | null) => {
     if (!value) return 'Not scheduled';
@@ -211,13 +213,12 @@ export default function CustomerHome() {
 
   const hasDogs = checkInStatus.totalDogs > 0;
   const allSubmitted = hasDogs && checkInStatus.pendingCount === 0;
-  const showCheckInPrompt = !hasDogs || checkInStatus.pendingCount > 0;
+  const showCheckInPrompt = hasDogs && checkInStatus.pendingCount > 0;
   const buttonLabel = !hasDogs
-    ? 'Add dogs to start check-ins'
+    ? 'Add dogs to start'
     : checkInStatus.pendingCount === checkInStatus.totalDogs
-        ? 'Start weekly check-in'
-        : `Finish ${checkInStatus.pendingCount} check-in${checkInStatus.pendingCount === 1 ? '' : 's'}`;
-  const buttonVariant = !hasDogs ? 'secondary' : 'primary';
+      ? 'Start check-in'
+      : `Finish ${checkInStatus.pendingCount} check-in${checkInStatus.pendingCount === 1 ? '' : 's'}`;
 
   const handleCheckInPress = () => {
     if (!hasDogs) {
@@ -235,9 +236,6 @@ export default function CustomerHome() {
   };
 
   const nextVisitLabel = formatDate(summary?.nextVisit?.scheduledDate);
-  const lastVisitLabel = summary?.lastVisit
-    ? formatDate(summary.lastVisit.scheduledDate)
-    : 'None yet';
 
   const wellnessStatus = useMemo(() => {
     if (!summary?.latestReport) {
@@ -252,36 +250,17 @@ export default function CustomerHome() {
     return { label, tone } as const;
   }, [summary?.latestReport]);
 
-  const statusPillStyle = useMemo(() => {
-    if (wellnessStatus.tone === 'good') {
-      return { backgroundColor: Colors.brand.mint, color: Colors.brand.graphite };
-    }
-    if (wellnessStatus.tone === 'attention') {
-      return { backgroundColor: palette.danger, color: '#FFFFFF' };
-    }
-    if (wellnessStatus.tone === 'alert') {
-      return { backgroundColor: Colors.brand.gold, color: Colors.brand.graphite };
-    }
-    return { backgroundColor: palette.border, color: palette.text };
+  const statusColor = useMemo(() => {
+    if (wellnessStatus.tone === 'good') return Colors.brand.mint;
+    if (wellnessStatus.tone === 'attention') return palette.danger;
+    if (wellnessStatus.tone === 'alert') return Colors.brand.gold;
+    return palette.border;
   }, [palette, wellnessStatus.tone]);
 
   const heroBackground =
     colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
 
   const visibleDogs = dogs.slice(0, MAX_DOGS_DISPLAY);
-  const showServiceSnapshot = hasService || Boolean(summary?.nextVisit || summary?.lastVisit);
-  const planLabel = access?.tier === 'PREMIUM' ? 'Premium wellness' : 'Free wellness';
-  const scansLabel = access?.tier === 'PREMIUM' ? 'Unlimited scans' : `${scansRemaining ?? 0} scans left`;
-  const chatsLabel = access?.tier === 'PREMIUM' ? 'Unlimited chat' : `${chatsRemaining ?? 0} chats left`;
-  const heroPills = hasService
-    ? [
-        { icon: 'calendar' as const, label: `Next visit ${nextVisitLabel}` },
-        { icon: 'heart' as const, label: `Wellness ${wellnessStatus.label}` },
-      ]
-    : [
-        { icon: 'shield' as const, label: planLabel },
-        { icon: 'camera' as const, label: scansLabel },
-      ];
 
   const weatherPill = useMemo(() => {
     const currentTemp = weather?.weather?.currentTemp ?? null;
@@ -312,11 +291,54 @@ export default function CustomerHome() {
     };
   }, [palette.danger, weather]);
 
+  // Quick actions - primary (always shown) and secondary (expandable)
+  const primaryActions = [
+    {
+      key: 'scan',
+      icon: 'camera' as const,
+      title: 'Scan stool',
+      route: '/(app)/(customer)/capture' as Href,
+    },
+    {
+      key: 'chat',
+      icon: 'comment' as const,
+      title: 'Ask AI',
+      route: '/(app)/(customer)/chat' as Href,
+    },
+  ];
+
+  const secondaryActions = [
+    {
+      key: 'food',
+      icon: 'cutlery' as const,
+      title: 'Food & meds',
+      route: '/(app)/(customer)/food-log' as Href,
+    },
+    {
+      key: 'walks',
+      icon: 'road' as const,
+      title: 'Walks',
+      route: '/(app)/(customer)/wellness-walks' as Href,
+    },
+    {
+      key: 'reminders',
+      icon: 'bell' as const,
+      title: 'Reminders',
+      route: '/(app)/(customer)/reminders' as Href,
+    },
+    {
+      key: 'wellness',
+      icon: 'heart' as const,
+      title: 'Wellness',
+      route: '/(app)/(customer)/wellness' as Href,
+    },
+  ];
+
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { backgroundColor: heroBackground }]}
-        >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Hero */}
+        <View style={[styles.hero, { backgroundColor: heroBackground }]}>
           <View
             style={[
               styles.heroGlow,
@@ -329,300 +351,256 @@ export default function CustomerHome() {
               { backgroundColor: palette.accent, opacity: colorScheme === 'light' ? 0.18 : 0.28 },
             ]}
           />
-          <Text style={[styles.heroEyebrow, { color: 'rgba(255,255,255,0.65)' }]}>
-            Welcome back
-          </Text>
-          <Text style={styles.heroTitle}>
-            {session?.user?.name ?? session?.user?.email ?? 'Customer'}
-          </Text>
-          <Text style={[styles.heroSubtitle, { color: 'rgba(255,255,255,0.7)' }]}>
-            {locationLabel}
-          </Text>
 
-          <View style={styles.heroPills}>
-            {heroPills.map((pill) => (
-              <View key={pill.label} style={styles.heroPill}>
-                <FontAwesome name={pill.icon} size={12} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.heroPillText}>{pill.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.packRow}>
-            <View style={styles.avatarStack}>
-              {visibleDogs.map((dog, index) => (
-                <View
-                  key={dog.id}
-                  style={[
-                    styles.avatarWrap,
-                    { marginLeft: index === 0 ? 0 : -14, zIndex: 10 - index },
-                  ]}
-                >
-                  {dog.photoUrl ? (
-                    <Image source={{ uri: dog.photoUrl }} style={styles.avatarImage} />
-                  ) : (
-                    <View style={[styles.avatarFallback, { backgroundColor: palette.card }]}>
-                      <Text style={[styles.avatarFallbackText, { color: palette.text }]}
-                      >
-                        {dog.name?.slice(0, 1)?.toUpperCase() ?? 'D'}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              ))}
-              {dogs.length > MAX_DOGS_DISPLAY ? (
-                <View style={[styles.avatarWrap, styles.avatarMore]}>
-                  <Text style={styles.avatarMoreText}>+{dogs.length - MAX_DOGS_DISPLAY}</Text>
-                </View>
-              ) : null}
-            </View>
-            <View style={styles.packCopy}>
-              <Text style={styles.packTitle}>Your pack</Text>
-              {dogsLoading ? (
-                <Text style={styles.packMeta}>Loading pups...</Text>
-              ) : dogsError ? (
-                <Text style={styles.packMeta}>Unable to load pets.</Text>
-              ) : dogs.length === 0 ? (
-                <Text style={styles.packMeta}>Add a pet profile to start tracking wellness.</Text>
-              ) : (
-                <Text style={styles.packMeta}>
-                  {dogs.map((dog) => dog.name).filter(Boolean).join(', ')}
-                </Text>
-              )}
-            </View>
-            <Pressable
-              onPress={() => router.push('/(app)/(customer)/account')}
-              style={[styles.packAction, { borderColor: 'rgba(255,255,255,0.24)' }]}
-            >
-              <FontAwesome name="plus" size={12} color="#FFFFFF" />
-              <Text style={styles.packActionText}>Add</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: palette.text }]}>Quick actions</Text>
-          <View style={styles.quickGrid}>
-            <Pressable
-              onPress={() => router.push('/(app)/(customer)/capture' as Href)}
-              style={[styles.quickCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-            >
-              <FontAwesome name="camera" size={16} color={palette.tint} />
-              <Text style={[styles.quickTitle, { color: palette.text }]}>Scan stool</Text>
-              <Text style={[styles.quickSubtitle, { color: palette.muted }]}>1-tap capture</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => router.push('/(app)/(customer)/chat' as Href)}
-              style={[styles.quickCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-            >
-              <FontAwesome name="comment" size={16} color={palette.tint} />
-              <Text style={[styles.quickTitle, { color: palette.text }]}>Ask AI</Text>
-              <Text style={[styles.quickSubtitle, { color: palette.muted }]}>Symptom Q&A</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => router.push('/(app)/(customer)/wellness-walks' as Href)}
-              style={[styles.quickCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-            >
-              <FontAwesome name="map" size={16} color={palette.tint} />
-              <Text style={[styles.quickTitle, { color: palette.text }]}>Walk tracking</Text>
-              <Text style={[styles.quickSubtitle, { color: palette.muted }]}>GPS route</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => router.push('/(app)/(customer)/wellness-food-log' as Href)}
-              style={[styles.quickCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-            >
-              <FontAwesome name="cutlery" size={16} color={palette.tint} />
-              <Text style={[styles.quickTitle, { color: palette.text }]}>Food & meds</Text>
-              <Text style={[styles.quickSubtitle, { color: palette.muted }]}>Scan + log</Text>
-            </Pressable>
-          </View>
-          <View style={styles.quickLinkRow}>
-            <Pressable
-              onPress={() => router.push('/(app)/(customer)/reminders' as Href)}
-              style={[styles.quickLink, { borderColor: palette.border }]}
-            >
-              <FontAwesome name="bell" size={14} color={palette.tint} />
-              <Text style={[styles.quickLinkText, { color: palette.text }]}>
-                Reminders
+          <View style={styles.heroHeader}>
+            <View style={styles.heroText}>
+              <Text style={[styles.heroEyebrow, { color: 'rgba(255,255,255,0.65)' }]}>
+                Welcome back
               </Text>
-            </Pressable>
+              <Text style={styles.heroTitle}>
+                {session?.user?.name?.split(' ')[0] ?? 'Hi there'}
+              </Text>
+            </View>
+
+            {/* Weather pill in hero */}
             {weatherPill && !weatherError ? (
               <Pressable
                 onPress={() => router.push('/(app)/(customer)/wellness-weather' as Href)}
                 style={[
-                  styles.quickLink,
-                  { borderColor: weatherPill.tone, backgroundColor: `${weatherPill.tone}12` },
+                  styles.weatherPill,
+                  { backgroundColor: `${weatherPill.tone}20`, borderColor: weatherPill.tone },
                 ]}
               >
                 <FontAwesome name={weatherPill.icon} size={14} color={weatherPill.tone} />
-                <Text style={[styles.quickLinkText, { color: palette.text }]}>
+                <Text style={[styles.weatherPillText, { color: '#FFFFFF' }]}>
                   {weatherPill.label}
                 </Text>
-                {weatherPill.hasAlert ? (
-                  <FontAwesome name="exclamation-circle" size={12} color={weatherPill.tone} />
-                ) : null}
               </Pressable>
             ) : null}
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>
-              {showServiceSnapshot ? 'Service snapshot' : 'Wellness snapshot'}
-            </Text>
-            <View style={[styles.statusPill, { backgroundColor: statusPillStyle.backgroundColor }]}
-            >
-              <Text style={[styles.statusPillText, { color: statusPillStyle.color }]}>
-                {wellnessStatus.label}
-              </Text>
+          {/* Compact status row */}
+          <View style={styles.statusRow}>
+            {hasService ? (
+              <View style={styles.statusItem}>
+                <FontAwesome name="calendar" size={12} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.statusText}>Next: {nextVisitLabel}</Text>
+              </View>
+            ) : null}
+            <View style={styles.statusItem}>
+              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+              <Text style={styles.statusText}>{wellnessStatus.label}</Text>
             </View>
+            {locationLabel ? (
+              <View style={styles.statusItem}>
+                <FontAwesome name="map-marker" size={12} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.statusText}>{locationLabel}</Text>
+              </View>
+            ) : null}
           </View>
 
-          {summary ? (
-            <View style={styles.snapshotGrid}>
-              {showServiceSnapshot ? (
-                <>
-                  <View style={[styles.snapshotTile, { backgroundColor: palette.card, borderColor: palette.border }]}
+          {/* Pack avatars */}
+          {dogs.length > 0 ? (
+            <View style={styles.packRow}>
+              <View style={styles.avatarStack}>
+                {visibleDogs.map((dog, index) => (
+                  <View
+                    key={dog.id}
+                    style={[
+                      styles.avatarWrap,
+                      { marginLeft: index === 0 ? 0 : -12, zIndex: 10 - index },
+                    ]}
                   >
-                    <Text style={[styles.snapshotLabel, { color: palette.muted }]}>Pets</Text>
-                    <Text style={[styles.snapshotValue, { color: palette.text }]}>
-                      {summary.petsCount}
-                    </Text>
+                    {dog.photoUrl ? (
+                      <Image source={{ uri: dog.photoUrl }} style={styles.avatarImage} />
+                    ) : (
+                      <View style={[styles.avatarFallback, { backgroundColor: palette.card }]}>
+                        <Text style={[styles.avatarFallbackText, { color: palette.text }]}>
+                          {dog.name?.slice(0, 1)?.toUpperCase() ?? 'D'}
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                  <View style={[styles.snapshotTile, { backgroundColor: palette.card, borderColor: palette.border }]}
-                  >
-                    <Text style={[styles.snapshotLabel, { color: palette.muted }]}>Next visit</Text>
-                    <Text style={[styles.snapshotValue, { color: palette.text }]}>
-                      {nextVisitLabel}
-                    </Text>
+                ))}
+                {dogs.length > MAX_DOGS_DISPLAY ? (
+                  <View style={[styles.avatarWrap, styles.avatarMore]}>
+                    <Text style={styles.avatarMoreText}>+{dogs.length - MAX_DOGS_DISPLAY}</Text>
                   </View>
-                  <View style={[styles.snapshotTile, { backgroundColor: palette.card, borderColor: palette.border }]}
-                  >
-                    <Text style={[styles.snapshotLabel, { color: palette.muted }]}>Last visit</Text>
-                    <Text style={[styles.snapshotValue, { color: palette.text }]}>
-                      {lastVisitLabel}
-                    </Text>
-                  </View>
-                  <View style={[styles.snapshotTile, { backgroundColor: palette.card, borderColor: palette.border }]}
-                  >
-                    <Text style={[styles.snapshotLabel, { color: palette.muted }]}>Latest check-in</Text>
-                    <Text style={[styles.snapshotValue, { color: palette.text }]}>
-                      {summary.latestReport ? formatDate(summary.latestReport.weekStart) : 'None yet'}
-                    </Text>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <View style={[styles.snapshotTile, { backgroundColor: palette.card, borderColor: palette.border }]}
-                  >
-                    <Text style={[styles.snapshotLabel, { color: palette.muted }]}>Plan</Text>
-                    <Text style={[styles.snapshotValue, { color: palette.text }]}>
-                      {planLabel}
-                    </Text>
-                  </View>
-                  <View style={[styles.snapshotTile, { backgroundColor: palette.card, borderColor: palette.border }]}
-                  >
-                    <Text style={[styles.snapshotLabel, { color: palette.muted }]}>Scans left</Text>
-                    <Text style={[styles.snapshotValue, { color: palette.text }]}>
-                      {scansLabel}
-                    </Text>
-                  </View>
-                  <View style={[styles.snapshotTile, { backgroundColor: palette.card, borderColor: palette.border }]}
-                  >
-                    <Text style={[styles.snapshotLabel, { color: palette.muted }]}>Chats left</Text>
-                    <Text style={[styles.snapshotValue, { color: palette.text }]}>
-                      {chatsLabel}
-                    </Text>
-                  </View>
-                  <View style={[styles.snapshotTile, { backgroundColor: palette.card, borderColor: palette.border }]}
-                  >
-                    <Text style={[styles.snapshotLabel, { color: palette.muted }]}>Check-in</Text>
-                    <Text style={[styles.snapshotValue, { color: palette.text }]}>
-                      {allSubmitted ? 'Complete' : 'Pending'}
-                    </Text>
-                  </View>
-                </>
-              )}
-            </View>
-          ) : loading ? (
-            <View style={styles.inlineRow}>
-              <ActivityIndicator size="small" color={palette.tint} />
-              <Text style={[styles.cardBody, { color: palette.muted }]}>
-                Loading summary...
+                ) : null}
+              </View>
+              <Text style={styles.packNames}>
+                {dogs.map((d) => d.name).filter(Boolean).join(', ')}
               </Text>
             </View>
-          ) : error ? (
-            <Text style={[styles.cardBody, { color: palette.danger }]}>{error}</Text>
-          ) : (
-            <Text style={[styles.cardBody, { color: palette.muted }]}
+          ) : !dogsLoading ? (
+            <Pressable
+              onPress={() => router.push('/(app)/(customer)/account')}
+              style={styles.addDogPrompt}
             >
-              Summary will load after sign-in.
+              <FontAwesome name="plus-circle" size={16} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.addDogText}>Add your first dog</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        {/* Elevated Check-in CTA - shown when pending */}
+        {showCheckInPrompt && !checkInLoading ? (
+          <Pressable
+            onPress={handleCheckInPress}
+            style={[styles.checkInBanner, { backgroundColor: palette.card, borderColor: Colors.brand.gold }]}
+          >
+            <View style={styles.checkInBannerLeft}>
+              <View style={[styles.checkInIconWrap, { backgroundColor: `${Colors.brand.gold}20` }]}>
+                <FontAwesome name="paw" size={20} color={Colors.brand.gold} />
+              </View>
+              <View style={styles.checkInBannerText}>
+                <View style={styles.checkInTitleRow}>
+                  <Text style={[styles.checkInBannerTitle, { color: palette.text }]}>
+                    Weekly check-in
+                  </Text>
+                  <View style={[styles.checkInPendingBadge, { backgroundColor: `${Colors.brand.gold}20` }]}>
+                    <View style={[styles.checkInDot, { backgroundColor: Colors.brand.gold }]} />
+                    <Text style={[styles.checkInPendingText, { color: Colors.brand.gold }]}>Due</Text>
+                  </View>
+                </View>
+                <Text style={[styles.checkInBannerMeta, { color: palette.muted }]}>
+                  {checkInWeekLabel} · {checkInStatus.pendingCount} of {checkInStatus.totalDogs} dogs pending
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.checkInBannerButton, { backgroundColor: Colors.brand.gold }]}>
+              <FontAwesome name="chevron-right" size={14} color="#FFFFFF" />
+            </View>
+          </Pressable>
+        ) : null}
+
+        {/* Primary Actions - Always visible */}
+        <View style={styles.actionsSection}>
+          <View style={styles.primaryActions}>
+            {primaryActions.map((action) => (
+              <Pressable
+                key={action.key}
+                onPress={() => router.push(action.route)}
+                style={[styles.primaryAction, { backgroundColor: palette.tint }]}
+              >
+                <FontAwesome name={action.icon} size={18} color="#FFFFFF" />
+                <Text style={styles.primaryActionText}>{action.title}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* More actions toggle */}
+          <Pressable
+            onPress={() => setShowMoreActions(!showMoreActions)}
+            style={[styles.moreToggle, { borderColor: palette.border }]}
+          >
+            <Text style={[styles.moreToggleText, { color: palette.text }]}>
+              {showMoreActions ? 'Less' : 'More tools'}
             </Text>
+            <FontAwesome
+              name={showMoreActions ? 'chevron-up' : 'chevron-down'}
+              size={12}
+              color={palette.muted}
+            />
+          </Pressable>
+
+          {/* Secondary actions - expandable */}
+          {showMoreActions ? (
+            <View style={styles.secondaryActions}>
+              {secondaryActions.map((action) => (
+                <Pressable
+                  key={action.key}
+                  onPress={() => router.push(action.route)}
+                  style={[styles.secondaryAction, { backgroundColor: palette.card, borderColor: palette.border }]}
+                >
+                  <FontAwesome name={action.icon} size={16} color={palette.tint} />
+                  <Text style={[styles.secondaryActionText, { color: palette.text }]}>
+                    {action.title}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+        </View>
+
+        {/* Quick Stats */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: palette.text }]}>At a glance</Text>
+          {loading ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator size="small" color={palette.tint} />
+              <Text style={[styles.loadingText, { color: palette.muted }]}>Loading...</Text>
+            </View>
+          ) : error ? (
+            <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
+          ) : (
+            <View style={styles.statsGrid}>
+              <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                <Text style={[styles.statLabel, { color: palette.muted }]}>Dogs</Text>
+                <Text style={[styles.statValue, { color: palette.text }]}>{dogs.length}</Text>
+              </View>
+              {hasService ? (
+                <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                  <Text style={[styles.statLabel, { color: palette.muted }]}>Next visit</Text>
+                  <Text style={[styles.statValue, { color: palette.text }]}>{nextVisitLabel}</Text>
+                </View>
+              ) : (
+                <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                  <Text style={[styles.statLabel, { color: palette.muted }]}>Scans left</Text>
+                  <Text style={[styles.statValue, { color: palette.text }]}>
+                    {access?.tier === 'PREMIUM' ? 'Unlimited' : scansRemaining ?? 0}
+                  </Text>
+                </View>
+              )}
+              <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                <Text style={[styles.statLabel, { color: palette.muted }]}>Wellness</Text>
+                <View style={styles.statValueRow}>
+                  <View style={[styles.miniDot, { backgroundColor: statusColor }]} />
+                  <Text style={[styles.statValue, { color: palette.text }]}>{wellnessStatus.label}</Text>
+                </View>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                <Text style={[styles.statLabel, { color: palette.muted }]}>Check-in</Text>
+                <Text style={[styles.statValue, { color: palette.text }]}>
+                  {allSubmitted ? 'Done' : hasDogs ? 'Pending' : 'Add dogs'}
+                </Text>
+              </View>
+            </View>
           )}
         </View>
 
-        <View style={styles.section}>
-          <View style={[styles.checkInCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-          >
+        {/* Check-in card for completed state or errors */}
+        {!showCheckInPrompt && hasDogs ? (
+          <View style={[styles.checkInCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
             <View style={styles.checkInHeader}>
               <View>
-                <Text style={[styles.sectionTitle, { color: palette.text }]}>Weekly check-in</Text>
-                <Text style={[styles.cardBody, { color: palette.muted }]}
-                >
-                  {checkInWeekLabel} - {allSubmitted ? 'Complete' : 'Pending'}
+                <Text style={[styles.checkInTitle, { color: palette.text }]}>Weekly check-in</Text>
+                <Text style={[styles.checkInMeta, { color: palette.muted }]}>
+                  {checkInWeekLabel}
                 </Text>
               </View>
-              <View style={[styles.statusDot, { backgroundColor: allSubmitted ? Colors.brand.mint : Colors.brand.gold }]} />
+              <View style={[styles.checkInStatusDot, { backgroundColor: Colors.brand.mint }]} />
             </View>
-            {checkInLoading ? (
-              <View style={styles.inlineRow}>
-                <ActivityIndicator size="small" color={palette.tint} />
-                <Text style={[styles.cardBody, { color: palette.muted }]}
-                >
-                  Checking this week's status...
-                </Text>
-              </View>
-            ) : checkInError ? (
-              <Text style={[styles.cardBody, { color: palette.danger }]}>{checkInError}</Text>
-            ) : allSubmitted ? (
-              <View style={styles.subtleCheckIn}>
-                <Text style={[styles.cardBody, { color: palette.muted }]}
-                >
-                  Thanks for keeping us updated. Want to edit a report?
-                </Text>
-                <Button
-                  title="Edit this week's check-in"
-                  onPress={handleCheckInPress}
-                  variant="ghost"
-                />
-              </View>
+            {checkInError ? (
+              <Text style={[styles.errorText, { color: palette.danger }]}>{checkInError}</Text>
             ) : (
-              showCheckInPrompt ? (
-                <>
-                  <Text style={[styles.cardBody, { color: palette.muted }]}
-                  >
-                    {hasDogs
-                      ? 'Help us personalize wellness insights with a quick check-in.'
-                      : 'Add your dog profiles to unlock wellness check-ins.'}
-                  </Text>
-                  <Button
-                    title={buttonLabel}
-                    onPress={handleCheckInPress}
-                    variant={buttonVariant}
-                    disabled={!hasDogs}
-                  />
-                </>
-              ) : null
+              <Button
+                title="Edit this week's check-in"
+                onPress={handleCheckInPress}
+                variant="ghost"
+              />
             )}
           </View>
-        </View>
+        ) : null}
       </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 40,
+  },
   hero: {
     borderRadius: 24,
     padding: 20,
@@ -630,57 +608,74 @@ const styles = StyleSheet.create({
   },
   heroGlow: {
     position: 'absolute',
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    top: -120,
-    right: -80,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    top: -100,
+    right: -60,
   },
   heroGlowSecondary: {
     position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    bottom: -80,
-    left: -40,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    bottom: -60,
+    left: -30,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  heroText: {
+    flex: 1,
   },
   heroEyebrow: {
     fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 2,
-    marginBottom: 8,
   },
   heroTitle: {
-    fontSize: 26,
+    marginTop: 6,
+    fontSize: 28,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  heroSubtitle: {
-    marginTop: 6,
-    fontSize: 14,
-  },
-  heroPills: {
-    marginTop: 16,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  heroPill: {
+  weatherPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
+    gap: 6,
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
   },
-  heroPillText: {
-    fontSize: 12,
-    color: '#FFFFFF',
+  weatherPillText: {
+    fontSize: 13,
     fontWeight: '600',
   },
+  statusRow: {
+    marginTop: 14,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+  },
+  statusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
+  },
   packRow: {
-    marginTop: 20,
+    marginTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -690,9 +685,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.9)',
     overflow: 'hidden',
@@ -708,7 +703,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarFallbackText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   avatarMore: {
@@ -718,128 +713,199 @@ const styles = StyleSheet.create({
   },
   avatarMoreText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
-  packCopy: {
+  packNames: {
+    flex: 1,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '500',
+  },
+  addDogPrompt: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  addDogText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '500',
+  },
+  checkInBanner: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 2,
+    borderRadius: 18,
+    padding: 14,
+    gap: 12,
+  },
+  checkInBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  checkInIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkInBannerText: {
     flex: 1,
     gap: 4,
   },
-  packTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  packMeta: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: 12,
-  },
-  packAction: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  checkInTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
-  packActionText: {
-    color: '#FFFFFF',
+  checkInBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  checkInPendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  checkInDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  checkInPendingText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  checkInBannerMeta: {
     fontSize: 12,
+  },
+  checkInBannerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionsSection: {
+    marginTop: 20,
+    gap: 12,
+  },
+  primaryActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  primaryAction: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 16,
+  },
+  primaryActionText: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  moreToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  moreToggleText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  secondaryActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  secondaryAction: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderRadius: 14,
+  },
+  secondaryActionText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   section: {
     marginTop: 24,
     gap: 12,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
   },
-  quickGrid: {
+  loadingRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    alignItems: 'center',
+    gap: 8,
   },
-  quickLinkRow: {
-    marginTop: 8,
+  loadingText: {
+    fontSize: 14,
+  },
+  errorText: {
+    fontSize: 14,
+  },
+  statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  quickLink: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    alignSelf: 'flex-start',
-  },
-  quickLinkText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  quickCard: {
+  statCard: {
     width: '48%',
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 14,
+    padding: 12,
     gap: 6,
   },
-  quickTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  quickSubtitle: {
-    fontSize: 12,
-  },
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  snapshotGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  snapshotTile: {
-    width: '48%',
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-  },
-  snapshotLabel: {
+  statLabel: {
     fontSize: 11,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
+    fontWeight: '600',
   },
-  snapshotValue: {
-    marginTop: 8,
+  statValue: {
     fontSize: 16,
     fontWeight: '700',
   },
-  inlineRow: {
+  statValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
-  cardBody: {
-    fontSize: 14,
+  miniDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   checkInCard: {
-    borderRadius: 20,
+    marginTop: 20,
+    borderRadius: 16,
     borderWidth: 1,
     padding: 16,
     gap: 12,
@@ -849,12 +915,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  statusDot: {
+  checkInTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  checkInMeta: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  checkInStatusDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-  },
-  subtleCheckIn: {
-    gap: 6,
   },
 });

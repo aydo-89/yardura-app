@@ -36,6 +36,23 @@ export async function uploadImage(
   return data;
 }
 
+export async function uploadFile(
+  bucket: string,
+  path: string,
+  file: ArrayBuffer | Buffer,
+  contentType: string,
+) {
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data, error } = await supabaseAdmin.storage
+    .from(bucket)
+    .upload(path, file, {
+      contentType,
+      upsert: true,
+    });
+  if (error) throw error;
+  return data;
+}
+
 export async function createSignedUrl(
   bucket: string,
   path: string,

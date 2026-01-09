@@ -49,6 +49,7 @@ export type DashboardServiceVisit = {
     analysisResult?: Record<string, unknown> | null;
     stoolSampleId?: string | null;
     stoolSampleView?: string | null;
+    reviewStatus?: string | null;
   }>;
   insight?: {
     colorIndicator: string;

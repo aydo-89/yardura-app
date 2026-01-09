@@ -131,6 +131,13 @@ export default function AdminDashboard() {
           icon: HandCoins,
         },
         {
+          title: "Scooper applications",
+          href: "/admin/marketplace/applicants",
+          description: "Review new applicants, confirm background checks, and move scoopers into certification.",
+          icon: UserPlus,
+          badge: "New",
+        },
+        {
           title: "Scooper discipline",
           href: "/admin/marketplace/handoffs",
           description: "Review missed visits, late releases, and recurring job drops.",

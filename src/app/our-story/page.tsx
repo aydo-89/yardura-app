@@ -48,7 +48,7 @@ const STORY_MILESTONES = [
   {
     title: "The morning everything changed",
     copy:
-      "Ludo skipped breakfast. He moved slowly, looked lethargic, and his gums turned pale. We rushed him to the emergency vet and learned he had masses on his liver and spleen - one had ruptured. It was an aggressive cancer, often called a silent killer because symptoms appear too late.",
+      "Ludo skipped breakfast. He moved slowly, looked lethargic, and his gums turned pale. We rushed him to the emergency vet and learned he had masses on his liver - one had ruptured and was bleeding internally. It was hemangiosarcoma, an aggressive cancer often called a silent killer because symptoms appear too late.",
   },
   {
     title: "The rabbit hole",
@@ -85,6 +85,7 @@ const VALUES = [
 
 const RESEARCH_TAKEAWAYS = [
   "Blood streaks, mucus, or pale stool can surface before outward symptoms.",
+  "Pale, yellowish, or clay-colored stool can signal liver or bile duct issues.",
   "White fragments can signal worms long before they cause a crisis.",
   "Yard hazards and hidden parasites often show up first in the poop.",
   "Gut changes are often the earliest clue that something is off.",
@@ -241,9 +242,13 @@ export default function OurStoryPage() {
               <p className="text-base text-graphite/70 dark:text-slate-300">
                 Looking back, there were signs we did not fully connect - he
                 was drinking more than normal, eating grass, and chewing on his
-                feet. He also had behavior quirks we were working to correct,
-                like eating poop. It made us realize how easy it is to miss
-                early changes when daily life moves fast.
+                feet. The biggest sign was his stool: it had turned pale,
+                almost yellowish-grey. At the time, I did not think much of it
+                because I had no idea what that color change could mean. I
+                later learned that pale or clay-colored stool can be a sign of
+                liver or bile duct problems - and the masses we found were on
+                his liver. It made us realize how easy it is to miss early
+                changes when you do not know what to look for.
               </p>
               <p className="text-base text-graphite/70 dark:text-slate-300">
                 We kept thinking: if the early changes had been easier to spot,

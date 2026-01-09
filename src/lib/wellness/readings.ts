@@ -7,6 +7,7 @@ type MediaInput = {
   stoolSampleId: string | null;
   stoolSampleView: string | null;
   assetType?: string | null;
+  reviewStatus?: string | null;
 };
 
 type CaptureInput = {
@@ -59,12 +60,32 @@ const normalizeContent = (value: unknown): string | undefined => {
   return normalized;
 };
 
-const buildIssues = (result: Record<string, unknown>): NormalizedResult => {
+const hasCustomerClear = (result: Record<string, unknown>): boolean => {
+  const cleared = (result as Record<string, unknown>).customer_flag_cleared;
+  const legacyCleared = (result as Record<string, unknown>).customer_cleared;
+  return Boolean(cleared) || Boolean(legacyCleared);
+};
+
+const buildIssues = (
+  result: Record<string, unknown>,
+  options?: { reviewStatus?: string | null },
+): NormalizedResult => {
   const issues = new Set<string>();
   const content = normalizeContent(result.content);
   const flagReason = normalizeText(result.flag_reason);
   const hasWellnessFlag = Boolean(result.wellness_flag);
   const needsReview = Boolean(result.needs_review);
+  const cleared = hasCustomerClear(result) || options?.reviewStatus === "APPROVED";
+
+  if (cleared) {
+    return {
+      color: needsReview ? undefined : normalizeColor(result.color),
+      consistency: needsReview ? undefined : normalizeConsistency(result.consistency, content ?? ""),
+      content,
+      issues: [],
+      hasWellnessFlag: false,
+    };
+  }
 
   if (content === "mucus") {
     issues.add("Mucous");
@@ -152,7 +173,9 @@ export const buildWellnessReadingsFromMedia = (
       .sort((a, b) => a.getTime() - b.getTime())[0];
 
     items.forEach((item) => {
-      const normalized = buildIssues(item.analysisResult as Record<string, unknown>);
+      const normalized = buildIssues(item.analysisResult as Record<string, unknown>, {
+        reviewStatus: item.reviewStatus ?? null,
+      });
       normalized.issues.forEach((issue) => issues.add(issue));
       hasWellnessFlag = hasWellnessFlag || normalized.hasWellnessFlag;
 

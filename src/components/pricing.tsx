@@ -280,13 +280,14 @@ export default function Pricing() {
     return "linear-gradient(155deg, rgba(7,11,8,0.3) 0%, rgba(8,16,12,0.28) 50%, rgba(10,18,12,0.26) 100%)";
   }, [theme]);
 
-  const backgroundColor = theme === "dark" ? "#050b08" : "#f8f5ee";
+  // Dark fallback ensures white text is always readable if image fails to load
+  const fallbackBackground = "linear-gradient(135deg, #1a2820 0%, #0d1a14 50%, #0a100c 100%)";
 
   return (
     <section
       id="pricing"
       className="landing-section section-modern relative overflow-hidden"
-      style={{ backgroundColor }}
+      style={{ background: fallbackBackground }}
     >
       <div className="absolute inset-0">
         <Image
@@ -297,6 +298,7 @@ export default function Pricing() {
           className="object-cover"
           sizes="100vw"
           style={{ objectPosition: "55% center" }}
+          unoptimized
         />
         <motion.div
           className="absolute inset-0"

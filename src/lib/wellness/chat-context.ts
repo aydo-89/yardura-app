@@ -7,6 +7,7 @@ import {
 type ChatContextLimits = {
   lookbackDays: number;
   weeklyReports: number;
+  dailyCheckIns: number;
   ownerCaptures: number;
   proCaptures: number;
   foodInventory: number;
@@ -21,6 +22,7 @@ type ChatContextLimits = {
 const FULL_LIMITS: ChatContextLimits = {
   lookbackDays: 90,
   weeklyReports: 8,
+  dailyCheckIns: 8,
   ownerCaptures: 6,
   proCaptures: 6,
   foodInventory: 8,
@@ -35,6 +37,7 @@ const FULL_LIMITS: ChatContextLimits = {
 const LITE_LIMITS: ChatContextLimits = {
   lookbackDays: 30,
   weeklyReports: 2,
+  dailyCheckIns: 3,
   ownerCaptures: 2,
   proCaptures: 2,
   foodInventory: 3,
@@ -192,6 +195,7 @@ export async function buildWellnessChatContext(
     dogs,
     weightEntries,
     weeklyReports,
+    dailyCheckIns,
     ownerCaptures,
     proMedia,
     foodProducts,
@@ -221,7 +225,9 @@ export async function buildWellnessChatContext(
       },
     }),
     prisma.dog.findMany({
-      where: options.dogId ? { id: options.dogId } : { customerId: options.customerId },
+      where: options.dogId
+        ? { id: options.dogId, customerId: options.customerId }
+        : { customerId: options.customerId },
       select: {
         id: true,
         name: true,
@@ -279,6 +285,30 @@ export async function buildWellnessChatContext(
         diagnosisNotes: true,
       },
     }),
+    prisma.customerWellnessDailyCheckIn.findMany({
+      where: {
+        customerId: options.customerId,
+        loggedAt: { gte: lookback },
+        ...(options.dogId
+          ? { OR: [{ dogId: options.dogId }, { suspectedDogIds: { has: options.dogId } }] }
+          : {}),
+      },
+      orderBy: { loggedAt: 'desc' },
+      take: limits.dailyCheckIns,
+      select: {
+        dogId: true,
+        loggedAt: true,
+        appetite: true,
+        energy: true,
+        waterIntake: true,
+        stoolFrequency: true,
+        vomiting: true,
+        diarrhea: true,
+        medsGiven: true,
+        medsNotes: true,
+        notes: true,
+      },
+    }),
     prisma.customerWellnessCapture.findMany({
       where: {
         customerId: options.customerId,
@@ -311,6 +341,7 @@ export async function buildWellnessChatContext(
         stoolSampleId: true,
         stoolSampleView: true,
         assetType: true,
+        reviewStatus: true,
       },
     }),
     prisma.customerFoodProduct.findMany({
@@ -520,6 +551,7 @@ export async function buildWellnessChatContext(
       stoolSampleId: media.stoolSampleId ?? null,
       stoolSampleView: media.stoolSampleView ?? null,
       assetType: media.assetType ?? null,
+      reviewStatus: media.reviewStatus ?? null,
     })),
   );
 
@@ -605,6 +637,19 @@ export async function buildWellnessChatContext(
       stoolNotes: cleanText(report.stoolNotes ?? null, 140),
       diagnosisLabel: cleanText(report.diagnosisLabel ?? null, 80),
       diagnosisNotes: cleanText(report.diagnosisNotes ?? null, 140),
+    })),
+    dailyCheckIns: dailyCheckIns.map((checkIn) => ({
+      loggedAt: toIso(checkIn.loggedAt),
+      dogName: checkIn.dogId ? dogNameById.get(checkIn.dogId) ?? null : null,
+      appetite: checkIn.appetite ?? null,
+      energy: checkIn.energy ?? null,
+      waterIntake: checkIn.waterIntake ?? null,
+      stoolFrequency: checkIn.stoolFrequency ?? null,
+      vomiting: checkIn.vomiting,
+      diarrhea: checkIn.diarrhea,
+      medsGiven: checkIn.medsGiven,
+      medsNotes: cleanText(checkIn.medsNotes ?? null, 140),
+      notes: cleanText(checkIn.notes ?? null, 140),
     })),
     captures: {
       owner: recentOwnerReadings,

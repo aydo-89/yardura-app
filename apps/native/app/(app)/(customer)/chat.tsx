@@ -3,6 +3,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,10 +11,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, type Href } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import Button from '@/components/ui/Button';
+import ChatBubble from '@/components/wellness/ChatBubble';
 import ChoiceChip from '@/components/ui/ChoiceChip';
+import QuickReplies from '@/components/wellness/QuickReplies';
 import Screen from '@/components/ui/Screen';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -25,7 +28,6 @@ import type {
   WellnessChatReply,
   WellnessChatResponse,
 } from '@/lib/api/types';
-import IndicatorPill from '@/components/wellness/IndicatorPill';
 
 type ChatMessage = {
   id: string;
@@ -33,6 +35,12 @@ type ChatMessage = {
   content: string;
   fullContent?: string;
   meta?: WellnessChatResponse | null;
+};
+
+type AISuggestionCategory = {
+  category: string;
+  icon: string;
+  questions: string[];
 };
 
 function TypingIndicator({ label, color }: { label: string; color: string }) {
@@ -45,12 +53,11 @@ function TypingIndicator({ label, color }: { label: string; color: string }) {
   }, []);
 
   return (
-    <View style={styles.inlineRow}>
-      <FontAwesome name="comment" size={12} color={color} />
-      <Text style={[styles.helperText, { color }]}>
-        {label}
-        {'.'.repeat(dots)}
-      </Text>
+    <View style={styles.typingRow}>
+      <View style={[styles.typingDot, { backgroundColor: color }]} />
+      <View style={[styles.typingDot, { backgroundColor: color, opacity: dots >= 2 ? 1 : 0.3 }]} />
+      <View style={[styles.typingDot, { backgroundColor: color, opacity: dots >= 3 ? 1 : 0.3 }]} />
+      <Text style={[styles.typingText, { color }]}>{label}</Text>
     </View>
   );
 }
@@ -69,9 +76,12 @@ export default function WellnessChatScreen() {
   const [error, setError] = useState<string | null>(null);
   const [analysisPendingId, setAnalysisPendingId] = useState<string | null>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [aiSuggestions, setAiSuggestions] = useState<AISuggestionCategory[] | null>(null);
+  const [aiSuggestionsLoading, setAiSuggestionsLoading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const autoScrollRef = useRef(true);
+  const suggestionsFetchedRef = useRef(false);
 
   const access = summary?.wellnessAccess ?? null;
   const multiDogLocked = access?.maxDogs === 1 && dogs.length > 1;
@@ -79,7 +89,7 @@ export default function WellnessChatScreen() {
     ? Math.max(0, access.limits.chatsPerMonth - access.usage.chatsCount)
     : null;
   const isPremium =
-    access?.tier === 'PREMIUM' || access?.source === 'SERVICE_PROMO' || access?.hasActiveService;
+    access?.tier === 'PREMIUM' || access?.hasActiveService;
 
   const loadDogs = useCallback(async () => {
     if (!session?.token) return;
@@ -105,10 +115,33 @@ export default function WellnessChatScreen() {
     }
   }, [session?.token]);
 
+  const loadAiSuggestions = useCallback(async () => {
+    if (!session?.token || suggestionsFetchedRef.current) return;
+    suggestionsFetchedRef.current = true;
+    setAiSuggestionsLoading(true);
+    try {
+      const data = await apiRequest<{
+        isPremium: boolean;
+        categories: AISuggestionCategory[] | null;
+      }>('/api/mobile/customer/wellness-chat/suggestions', {
+        token: session.token,
+      });
+      if (data.isPremium && data.categories) {
+        setAiSuggestions(data.categories);
+      }
+    } catch (err) {
+      console.warn('load-ai-suggestions.failed', err);
+    } finally {
+      setAiSuggestionsLoading(false);
+    }
+  }, [session?.token]);
+
   useEffect(() => {
     loadDogs();
     loadSummary();
-  }, [loadDogs, loadSummary]);
+    // Start loading AI suggestions immediately - API will check premium status
+    loadAiSuggestions();
+  }, [loadDogs, loadSummary, loadAiSuggestions]);
 
   useEffect(() => {
     if (!multiDogLocked) return;
@@ -260,6 +293,12 @@ export default function WellnessChatScreen() {
     }
   };
 
+  const handleUpgrade = useCallback(() => {
+    router.push('/(app)/(customer)/wellness-upgrade' as Href);
+  }, []);
+
+  const selectedDogName = dogId ? dogs.find((d) => d.id === dogId)?.name : null;
+
   return (
     <Screen>
       <KeyboardAvoidingView
@@ -283,135 +322,176 @@ export default function WellnessChatScreen() {
           }}
           scrollEventThrottle={16}
         >
-          <View style={styles.header}>
-            <Text style={[styles.kicker, { color: palette.muted }]}>AI wellness chat</Text>
-            <Text style={[styles.title, { color: palette.text }]}>Ask about symptoms</Text>
-            <Text style={[styles.subtitle, { color: palette.muted }]}
-            >
-              Not a diagnosis. We highlight red flags and what to do tonight.
-            </Text>
+          {/* Hero Card */}
+          <View style={[styles.heroCard, { backgroundColor: palette.tint }]}>
+            <View style={styles.heroIcon}>
+              <FontAwesome name="comment" size={28} color="#fff" />
+            </View>
+            <View style={styles.heroContent}>
+              <Text style={styles.heroTitle}>AI Wellness Chat</Text>
+              <Text style={styles.heroSubtitle}>
+                Ask about diet, health, visits, or your account
+              </Text>
+            </View>
           </View>
 
-          {access ? (
-            <View style={[styles.accessCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-            >
-              <View style={styles.accessRow}>
-                <Text style={[styles.helperText, { color: palette.muted }]}>Chats left</Text>
-                <Text style={[styles.accessValue, { color: palette.text }]}>
-                  {isPremium ? 'Unlimited' : `${chatsRemaining ?? 0}`}
+          {/* Access & Dog Selector Card */}
+          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            {/* Stats Grid */}
+            <View style={styles.statsGrid}>
+              <View style={[styles.statBox, { backgroundColor: palette.background }]}>
+                <View style={[styles.statIcon, { backgroundColor: `${palette.tint}15` }]}>
+                  <FontAwesome name="comments" size={14} color={palette.tint} />
+                </View>
+                <Text style={[styles.statValue, { color: palette.text }]}>
+                  {isPremium ? '∞' : chatsRemaining ?? 0}
+                </Text>
+                <Text style={[styles.statLabel, { color: palette.muted }]}>
+                  {isPremium ? 'Unlimited' : 'Chats left'}
                 </Text>
               </View>
-              {access.planEndsAt ? (
-                <Text style={[styles.helperText, { color: palette.muted }]}
-                >
-                  Access through{' '}
-                  {new Date(access.planEndsAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </Text>
-              ) : null}
+              {access?.planEndsAt && (
+                <View style={[styles.statBox, { backgroundColor: palette.background }]}>
+                  <View style={[styles.statIcon, { backgroundColor: `${Colors.brand.gold}15` }]}>
+                    <FontAwesome name="calendar" size={14} color={Colors.brand.gold} />
+                  </View>
+                  <Text style={[styles.statValue, { color: palette.text }]} numberOfLines={1}>
+                    {new Date(access.planEndsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                  </Text>
+                  <Text style={[styles.statLabel, { color: palette.muted }]}>
+                    Access until
+                  </Text>
+                </View>
+              )}
+              {dogs.length > 0 && (
+                <View style={[styles.statBox, { backgroundColor: palette.background }]}>
+                  <View style={[styles.statIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                    <FontAwesome name="paw" size={14} color={Colors.brand.mint} />
+                  </View>
+                  <Text style={[styles.statValue, { color: palette.text }]}>{dogs.length}</Text>
+                  <Text style={[styles.statLabel, { color: palette.muted }]}>
+                    {dogs.length === 1 ? 'Dog' : 'Dogs'}
+                  </Text>
+                </View>
+              )}
             </View>
-          ) : null}
 
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>
-              About which dog? (optional)
-            </Text>
-            <View style={styles.chipRow}>
-              <ChoiceChip
-                label="Household"
-                selected={!dogId}
-                onPress={() => setDogId(null)}
-                disabled={multiDogLocked}
-              />
-              {dogs.map((dog) => (
-                <ChoiceChip
-                  key={dog.id}
-                  label={dog.name}
-                  selected={dogId === dog.id}
-                  onPress={() => setDogId(dog.id)}
-                  disabled={multiDogLocked}
-                />
-              ))}
-            </View>
-            {multiDogLocked ? (
-              <Text style={[styles.helperText, { color: palette.muted }]}>
-                Premium unlocks per-dog chat context.
-              </Text>
-            ) : null}
+            {/* Dog Selector */}
+            {dogs.length > 0 && (
+              <View style={styles.dogSelector}>
+                <Text style={[styles.selectorLabel, { color: palette.muted }]}>
+                  Context: {selectedDogName ?? 'Household'}
+                </Text>
+                <View style={styles.chipRow}>
+                  <ChoiceChip
+                    label="Household"
+                    selected={!dogId}
+                    onPress={() => setDogId(null)}
+                    disabled={multiDogLocked}
+                  />
+                  {dogs.map((dog) => (
+                    <ChoiceChip
+                      key={dog.id}
+                      label={dog.name}
+                      selected={dogId === dog.id}
+                      onPress={() => setDogId(dog.id)}
+                      disabled={multiDogLocked}
+                    />
+                  ))}
+                </View>
+                {multiDogLocked && (
+                  <View style={[styles.lockBadge, { backgroundColor: `${Colors.brand.gold}15` }]}>
+                    <FontAwesome name="star" size={10} color={Colors.brand.gold} />
+                    <Text style={[styles.lockText, { color: Colors.brand.gold }]}>
+                      Premium unlocks per-dog context
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
-          {messages.map((message) => (
-            <View
-              key={message.id}
-              style={[
-                styles.bubble,
-                message.role === 'user' ? styles.userBubble : styles.assistantBubble,
-                { backgroundColor: palette.card, borderColor: palette.border },
-              ]}
-            >
-              <Text style={[styles.bubbleText, { color: palette.text }]}>
-                {message.content}
-              </Text>
-              {message.role === 'assistant' && analysisPendingId === message.id && !message.meta ? (
-                <View style={styles.metaBlock}>
-                  <TypingIndicator label="Analyzing" color={palette.muted} />
-                </View>
-              ) : null}
-              {message.role === 'assistant' && message.meta ? (
-                <View style={styles.metaBlock}>
-                  <IndicatorPill indicator={message.meta.risk_level} size="sm" />
-                  <Text style={[styles.metaText, { color: palette.muted }]}>
-                    {message.meta.disclaimer}
+          {/* Quick Replies - only show when no messages */}
+          {messages.length === 0 && !sending && (
+            <QuickReplies
+              aiSuggestions={aiSuggestions}
+              aiLoading={aiSuggestionsLoading}
+              isPremium={isPremium}
+              dogs={dogs}
+              summary={summary}
+              selectedDogId={dogId}
+              onSelect={(text) => setInput(text)}
+              onUpgrade={handleUpgrade}
+              disabled={sending}
+            />
+          )}
+
+          {/* Messages */}
+          {messages.length > 0 && (
+            <View style={styles.messagesContainer}>
+              {/* Chat Header with Clear Chat button */}
+              <View style={styles.chatHeader}>
+                <View style={styles.chatHeaderLeft}>
+                  <FontAwesome name="comments" size={14} color={palette.muted} />
+                  <Text style={[styles.chatHeaderTitle, { color: palette.text }]}>
+                    Conversation
                   </Text>
-                  {message.meta.red_flags.length > 0 ? (
-                    <View style={styles.metaSection}>
-                      <Text style={[styles.metaTitle, { color: palette.text }]}>Red flags</Text>
-                      {message.meta.red_flags.map((flag, index) => (
-                        <Text key={`${flag}-${index}`} style={[styles.metaText, { color: palette.muted }]}>
-                          • {flag}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : null}
-                  {message.meta.suggested_actions.length > 0 ? (
-                    <View style={styles.metaSection}>
-                      <Text style={[styles.metaTitle, { color: palette.text }]}>What to do tonight</Text>
-                      {message.meta.suggested_actions.map((action, index) => (
-                        <Text key={`${action}-${index}`} style={[styles.metaText, { color: palette.muted }]}>
-                          • {action}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : null}
-                  {message.meta.follow_up_questions.length > 0 ? (
-                    <View style={styles.metaSection}>
-                      <Text style={[styles.metaTitle, { color: palette.text }]}>Follow-up questions</Text>
-                      {message.meta.follow_up_questions.map((question, index) => (
-                        <Text key={`${question}-${index}`} style={[styles.metaText, { color: palette.muted }]}>
-                          • {question}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : null}
                 </View>
-              ) : null}
-            </View>
-          ))}
+                <Pressable
+                  onPress={() => {
+                    setMessages([]);
+                    setInput('');
+                    setError(null);
+                    setAnalysisPendingId(null);
+                  }}
+                  style={({ pressed }) => [
+                    styles.clearChatButton,
+                    { backgroundColor: palette.card, borderColor: palette.border },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <FontAwesome name="refresh" size={12} color={palette.tint} />
+                  <Text style={[styles.clearChatText, { color: palette.tint }]}>Clear & start over</Text>
+                </Pressable>
+              </View>
 
-          {sending ? (
-            <View style={[styles.bubble, styles.assistantBubble, { backgroundColor: palette.card, borderColor: palette.border }]}>
-              <TypingIndicator label="Thinking" color={palette.muted} />
-            </View>
-          ) : null}
+              {messages.map((message) => (
+                <ChatBubble
+                  key={message.id}
+                  role={message.role}
+                  content={message.content}
+                  meta={message.meta}
+                  isAnalyzing={analysisPendingId === message.id}
+                  onFollowUpPress={(question) => setInput(question)}
+                />
+              ))}
 
-          {error ? (
-            <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
-          ) : null}
+              {sending && (
+                <View style={[styles.assistantBubble, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                  <TypingIndicator label="Thinking" color={palette.muted} />
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Error */}
+          {error && (
+            <View style={[styles.errorCard, { backgroundColor: `${palette.danger}10`, borderColor: `${palette.danger}30` }]}>
+              <FontAwesome name="exclamation-circle" size={14} color={palette.danger} />
+              <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
+            </View>
+          )}
+
+          {/* Safety Notice */}
+          <View style={[styles.safetyCard, { backgroundColor: `${Colors.brand.coral}08`, borderColor: `${Colors.brand.coral}25` }]}>
+            <FontAwesome name="info-circle" size={12} color={Colors.brand.coral} />
+            <Text style={[styles.safetyText, { color: palette.muted }]}>
+              Not a diagnosis. Seek veterinary care for emergencies, blood in stool, or severe symptoms.
+            </Text>
+          </View>
         </ScrollView>
 
+        {/* Input Bar */}
         <View
           style={[
             styles.inputBar,
@@ -423,15 +503,40 @@ export default function WellnessChatScreen() {
             },
           ]}
         >
-          <TextInput
-            style={[styles.inputField, { color: palette.text }]}
-            placeholder="Describe what you’re seeing..."
-            placeholderTextColor={palette.muted}
-            value={input}
-            onChangeText={setInput}
-            multiline
-          />
-          <Button title={sending ? 'Sending...' : 'Send'} onPress={handleSend} disabled={sending} />
+          <View style={[styles.inputWrapper, { backgroundColor: palette.background, borderColor: palette.border }]}>
+            <TextInput
+              style={[styles.inputField, { color: palette.text }]}
+              placeholder={selectedDogName ? `Ask about ${selectedDogName}...` : 'Ask about your dog or account...'}
+              placeholderTextColor={palette.muted}
+              value={input}
+              onChangeText={setInput}
+              multiline
+              maxLength={1000}
+            />
+            {input.length > 0 && (
+              <Text style={[styles.charCount, { color: palette.muted }]}>
+                {input.length}/1000
+              </Text>
+            )}
+          </View>
+          <Pressable
+            onPress={handleSend}
+            disabled={sending || !input.trim()}
+            style={({ pressed }) => [
+              styles.sendButton,
+              {
+                backgroundColor: input.trim() ? palette.tint : palette.border,
+                opacity: pressed ? 0.8 : 1,
+              },
+              (sending || !input.trim()) && styles.sendButtonDisabled,
+            ]}
+          >
+            <FontAwesome
+              name={sending ? 'spinner' : 'paper-plane'}
+              size={18}
+              color={input.trim() ? '#FFFFFF' : palette.muted}
+            />
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </Screen>
@@ -444,86 +549,173 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 20,
+    gap: 16,
   },
-  header: {
-    marginBottom: 20,
+  heroCard: {
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  kicker: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    fontWeight: '600',
+  heroIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  title: {
+  heroContent: {
+    flex: 1,
+  },
+  heroTitle: {
     fontSize: 22,
     fontWeight: '700',
-    marginTop: 6,
+    color: '#fff',
   },
-  subtitle: {
+  heroSubtitle: {
     fontSize: 13,
-    marginTop: 6,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 4,
   },
-  accessCard: {
+  card: {
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    gap: 6,
-    marginBottom: 12,
+    borderRadius: 18,
+    padding: 16,
+    gap: 14,
   },
-  accessRow: {
+  statsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  accessValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  section: {
     gap: 10,
-    marginBottom: 18,
   },
-  sectionTitle: {
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  statIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  dogSelector: {
+    gap: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(150,150,150,0.15)',
+  },
+  selectorLabel: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  bubble: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 12,
-    marginBottom: 12,
+  lockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
-  userBubble: {
-    alignSelf: 'flex-end',
+  lockText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  messagesContainer: {
+    gap: 12,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingBottom: 12,
+  },
+  chatHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chatHeaderTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  clearChatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  clearChatText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   assistantBubble: {
     alignSelf: 'flex-start',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    maxWidth: '85%',
   },
-  bubbleText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  metaBlock: {
-    marginTop: 10,
-    gap: 8,
-  },
-  metaSection: {
+  typingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
-  metaTitle: {
-    fontSize: 12,
-    fontWeight: '600',
+  typingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  metaText: {
+  typingText: {
     fontSize: 12,
+    marginLeft: 6,
+  },
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   errorText: {
+    flex: 1,
     fontSize: 12,
-    marginTop: 6,
+    fontWeight: '500',
+  },
+  safetyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  safetyText: {
+    flex: 1,
+    fontSize: 11,
   },
   inputBar: {
     position: 'absolute',
@@ -535,18 +727,32 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'flex-end',
   },
-  inputField: {
+  inputWrapper: {
     flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  inputField: {
     fontSize: 14,
+    lineHeight: 20,
+    minHeight: 24,
+    maxHeight: 100,
   },
-  helperText: {
-    fontSize: 12,
+  charCount: {
+    fontSize: 10,
+    textAlign: 'right',
+    marginTop: 4,
   },
-  inlineRow: {
-    flexDirection: 'row',
+  sendButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+  },
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
 });

@@ -1,75 +1,42 @@
-import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import {
   ActivityIndicator,
   Alert,
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   Pressable,
   Linking,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
 import Button from '@/components/ui/Button';
-import ChoiceChip from '@/components/ui/ChoiceChip';
 import Screen from '@/components/ui/Screen';
 import ScooperCalendarModal from '@/components/scooper/ScooperCalendarModal';
+import VisitTimeline from '@/components/scooper/VisitTimeline';
+import ReleaseSheet from '@/components/scooper/ReleaseSheet';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { ApiError, apiRequest } from '@/lib/api/client';
-import { setJson } from '@/lib/storage';
 import { parseDateInput } from '@/lib/dates';
-import { isHaulAwayMode } from '@/lib/scooper/disposal';
-import type {
-  ScooperDailyCheckRewards,
-  ScooperDailyCheckStatus,
-  ScooperSummary,
-  ScooperRoutePlan,
-  ScooperRouteSummary,
-  ScooperRouteVisit,
-} from '@/lib/api/types';
+import {
+  useRoutePlan,
+  isVisitComplete,
+  isSameLocalDay,
+  formatDayLabel,
+  formatFrequencyLabel,
+  formatCurrencyFromCents,
+  resolveLateReleaseCutoff,
+  formatShortDateLabel,
+  resolveVisitPayoutCents,
+  deriveRouteSummaryFromVisits,
+} from '@/lib/scooper/useRoutePlan';
+import type { ScooperRouteVisit } from '@/lib/api/types';
 
-type VisitGroup = {
-  label: string;
-  visits: ScooperRouteVisit[];
-};
-
-const COMPLETED_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'SKIPPED']);
-const DAILY_ROUTE_SNAPSHOT_KEY = 'insightscoop_scooper_daily_route';
-const RELEASE_REASON_OPTIONS = [
-  { key: 'schedule', label: 'Schedule conflict' },
-  { key: 'vehicle', label: 'Vehicle issue' },
-  { key: 'weather', label: 'Weather/safety' },
-  { key: 'access', label: 'Access issue' },
-  { key: 'illness', label: 'Illness/emergency' },
-  { key: 'other', label: 'Other' },
-] as const;
-
-type ReleaseReasonKey = (typeof RELEASE_REASON_OPTIONS)[number]['key'];
-
-function isVisitComplete(status?: string | null) {
-  if (!status) return false;
-  return COMPLETED_STATUSES.has(status);
-}
-
-function formatDayLabel(value: string) {
-  const date = parseDateInput(value);
-  if (Number.isNaN(date.getTime())) return 'Scheduled';
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+// Helper functions for visit display
 
 function formatVisitWindow(
   visit: Pick<ScooperRouteVisit, 'preferredTimeWindowLabel' | 'preferredTimeWindowSlug'>,
@@ -106,102 +73,6 @@ function compactWindowLabel(label: string): string {
   return label.replace(match[0], range);
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null;
-  }
-  return value as Record<string, unknown>;
-}
-
-function readString(record: Record<string, unknown> | null, key: string): string | null {
-  if (!record) return null;
-  const value = record[key];
-  return typeof value === 'string' ? value : null;
-}
-
-function getVisitDisposalMode(visit: ScooperRouteVisit): string | null {
-  const metadata = asRecord(visit.metadata);
-  const disposalPreferences = asRecord(metadata?.disposalPreferences);
-  return readString(disposalPreferences, 'mode');
-}
-
-function dayKey(value: Date) {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
-}
-
-function localDayKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function isSameLocalDay(value?: string | null, compareDate: Date = new Date()): boolean {
-  if (!value) return false;
-  const date = parseCheckDate(value);
-  if (Number.isNaN(date.getTime())) return false;
-  return localDayKey(date) === localDayKey(compareDate);
-}
-
-function parseCheckDate(value: string) {
-  return parseDateInput(value);
-}
-
-function formatShortDateLabel(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function formatCompactDateLabel(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function resolveVisitGroupRangeLabel(visits: ScooperRouteVisit[]): string | null {
-  const dates = visits
-    .map((visit) => parseDateInput(visit.scheduledDate))
-    .filter((date) => !Number.isNaN(date.getTime()));
-  if (!dates.length) return null;
-  const min = new Date(Math.min(...dates.map((date) => date.getTime())));
-  const max = new Date(Math.max(...dates.map((date) => date.getTime())));
-  const startLabel = formatCompactDateLabel(min);
-  const endLabel = formatCompactDateLabel(max);
-  return startLabel === endLabel ? startLabel : `${startLabel}-${endLabel}`;
-}
-
-function resolveLateReleaseCutoff(value: string): Date | null {
-  const date = parseCheckDate(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const cutoff = new Date(date);
-  cutoff.setHours(cutoff.getHours() - 48);
-  return cutoff;
-}
-
-function isTodayValue(value: string | null | undefined): boolean {
-  if (!value) return false;
-  const date = parseCheckDate(value);
-  if (Number.isNaN(date.getTime())) return false;
-  return localDayKey(date) === localDayKey(new Date());
-}
-
-function startOfWeekMonday(date: Date) {
-  const start = new Date(date);
-  const day = start.getDay();
-  const diff = (day + 6) % 7;
-  start.setDate(start.getDate() - diff);
-  start.setHours(0, 0, 0, 0);
-  return start;
-}
-
-function formatFrequencyLabel(frequency?: string | null): string {
-  if (!frequency) return 'recurring';
-  return frequency.toLowerCase().replace(/_/g, ' ');
-}
 
 function formatDogSummary(
   dogs?: Array<{ name: string; breed?: string | null }>,
@@ -221,44 +92,29 @@ function formatDogSummary(
   return `${label}: ${dogs.length} • ${preview}${suffix}`;
 }
 
-function formatCurrencyFromCents(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value / 100);
-}
-
-function resolveVisitPayoutCents(visit: ScooperRouteVisit): number {
-  if (typeof visit.payoutCents === 'number') return visit.payoutCents;
-  if (typeof visit.projectedPayoutCents === 'number') return visit.projectedPayoutCents;
-  return 0;
-}
-
-function deriveRouteSummaryFromVisits(
-  visits: ScooperRouteVisit[],
-): ScooperRouteSummary | null {
+function resolveVisitGroupRangeLabel(
+  visits: Array<{ scheduledDate: string }>,
+): string | null {
   if (!visits.length) return null;
-  let betweenStopsDistanceMeters = 0;
-  let betweenStopsDurationSeconds = 0;
-
-  visits.forEach((visit) => {
-    if (!visit.travelFromPrevious) return;
-    betweenStopsDistanceMeters += visit.travelFromPrevious.distanceMeters ?? 0;
-    betweenStopsDurationSeconds += visit.travelFromPrevious.durationSeconds ?? 0;
+  const sorted = [...visits].sort((a, b) => {
+    const dateA = parseDateInput(a.scheduledDate);
+    const dateB = parseDateInput(b.scheduledDate);
+    return dateA.getTime() - dateB.getTime();
   });
-
-  if (betweenStopsDistanceMeters <= 0 || betweenStopsDurationSeconds <= 0) {
-    return null;
+  const first = parseDateInput(sorted[0].scheduledDate);
+  const last = parseDateInput(sorted[sorted.length - 1].scheduledDate);
+  if (first.getTime() === last.getTime()) {
+    return formatDayLabel(sorted[0].scheduledDate);
   }
-
-  return {
-    betweenStopsDistanceMeters,
-    betweenStopsDurationSeconds,
-    totalDistanceMeters: betweenStopsDistanceMeters,
-    totalDurationSeconds: betweenStopsDurationSeconds,
-  };
+  const firstLabel = first.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+  const lastLabel = last.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+  return `${firstLabel} - ${lastLabel}`;
 }
 
 export default function ScooperHome() {
@@ -272,210 +128,64 @@ export default function ScooperHome() {
     colorScheme === 'dark' ? Colors.brand.graphiteSoft : Colors.brand.slate100;
   const cardShadowStyle =
     colorScheme === 'dark' ? styles.cardShadowDark : styles.cardShadow;
-  const checkboxBorder = colorScheme === 'dark'
-    ? 'rgba(248, 250, 252, 0.7)'
-    : 'rgba(15, 23, 42, 0.4)';
-  const checkboxBackground = colorScheme === 'dark'
-    ? 'rgba(248, 250, 252, 0.12)'
-    : 'rgba(15, 23, 42, 0.06)';
-  const [routePlan, setRoutePlan] = useState<ScooperRoutePlan | null>(null);
-  const [todayRoutePlan, setTodayRoutePlan] = useState<ScooperRoutePlan | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [profileStatus, setProfileStatus] = useState<string | null>(null);
-  const [backgroundStatus, setBackgroundStatus] = useState<string | null>(null);
-  const [statusLoading, setStatusLoading] = useState(false);
-  const [routeErrorCode, setRouteErrorCode] = useState<string | null>(null);
-  const [checkInLoading, setCheckInLoading] = useState(false);
-  const [checkInError, setCheckInError] = useState<string | null>(null);
-  const [checkInLoggedToday, setCheckInLoggedToday] = useState<boolean | null>(null);
-  const [checkInSelfieSkipped, setCheckInSelfieSkipped] = useState(false);
-  const [checkInUploadStatus, setCheckInUploadStatus] = useState<string | null>(null);
-  const [lastCheckInAt, setLastCheckInAt] = useState<string | null>(null);
-  const [checkInRewards, setCheckInRewards] = useState<ScooperDailyCheckRewards | null>(null);
+
+  // Use the useRoutePlan hook for all route/check-in state and logic
+  const {
+    routePlan,
+    todayRoutePlan,
+    loading,
+    error,
+    routeErrorCode,
+    profileStatus,
+    statusLoading,
+    checkInLoading,
+    checkInError,
+    checkInLoggedToday,
+    checkInSelfieSkipped,
+    checkInUploadStatus,
+    checkInRewards,
+    groupedVisits,
+    orderedTodayVisits,
+    blockedVisitIds,
+    nextVisit,
+    nextVisitIsToday,
+    timelineVisits,
+    currentVisitId,
+    routeStops,
+    totalMiles,
+    totalMinutes,
+    totalPayoutCents,
+    weekLabel,
+    weekCompletedVisits,
+    weekRemainingVisits,
+    weekPayoutCents,
+    isPendingProfile,
+    profileStatusLabel,
+    backgroundStatusLabel,
+    checkInStatusKnown,
+    checkInComplete,
+    checkInNeedsSelfie,
+    checkInBlocked,
+    checkInUploadFailed,
+    hasTodayVisits,
+    loadRoute,
+    setRoutePlan,
+    setTodayRoutePlan,
+  } = useRoutePlan();
+
+  // UI state
   const [routeLegsExpanded, setRouteLegsExpanded] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     Upcoming: true,
     'This week': true,
   });
   const [releaseVisit, setReleaseVisit] = useState<ScooperRouteVisit | null>(null);
-  const [releaseScope, setReleaseScope] = useState<'visit' | 'job'>('visit');
-  const [releaseReasonOption, setReleaseReasonOption] = useState<ReleaseReasonKey | null>(
-    null,
-  );
-  const [releaseReason, setReleaseReason] = useState('');
-  const [releaseChecks, setReleaseChecks] = useState({
-    availability: false,
-    scope: false,
-    policy: false,
-  });
-  const [releaseSubmitting, setReleaseSubmitting] = useState(false);
-  const [releaseError, setReleaseError] = useState<string | null>(null);
+  const [releaseSheetOpen, setReleaseSheetOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'today' | 'week'>('today');
+  const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
 
-  const loadStatus = useCallback(async () => {
-    if (!session?.token) return null;
-    setStatusLoading(true);
-    try {
-      const data = await apiRequest<ScooperSummary>(
-        '/api/mobile/scooper/summary',
-        { token: session.token },
-      );
-      setProfileStatus(data.profileStatus ?? null);
-      setBackgroundStatus(data.backgroundCheckStatus ?? null);
-      return data.profileStatus ?? null;
-    } catch {
-      setProfileStatus(null);
-      setBackgroundStatus(null);
-      return null;
-    } finally {
-      setStatusLoading(false);
-    }
-  }, [session?.token]);
-
-  const loadRoute = useCallback(async () => {
-    if (!session?.token) return;
-    setLoading(true);
-    setError(null);
-    setRouteErrorCode(null);
-    try {
-      const todayKey = localDayKey(new Date());
-      const data = await apiRequest<ScooperRoutePlan>('/api/field-tech/visits', {
-        token: session.token,
-      });
-      let todayData: ScooperRoutePlan | null = null;
-      try {
-        todayData = await apiRequest<ScooperRoutePlan>(
-          `/api/field-tech/visits?date=${encodeURIComponent(todayKey)}`,
-          { token: session.token },
-        );
-      } catch (todayError) {
-        console.warn('[scooper.route] Unable to load today route plan', todayError);
-      }
-      const normalizedToday = todayData?.visits?.length ? todayData : null;
-      setRoutePlan(data);
-      setTodayRoutePlan(normalizedToday);
-      const todaySource = normalizedToday?.visits ?? data?.visits ?? [];
-      const todayVisits = todaySource.filter(
-        (visit) => isSameLocalDay(visit.scheduledDate) && !isVisitComplete(visit.status),
-      );
-      const todayVisitsCount = todayVisits.length ?? 0;
-      const hasHaulAway = todayVisits.some((visit) =>
-        isHaulAwayMode(getVisitDisposalMode(visit)),
-      );
-      void setJson(DAILY_ROUTE_SNAPSHOT_KEY, {
-        dayKey: todayKey,
-        hasVisits: todayVisitsCount > 0,
-        visitCount: todayVisitsCount,
-        hasHaulAway,
-      });
-    } catch (err) {
-      let message = err instanceof Error ? err.message : 'Unable to load route.';
-      let code: string | null = null;
-      if (err instanceof ApiError) {
-        const details = err.details as { error?: string } | undefined;
-        if (typeof details?.error === 'string') {
-          code = details.error;
-        }
-        if (code === 'home_anchor_missing') {
-          message = 'Set your home base to unlock routing and drive estimates.';
-        }
-      }
-      setRouteErrorCode(code);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [session?.token]);
-
-  const loadDailyCheck = useCallback(async () => {
-    if (!session?.token) return;
-    setCheckInLoading(true);
-    setCheckInError(null);
-    try {
-      const data = await apiRequest<ScooperDailyCheckStatus>(
-        '/api/field-tech/gear-check',
-        { token: session.token },
-      );
-      const lastLogged = data?.lastGearCheckAt ?? null;
-      setLastCheckInAt(lastLogged);
-      setCheckInLoggedToday(isTodayValue(lastLogged));
-      setCheckInSelfieSkipped(Boolean(data?.check?.selfieSkipped));
-      setCheckInUploadStatus(data?.check?.uploadStatus ?? null);
-      setCheckInRewards(data?.rewards ?? null);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Unable to load daily check-in.';
-      setCheckInError(message);
-      setCheckInLoggedToday(false);
-      setCheckInSelfieSkipped(false);
-      setCheckInUploadStatus(null);
-      setCheckInRewards(null);
-    } finally {
-      setCheckInLoading(false);
-    }
-  }, [session?.token]);
-
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      const run = async () => {
-        const status = await loadStatus();
-        if (!active) return;
-        if (status && status !== 'CERTIFIED') {
-          setRoutePlan(null);
-          setTodayRoutePlan(null);
-          setError(null);
-          setRouteErrorCode(null);
-          setLoading(false);
-          setCheckInLoading(false);
-          return;
-        }
-        loadRoute();
-        loadDailyCheck();
-      };
-      run();
-      return () => {
-        active = false;
-      };
-    }, [loadStatus, loadRoute, loadDailyCheck]),
-  );
-
-  const groupedVisits = useMemo<VisitGroup[]>(() => {
-    if (!routePlan?.visits?.length) {
-      return [];
-    }
-    const now = new Date();
-    const weekStart = startOfWeekMonday(now);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 7);
-    const todayKey = dayKey(now);
-    const tomorrowKey = dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
-    const groups: Record<string, ScooperRouteVisit[]> = {
-      Today: [],
-      Tomorrow: [],
-      'This week': [],
-      Upcoming: [],
-    };
-
-    routePlan.visits.forEach((visit) => {
-      const scheduled = parseDateInput(visit.scheduledDate);
-      const scheduledKey = dayKey(scheduled);
-      if (scheduledKey === todayKey) {
-        groups.Today.push(visit);
-      } else if (scheduledKey === tomorrowKey) {
-        groups.Tomorrow.push(visit);
-      } else if (scheduled >= weekStart && scheduled < weekEnd) {
-        groups['This week'].push(visit);
-      } else {
-        groups.Upcoming.push(visit);
-      }
-    });
-
-    return Object.entries(groups)
-      .filter(([, visits]) => visits.length > 0)
-      .map(([label, visits]) => ({ label, visits }));
-  }, [routePlan]);
+  // Section collapse helpers
 
   const isSectionCollapsed = useCallback(
     (label: string) => collapsedSections[label] ?? (label === 'Upcoming' || label === 'This week'),
@@ -489,20 +199,7 @@ export default function ScooperHome() {
     });
   }, []);
 
-  const todayVisits = useMemo(
-    () =>
-      (todayRoutePlan?.visits ?? routePlan?.visits ?? []).filter(
-        (visit) => isSameLocalDay(visit.scheduledDate) && !isVisitComplete(visit.status),
-      ),
-    [todayRoutePlan, routePlan],
-  );
-  const hasTodayVisits = todayVisits.length > 0;
-  const checkInUploadSkipped = checkInUploadStatus === 'skipped';
-  const checkInComplete =
-    Boolean(checkInLoggedToday) &&
-    !(hasTodayVisits && (checkInSelfieSkipped || checkInUploadSkipped));
-  const checkInBlocked = hasTodayVisits && checkInComplete === false;
-
+  // Derived UI values (using hook-provided data)
   const todayRouteVisits = useMemo(
     () =>
       todayRoutePlan?.visits ??
@@ -511,66 +208,17 @@ export default function ScooperHome() {
     [todayRoutePlan, routePlan],
   );
 
-  const orderedVisits = useMemo(() => {
-    if (!routePlan?.visits?.length) return [];
-    return [...routePlan.visits].sort((a, b) => {
-      const seqA = a.routeSequence;
-      const seqB = b.routeSequence;
-      if (typeof seqA === 'number' && typeof seqB === 'number') {
-        return seqA - seqB;
-      }
-      if (typeof seqA === 'number') return -1;
-      if (typeof seqB === 'number') return 1;
-      return (
-        parseDateInput(a.scheduledDate).getTime() -
-        parseDateInput(b.scheduledDate).getTime()
-      );
-    });
-  }, [routePlan]);
-
-  const orderedTodayVisits = useMemo(() => {
-    if (!todayRouteVisits.length) return [];
-    return [...todayRouteVisits].sort((a, b) => {
-      const seqA = a.routeSequence;
-      const seqB = b.routeSequence;
-      if (typeof seqA === 'number' && typeof seqB === 'number') {
-        return seqA - seqB;
-      }
-      if (typeof seqA === 'number') return -1;
-      if (typeof seqB === 'number') return 1;
-      return (
-        parseDateInput(a.scheduledDate).getTime() -
-        parseDateInput(b.scheduledDate).getTime()
-      );
-    });
-  }, [todayRouteVisits]);
-
-  const blockedVisitIds = useMemo(() => {
-    const sequencingVisits = orderedTodayVisits.length ? orderedTodayVisits : orderedVisits;
-    if (!sequencingVisits.length) return new Set<string>();
-    const firstIncompleteIndex = sequencingVisits.findIndex(
-      (visit) => !isVisitComplete(visit.status),
-    );
-    if (firstIncompleteIndex === -1) return new Set<string>();
-    return new Set(
-      sequencingVisits.slice(firstIncompleteIndex + 1).map((visit) => visit.id),
-    );
-  }, [orderedTodayVisits, orderedVisits]);
-
-  const routeSummary =
-    todayRoutePlan?.summary ?? deriveRouteSummaryFromVisits(todayRouteVisits);
-  const routeStops = todayRouteVisits.length;
   const stopsWithGeo = useMemo(
     () => todayRouteVisits.filter((visit) => visit.geo).length,
     [todayRouteVisits],
   );
+
+  // Route summary and leg breakdown (UI-specific calculations)
+  const routeSummary = todayRoutePlan?.summary ?? deriveRouteSummaryFromVisits(todayRouteVisits);
   const summaryDistance = routeSummary?.totalDistanceMeters ?? 0;
   const summaryDuration = routeSummary?.totalDurationSeconds ?? 0;
   const summaryAvailable = summaryDistance > 0 && summaryDuration > 0;
-  const totalMiles = summaryAvailable ? (summaryDistance / 1609.34).toFixed(1) : null;
-  const totalMinutes = summaryAvailable
-    ? Math.max(0, Math.round(summaryDuration / 60))
-    : null;
+
   const betweenStopsMiles =
     routeSummary?.betweenStopsDistanceMeters !== undefined && summaryAvailable
       ? (routeSummary.betweenStopsDistanceMeters / 1609.34).toFixed(1)
@@ -595,19 +243,24 @@ export default function ScooperHome() {
     routeSummary?.endToHomeDurationSeconds !== undefined && summaryAvailable
       ? Math.max(0, Math.round(routeSummary.endToHomeDurationSeconds / 60))
       : null;
+
   const showAnchorLegs =
     summaryAvailable &&
     Boolean(todayRoutePlan?.summary) &&
     routeStops > 0 &&
     stopsWithGeo > 0;
+
   const geoCoverageLabel =
     routeStops > 0 ? `${stopsWithGeo}/${routeStops} stops mapped` : null;
+
   const driveSummaryLabel =
     summaryAvailable && totalMiles && totalMinutes !== null
       ? `${totalMiles} mi • ${totalMinutes} min`
       : null;
+
   const todayDriveLabel =
     routeStops > 0 ? driveSummaryLabel ?? 'Drive pending' : null;
+
   const routeDetailLabel =
     routeStops > 0
       ? stopsWithGeo === 0
@@ -616,88 +269,26 @@ export default function ScooperHome() {
           ? 'Drive time uses mapped stops only.'
           : null
       : null;
+
   const routeLegs = showAnchorLegs
     ? [
-        {
-          label: 'Start',
-          value: `${startLegMiles ?? '—'} mi • ${startLegMinutes ?? '—'} min`,
-        },
-        {
-          label: 'Between',
-          value: `${betweenStopsMiles ?? '—'} mi • ${betweenStopsMinutes ?? '—'} min`,
-        },
-        {
-          label: 'Return',
-          value: `${endLegMiles ?? '—'} mi • ${endLegMinutes ?? '—'} min`,
-        },
+        { label: 'Start', value: `${startLegMiles ?? '—'} mi • ${startLegMinutes ?? '—'} min` },
+        { label: 'Between', value: `${betweenStopsMiles ?? '—'} mi • ${betweenStopsMinutes ?? '—'} min` },
+        { label: 'Return', value: `${endLegMiles ?? '—'} mi • ${endLegMinutes ?? '—'} min` },
       ]
     : summaryAvailable && betweenStopsMiles !== null && betweenStopsMinutes !== null
-      ? [
-          {
-            label: 'Between',
-            value: `${betweenStopsMiles} mi • ${betweenStopsMinutes} min`,
-          },
-        ]
+      ? [{ label: 'Between', value: `${betweenStopsMiles} mi • ${betweenStopsMinutes} min` }]
       : [];
-  const nextVisitSource = orderedTodayVisits.some((visit) => !isVisitComplete(visit.status))
-    ? orderedTodayVisits
-    : orderedVisits;
-  const nextVisitId =
-    nextVisitSource.find((visit) => !isVisitComplete(visit.status))?.id ?? null;
-  const nextVisit = nextVisitId
-    ? nextVisitSource.find((visit) => visit.id === nextVisitId) ?? null
-    : null;
-  const nextVisitIsToday = nextVisit ? isSameLocalDay(nextVisit.scheduledDate) : false;
+
   const nextVisitBlocked = !nextVisitIsToday || checkInBlocked;
-  const isPendingProfile =
-    typeof profileStatus === 'string' && profileStatus !== 'CERTIFIED';
-  const profileStatusLabel = profileStatus
-    ? profileStatus.toLowerCase().replace(/_/g, ' ')
-    : null;
-  const backgroundStatusLabel = backgroundStatus
-    ? backgroundStatus.toLowerCase().replace(/_/g, ' ')
-    : null;
 
   const headerSubtitle = routeStops
     ? `${routeStops} stop${routeStops === 1 ? '' : 's'} today${totalMiles ? ` • ${totalMiles} mi` : ''}${totalMinutes ? ` • ${totalMinutes} min` : ''}`
     : 'No stops scheduled today.';
 
-  const totalPayoutCents = todayRouteVisits.reduce(
-    (sum, visit) => sum + resolveVisitPayoutCents(visit),
-    0,
-  );
   const todayPayoutLabel =
     totalPayoutCents > 0 ? formatCurrencyFromCents(totalPayoutCents) : '—';
 
-  const weekStart = startOfWeekMonday(new Date());
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
-  const weekLabel = useMemo(() => {
-    const startLabel = weekStart.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-    const endLabel = new Date(weekEnd.getTime() - 86400000).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-    return `${startLabel}-${endLabel}`;
-  }, [weekStart, weekEnd]);
-  const weekVisits = useMemo(() => {
-    if (!routePlan?.visits?.length) return [];
-    return routePlan.visits.filter((visit) => {
-      const scheduled = parseDateInput(visit.scheduledDate);
-      return scheduled >= weekStart && scheduled < weekEnd;
-    });
-  }, [routePlan, weekStart, weekEnd]);
-  const weekRemainingVisits = weekVisits.filter(
-    (visit) => !isVisitComplete(visit.status),
-  );
-  const weekCompletedVisits = weekVisits.length - weekRemainingVisits.length;
-  const weekPayoutCents = weekRemainingVisits.reduce(
-    (sum, visit) => sum + resolveVisitPayoutCents(visit),
-    0,
-  );
   const weekPayoutLabel =
     weekPayoutCents > 0 ? formatCurrencyFromCents(weekPayoutCents) : '—';
 
@@ -706,25 +297,38 @@ export default function ScooperHome() {
       ? `${checkInRewards.streakCount} day streak • ${checkInRewards.pointsBalance} check-in points`
       : `${checkInRewards.streakIfSubmit} day streak if you check in • Earn ${checkInRewards.pointsPreview.totalPoints} points`
     : null;
-  const checkInStatusLabel = checkInComplete
-    ? 'Checked in'
-    : checkInLoggedToday && hasTodayVisits
-      ? checkInSelfieSkipped || checkInUploadSkipped
-        ? 'Check-in incomplete'
-        : 'Check-in required'
+  const checkInStatusLabel = !checkInStatusKnown
+    ? 'Checking status'
+    : checkInComplete
+      ? checkInUploadFailed
+        ? 'Checked in (upload pending)'
+        : checkInNeedsSelfie
+          ? 'Checked in (selfie missing)'
+          : 'Checked in'
       : hasTodayVisits
         ? 'Check-in required'
         : 'Optional today';
-  const checkInStatusTone = checkInComplete
-    ? palette.tint
-    : hasTodayVisits
-      ? palette.danger
-      : palette.border;
-  const checkInRequired = hasTodayVisits && checkInComplete === false;
-  const showCheckInCard = checkInLoading || checkInError || checkInRequired;
+  const checkInStatusTone = !checkInStatusKnown
+    ? palette.border
+    : checkInComplete
+      ? checkInNeedsSelfie
+        ? palette.danger
+        : palette.tint
+      : hasTodayVisits
+        ? palette.danger
+        : palette.border;
+  const checkInRequired = hasTodayVisits && checkInStatusKnown && !checkInComplete;
+  const showCheckInCard =
+    checkInLoading ||
+    checkInError ||
+    checkInRequired ||
+    checkInUploadFailed ||
+    checkInNeedsSelfie;
   const showCheckInBubble = true;
   const checkInBubbleLabel = checkInComplete
-    ? 'Checked in'
+    ? checkInNeedsSelfie
+      ? 'Selfie missing'
+      : 'Checked in'
     : checkInRequired
       ? 'Check-in required'
       : 'Check-in optional';
@@ -735,11 +339,27 @@ export default function ScooperHome() {
     : checkInRewards?.pointsPreview?.totalPoints
       ? `Earn ${checkInRewards.pointsPreview.totalPoints} pts`
       : null;
-  const checkInBubbleTone = checkInComplete
-    ? rewardTone
-    : checkInRequired
-      ? palette.danger
+  const checkInBubbleTone = checkInNeedsSelfie || checkInRequired
+    ? palette.danger
+    : checkInComplete
+      ? rewardTone
       : palette.muted;
+  const checkInCardBody = checkInComplete
+    ? checkInUploadFailed
+      ? 'Your check-in is saved, but the selfie upload is pending. Open check-in to retry when you have a strong signal.'
+      : checkInNeedsSelfie
+        ? 'You checked in without a selfie. Add one to stay compliant and keep rewards.'
+        : 'You’re checked in and ready to start visits.'
+    : hasTodayVisits
+      ? 'Complete your daily check-in before starting visits.'
+      : 'Check-ins are optional today, but you can earn points by completing one.';
+  const checkInActionLabel = checkInComplete
+    ? checkInUploadFailed
+      ? 'Retry selfie'
+      : checkInNeedsSelfie
+        ? 'Add selfie'
+        : 'Open check-in'
+    : 'Start check-in';
 
   const openCalendar = () => {
     setCalendarOpen(true);
@@ -782,9 +402,7 @@ export default function ScooperHome() {
     router.push(`/(app)/(scooper)/visits/${nextVisit.id}`);
   };
 
-  const releaseFrequencyLabel = releaseVisit?.job?.frequency
-    ? formatFrequencyLabel(releaseVisit.job.frequency)
-    : null;
+  // Release dialog state (using new ReleaseSheet component)
   const releaseJobOwnerId = releaseVisit?.job?.primaryScooperId ?? null;
   const isReleaseJobOwner = Boolean(
     releaseJobOwnerId && session?.user?.id && releaseJobOwnerId === session.user.id,
@@ -798,194 +416,155 @@ export default function ScooperHome() {
       releaseVisit.job.frequency !== 'ONE_TIME' &&
       isReleaseJobOwner,
   );
-  const releaseCommitment = isReleaseJobOwnedByAnother
-    ? 'This route stays with its current owner.'
-    : releaseVisit?.job?.id
-      ? 'Your recurring route remains assigned unless you release the job.'
-      : 'No recurring schedule is affected.';
-  const releaseSummary =
-    releaseScope === 'job'
-      ? {
-          title: 'Release recurring job',
-          description: `Removes all upcoming ${releaseFrequencyLabel ?? 'recurring'} visits from your route.`,
-          commitment: 'Future visits return to the offer board for reassignment.',
-        }
-      : {
-          title: 'Release this visit',
-          description: 'Returns this single visit to the offer board.',
-          commitment: releaseCommitment,
-        };
-  const releaseScopeLabel = releaseScope === 'job' ? 'recurring job' : 'visit';
   const releaseIsSameDay = releaseVisit ? isSameLocalDay(releaseVisit.scheduledDate) : false;
-  const selectedReasonLabel =
-    RELEASE_REASON_OPTIONS.find((option) => option.key === releaseReasonOption)?.label ??
-    null;
-  const isOtherReason = releaseReasonOption === 'other';
-  const reasonReady =
-    Boolean(releaseReasonOption) && (!isOtherReason || Boolean(releaseReason.trim()));
-  const canConfirmRelease =
-    releaseChecks.availability &&
-    releaseChecks.scope &&
-    releaseChecks.policy &&
-    reasonReady &&
-    !releaseIsSameDay;
 
   const openReleaseDialog = (visit: ScooperRouteVisit) => {
     if (visit.status !== 'SCHEDULED') return;
     setReleaseVisit(visit);
-    setReleaseScope('visit');
-    setReleaseReasonOption(null);
-    setReleaseReason('');
-    setReleaseChecks({
-      availability: false,
-      scope: false,
-      policy: false,
-    });
-    setReleaseError(null);
+    setReleaseSheetOpen(true);
   };
 
   const closeReleaseDialog = () => {
+    setReleaseSheetOpen(false);
     setReleaseVisit(null);
-    setReleaseScope('visit');
-    setReleaseReasonOption(null);
-    setReleaseReason('');
-    setReleaseChecks({
-      availability: false,
-      scope: false,
-      policy: false,
+  };
+
+  const handleReleaseSubmit = async (scope: 'visit' | 'job', reason: string) => {
+    if (!session?.token || !releaseVisit) {
+      throw new Error('Unable to release. Please try again.');
+    }
+    const endpoint =
+      scope === 'job'
+        ? `/api/field-tech/jobs/${releaseVisit.job?.id}/handoff`
+        : `/api/field-tech/visits/${releaseVisit.id}/handoff`;
+    await apiRequest(endpoint, {
+      method: 'POST',
+      token: session.token,
+      body: { reason: reason || undefined },
     });
-    setReleaseError(null);
-  };
-
-  const handleReleaseScopeChange = (value: 'visit' | 'job') => {
-    if (value === 'job' && !canReleaseJob) return;
-    setReleaseScope(value);
-    setReleaseChecks((prev) => ({ ...prev, scope: false }));
-  };
-
-  const submitRelease = async () => {
-    if (!session?.token || !releaseVisit) return;
-    if (releaseIsSameDay) {
-      setReleaseError('Same-day releases are not available. Contact dispatch for help.');
-      return;
-    }
-    if (releaseScope === 'job' && !releaseVisit.job?.id) {
-      setReleaseError('This visit is not tied to a recurring job.');
-      return;
-    }
-    const resolvedReason =
-      releaseReasonOption === 'other' ? releaseReason.trim() : selectedReasonLabel;
-    if (!resolvedReason) {
-      setReleaseError('Select a release reason to continue.');
-      return;
-    }
-
-    setReleaseSubmitting(true);
-    setReleaseError(null);
-    try {
-      const endpoint =
-        releaseScope === 'job'
-          ? `/api/field-tech/jobs/${releaseVisit.job?.id}/handoff`
-          : `/api/field-tech/visits/${releaseVisit.id}/handoff`;
-      await apiRequest(endpoint, {
-        method: 'POST',
-        token: session.token,
-        body: {
-          reason: resolvedReason || undefined,
-        },
-      });
-      const releasedJobId = releaseScope === 'job' ? releaseVisit.job?.id ?? null : null;
-      const shouldRemove = (visit: ScooperRouteVisit) =>
-        releasedJobId ? visit.job?.id === releasedJobId : visit.id === releaseVisit.id;
-      setRoutePlan((prev) =>
-        prev ? { ...prev, visits: prev.visits.filter((visit) => !shouldRemove(visit)) } : prev,
-      );
-      setTodayRoutePlan((prev) =>
-        prev ? { ...prev, visits: prev.visits.filter((visit) => !shouldRemove(visit)) } : prev,
-      );
-      closeReleaseDialog();
-      loadRoute();
-    } catch (err) {
-      const message =
-        err instanceof ApiError && err.details && typeof err.details === 'object'
-          ? typeof (err.details as { message?: string }).message === 'string'
-            ? (err.details as { message?: string }).message
-            : err.message
-          : err instanceof Error
-            ? err.message
-            : undefined;
-      setReleaseError(message ?? 'Unable to release this work.');
-    } finally {
-      setReleaseSubmitting(false);
-    }
+    const releasedJobId = scope === 'job' ? releaseVisit.job?.id ?? null : null;
+    const shouldRemove = (visit: ScooperRouteVisit) =>
+      releasedJobId ? visit.job?.id === releasedJobId : visit.id === releaseVisit.id;
+    setRoutePlan((prev) =>
+      prev ? { ...prev, visits: prev.visits.filter((visit) => !shouldRemove(visit)) } : prev,
+    );
+    setTodayRoutePlan((prev) =>
+      prev ? { ...prev, visits: prev.visits.filter((visit) => !shouldRemove(visit)) } : prev,
+    );
+    loadRoute();
   };
 
   const now = new Date();
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Compact Header */}
         <View style={styles.pageHeader}>
-          <View style={styles.pageHeaderRow}>
-            <View style={styles.pageHeaderText}>
-              <Text style={[styles.kicker, { color: palette.muted }]}>
-                Today's route
-              </Text>
-              <Text style={[styles.title, { color: palette.text }]}>
-                Hey {session?.user?.name ?? 'Scooper'}
-              </Text>
-              <Text style={[styles.subtitle, { color: palette.muted }]}>
-                {headerSubtitle}
-              </Text>
-            </View>
-            <View style={styles.pageHeaderActions}>
-              {showCheckInBubble ? (
-                <Pressable
-                  onPress={() => router.push('/(app)/(scooper)/daily-check')}
-                  style={({ pressed }) => [
-                    styles.checkInBubble,
-                    { borderColor: cardBorder, backgroundColor: palette.card },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <Text style={[styles.checkInBubbleLabel, { color: checkInBubbleTone }]}>
-                    {checkInBubbleLabel}
-                  </Text>
-                  {checkInBubbleMeta ? (
-                    <Text style={[styles.checkInBubbleMeta, { color: checkInBubbleTone }]}>
-                      {checkInBubbleMeta}
-                    </Text>
-                  ) : null}
-                </Pressable>
-              ) : null}
+          <View style={styles.pageHeaderMain}>
+            <Text style={[styles.title, { color: palette.text }]}>
+              Hey {session?.user?.name?.split(' ')[0] ?? 'Scooper'}
+            </Text>
+            <View style={styles.headerActions}>
               <Pressable
                 onPress={openCalendar}
                 style={({ pressed }) => [
-                  styles.calendarButton,
-                  { borderColor: cardBorder, backgroundColor: palette.card },
-                  pressed && { opacity: 0.85 },
+                  styles.headerIconButton,
+                  { backgroundColor: palette.card, borderColor: cardBorder },
+                  pressed && { opacity: 0.8 },
                 ]}
               >
-                <FontAwesome name="calendar" size={14} color={palette.text} />
-                <Text style={[styles.calendarButtonText, { color: palette.text }]}>
-                  Calendar
-                </Text>
+                <FontAwesome name="calendar" size={16} color={palette.text} />
               </Pressable>
               <Pressable
                 onPress={() => router.push('/(app)/(scooper)/ongoing-customers' as any)}
                 style={({ pressed }) => [
-                  styles.calendarButton,
-                  { borderColor: cardBorder, backgroundColor: palette.card },
-                  pressed && { opacity: 0.85 },
+                  styles.headerIconButton,
+                  { backgroundColor: palette.card, borderColor: cardBorder },
+                  pressed && { opacity: 0.8 },
                 ]}
               >
-                <FontAwesome name="users" size={14} color={palette.text} />
-                <Text style={[styles.calendarButtonText, { color: palette.text }]}>
-                  Ongoing
-                </Text>
+                <FontAwesome name="users" size={16} color={palette.text} />
               </Pressable>
             </View>
           </View>
+        </View>
+
+        {/* Stats Row - Stops, Miles, Payout */}
+        <View style={styles.statsRow}>
+          <Pressable
+            onPress={() => router.push('/(app)/(scooper)/daily-check')}
+            style={({ pressed }) => [
+              styles.statCard,
+              { backgroundColor: palette.card, borderColor: cardBorder },
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <View style={[styles.statIcon, { backgroundColor: checkInComplete ? `${Colors.brand.mint}15` : `${palette.danger}15` }]}>
+              <FontAwesome name="check-circle" size={14} color={checkInComplete ? Colors.brand.mint : palette.danger} />
+            </View>
+            <Text style={[styles.statValue, { color: checkInComplete ? Colors.brand.mint : palette.danger }]}>
+              {checkInComplete ? 'Done' : 'Due'}
+            </Text>
+            <Text style={[styles.statLabel, { color: palette.muted }]}>Check-in</Text>
+          </Pressable>
+          <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+            <View style={[styles.statIcon, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="map-marker" size={14} color={palette.tint} />
+            </View>
+            <Text style={[styles.statValue, { color: palette.text }]}>
+              {activeTab === 'today' ? routeStops : weekRemainingVisits.length}
+            </Text>
+            <Text style={[styles.statLabel, { color: palette.muted }]}>Stops</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+            <View style={[styles.statIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+              <FontAwesome name="dollar" size={14} color={Colors.brand.mint} />
+            </View>
+            <Text style={[styles.statValue, { color: Colors.brand.mint }]}>
+              {activeTab === 'today' ? todayPayoutLabel : weekPayoutLabel}
+            </Text>
+            <Text style={[styles.statLabel, { color: palette.muted }]}>Payout</Text>
+          </View>
+        </View>
+
+        {/* Tab Bar: Today | Week */}
+        <View style={[styles.tabBar, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+          <Pressable
+            onPress={() => setActiveTab('today')}
+            style={[
+              styles.tabButton,
+              activeTab === 'today' && { backgroundColor: palette.tint },
+            ]}
+          >
+            <Text style={[
+              styles.tabButtonText,
+              { color: activeTab === 'today' ? '#FFFFFF' : palette.muted },
+            ]}>
+              Today
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveTab('week')}
+            style={[
+              styles.tabButton,
+              activeTab === 'week' && { backgroundColor: palette.tint },
+            ]}
+          >
+            <Text style={[
+              styles.tabButtonText,
+              { color: activeTab === 'week' ? '#FFFFFF' : palette.muted },
+            ]}>
+              This Week
+            </Text>
+            {weekRemainingVisits.length > 0 ? (
+              <View style={[styles.tabBadge, { backgroundColor: activeTab === 'week' ? '#FFFFFF' : palette.tint }]}>
+                <Text style={[styles.tabBadgeText, { color: activeTab === 'week' ? palette.tint : '#FFFFFF' }]}>
+                  {weekRemainingVisits.length}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
         </View>
 
         {isPendingProfile ? (
@@ -1075,207 +654,40 @@ export default function ScooperHome() {
           </View>
         ) : null}
 
-        <View style={styles.summaryGrid}>
+        {/* Route Timeline - visual progress of today's stops */}
+        {timelineVisits.length > 0 ? (
           <View
             style={[
-              styles.summaryCard,
+              styles.timelineCard,
               cardShadowStyle,
               { backgroundColor: palette.card, borderColor: cardBorder },
             ]}
           >
-            <View style={styles.summaryHeaderRow}>
-              <Text style={[styles.summaryLabel, { color: palette.muted }]}>Today</Text>
-              {todayDriveLabel ? (
-                <View
-                  style={[
-                    styles.summaryChip,
-                    { borderColor: palette.border, backgroundColor: palette.background },
-                  ]}
-                >
-                  <Text style={[styles.summaryChipText, { color: palette.muted }]}>
-                    {todayDriveLabel}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-            <Text style={[styles.summaryValue, { color: palette.text }]}>
-              {routeStops > 0 ? `${routeStops} stop${routeStops === 1 ? '' : 's'}` : 'No stops'}
-            </Text>
-            <Text style={[styles.summaryMeta, { color: palette.muted }]}>
-              {routeStops > 0 ? `Est payout ${todayPayoutLabel}` : 'Check offers for new work.'}
-            </Text>
-            {loading ? (
-              <View style={styles.inlineRow}>
-                <ActivityIndicator size="small" color={palette.tint} />
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  Syncing route...
-                </Text>
-              </View>
-            ) : error ? (
-              <Text style={[styles.summaryHelper, { color: palette.danger }]}>
-                {routeErrorCode === 'home_anchor_missing'
-                  ? 'Set your home base to unlock drive estimates.'
-                  : 'Route details unavailable.'}
-              </Text>
-            ) : routeStops > 0 ? (
-              <>
-                {geoCoverageLabel ? (
-                  <View
-                    style={[
-                      styles.infoPill,
-                      { borderColor: palette.border, backgroundColor: palette.background },
-                    ]}
-                  >
-                    <Text style={[styles.infoPillText, { color: palette.muted }]}>
-                      {geoCoverageLabel}
-                    </Text>
-                  </View>
-                ) : null}
-                {routeLegs.length > 0 ? (
-                  <>
-                    <Pressable
-                      onPress={() => setRouteLegsExpanded((prev) => !prev)}
-                      style={[
-                        styles.routeToggle,
-                        { borderColor: palette.border, backgroundColor: palette.background },
-                      ]}
-                    >
-                      <Text style={[styles.routeToggleLabel, { color: palette.text }]}>
-                        Route legs
-                      </Text>
-                      <View style={styles.routeToggleMeta}>
-                        <Text style={[styles.routeToggleMetaText, { color: palette.muted }]}>
-                          {routeLegsExpanded ? 'Hide' : 'Show'}
-                        </Text>
-                        <FontAwesome
-                          name={routeLegsExpanded ? 'chevron-up' : 'chevron-down'}
-                          size={12}
-                          color={palette.muted}
-                        />
-                      </View>
-                    </Pressable>
-                    {routeLegsExpanded ? (
-                      <View style={styles.routeChipRow}>
-                        {routeLegs.map((leg) => (
-                          <View
-                            key={leg.label}
-                            style={[
-                              styles.routeChip,
-                              { borderColor: palette.border, backgroundColor: palette.background },
-                            ]}
-                          >
-                            <Text style={[styles.routeChipLabel, { color: palette.muted }]}>
-                              {leg.label}
-                            </Text>
-                            <Text style={[styles.routeChipValue, { color: palette.text }]}>
-                              {leg.value}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    ) : null}
-                  </>
-                ) : null}
-                {routeDetailLabel ? (
-                  <Text style={[styles.summaryHelper, { color: palette.muted }]}>
-                    {routeDetailLabel}
-                  </Text>
-                ) : null}
-              </>
-            ) : null}
+            <VisitTimeline
+              visits={timelineVisits}
+              currentVisitId={currentVisitId}
+              onVisitPress={(visitId) => {
+                const visit = orderedTodayVisits.find((v) => v.id === visitId);
+                if (!visit) return;
+                const isBlocked = blockedVisitIds.has(visitId) || checkInBlocked;
+                const isToday = isSameLocalDay(visit.scheduledDate);
+                if (!isBlocked && isToday && !isVisitComplete(visit.status)) {
+                  router.push(`/(app)/(scooper)/visits/${visitId}`);
+                }
+              }}
+              showLabels={true}
+            />
           </View>
-          <View
-            style={[
-              styles.summaryCard,
-              cardShadowStyle,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
-            <View style={styles.summaryHeaderRow}>
-              <Text style={[styles.summaryLabel, { color: palette.muted }]}>This week</Text>
-              <View
-                style={[
-                  styles.summaryChip,
-                  { borderColor: palette.border, backgroundColor: palette.background },
-                ]}
-              >
-                <Text style={[styles.summaryChipText, { color: palette.muted }]}>
-                  {weekLabel}
-                </Text>
-              </View>
-            </View>
-            <Text style={[styles.summaryValue, { color: palette.text }]}>
-              {weekRemainingVisits.length} remaining
-            </Text>
-            <Text style={[styles.summaryMeta, { color: palette.muted }]}>
-              {weekCompletedVisits} completed
-            </Text>
-            <Text style={[styles.summaryMeta, { color: palette.muted }]}>
-              Est payout {weekPayoutLabel}
-            </Text>
-          </View>
-        </View>
+        ) : null}
 
-        {showCheckInCard ? (
-          <View
-            style={[
-              styles.card,
-              cardShadowStyle,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
-            <View style={styles.cardHeader}>
-              <View style={styles.checkInHeaderLeft}>
-                <Text style={[styles.cardTitle, { color: palette.text }]}>
-                  Daily check-in
-                </Text>
-                <View style={[styles.statusPill, { backgroundColor: checkInStatusTone }]}>
-                  <Text style={styles.statusPillText}>{checkInStatusLabel}</Text>
-                </View>
-              </View>
-            </View>
-            {checkInLoading ? (
-              <View style={styles.inlineRow}>
-                <ActivityIndicator size="small" color={palette.tint} />
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  Checking status...
-                </Text>
-              </View>
-            ) : checkInError ? (
-              <Text style={[styles.cardBody, { color: palette.danger }]}>{checkInError}</Text>
-            ) : (
-              <>
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  Complete your daily check-in before starting visits.
-                </Text>
-                {checkInSummary ? (
-                  <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                    {checkInSummary}
-                  </Text>
-                ) : null}
-                {checkInRewards ? (
-                  <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                    Redeem points for Amazon gift cards.
-                  </Text>
-                ) : null}
-                <View style={styles.actionRow}>
-                  <Button
-                    title="Start check-in"
-                    onPress={() => router.push('/(app)/(scooper)/daily-check')}
-                    variant="primary"
-                    style={styles.primaryCta}
-                  />
-                  {checkInRewards ? (
-                    <Button
-                      title="View rewards"
-                      onPress={() => router.push('/(app)/(scooper)/rewards')}
-                      variant="ghost"
-                      style={styles.secondaryCta}
-                    />
-                  ) : null}
-                </View>
-              </>
-            )}
+        {/* Drive info chip (when available) */}
+        {todayDriveLabel && activeTab === 'today' ? (
+          <View style={[styles.driveInfoChip, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+            <FontAwesome name="car" size={12} color={palette.muted} />
+            <Text style={[styles.driveInfoText, { color: palette.muted }]}>{todayDriveLabel}</Text>
+            {geoCoverageLabel ? (
+              <Text style={[styles.driveInfoText, { color: palette.muted }]}>• {geoCoverageLabel}</Text>
+            ) : null}
           </View>
         ) : null}
 
@@ -1305,11 +717,53 @@ export default function ScooperHome() {
             <Text style={[styles.cardBody, { color: palette.danger }]}>{error}</Text>
           )
         ) : groupedVisits.length === 0 ? (
-          <Text style={[styles.cardBody, { color: palette.muted }]}>
-            No upcoming jobs yet.
-          </Text>
+          <View style={[styles.emptyState, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+            <View style={[styles.emptyIcon, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="calendar-check-o" size={24} color={palette.tint} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: palette.text }]}>No stops scheduled</Text>
+            <Text style={[styles.emptyBody, { color: palette.muted }]}>
+              Check offers for new work opportunities.
+            </Text>
+            <Button
+              title="View offers"
+              onPress={() => router.push('/(app)/(scooper)/offers')}
+              variant="primary"
+              style={{ marginTop: 12 }}
+            />
+          </View>
+        ) : activeTab === 'today' && !groupedVisits.some((g) => g.label === 'Today') ? (
+          <View style={[styles.emptyState, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+            <View style={[styles.emptyIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+              <FontAwesome name="check" size={24} color={Colors.brand.mint} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: palette.text }]}>All done for today</Text>
+            <Text style={[styles.emptyBody, { color: palette.muted }]}>
+              {weekRemainingVisits.length > 0
+                ? `You have ${weekRemainingVisits.length} more stop${weekRemainingVisits.length === 1 ? '' : 's'} this week.`
+                : 'Check offers for new work opportunities.'}
+            </Text>
+            {weekRemainingVisits.length > 0 ? (
+              <Button
+                title="View week"
+                onPress={() => setActiveTab('week')}
+                variant="secondary"
+                style={{ marginTop: 12 }}
+              />
+            ) : (
+              <Button
+                title="View offers"
+                onPress={() => router.push('/(app)/(scooper)/offers')}
+                variant="primary"
+                style={{ marginTop: 12 }}
+              />
+            )}
+          </View>
         ) : (
-          groupedVisits.map((group) => {
+          (activeTab === 'today'
+            ? groupedVisits.filter((g) => g.label === 'Today')
+            : groupedVisits
+          ).map((group) => {
             const countLabel = `${group.visits.length} stop${group.visits.length === 1 ? '' : 's'}`;
             const groupPayoutCents = group.visits.reduce(
               (sum, visit) => sum + resolveVisitPayoutCents(visit),
@@ -1400,7 +854,7 @@ export default function ScooperHome() {
                           const isScheduledToday = isSameLocalDay(visit.scheduledDate);
                           const dateBlocked = !isScheduledToday;
                           const openBlocked = checkInBlocked || sequenceBlocked || dateBlocked;
-                          const isNext = visit.id === nextVisitId;
+                          const isNext = visit.id === nextVisit?.id;
                           const completed = isVisitComplete(visit.status);
                           const payoutCents = resolveVisitPayoutCents(visit);
                           const payoutLabel =
@@ -1439,124 +893,190 @@ export default function ScooperHome() {
                                 : sequenceBlocked
                                   ? palette.border
                                   : palette.tint;
+                          const isExpanded = expandedVisitId === visit.id;
+                          const dogsLabel = formatDogSummary(visit.customer?.dogs);
+                          const dogCount = visit.customer?.dogs?.length ?? 0;
                           return (
-                            <View
+                            <Pressable
                               key={visit.id}
+                              onPress={() => setExpandedVisitId(isExpanded ? null : visit.id)}
                               style={[
-                                styles.card,
                                 styles.visitCard,
                                 cardShadowStyle,
-                                { backgroundColor: palette.card, borderColor: isNext ? palette.tint : cardBorder },
+                                {
+                                  backgroundColor: palette.card,
+                                  borderColor: cardBorder,
+                                  borderWidth: 1,
+                                },
                               ]}
                             >
-                              <View style={styles.visitHeader}>
-                                <View style={styles.nameRow}>
-                                  <FontAwesome name="user" size={14} color={palette.muted} />
-                                  <Text style={[styles.cardTitle, { color: palette.text }]}>
+                              {/* "Next" indicator accent bar */}
+                              {isNext ? (
+                                <View style={[styles.visitNextAccent, { backgroundColor: palette.tint }]} />
+                              ) : null}
+                              {/* Compact Header Row */}
+                              <View style={styles.visitCompactHeader}>
+                                <View style={[styles.visitAvatar, { backgroundColor: `${statusTone}15` }]}>
+                                  <FontAwesome
+                                    name={completed ? 'check' : 'user'}
+                                    size={14}
+                                    color={statusTone}
+                                  />
+                                </View>
+                                <View style={styles.visitCompactInfo}>
+                                  <Text style={[styles.visitCustomerName, { color: palette.text }]} numberOfLines={1}>
                                     {customerName}
                                   </Text>
+                                  <View style={styles.visitCompactMeta}>
+                                    <Text style={[styles.visitMetaText, { color: palette.muted }]}>
+                                      {windowLabel ?? formatDayLabel(visit.scheduledDate)}
+                                    </Text>
+                                    {dogCount > 0 ? (
+                                      <>
+                                        <View style={[styles.visitMetaDot, { backgroundColor: palette.border }]} />
+                                        <FontAwesome name="paw" size={10} color={palette.muted} />
+                                        <Text style={[styles.visitMetaText, { color: palette.muted }]}>
+                                          {dogCount}
+                                        </Text>
+                                      </>
+                                    ) : null}
+                                    {payoutLabel ? (
+                                      <>
+                                        <View style={[styles.visitMetaDot, { backgroundColor: palette.border }]} />
+                                        <Text style={[styles.visitMetaText, styles.visitPayoutText, { color: mintTone }]}>
+                                          {payoutLabel}
+                                        </Text>
+                                      </>
+                                    ) : null}
+                                  </View>
                                 </View>
-                                <View style={[styles.statusPill, { backgroundColor: statusTone }]}>
-                                  <Text
-                                    style={[
-                                      styles.statusPillText,
-                                      { color: sequenceBlocked ? palette.text : '#FFFFFF' },
-                                    ]}
-                                  >
-                                    {statusLabel}
-                                  </Text>
+                                <View style={styles.visitCompactRight}>
+                                  <View style={[styles.statusPill, { backgroundColor: statusTone }]}>
+                                    <Text style={[styles.statusPillText, { color: sequenceBlocked ? palette.text : '#FFFFFF' }]}>
+                                      {statusLabel}
+                                    </Text>
+                                  </View>
+                                  <FontAwesome
+                                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                    size={10}
+                                    color={palette.muted}
+                                  />
                                 </View>
                               </View>
-                              <View style={styles.scheduleRow}>
-                                <FontAwesome name="calendar" size={12} color={palette.muted} />
-                                <Text
-                                  style={[styles.metaText, styles.scheduleText, { color: palette.muted }]}
-                                >
-                                  {scheduleLine}
-                                </Text>
-                              </View>
-                          <View style={styles.metaRow}>
-                            <FontAwesome name="map-marker" size={12} color={palette.muted} />
-                            <Text style={[styles.metaText, { color: palette.muted }]}>
-                              {address}
-                              {city}
-                            </Text>
-                          </View>
-                          {formatDogSummary(visit.customer?.dogs) ? (
-                            <View style={styles.metaRow}>
-                              <FontAwesome name="paw" size={12} color={palette.muted} />
-                              <Text style={[styles.metaText, { color: palette.muted }]}>
-                                {formatDogSummary(visit.customer?.dogs)}
-                              </Text>
-                            </View>
-                          ) : null}
-                          {payoutLabel ? (
-                            <View style={styles.metaRow}>
-                              <FontAwesome name="usd" size={12} color={palette.muted} />
-                              <View style={styles.payoutStack}>
-                                <Text style={[styles.metaText, styles.payoutText, { color: mintTone }]}>
-                                  {payoutLabel} payout
-                                </Text>
-                                <Text style={[styles.payoutNote, { color: palette.muted }]}>
-                                  Includes mileage + PPE est.
-                                </Text>
-                              </View>
-                            </View>
-                          ) : null}
-                          <View style={styles.visitActions}>
-                            <Button
-                              title="Open"
-                              onPress={() => router.push(`/(app)/(scooper)/visits/${visit.id}`)}
-                              variant="primary"
-                              disabled={openBlocked}
-                              style={styles.visitActionButton}
-                              labelStyle={styles.visitActionLabel}
-                            />
-                            {visit.navigationUrl ? (
-                              <Button
-                                title="Navigate"
-                                onPress={() => openNavigation(visit.navigationUrl)}
-                                variant="secondary"
-                                disabled={openBlocked}
-                                style={styles.visitActionButton}
-                                labelStyle={styles.visitActionLabel}
-                              />
-                            ) : null}
-                            {canReleaseVisit ? (
-                              <Button
-                                title="Release"
-                                onPress={() => openReleaseDialog(visit)}
-                                variant="secondary"
-                                disabled={releaseSubmitting}
-                                style={[
-                                  styles.visitActionButton,
-                                  styles.releaseButton,
-                                  { borderColor: palette.danger },
-                                ]}
-                                labelStyle={[styles.visitActionLabel, { color: palette.danger }]}
-                              />
-                            ) : null}
-                          </View>
-                          {lateReleaseText ? (
-                            <Text style={[styles.lateReleaseText, { color: lateReleaseTone }]}>
-                              {lateReleaseText}
-                            </Text>
-                          ) : null}
-                          {checkInBlocked ? (
-                            <Text style={[styles.helperText, { color: palette.muted }]}>
-                              Complete daily check-in to unlock visits.
-                            </Text>
-                          ) : dateBlocked ? (
-                            <Text style={[styles.helperText, { color: palette.muted }]}>
-                              Available on {formatDayLabel(visit.scheduledDate)}.
-                            </Text>
-                          ) : sequenceBlocked ? (
-                            <Text style={[styles.helperText, { color: palette.muted }]}>
-                              Finish the previous stop before opening this visit.
-                            </Text>
-                          ) : null}
-                        </View>
-                      );
+
+                              {/* Expanded Details */}
+                              {isExpanded ? (
+                                <View style={styles.visitExpandedContent}>
+                                  <View style={[styles.visitExpandedDivider, { backgroundColor: palette.border }]} />
+                                  <View style={styles.visitDetailRow}>
+                                    <View style={[styles.visitDetailIcon, { backgroundColor: `${palette.muted}15` }]}>
+                                      <FontAwesome name="map-marker" size={12} color={palette.muted} />
+                                    </View>
+                                    <Text style={[styles.visitDetailText, { color: palette.text }]}>
+                                      {address}{city}
+                                    </Text>
+                                  </View>
+                                  {dogsLabel ? (
+                                    <View style={styles.visitDetailRow}>
+                                      <View style={[styles.visitDetailIcon, { backgroundColor: `${palette.muted}15` }]}>
+                                        <FontAwesome name="paw" size={12} color={palette.muted} />
+                                      </View>
+                                      <Text style={[styles.visitDetailText, { color: palette.text }]}>
+                                        {dogsLabel}
+                                      </Text>
+                                    </View>
+                                  ) : null}
+                                  {payoutLabel ? (
+                                    <View style={styles.visitDetailRow}>
+                                      <View style={[styles.visitDetailIcon, { backgroundColor: `${mintTone}15` }]}>
+                                        <FontAwesome name="usd" size={12} color={mintTone} />
+                                      </View>
+                                      <View>
+                                        <Text style={[styles.visitDetailText, { color: mintTone }]}>
+                                          {payoutLabel} estimated
+                                        </Text>
+                                        <Text style={[styles.visitDetailSubtext, { color: palette.muted }]}>
+                                          Includes mileage + PPE
+                                        </Text>
+                                      </View>
+                                    </View>
+                                  ) : null}
+                                  {lateReleaseText ? (
+                                    <View style={styles.visitDetailRow}>
+                                      <View style={[styles.visitDetailIcon, { backgroundColor: `${lateReleaseTone}15` }]}>
+                                        <FontAwesome name="clock-o" size={12} color={lateReleaseTone} />
+                                      </View>
+                                      <Text style={[styles.visitDetailText, { color: lateReleaseTone }]}>
+                                        {lateReleaseText}
+                                      </Text>
+                                    </View>
+                                  ) : null}
+                                  {/* Inline Actions */}
+                                  <View style={styles.visitExpandedActions}>
+                                    <Pressable
+                                      onPress={() => router.push(`/(app)/(scooper)/visits/${visit.id}`)}
+                                      disabled={openBlocked}
+                                      style={[
+                                        styles.visitInlineAction,
+                                        { backgroundColor: openBlocked ? palette.border : palette.tint },
+                                      ]}
+                                    >
+                                      <FontAwesome name="play" size={12} color={openBlocked ? palette.muted : '#FFFFFF'} />
+                                      <Text style={[styles.visitInlineActionText, { color: openBlocked ? palette.muted : '#FFFFFF' }]}>
+                                        Start
+                                      </Text>
+                                    </Pressable>
+                                    {visit.navigationUrl ? (
+                                      <Pressable
+                                        onPress={() => openNavigation(visit.navigationUrl)}
+                                        disabled={openBlocked}
+                                        style={[styles.visitInlineAction, { backgroundColor: palette.card, borderWidth: 1, borderColor: cardBorder }]}
+                                      >
+                                        <FontAwesome name="location-arrow" size={12} color={openBlocked ? palette.muted : palette.text} />
+                                        <Text style={[styles.visitInlineActionText, { color: openBlocked ? palette.muted : palette.text }]}>
+                                          Navigate
+                                        </Text>
+                                      </Pressable>
+                                    ) : null}
+                                    {canReleaseVisit ? (
+                                      <Pressable
+                                        onPress={() => openReleaseDialog(visit)}
+                                        style={[styles.visitInlineAction, { backgroundColor: `${palette.danger}10`, borderWidth: 1, borderColor: palette.danger }]}
+                                      >
+                                        <FontAwesome name="times" size={12} color={palette.danger} />
+                                        <Text style={[styles.visitInlineActionText, { color: palette.danger }]}>
+                                          Release
+                                        </Text>
+                                      </Pressable>
+                                    ) : null}
+                                  </View>
+                                  {/* Blocked Messages */}
+                                  {checkInBlocked ? (
+                                    <View style={[styles.visitBlockedBanner, { backgroundColor: `${palette.danger}10` }]}>
+                                      <FontAwesome name="lock" size={10} color={palette.danger} />
+                                      <Text style={[styles.visitBlockedText, { color: palette.danger }]}>
+                                        Complete daily check-in to unlock
+                                      </Text>
+                                    </View>
+                                  ) : dateBlocked ? (
+                                    <View style={[styles.visitBlockedBanner, { backgroundColor: `${palette.muted}15` }]}>
+                                      <FontAwesome name="calendar" size={10} color={palette.muted} />
+                                      <Text style={[styles.visitBlockedText, { color: palette.muted }]}>
+                                        Available on {formatDayLabel(visit.scheduledDate)}
+                                      </Text>
+                                    </View>
+                                  ) : sequenceBlocked ? (
+                                    <View style={[styles.visitBlockedBanner, { backgroundColor: `${palette.muted}15` }]}>
+                                      <FontAwesome name="lock" size={10} color={palette.muted} />
+                                      <Text style={[styles.visitBlockedText, { color: palette.muted }]}>
+                                        Complete previous stop first
+                                      </Text>
+                                    </View>
+                                  ) : null}
+                                </View>
+                              ) : null}
+                            </Pressable>
+                          );
                     })}
                   </View>
                 </>
@@ -1574,260 +1094,148 @@ export default function ScooperHome() {
         loading={loading}
         error={error}
       />
-      <Modal
-        visible={Boolean(releaseVisit)}
-        transparent
-        animationType="fade"
-        onRequestClose={closeReleaseDialog}
-      >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
-        >
-          <Pressable style={styles.modalBackdrop} onPress={Keyboard.dismiss} />
-          <View style={styles.modalContent}>
-            <ScrollView
-              style={styles.modalScroll}
-              contentContainerStyle={styles.modalScrollContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <View style={[styles.modalCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                <Text style={[styles.modalTitle, { color: palette.text }]}>{releaseSummary.title}</Text>
-                <Text style={[styles.modalBody, { color: palette.muted }]}>
-                  Return work to the offer board so another scooper can cover it.
-                </Text>
-
-                  <View style={[styles.modalSection, { borderColor: palette.border, backgroundColor: palette.background }]}>
-                    <Text style={[styles.modalSectionLabel, { color: palette.muted }]}>Release scope</Text>
-                    <View style={styles.scopeRow}>
-                      <Pressable
-                        onPress={() => handleReleaseScopeChange('visit')}
-                        style={[
-                          styles.scopeOption,
-                          { borderColor: palette.border },
-                          releaseScope === 'visit' && { borderColor: palette.tint, backgroundColor: palette.tint },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.scopeText,
-                            { color: releaseScope === 'visit' ? '#FFFFFF' : palette.text },
-                          ]}
-                        >
-                          This visit only
-                        </Text>
-                      </Pressable>
-                      {canReleaseJob ? (
-                        <Pressable
-                          onPress={() => handleReleaseScopeChange('job')}
-                          style={[
-                            styles.scopeOption,
-                            { borderColor: palette.border },
-                            releaseScope === 'job' && { borderColor: palette.tint, backgroundColor: palette.tint },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.scopeText,
-                              { color: releaseScope === 'job' ? '#FFFFFF' : palette.text },
-                            ]}
-                          >
-                            Entire recurring job
-                          </Text>
-                        </Pressable>
-                      ) : null}
-                    </View>
-                    {!canReleaseJob ? (
-                      <Text style={[styles.modalBody, { color: palette.muted }]}>
-                        {releaseVisit?.job?.frequency === 'ONE_TIME'
-                          ? 'This stop is a one-time visit, so only the visit can be released.'
-                          : isReleaseJobOwnedByAnother
-                            ? 'This visit is part of a route owned by another scooper, so only this visit can be released.'
-                            : 'Only this visit can be released.'}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  <View style={[styles.modalSection, { borderColor: palette.border, backgroundColor: palette.background }]}>
-                    <Text style={[styles.modalSectionLabel, { color: palette.muted }]}>What happens next</Text>
-                    <Text style={[styles.modalBody, { color: palette.text }]}>{releaseSummary.description}</Text>
-                    <Text style={[styles.modalBody, { color: palette.muted }]}>{releaseSummary.commitment}</Text>
-                    {releaseScope === 'job' && releaseFrequencyLabel ? (
-                      <Text style={[styles.modalBody, { color: palette.muted }]}>
-                        Schedule: {releaseFrequencyLabel}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  <View style={[styles.modalSection, { borderColor: palette.border, backgroundColor: palette.background }]}>
-                    <Text style={[styles.modalSectionLabel, { color: palette.muted }]}>Reliability note</Text>
-                    <Text style={[styles.modalBody, { color: palette.muted }]}>
-                      We track releases to keep schedules reliable. Three missed visits in a quarter pause
-                      new offers. Late releases within 48 hours are capped at five per quarter.
-                    </Text>
-                    {releaseIsSameDay ? (
-                      <Text style={[styles.modalBody, { color: palette.danger }]}>
-                        Same-day releases are locked so routes stay reliable. Reach out to dispatch for help.
-                      </Text>
-                    ) : null}
-                    {releaseScope === 'visit' ? (
-                      <Text style={[styles.modalBody, { color: palette.muted }]}>
-                        If you can't keep the recurring schedule, release the entire job instead.
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  <View style={styles.modalSection}>
-                    <Text style={[styles.modalSectionLabel, { color: palette.muted }]}>Reason (required)</Text>
-                    <View style={styles.reasonChips}>
-                      {RELEASE_REASON_OPTIONS.map((option) => (
-                        <ChoiceChip
-                          key={option.key}
-                          label={option.label}
-                          selected={releaseReasonOption === option.key}
-                          onPress={() => {
-                            setReleaseReasonOption(option.key);
-                            if (option.key !== 'other') {
-                              setReleaseReason('');
-                            }
-                          }}
-                        />
-                      ))}
-                    </View>
-                    {!reasonReady ? (
-                      <Text style={[styles.helperText, { color: palette.muted }]}>
-                        Select a reason to continue.
-                      </Text>
-                    ) : null}
-                    {isOtherReason ? (
-                      <TextInput
-                        value={releaseReason}
-                        onChangeText={setReleaseReason}
-                        placeholder="Tell us what happened"
-                        placeholderTextColor={palette.muted}
-                        style={[styles.input, styles.textArea, { color: palette.text, borderColor: palette.border }]}
-                        multiline
-                        textAlignVertical="top"
-                      />
-                    ) : null}
-                  </View>
-
-                  <View style={styles.checkboxGroup}>
-                    <Pressable
-                      onPress={() =>
-                        setReleaseChecks((prev) => ({
-                          ...prev,
-                          availability: !prev.availability,
-                        }))
-                      }
-                      style={styles.checkboxRow}
-                    >
-                      <View
-                        style={[
-                          styles.checkbox,
-                          { borderColor: checkboxBorder, backgroundColor: checkboxBackground },
-                          releaseChecks.availability && {
-                            backgroundColor: palette.tint,
-                            borderColor: palette.tint,
-                          },
-                        ]}
-                      >
-                        {releaseChecks.availability ? <Text style={styles.checkboxMark}>X</Text> : null}
-                      </View>
-                      <Text style={[styles.checkboxText, { color: palette.text }]}>
-                        I can't complete this {releaseScopeLabel} and need to release it.
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() =>
-                        setReleaseChecks((prev) => ({
-                          ...prev,
-                          scope: !prev.scope,
-                        }))
-                      }
-                      style={styles.checkboxRow}
-                    >
-                      <View
-                        style={[
-                          styles.checkbox,
-                          { borderColor: checkboxBorder, backgroundColor: checkboxBackground },
-                          releaseChecks.scope && {
-                            backgroundColor: palette.tint,
-                            borderColor: palette.tint,
-                          },
-                        ]}
-                      >
-                        {releaseChecks.scope ? <Text style={styles.checkboxMark}>X</Text> : null}
-                      </View>
-                      <Text style={[styles.checkboxText, { color: palette.text }]}>
-                        I understand this releases the {releaseScopeLabel} back to the offer board.
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() =>
-                        setReleaseChecks((prev) => ({
-                          ...prev,
-                          policy: !prev.policy,
-                        }))
-                      }
-                      style={styles.checkboxRow}
-                    >
-                      <View
-                        style={[
-                          styles.checkbox,
-                          { borderColor: checkboxBorder, backgroundColor: checkboxBackground },
-                          releaseChecks.policy && {
-                            backgroundColor: palette.tint,
-                            borderColor: palette.tint,
-                          },
-                        ]}
-                      >
-                        {releaseChecks.policy ? <Text style={styles.checkboxMark}>X</Text> : null}
-                      </View>
-                      <Text style={[styles.checkboxText, { color: palette.text }]}>
-                        I understand late releases within 48 hours are capped and missed visits can pause offers.
-                      </Text>
-                    </Pressable>
-                  </View>
-
-                  {releaseError ? (
-                    <View style={[styles.errorBox, { borderColor: palette.danger }]}>
-                      <Text style={[styles.errorText, { color: palette.danger }]}>{releaseError}</Text>
-                    </View>
-                  ) : null}
-
-                  <View style={styles.modalActions}>
-                    <Button
-                      title="Cancel"
-                      variant="secondary"
-                      onPress={closeReleaseDialog}
-                      style={styles.modalButton}
-                    />
-                    <Button
-                      title={releaseSubmitting ? 'Releasing...' : 'Release work'}
-                      onPress={submitRelease}
-                      disabled={!canConfirmRelease || releaseSubmitting}
-                      style={[
-                        styles.modalButton,
-                        { backgroundColor: palette.danger, borderColor: palette.danger },
-                      ]}
-                      labelStyle={{ color: '#FFFFFF' }}
-                    />
-                  </View>
-              </View>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* New ReleaseSheet component - progressive disclosure */}
+      <ReleaseSheet
+        visible={releaseSheetOpen}
+        onClose={closeReleaseDialog}
+        onRelease={handleReleaseSubmit}
+        customerName={releaseVisit?.customer?.name ?? undefined}
+        frequency={releaseVisit?.job?.frequency}
+        canReleaseJob={canReleaseJob}
+        isJobOwnedByAnother={isReleaseJobOwnedByAnother}
+        isSameDay={releaseIsSameDay}
+        isLateRelease={Boolean(
+          resolveLateReleaseCutoff(releaseVisit?.scheduledDate ?? '') &&
+            new Date() >= (resolveLateReleaseCutoff(releaseVisit?.scheduledDate ?? '') ?? new Date()),
+        )}
+        lateReleaseLabel={
+          resolveLateReleaseCutoff(releaseVisit?.scheduledDate ?? '')
+            ? formatShortDateLabel(resolveLateReleaseCutoff(releaseVisit?.scheduledDate ?? '') ?? new Date())
+            : null
+        }
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 32,
+  },
   pageHeader: {
-    marginBottom: 18,
+    marginBottom: 12,
+  },
+  pageHeaderMain: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 4,
+    marginBottom: 16,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  tabButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  tabBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  tabBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  driveInfoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  driveInfoText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  emptyState: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  emptyBody: {
+    fontSize: 14,
+    textAlign: 'center',
   },
   pageHeaderRow: {
     flexDirection: 'row',
@@ -1883,7 +1291,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
   },
   subtitle: {
@@ -1972,6 +1380,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     marginBottom: 12,
+  },
+  timelineCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 12,
+    overflow: 'hidden',
   },
   cardShadow: {
     shadowColor: '#0F172A',
@@ -2199,7 +1613,119 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   visitCard: {
+    borderRadius: 16,
+    padding: 14,
     marginBottom: 0,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  visitNextAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  visitCompactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  visitAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  visitCompactInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  visitCustomerName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  visitCompactMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  visitMetaText: {
+    fontSize: 12,
+  },
+  visitMetaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+  },
+  visitPayoutText: {
+    fontWeight: '700',
+  },
+  visitCompactRight: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  visitExpandedContent: {
+    marginTop: 12,
+    gap: 10,
+  },
+  visitExpandedDivider: {
+    height: 1,
+    marginBottom: 2,
+  },
+  visitDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  visitDetailIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  visitDetailText: {
+    fontSize: 13,
+    flex: 1,
+  },
+  visitDetailSubtext: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  visitExpandedActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  visitInlineAction: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  visitInlineActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  visitBlockedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  visitBlockedText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   visitActions: {
     flexDirection: 'row',
@@ -2250,125 +1776,5 @@ const styles = StyleSheet.create({
   },
   releaseButton: {
     minWidth: 0,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
-    justifyContent: 'center',
-    padding: 20,
-    position: 'relative',
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  modalContent: {
-    flex: 1,
-    zIndex: 1,
-  },
-  modalScroll: {
-    flex: 1,
-  },
-  modalScrollContent: {
-    paddingVertical: 12,
-  },
-  modalCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-    gap: 12,
-    width: '100%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  modalBody: {
-    fontSize: 13,
-  },
-  modalSection: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 12,
-    gap: 6,
-  },
-  modalSectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  scopeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 6,
-  },
-  reasonChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  scopeOption: {
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  scopeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13,
-  },
-  textArea: {
-    minHeight: 80,
-  },
-  checkboxGroup: {
-    gap: 10,
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderRadius: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  checkboxMark: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  checkboxText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-  },
-  errorBox: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 10,
-  },
-  errorText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
 });

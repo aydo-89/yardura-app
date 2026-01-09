@@ -1,19 +1,21 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import {
+  ActivityIndicator,
   Image,
   Linking,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
 
 import Button from '@/components/ui/Button';
+import CollapsibleSection from '@/components/ui/CollapsibleSection';
 import Screen from '@/components/ui/Screen';
+import Switch from '@/components/ui/ThemedSwitch';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -21,6 +23,8 @@ import { apiRequest } from '@/lib/api/client';
 import type { AppUserRole } from '@/lib/auth/types';
 import { useThemePreference } from '@/lib/theme/ThemePreferenceProvider';
 import { ensurePushRegistration } from '@/lib/notifications/push';
+import { captureWithFallback } from '@/lib/media/imagePicker';
+import { apiUpload } from '@/lib/api/client';
 
 const ROLE_LABELS: Record<AppUserRole, string> = {
   CUSTOMER: 'Pet Owner',
@@ -39,6 +43,7 @@ export default function SalesAccountScreen() {
     colorScheme === 'dark' ? styles.cardShadowDark : styles.cardShadow;
   const roles = session?.roles ?? [];
   const emailLabel = session?.user?.email ?? '';
+  const userName = session?.user?.name ?? 'Sales Rep';
   const activeRoleLabel = session?.activeRole ? ROLE_LABELS[session.activeRole] : null;
   const themePreference = useThemePreference();
   const themeValue = themePreference?.preference ?? 'system';
@@ -47,6 +52,11 @@ export default function SalesAccountScreen() {
   const [pushLoading, setPushLoading] = useState(false);
   const [pushUpdating, setPushUpdating] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(
+    session?.user?.imageUrl ?? null,
+  );
+  const [profilePhotoLoading, setProfilePhotoLoading] = useState(false);
+  const [profilePhotoError, setProfilePhotoError] = useState<string | null>(null);
 
   const handleSwitch = async (role: AppUserRole) => {
     await setActiveRole(role);
@@ -65,6 +75,41 @@ export default function SalesAccountScreen() {
     await signOut();
     router.replace('/(auth)/sign-in');
   };
+
+  useEffect(() => {
+    setProfilePhotoUrl(session?.user?.imageUrl ?? null);
+  }, [session?.user?.imageUrl]);
+
+  const handleProfilePhoto = useCallback(async () => {
+    if (!session?.token) return;
+    setProfilePhotoLoading(true);
+    setProfilePhotoError(null);
+    try {
+      const asset = await captureWithFallback({ kind: 'photo', source: 'auto' });
+      if (!asset?.uri) return;
+      const name =
+        asset.fileName ||
+        `sales-${Date.now()}.${asset.uri.split('.').pop() || 'jpg'}`;
+      const type = asset.mimeType || 'image/jpeg';
+      const formData = new FormData();
+      formData.append('file', { uri: asset.uri, name, type } as any);
+      const upload = await apiUpload<{ photoUrl: string | null }>(
+        '/api/mobile/users/avatar',
+        {
+          method: 'POST',
+          token: session.token,
+          body: formData,
+        },
+      );
+      setProfilePhotoUrl(upload.photoUrl ?? null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Unable to update profile photo.';
+      setProfilePhotoError(message);
+    } finally {
+      setProfilePhotoLoading(false);
+    }
+  }, [session?.token]);
 
   useEffect(() => {
     if (!session?.token) return;
@@ -122,172 +167,196 @@ export default function SalesAccountScreen() {
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.pageHeader}>
-          <View style={styles.headerRow}>
-            <Image
-              source={require('../../../assets/images/logo-horizontal.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <View style={styles.headerCopy}>
-              <Text style={[styles.kicker, { color: palette.muted }]}>Account</Text>
-              <Text style={[styles.title, { color: palette.text }]}>Sales access</Text>
-              <Text style={[styles.subtitle, { color: palette.muted }]}>{emailLabel}</Text>
-            </View>
-          </View>
-          <View style={styles.headerControls}>
-            <View style={styles.metaRow}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Profile Card with Avatar */}
+        <View
+          style={[
+            styles.profileCard,
+            cardShadowStyle,
+            { backgroundColor: palette.card, borderColor: cardBorder },
+          ]}
+        >
+          <View style={styles.profileRow}>
+            <Pressable
+              onPress={handleProfilePhoto}
+              disabled={profilePhotoLoading}
+              style={styles.profileAvatarButton}
+            >
+              {profilePhotoUrl ? (
+                <Image source={{ uri: profilePhotoUrl }} style={styles.profileAvatar} />
+              ) : (
+                <View style={[styles.profileAvatar, { backgroundColor: palette.border }]}>
+                  <Text style={[styles.profileInitials, { color: palette.text }]}>
+                    {userName
+                      .split(' ')
+                      .map((part) => part[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={[styles.profileAvatarBadge, { backgroundColor: palette.tint }]}>
+                <FontAwesome name="camera" size={12} color="#FFFFFF" />
+              </View>
+            </Pressable>
+            <View style={styles.profileMeta}>
+              <Text style={[styles.profileName, { color: palette.text }]}>
+                {userName}
+              </Text>
+              <Text style={[styles.profileSubtitle, { color: palette.muted }]}>
+                {emailLabel}
+              </Text>
               {activeRoleLabel ? (
-                <View
-                  style={[
-                    styles.metaPill,
-                    { backgroundColor: palette.card, borderColor: palette.border },
-                  ]}
-                >
-                  <Text style={[styles.metaText, { color: palette.text }]}>
-                    Active role: {activeRoleLabel}
+                <View style={[styles.roleBadge, { backgroundColor: `${palette.tint}15` }]}>
+                  <Text style={[styles.roleBadgeText, { color: palette.tint }]}>
+                    {activeRoleLabel}
                   </Text>
                 </View>
               ) : null}
             </View>
-            <View style={styles.themeToggleContainer}>
-              <View
+            {/* Theme toggle */}
+            <View style={[styles.themeToggle, { borderColor: palette.border, backgroundColor: palette.background }]}>
+              <Pressable
+                onPress={() => themePreference?.setPreference('system')}
                 style={[
-                  styles.themeToggle,
-                  { borderColor: palette.border, backgroundColor: palette.card },
+                  styles.themeToggleButton,
+                  themeValue === 'system' && { backgroundColor: palette.tint },
                 ]}
+                disabled={themeLoading || !themePreference}
               >
-                <Pressable
-                  onPress={() => themePreference?.setPreference('system')}
-                  style={[
-                    styles.themeToggleButton,
-                    themeValue === 'system' && { backgroundColor: palette.tint },
-                  ]}
-                  disabled={themeLoading || !themePreference}
-                >
-                  <FontAwesome
-                    name="adjust"
-                    size={14}
-                    color={themeValue === 'system' ? '#FFFFFF' : palette.text}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => themePreference?.setPreference('light')}
-                  style={[
-                    styles.themeToggleButton,
-                    themeValue === 'light' && { backgroundColor: palette.tint },
-                  ]}
-                  disabled={themeLoading || !themePreference}
-                >
-                  <FontAwesome
-                    name="sun-o"
-                    size={14}
-                    color={themeValue === 'light' ? '#FFFFFF' : palette.text}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => themePreference?.setPreference('dark')}
-                  style={[
-                    styles.themeToggleButton,
-                    themeValue === 'dark' && { backgroundColor: palette.tint },
-                  ]}
-                  disabled={themeLoading || !themePreference}
-                >
-                  <FontAwesome
-                    name="moon-o"
-                    size={14}
-                    color={themeValue === 'dark' ? '#FFFFFF' : palette.text}
-                  />
-                </Pressable>
-              </View>
+                <FontAwesome
+                  name="adjust"
+                  size={12}
+                  color={themeValue === 'system' ? '#FFFFFF' : palette.muted}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => themePreference?.setPreference('light')}
+                style={[
+                  styles.themeToggleButton,
+                  themeValue === 'light' && { backgroundColor: palette.tint },
+                ]}
+                disabled={themeLoading || !themePreference}
+              >
+                <FontAwesome
+                  name="sun-o"
+                  size={12}
+                  color={themeValue === 'light' ? '#FFFFFF' : palette.muted}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => themePreference?.setPreference('dark')}
+                style={[
+                  styles.themeToggleButton,
+                  themeValue === 'dark' && { backgroundColor: palette.tint },
+                ]}
+                disabled={themeLoading || !themePreference}
+              >
+                <FontAwesome
+                  name="moon-o"
+                  size={12}
+                  color={themeValue === 'dark' ? '#FFFFFF' : palette.muted}
+                />
+              </Pressable>
             </View>
           </View>
+          {profilePhotoLoading ? (
+            <Text style={[styles.helperText, { color: palette.muted }]}>Updating photo...</Text>
+          ) : null}
+          {profilePhotoError ? (
+            <Text style={[styles.helperText, { color: palette.danger }]}>{profilePhotoError}</Text>
+          ) : null}
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Preferences</Text>
-            <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>Alerts and device settings.</Text>
-          </View>
-
-          <View
-            style={[
-              styles.card,
-              cardShadowStyle,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Notifications</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>Control push alerts for lead updates and reminders.</Text>
+        {/* Collapsible Settings Sections */}
+        <View style={styles.settingsContainer}>
+          {/* Notifications */}
+          <CollapsibleSection title="Notifications" subtitle={pushEnabled ? 'Enabled' : 'Disabled'}>
             {pushLoading ? (
-              <Text style={[styles.cardBody, { color: palette.muted }]}>Loading...</Text>
+              <View style={styles.inlineRow}>
+                <ActivityIndicator size="small" color={palette.tint} />
+                <Text style={[styles.helperText, { color: palette.muted }]}>Loading...</Text>
+              </View>
             ) : (
-              <View style={styles.toggleRow}>
-                <View style={styles.toggleText}>
-                  <Text style={[styles.cardBody, { color: palette.text }]}>Push alerts</Text>
-                  <Text style={[styles.toggleMeta, { color: palette.muted }]}>
-                    {pushEnabled ? 'On' : 'Off'}
+              <View style={[styles.settingItem, { backgroundColor: palette.background }]}>
+                <View style={[styles.settingItemIcon, { backgroundColor: pushEnabled ? `${Colors.brand.mint}15` : `${palette.muted}15` }]}>
+                  <FontAwesome name="bell" size={14} color={pushEnabled ? Colors.brand.mint : palette.muted} />
+                </View>
+                <View style={styles.settingItemCopy}>
+                  <Text style={[styles.settingLabel, { color: palette.text }]}>Push alerts</Text>
+                  <Text style={[styles.helperText, { color: palette.muted }]}>
+                    Lead updates and reminders
                   </Text>
                 </View>
                 <Switch
                   value={Boolean(pushEnabled)}
                   onValueChange={handlePushToggle}
-                  disabled={pushUpdating}
-                  trackColor={{ true: palette.tint, false: palette.border }}
-                  thumbColor={palette.card}
+                  disabled={pushUpdating || pushEnabled === null}
+                  trackColor={{ false: palette.border, true: Colors.brand.mint }}
+                  thumbColor="#FFFFFF"
                 />
               </View>
             )}
-            {pushUpdating ? (
-              <Text style={[styles.cardBody, { color: palette.muted }]}>Saving...</Text>
-            ) : null}
-            {pushError ? (
-              <Text style={[styles.cardBody, { color: palette.danger }]}>{pushError}</Text>
-            ) : null}
-            <Button
-              title="Manage device settings"
+            {pushError ? <Text style={[styles.helperText, { color: palette.danger }]}>{pushError}</Text> : null}
+            <Pressable
               onPress={() => Linking.openSettings()}
-              variant="ghost"
-            />
-          </View>
+              style={({ pressed }) => [
+                styles.settingItem,
+                { backgroundColor: palette.background },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <View style={[styles.settingItemIcon, { backgroundColor: `${palette.muted}15` }]}>
+                <FontAwesome name="cog" size={14} color={palette.muted} />
+              </View>
+              <View style={styles.settingItemCopy}>
+                <Text style={[styles.settingLabel, { color: palette.text }]}>Device settings</Text>
+                <Text style={[styles.helperText, { color: palette.muted }]}>Open system preferences</Text>
+              </View>
+              <FontAwesome name="external-link" size={12} color={palette.muted} />
+            </Pressable>
+          </CollapsibleSection>
+
+          {/* Role Access */}
+          {roles.length > 1 ? (
+            <CollapsibleSection title="Switch role" subtitle={activeRoleLabel ?? 'Select role'}>
+              <View style={styles.roleList}>
+                {roles.map((role) => {
+                  const isActive = role === session?.activeRole;
+                  const roleIcon = role === 'TECH' ? 'truck' : role === 'CUSTOMER' ? 'paw' : role === 'SALES_REP' ? 'handshake-o' : 'user-circle';
+                  return (
+                    <Pressable
+                      key={role}
+                      onPress={() => handleSwitch(role)}
+                      style={({ pressed }) => [
+                        styles.roleChip,
+                        { borderColor: isActive ? palette.tint : palette.border },
+                        isActive && { backgroundColor: `${palette.tint}15` },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <FontAwesome name={roleIcon} size={14} color={isActive ? palette.tint : palette.muted} />
+                      <Text style={[styles.roleChipText, { color: isActive ? palette.tint : palette.text }]}>
+                        {ROLE_LABELS[role]}
+                      </Text>
+                      {isActive ? (
+                        <FontAwesome name="check" size={12} color={palette.tint} />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </CollapsibleSection>
+          ) : null}
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Account & access</Text>
-            <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>Manage roles and sign-in options.</Text>
-          </View>
-
-          <View
-            style={[
-              styles.card,
-              cardShadowStyle,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Role access</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>Switch roles if you manage multiple dashboards.</Text>
-            <View style={styles.roleList}>
-              {roles.length === 0 ? (
-                <Text style={[styles.cardBody, { color: palette.muted }]}>No roles assigned.</Text>
-              ) : (
-                roles.map((role) => (
-                  <Button
-                    key={role}
-                    title={ROLE_LABELS[role]}
-                    onPress={() => handleSwitch(role)}
-                    variant={role === session?.activeRole ? 'primary' : 'secondary'}
-                    style={styles.roleButton}
-                  />
-                ))
-              )}
-            </View>
-          </View>
-
-          <View style={styles.actions}>
-            <Button title="Sign out" onPress={handleSignOut} variant="secondary" />
-          </View>
+        {/* Sign Out */}
+        <View style={styles.signOutContainer}>
+          <Button title="Sign out" onPress={handleSignOut} variant="secondary" />
         </View>
       </ScrollView>
     </Screen>
@@ -297,60 +366,66 @@ export default function SalesAccountScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
+    gap: 16,
   },
-  pageHeader: {
-    marginBottom: 22,
-    gap: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  headerControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  themeToggleContainer: {
-    alignItems: 'flex-end',
-  },
-  logo: {
-    width: 110,
-    height: 32,
-  },
-  headerCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  kicker: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 14,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  profileCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 16,
     gap: 8,
   },
-  metaPill: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  metaText: {
+  profileAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileAvatarButton: {
+    position: 'relative',
+  },
+  profileAvatarBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  profileInitials: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  profileMeta: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  profileName: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  profileSubtitle: {
     fontSize: 12,
+  },
+  roleBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    marginTop: 2,
+  },
+  roleBadgeText: {
+    fontSize: 10,
     fontWeight: '600',
   },
   themeToggle: {
@@ -360,70 +435,75 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   themeToggleButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
-  section: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    gap: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 16,
+  settingsContainer: {
     gap: 12,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cardBody: {
-    fontSize: 13,
-  },
-  toggleRow: {
+  settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 12,
+    borderRadius: 12,
+    padding: 12,
   },
-  toggleText: {
+  settingItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingItemCopy: {
     flex: 1,
-    gap: 4,
+    gap: 2,
   },
-  toggleMeta: {
+  settingLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  helperText: {
     fontSize: 12,
   },
+  inlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   roleList: {
-    gap: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  roleButton: {
-    width: '100%',
+  roleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  actions: {
+  roleChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  signOutContainer: {
     marginTop: 8,
   },
   cardShadow: {
     shadowColor: '#0F172A',
     shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 2,
   },
   cardShadowDark: {
     shadowColor: '#000000',
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
 });

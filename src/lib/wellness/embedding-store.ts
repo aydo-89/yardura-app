@@ -52,8 +52,17 @@ export async function collectWellnessEmbeddingDocs(options: {
     ? { OR: [{ dogId: options.dogId }, { dogId: null }] }
     : {};
 
-  const [dogs, weeklyReports, ownerCaptures, proMedia, foodProducts, foodLogs, reminders, chatLogs] =
-    await Promise.all([
+  const [
+    dogs,
+    weeklyReports,
+    dailyCheckIns,
+    ownerCaptures,
+    proMedia,
+    foodProducts,
+    foodLogs,
+    reminders,
+    chatLogs,
+  ] = await Promise.all([
       prisma.dog.findMany({
         where: options.dogId ? { id: options.dogId } : { customerId: options.customerId },
         select: {
@@ -99,6 +108,31 @@ export async function collectWellnessEmbeddingDocs(options: {
           stoolNotes: true,
           diagnosisLabel: true,
           diagnosisNotes: true,
+        },
+      }),
+      prisma.customerWellnessDailyCheckIn.findMany({
+        where: {
+          customerId: options.customerId,
+          loggedAt: { gte: lookback },
+          ...(options.dogId
+            ? { OR: [{ dogId: options.dogId }, { suspectedDogIds: { has: options.dogId } }] }
+            : {}),
+        },
+        orderBy: { loggedAt: 'desc' },
+        take: 16,
+        select: {
+          id: true,
+          dogId: true,
+          loggedAt: true,
+          appetite: true,
+          energy: true,
+          waterIntake: true,
+          stoolFrequency: true,
+          vomiting: true,
+          diarrhea: true,
+          medsGiven: true,
+          medsNotes: true,
+          notes: true,
         },
       }),
       prisma.customerWellnessCapture.findMany({
@@ -209,6 +243,7 @@ export async function collectWellnessEmbeddingDocs(options: {
     ]);
 
   const docs: WellnessEmbeddingDoc[] = [];
+  const dogNameById = new Map(dogs.map((dog) => [dog.id, dog.name]));
 
   dogs.forEach((dog) => {
     const content = normalizeText(
@@ -276,6 +311,40 @@ export async function collectWellnessEmbeddingDocs(options: {
       sourceId: report.id,
       content,
       metadata: { weekStart: report.weekStart.toISOString(), weekEnd: report.weekEnd.toISOString() },
+    });
+  });
+
+  dailyCheckIns.forEach((checkIn) => {
+    const dogName = checkIn.dogId ? dogNameById.get(checkIn.dogId) ?? null : null;
+    const content = normalizeText(
+      [
+        `Daily check-in (${checkIn.loggedAt.toISOString().slice(0, 10)}).`,
+        dogName ? `Dog: ${dogName}.` : null,
+        checkIn.appetite ? `Appetite: ${checkIn.appetite}.` : null,
+        checkIn.energy ? `Energy: ${checkIn.energy}.` : null,
+        checkIn.waterIntake ? `Water intake: ${checkIn.waterIntake}.` : null,
+        typeof checkIn.stoolFrequency === 'number'
+          ? `Stool frequency: ${checkIn.stoolFrequency}.`
+          : null,
+        checkIn.vomiting ? 'Vomiting noted.' : null,
+        checkIn.diarrhea ? 'Diarrhea noted.' : null,
+        checkIn.medsGiven ? 'Meds given.' : null,
+        checkIn.medsNotes ? `Meds notes: ${checkIn.medsNotes}.` : null,
+        checkIn.notes ? `Notes: ${checkIn.notes}.` : null,
+      ]
+        .filter(Boolean)
+        .join(' '),
+      700,
+    );
+    if (!content) return;
+    docs.push({
+      orgId: options.orgId,
+      customerId: options.customerId,
+      dogId: checkIn.dogId ?? null,
+      sourceType: 'DAILY_CHECK_IN',
+      sourceId: checkIn.id,
+      content,
+      metadata: { loggedAt: checkIn.loggedAt.toISOString(), dogName },
     });
   });
 

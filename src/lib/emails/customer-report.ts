@@ -38,13 +38,18 @@ export async function sendCustomerEmailReport({
   const visualizations: {
     wellnessScore?: number;
     wellnessLabel?: string;
-    bristolAvg?: number | null;
     hydrationLevel?: number | null;
     issues?: Array<{ label: string; count: number }>;
     checkInDays?: number[];
     periodDays?: number;
     foodBreakdown?: Record<string, number>;
     walkStats?: { total: number; distanceMiles: number; durationMinutes: number };
+    walkRouteMap?: {
+      url: string;
+      dogName?: string | null;
+      distanceMiles?: number | null;
+      durationMinutes?: number | null;
+    };
     activitySummary?: Array<{ label: string; value: number; color?: string }>;
   } = {};
 
@@ -52,13 +57,9 @@ export async function sendCustomerEmailReport({
   visualizations.wellnessScore = report.stats.wellnessScore;
   visualizations.wellnessLabel = report.stats.wellnessLabel;
 
-  // Bristol scale average (firmness)
-  if (report.wellness?.firmnessAvg != null) {
-    visualizations.bristolAvg = report.wellness.firmnessAvg;
-  }
-
-  // Hydration level
-  if (report.wellness?.hydrationAvg != null) {
+  // Hydration level - only show if we have valid data (above 0)
+  // A score of 0 typically means the AI couldn't determine hydration, so skip it
+  if (report.wellness?.hydrationAvg != null && report.wellness.hydrationAvg > 0) {
     visualizations.hydrationLevel = report.wellness.hydrationAvg;
   }
 
@@ -94,6 +95,16 @@ export async function sendCustomerEmailReport({
       distanceMiles: report.walks.distanceMiles,
       durationMinutes: report.walks.durationMinutes,
     };
+    
+    // Walk route map for latest walk
+    if (report.walks.latestRouteMapUrl) {
+      visualizations.walkRouteMap = {
+        url: report.walks.latestRouteMapUrl,
+        dogName: report.walks.latestRouteDogName,
+        distanceMiles: report.walks.latestRouteDistanceMiles,
+        durationMinutes: report.walks.latestRouteDurationMinutes,
+      };
+    }
   }
 
   // Activity summary bars
@@ -175,7 +186,7 @@ export async function sendCustomerEmailReport({
       report.wellness.stoolNotes ? `Stool notes: ${report.wellness.stoolNotes}` : "",
     ].filter(Boolean);
     // Only add section if visualizations don't already cover it
-    if (!visualizations.bristolAvg && !visualizations.hydrationLevel) {
+    if (!visualizations.hydrationLevel) {
       sections.push({ title: "Wellness snapshot", lines, accent: "mint" });
     }
   }
@@ -248,6 +259,14 @@ export async function sendCustomerEmailReport({
   // NOTE: We do NOT include stool photos in email reports - people don't want poop in their inbox!
   // Instead, flagged items are mentioned in highlights and users can view in the app.
   const photos = undefined;
+  const poopMap = report.poopMap
+    ? {
+        url: report.poopMap.heatmapUrl,
+        pointsCount: report.poopMap.pointsCount,
+        ownerCount: report.poopMap.ownerCount,
+        proCount: report.poopMap.proCount,
+      }
+    : undefined;
 
   const cadenceLabel = report.period.cadence === "MONTHLY" ? "Monthly" : "Weekly";
 
@@ -259,6 +278,7 @@ export async function sendCustomerEmailReport({
     highlights: report.highlights.length ? report.highlights : ["Everything looks on track this period."],
     sections,
     photos,
+    poopMap,
     dashboardUrl,
     manageUrl,
     visualizations,

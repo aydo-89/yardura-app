@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Button from '@/components/ui/Button';
-import ChoiceChip from '@/components/ui/ChoiceChip';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import VisitStepShell from '@/components/scooper/VisitStepShell';
@@ -13,6 +13,10 @@ import { useStepGuard } from '@/lib/scooper/useStepGuard';
 export default function ReviewStepScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const cardBorder = colorScheme === 'dark' ? '#233045' : palette.border;
+  const successTone = Colors.brand.mint;
+  const warningTone = Colors.brand.gold;
+
   const {
     steps,
     visitId,
@@ -32,6 +36,7 @@ export default function ReviewStepScreen() {
   } = useVisitFlow();
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showSamples, setShowSamples] = useState(false);
 
   const sampleGroups = useMemo(() => {
     const grouped = new Map<string, typeof insightMedia>();
@@ -83,9 +88,9 @@ export default function ReviewStepScreen() {
 
   useStepGuard('review');
 
-  const stepIndex = Math.max(
-    steps.findIndex((step) => step.id === 'review'),
-    0,
+  const stepIndex = useMemo(
+    () => Math.max(steps.findIndex((step) => step.id === 'review'), 0),
+    [steps],
   );
 
   const canContinue = Boolean(
@@ -102,15 +107,8 @@ export default function ReviewStepScreen() {
     router.push(`/(app)/(scooper)/visits/${visitId}/${stepId}`);
   };
 
-  const handleBack = () => {
-    const prev = getPreviousStep('review');
-    goToStep(prev);
-  };
-
-  const handleNext = () => {
-    const next = getNextStep('review');
-    goToStep(next);
-  };
+  const handleBack = () => goToStep(getPreviousStep('review'));
+  const handleNext = () => goToStep(getNextStep('review'));
 
   const handleDeleteSample = async (mediaId: string) => {
     if (!mediaId) return;
@@ -119,357 +117,540 @@ export default function ReviewStepScreen() {
     setDeletingId(null);
   };
 
-  const analysisLabel = useMemo(() => {
-    if (analysisGoal === 0) {
-      return 'Capture at least one sample to unlock AI summary.';
-    }
-    return `${analyzedCount} analyzed of ${analysisGoal} recommended`;
-  }, [analysisGoal, analyzedCount]);
-
   useEffect(() => {
     if (!hasMetAnalysisMinimum || summaryLoading || summaryResult || summaryError) return;
     generateSummary();
   }, [hasMetAnalysisMinimum, summaryLoading, summaryResult, summaryError, generateSummary]);
 
+  const totalSamples = sampleGroups.groups.length + sampleGroups.ungrouped.length;
+
   return (
     <VisitStepShell
       title="Review & summarize"
-      subtitle="Confirm the 3Cs and insights that the customer will receive."
+      subtitle="Complete the 3Cs summary for the customer"
       stepIndex={stepIndex}
       stepCount={steps.length || 1}
       onBack={handleBack}
     >
-      <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-        <Text style={[styles.cardTitle, { color: palette.text }]}>AI summary</Text>
-        <Text style={[styles.cardBody, { color: palette.muted }]}>{analysisLabel}</Text>
-        {summaryResult ? (
-          <Text style={[styles.cardBody, { color: palette.muted }]}>
-            Suggestions loaded from analyzed samples.
-          </Text>
-        ) : null}
+      {/* AI Summary Card */}
+      <View style={[styles.summaryCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+        <View style={styles.summaryHeader}>
+          <View style={[styles.summaryIcon, { backgroundColor: `${palette.tint}15` }]}>
+            <FontAwesome name="magic" size={18} color={palette.tint} />
+          </View>
+          <View style={styles.summaryContent}>
+            <Text style={[styles.summaryTitle, { color: palette.text }]}>AI Summary</Text>
+            <Text style={[styles.summarySubtitle, { color: palette.muted }]}>
+              {analyzedCount} of {Math.max(1, analysisGoal)} samples analyzed
+            </Text>
+          </View>
+          {hasMetAnalysisMinimum ? (
+            <View style={[styles.statusBadge, { backgroundColor: `${successTone}20` }]}>
+              <Text style={[styles.statusText, { color: successTone }]}>Ready</Text>
+            </View>
+          ) : (
+            <View style={[styles.statusBadge, { backgroundColor: `${warningTone}20` }]}>
+              <Text style={[styles.statusText, { color: warningTone }]}>Pending</Text>
+            </View>
+          )}
+        </View>
         {summaryError ? (
-          <Text style={[styles.errorText, { color: palette.danger }]}>{summaryError}</Text>
+          <View style={[styles.errorBanner, { backgroundColor: `${palette.danger}10` }]}>
+            <FontAwesome name="exclamation-circle" size={12} color={palette.danger} />
+            <Text style={[styles.errorText, { color: palette.danger }]}>{summaryError}</Text>
+          </View>
         ) : null}
-        <Button
-          title={summaryLoading ? 'Generating...' : 'Generate AI summary'}
+        <Pressable
           onPress={generateSummary}
           disabled={summaryLoading || !hasMetAnalysisMinimum}
-          variant="secondary"
-        />
-        {!hasMetAnalysisMinimum ? (
-          <Text style={[styles.helperText, { color: palette.muted }]}>
-            Analyze at least {Math.max(1, analysisGoal)} samples to enable AI summary.
+          style={({ pressed }) => [
+            styles.generateButton,
+            {
+              backgroundColor: hasMetAnalysisMinimum ? `${palette.tint}15` : palette.background,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <FontAwesome
+            name={summaryLoading ? 'spinner' : 'refresh'}
+            size={14}
+            color={hasMetAnalysisMinimum ? palette.tint : palette.muted}
+          />
+          <Text
+            style={[
+              styles.generateText,
+              { color: hasMetAnalysisMinimum ? palette.tint : palette.muted },
+            ]}
+          >
+            {summaryLoading ? 'Generating...' : summaryResult ? 'Regenerate' : 'Generate summary'}
           </Text>
-        ) : null}
+        </Pressable>
       </View>
 
-      {insightMedia.length ? (
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-          <Text style={[styles.cardTitle, { color: palette.text }]}>Captured samples</Text>
-          <Text style={[styles.cardBody, { color: palette.muted }]}>
-            Remove any accidental or blurry captures before completing the visit.
-          </Text>
-          <View style={styles.sampleGroupList}>
-            {sampleGroups.groups.map((group, index) => (
-              <View key={group.sampleId} style={[styles.sampleGroupCard, { borderColor: palette.border }]}>
-                <View style={styles.sampleGroupHeader}>
-                  <Text style={[styles.sampleGroupTitle, { color: palette.text }]}>
-                    Sample {index + 1}
-                  </Text>
-                  <Text style={[styles.sampleGroupMeta, { color: palette.muted }]}>
-                    {group.surface && group.cross ? 'Surface + cross-section' : group.surface ? 'Surface only' : 'Cross-section only'}
-                  </Text>
-                </View>
-                <View style={styles.samplePairRow}>
-                  {[{ media: group.surface, label: 'Surface' }, { media: group.cross, label: 'Cross-section' }].map(
-                    ({ media, label }) => {
-                      const status = media?.analysisStatus
-                        ? media.analysisStatus.toLowerCase().replace('_', ' ')
-                        : 'pending';
-                      return (
-                        <View
-                          key={`${group.sampleId}-${label}`}
-                          style={[styles.sampleCard, styles.sampleCardPair, { borderColor: palette.border }]}
-                        >
-                          {media?.url ? (
-                            <Image source={{ uri: media.url }} style={styles.sampleImage} />
-                          ) : (
-                            <View style={[styles.samplePlaceholder, { backgroundColor: palette.background }]} />
-                          )}
-                          <Text style={[styles.sampleLabel, { color: palette.text }]}>{label}</Text>
-                          {media ? (
-                            <Text style={[styles.sampleStatus, { color: palette.muted }]}>Analysis: {status}</Text>
-                          ) : (
-                            <Text style={[styles.sampleStatus, { color: palette.muted }]}>Missing capture</Text>
-                          )}
-                          {media ? (
-                            <Button
-                              title={deletingId === media.id ? 'Removing...' : 'Remove'}
-                              onPress={() => handleDeleteSample(media.id)}
-                              disabled={deletingId === media.id}
-                              variant="ghost"
-                              style={styles.sampleRemove}
-                              labelStyle={styles.sampleRemoveLabel}
-                            />
-                          ) : null}
-                        </View>
-                      );
-                    },
-                  )}
-                </View>
-              </View>
-            ))}
-            {sampleGroups.ungrouped.length ? (
-              <View style={styles.ungroupedSection}>
-                <Text style={[styles.ungroupedTitle, { color: palette.muted }]}>Unpaired captures</Text>
-                <View style={styles.sampleGrid}>
-                  {sampleGroups.ungrouped.map((media) => {
-                    const label = media.stoolSampleView === 'CROSS_SECTION' ? 'Cross-section' : 'Surface';
-                    const status = media.analysisStatus
-                      ? media.analysisStatus.toLowerCase().replace('_', ' ')
-                      : 'pending';
-                    return (
-                      <View key={media.id} style={[styles.sampleCard, { borderColor: palette.border }]}>
-                        {media.url ? (
-                          <Image source={{ uri: media.url }} style={styles.sampleImage} />
-                        ) : (
-                          <View style={[styles.samplePlaceholder, { backgroundColor: palette.background }]} />
-                        )}
-                        <Text style={[styles.sampleLabel, { color: palette.text }]}>{label}</Text>
-                        <Text style={[styles.sampleStatus, { color: palette.muted }]}>Analysis: {status}</Text>
-                        <Button
-                          title={deletingId === media.id ? 'Removing...' : 'Remove'}
-                          onPress={() => handleDeleteSample(media.id)}
-                          disabled={deletingId === media.id}
-                          variant="ghost"
-                          style={styles.sampleRemove}
-                          labelStyle={styles.sampleRemoveLabel}
-                        />
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
-          </View>
-        </View>
-      ) : null}
-
-      <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-        <Text style={[styles.cardTitle, { color: palette.text }]}>3Cs summary</Text>
-        <Text style={[styles.inputLabel, { color: palette.text }]}>Color</Text>
-        <TextInput
-          value={summaryDraft.color}
-          onChangeText={(value) => updateSummaryDraft({ color: value })}
-          placeholder="e.g. Chocolate brown"
-          placeholderTextColor={palette.muted}
-          style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-        />
-        <Text style={[styles.inputLabel, { color: palette.text }]}>Consistency</Text>
-        <TextInput
-          value={summaryDraft.consistency}
-          onChangeText={(value) => updateSummaryDraft({ consistency: value })}
-          placeholder="e.g. Firm, logs"
-          placeholderTextColor={palette.muted}
-          style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-        />
-        <Text style={[styles.inputLabel, { color: palette.text }]}>Content</Text>
-        <TextInput
-          value={summaryDraft.content}
-          onChangeText={(value) => updateSummaryDraft({ content: value })}
-          placeholder="e.g. No visible debris"
-          placeholderTextColor={palette.muted}
-          style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-        />
-        <Text style={[styles.inputLabel, { color: palette.text }]}>Notes</Text>
-        <TextInput
-          value={summaryDraft.observations}
-          onChangeText={(value) => updateSummaryDraft({ observations: value })}
-          placeholder="Optional notes for the family"
-          placeholderTextColor={palette.muted}
-          style={[styles.input, styles.textArea, { color: palette.text, borderColor: palette.border }]}
-          multiline
-          textAlignVertical="top"
-        />
-        <Text style={[styles.inputLabel, { color: palette.text }]}>Wellness flag</Text>
-        <View style={styles.rowWrap}>
-          <ChoiceChip
-            label="All good"
-            selected={!summaryDraft.wellnessFlag}
-            onPress={() => updateSummaryDraft({ wellnessFlag: false, flagReason: '' })}
-          />
-          <ChoiceChip
-            label="Flag issue"
-            selected={summaryDraft.wellnessFlag}
-            onPress={() => updateSummaryDraft({ wellnessFlag: true })}
-          />
-        </View>
-        {summaryDraft.wellnessFlag ? (
-          <>
-            <Text style={[styles.inputLabel, { color: palette.text }]}>Flag reason</Text>
-            <TextInput
-              value={summaryDraft.flagReason}
-              onChangeText={(value) => updateSummaryDraft({ flagReason: value })}
-              placeholder="Describe the concern"
-              placeholderTextColor={palette.muted}
-              style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-            />
-          </>
-        ) : null}
-        {summaryDraft.flaggedSampleReasons.length ? (
-          <View style={styles.flagList}>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>Flagged samples:</Text>
-            {summaryDraft.flaggedSampleReasons.map((reason, index) => (
-              <Text key={`${reason}-${index}`} style={[styles.flagItem, { color: palette.muted }]}>
-                • {reason}
+      {/* Samples Section (Collapsible) */}
+      {insightMedia.length > 0 ? (
+        <View style={styles.samplesSection}>
+          <Pressable
+            onPress={() => setShowSamples(!showSamples)}
+            style={[styles.samplesHeader, { backgroundColor: palette.card, borderColor: cardBorder }]}
+          >
+            <View style={[styles.samplesIcon, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="image" size={16} color={palette.tint} />
+            </View>
+            <View style={styles.samplesHeaderContent}>
+              <Text style={[styles.samplesTitle, { color: palette.text }]}>
+                Captured samples
               </Text>
-            ))}
-          </View>
-        ) : null}
+              <Text style={[styles.samplesSubtitle, { color: palette.muted }]}>
+                {totalSamples} sample{totalSamples !== 1 ? 's' : ''} • Tap to {showSamples ? 'hide' : 'review'}
+              </Text>
+            </View>
+            <FontAwesome
+              name={showSamples ? 'chevron-up' : 'chevron-down'}
+              size={12}
+              color={palette.muted}
+            />
+          </Pressable>
+
+          {showSamples ? (
+            <View style={[styles.samplesContent, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sampleScroll}>
+                <View style={styles.sampleRow}>
+                  {sampleGroups.groups.map((group, index) => (
+                    <View key={group.sampleId} style={[styles.sampleCard, { borderColor: cardBorder }]}>
+                      <View style={styles.sampleImageRow}>
+                        {group.surface?.url ? (
+                          <Image source={{ uri: group.surface.url }} style={styles.sampleThumb} />
+                        ) : (
+                          <View style={[styles.sampleThumbPlaceholder, { backgroundColor: palette.background }]} />
+                        )}
+                        {group.cross?.url ? (
+                          <Image source={{ uri: group.cross.url }} style={styles.sampleThumb} />
+                        ) : (
+                          <View style={[styles.sampleThumbPlaceholder, { backgroundColor: palette.background }]} />
+                        )}
+                      </View>
+                      <Text style={[styles.sampleCardLabel, { color: palette.text }]}>Sample {index + 1}</Text>
+                      <View style={styles.sampleActions}>
+                        {group.surface ? (
+                          <Pressable
+                            onPress={() => handleDeleteSample(group.surface!.id)}
+                            disabled={deletingId === group.surface.id}
+                            style={styles.removeButton}
+                          >
+                            <FontAwesome name="trash-o" size={12} color={palette.danger} />
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                  {sampleGroups.ungrouped.map((media) => (
+                    <View key={media.id} style={[styles.sampleCard, { borderColor: cardBorder }]}>
+                      {media.url ? (
+                        <Image source={{ uri: media.url }} style={styles.singleThumb} />
+                      ) : (
+                        <View style={[styles.singleThumbPlaceholder, { backgroundColor: palette.background }]} />
+                      )}
+                      <Text style={[styles.sampleCardLabel, { color: palette.muted }]}>Unpaired</Text>
+                      <Pressable
+                        onPress={() => handleDeleteSample(media.id)}
+                        disabled={deletingId === media.id}
+                        style={styles.removeButton}
+                      >
+                        <FontAwesome name="trash-o" size={12} color={palette.danger} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {/* 3Cs Form */}
+      <View style={[styles.formCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+        <View style={styles.formHeader}>
+          <Text style={[styles.formTitle, { color: palette.text }]}>3Cs Summary</Text>
+          <Text style={[styles.formSubtitle, { color: palette.muted }]}>Color, Consistency, Content</Text>
+        </View>
+
+        <View style={styles.formField}>
+          <Text style={[styles.fieldLabel, { color: palette.text }]}>Color</Text>
+          <TextInput
+            value={summaryDraft.color}
+            onChangeText={(value) => updateSummaryDraft({ color: value })}
+            placeholder="e.g. Chocolate brown"
+            placeholderTextColor={palette.muted}
+            style={[styles.input, { color: palette.text, borderColor: cardBorder, backgroundColor: palette.background }]}
+          />
+        </View>
+
+        <View style={styles.formField}>
+          <Text style={[styles.fieldLabel, { color: palette.text }]}>Consistency</Text>
+          <TextInput
+            value={summaryDraft.consistency}
+            onChangeText={(value) => updateSummaryDraft({ consistency: value })}
+            placeholder="e.g. Firm, logs"
+            placeholderTextColor={palette.muted}
+            style={[styles.input, { color: palette.text, borderColor: cardBorder, backgroundColor: palette.background }]}
+          />
+        </View>
+
+        <View style={styles.formField}>
+          <Text style={[styles.fieldLabel, { color: palette.text }]}>Content</Text>
+          <TextInput
+            value={summaryDraft.content}
+            onChangeText={(value) => updateSummaryDraft({ content: value })}
+            placeholder="e.g. No visible debris"
+            placeholderTextColor={palette.muted}
+            style={[styles.input, { color: palette.text, borderColor: cardBorder, backgroundColor: palette.background }]}
+          />
+        </View>
+
+        <View style={styles.formField}>
+          <Text style={[styles.fieldLabel, { color: palette.text }]}>Notes (optional)</Text>
+          <TextInput
+            value={summaryDraft.observations}
+            onChangeText={(value) => updateSummaryDraft({ observations: value })}
+            placeholder="Additional observations for the family"
+            placeholderTextColor={palette.muted}
+            style={[styles.input, styles.textArea, { color: palette.text, borderColor: cardBorder, backgroundColor: palette.background }]}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
       </View>
 
-      <Button
-        title="Continue to next step"
-        onPress={handleNext}
-        disabled={!canContinue}
-        variant="cta"
-      />
-      {!canContinue ? (
-        <Text style={[styles.helperText, { color: palette.muted }]}>
-          Add color, consistency, and content before continuing.
-        </Text>
+      {/* Wellness Flag */}
+      <Pressable
+        onPress={() => updateSummaryDraft({ wellnessFlag: !summaryDraft.wellnessFlag, flagReason: '' })}
+        style={[
+          styles.flagCard,
+          {
+            backgroundColor: summaryDraft.wellnessFlag ? `${warningTone}10` : palette.card,
+            borderColor: summaryDraft.wellnessFlag ? warningTone : cardBorder,
+          },
+        ]}
+      >
+        <View style={[styles.flagIcon, { backgroundColor: summaryDraft.wellnessFlag ? `${warningTone}20` : `${palette.tint}15` }]}>
+          <FontAwesome
+            name="flag"
+            size={18}
+            color={summaryDraft.wellnessFlag ? warningTone : palette.tint}
+          />
+        </View>
+        <View style={styles.flagContent}>
+          <Text style={[styles.flagTitle, { color: summaryDraft.wellnessFlag ? warningTone : palette.text }]}>
+            {summaryDraft.wellnessFlag ? 'Issue flagged' : 'Flag wellness issue'}
+          </Text>
+          <Text style={[styles.flagSubtitle, { color: palette.muted }]}>
+            {summaryDraft.wellnessFlag ? 'Customer will be notified' : 'Toggle if you noticed a concern'}
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.flagToggle,
+            {
+              borderColor: summaryDraft.wellnessFlag ? warningTone : cardBorder,
+              backgroundColor: summaryDraft.wellnessFlag ? warningTone : 'transparent',
+            },
+          ]}
+        >
+          {summaryDraft.wellnessFlag ? (
+            <FontAwesome name="check" size={12} color="#FFFFFF" />
+          ) : null}
+        </View>
+      </Pressable>
+
+      {summaryDraft.wellnessFlag ? (
+        <View style={[styles.flagReasonCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+          <Text style={[styles.fieldLabel, { color: palette.text }]}>Describe the concern</Text>
+          <TextInput
+            value={summaryDraft.flagReason}
+            onChangeText={(value) => updateSummaryDraft({ flagReason: value })}
+            placeholder="What did you notice?"
+            placeholderTextColor={palette.muted}
+            style={[styles.input, { color: palette.text, borderColor: cardBorder, backgroundColor: palette.background }]}
+          />
+        </View>
       ) : null}
+
+      {summaryDraft.flaggedSampleReasons.length > 0 ? (
+        <View style={[styles.flaggedList, { backgroundColor: `${warningTone}08`, borderColor: warningTone }]}>
+          <Text style={[styles.flaggedTitle, { color: warningTone }]}>AI-detected flags</Text>
+          {summaryDraft.flaggedSampleReasons.map((reason, index) => (
+            <Text key={`${reason}-${index}`} style={[styles.flaggedItem, { color: palette.text }]}>
+              • {reason}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Button
+          title="Continue"
+          onPress={handleNext}
+          variant={canContinue ? 'cta' : 'secondary'}
+          disabled={!canContinue}
+          style={styles.ctaButton}
+        />
+        {!canContinue ? (
+          <Text style={[styles.footerHint, { color: palette.muted }]}>
+            Complete color, consistency, and content
+          </Text>
+        ) : null}
+      </View>
     </VisitStepShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  summaryCard: {
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 16,
+    padding: 14,
     gap: 12,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
   },
-  cardTitle: {
-    fontSize: 16,
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  summaryIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryContent: {
+    flex: 1,
+    gap: 2,
+  },
+  summaryTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  summarySubtitle: {
+    fontSize: 12,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  statusText: {
+    fontSize: 11,
     fontWeight: '700',
   },
-  cardBody: {
-    fontSize: 13,
-    lineHeight: 18,
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
   },
-  inputLabel: {
+  errorText: {
+    fontSize: 12,
+    flex: 1,
+  },
+  generateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  generateText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  samplesSection: {
+    gap: 0,
+  },
+  samplesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+  },
+  samplesIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  samplesHeaderContent: {
+    flex: 1,
+    gap: 2,
+  },
+  samplesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  samplesSubtitle: {
+    fontSize: 12,
+  },
+  samplesContent: {
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    padding: 12,
+    marginTop: -16,
+    paddingTop: 20,
+  },
+  sampleScroll: {
+    marginHorizontal: -4,
+  },
+  sampleRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 4,
+  },
+  sampleCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 8,
+    gap: 6,
+    width: 100,
+  },
+  sampleImageRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  sampleThumb: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
+  },
+  sampleThumbPlaceholder: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
+  },
+  singleThumb: {
+    width: '100%',
+    height: 60,
+    borderRadius: 8,
+  },
+  singleThumbPlaceholder: {
+    width: '100%',
+    height: 60,
+    borderRadius: 8,
+  },
+  sampleCardLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  sampleActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  removeButton: {
+    padding: 6,
+  },
+  formCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    gap: 14,
+  },
+  formHeader: {
+    gap: 2,
+  },
+  formTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  formSubtitle: {
+    fontSize: 12,
+  },
+  formField: {
+    gap: 6,
+  },
+  fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
   },
   textArea: {
-    minHeight: 90,
+    minHeight: 80,
   },
-  rowWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  flagList: {
-    gap: 4,
-  },
-  flagItem: {
-    fontSize: 12,
-  },
-  helperText: {
-    fontSize: 12,
-  },
-  sampleGroupList: {
-    gap: 12,
-  },
-  sampleGroupCard: {
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 12,
-    gap: 12,
-  },
-  sampleGroupHeader: {
+  flagCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  sampleGroupTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  sampleGroupMeta: {
-    fontSize: 12,
-  },
-  samplePairRow: {
-    flexDirection: 'row',
     gap: 12,
-    flexWrap: 'wrap',
-  },
-  sampleGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  sampleCard: {
-    flex: 1,
-    minWidth: 140,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: 16,
-    padding: 10,
-    gap: 6,
+    padding: 14,
   },
-  sampleCardPair: {
-    flexBasis: 0,
-    minWidth: 0,
+  flagIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sampleImage: {
-    width: '100%',
-    height: 120,
-    borderRadius: 12,
+  flagContent: {
+    flex: 1,
+    gap: 2,
   },
-  samplePlaceholder: {
-    width: '100%',
-    height: 120,
-    borderRadius: 12,
-  },
-  sampleLabel: {
-    fontSize: 12,
+  flagTitle: {
+    fontSize: 15,
     fontWeight: '600',
   },
-  sampleStatus: {
-    fontSize: 11,
-  },
-  sampleRemove: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-  },
-  sampleRemoveLabel: {
+  flagSubtitle: {
     fontSize: 12,
   },
-  ungroupedSection: {
+  flagToggle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flagReasonCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
     gap: 8,
   },
-  ungroupedTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+  flaggedList: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
   },
-  errorText: {
+  flaggedTitle: {
     fontSize: 12,
+    fontWeight: '700',
+  },
+  flaggedItem: {
+    fontSize: 12,
+  },
+  footer: {
+    marginTop: 'auto',
+    gap: 8,
+  },
+  ctaButton: {
+    width: '100%',
+  },
+  footerHint: {
+    fontSize: 12,
+    textAlign: 'center',
   },
 });

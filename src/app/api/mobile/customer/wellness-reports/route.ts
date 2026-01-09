@@ -153,6 +153,11 @@ function isFlaggedMedia(media: {
   analysisResult?: unknown;
   reviewStatus?: string | null;
 }): boolean {
+  const result =
+    media.analysisResult && typeof media.analysisResult === 'object'
+      ? (media.analysisResult as Record<string, unknown>)
+      : null;
+  if (result?.customer_flag_cleared || result?.customer_cleared) return false;
   return isWellnessFlaggedMedia(
     {
       analysisResult: media.analysisResult,

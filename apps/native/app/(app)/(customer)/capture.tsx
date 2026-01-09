@@ -22,7 +22,11 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiRequest, apiUpload, ApiError } from '@/lib/api/client';
 import type { CustomerSummary, DogSummary, WellnessCapture } from '@/lib/api/types';
 import { captureWithFallback } from '@/lib/media/imagePicker';
+import CaptureResultCard from '@/components/wellness/CaptureResultCard';
+import ScanProgress from '@/components/wellness/ScanProgress';
 import IndicatorPill from '@/components/wellness/IndicatorPill';
+import PoopMapPlacementModal from '@/components/maps/PoopMapPlacementModal';
+import { LOW_CONFIDENCE_THRESHOLD_METERS } from '@/lib/maps/poopMap';
 
 type CaptureStatus = 'idle' | 'capturing' | 'uploading';
 
@@ -83,14 +87,21 @@ export default function OwnerCaptureScreen() {
   const [recentOpen, setRecentOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [placementOpen, setPlacementOpen] = useState(false);
+  const [placementTarget, setPlacementTarget] = useState<{
+    id: string;
+    lat: number;
+    lng: number;
+    accuracy?: number | null;
+  } | null>(null);
 
   const access = summary?.wellnessAccess ?? null;
   const scansRemaining = access
     ? Math.max(0, access.limits.scansPerMonth - access.usage.scansCount)
     : null;
-  const isPremium =
-    access?.tier === 'PREMIUM' || access?.source === 'SERVICE_PROMO' || access?.hasActiveService;
-  const scansLabel = isPremium ? 'Unlimited' : `${scansRemaining ?? 0}`;
+  const isPremium = Boolean(
+    access?.tier === 'PREMIUM' || access?.source === 'SERVICE_PROMO' || access?.hasActiveService
+  );
   const multiDogLocked = access?.maxDogs === 1 && dogs.length > 1;
 
   const loadDogs = useCallback(async () => {
@@ -248,6 +259,21 @@ export default function OwnerCaptureScreen() {
       if (data.capture) {
         setCaptures((prev) => [data.capture, ...prev]);
         setSelectedCaptureId(data.capture.id);
+        if (
+          typeof data.capture.gpsLat === 'number' &&
+          typeof data.capture.gpsLng === 'number'
+        ) {
+          const accuracy = data.capture.gpsAccuracy ?? null;
+          if (typeof accuracy === 'number' && accuracy > LOW_CONFIDENCE_THRESHOLD_METERS) {
+            setPlacementTarget({
+              id: data.capture.id,
+              lat: data.capture.gpsLat,
+              lng: data.capture.gpsLng,
+              accuracy,
+            });
+            setPlacementOpen(true);
+          }
+        }
       }
       setAsset(null);
     } catch (err) {
@@ -265,6 +291,58 @@ export default function OwnerCaptureScreen() {
       setStatus('idle');
     }
   }, [asset, dogs, notSure, selectedDogId, session?.token]);
+
+  const openPlacement = useCallback((capture: WellnessCapture) => {
+    if (typeof capture.gpsLat !== 'number' || typeof capture.gpsLng !== 'number') {
+      return;
+    }
+    setPlacementTarget({
+      id: capture.id,
+      lat: capture.gpsLat,
+      lng: capture.gpsLng,
+      accuracy: capture.gpsAccuracy ?? null,
+    });
+    setPlacementOpen(true);
+  }, []);
+
+  const handlePlacementSave = useCallback(
+    async (nextLocation: { lat: number; lng: number; accuracy?: number | null }) => {
+      if (!session?.token || !placementTarget) return;
+      setError(null);
+      try {
+        const payload = {
+          lat: nextLocation.lat,
+          lng: nextLocation.lng,
+          accuracy: 3,
+          rawLat: placementTarget.lat,
+          rawLng: placementTarget.lng,
+          rawAccuracy: placementTarget.accuracy ?? null,
+        };
+        const response = await apiRequest<{ capture: WellnessCapture }>(
+          `/api/mobile/customer/wellness-captures/${placementTarget.id}`,
+          {
+            method: 'PATCH',
+            token: session.token,
+            body: payload,
+          },
+        );
+        if (response.capture) {
+          setCaptures((prev) =>
+            prev.map((item) => (item.id === response.capture.id ? response.capture : item)),
+          );
+          if (selectedCaptureId === response.capture.id) {
+            setSelectedCaptureId(response.capture.id);
+          }
+        }
+        setPlacementOpen(false);
+        setPlacementTarget(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unable to update placement.';
+        setError(message);
+      }
+    },
+    [placementTarget, selectedCaptureId, session?.token],
+  );
 
   const isReadyToAnalyze = Boolean(asset && status === 'idle');
 
@@ -305,32 +383,37 @@ export default function OwnerCaptureScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={[styles.kicker, { color: palette.muted }]}>Owner stool scan</Text>
-          <Text style={[styles.title, { color: palette.text }]}>Capture & analyze</Text>
-          <Text style={[styles.subtitle, { color: palette.muted }]}>
-            1-tap capture with hydration, firmness, and a watch/monitor/vet-now indicator.
-          </Text>
-        </View>
-
-        {access ? (
-          <View style={[styles.accessCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-          >
-            <View style={styles.accessHeader}>
-              <Text style={[styles.accessTitle, { color: palette.text }]}>Monthly scans</Text>
-              <Text style={[styles.accessValue, { color: palette.text }]}>{scansLabel}</Text>
-            </View>
-            <Text style={[styles.helperText, { color: palette.muted }]}>
-              {isPremium ? 'Unlimited scans included with your plan.' : 'Upgrade for unlimited scans.'}
+        {/* Hero Card */}
+        <View style={[styles.heroCard, { backgroundColor: palette.tint }]}>
+          <View style={styles.heroIcon}>
+            <FontAwesome name="camera" size={28} color="#fff" />
+          </View>
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle}>Stool Scanner</Text>
+            <Text style={styles.heroSubtitle}>
+              AI-powered analysis for hydration, firmness, and health indicators
             </Text>
           </View>
+        </View>
+
+        {/* Scan Progress */}
+        {access ? (
+          <ScanProgress
+            used={access.usage.scansCount}
+            limit={access.limits.scansPerMonth}
+            isPremium={isPremium}
+          />
         ) : null}
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: palette.text }]}>Which dog?</Text>
-          <Text style={[styles.helperText, { color: palette.muted }]}>
-            Pick a dog or tap Not sure to tag the household.
-          </Text>
+        {/* Dog Selector Card */}
+        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIconContainer, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="paw" size={16} color={palette.tint} />
+            </View>
+            <Text style={[styles.cardTitle, { color: palette.text }]}>Which dog?</Text>
+          </View>
+
           <View style={styles.chipRow}>
             {dogs.map((dog) => (
               <ChoiceChip
@@ -353,220 +436,249 @@ export default function OwnerCaptureScreen() {
               }}
             />
           </View>
-          {multiDogLocked ? (
-            <Text style={[styles.helperText, { color: palette.muted }]}>
-              Premium unlocks per-dog tagging for multi-dog households.
-            </Text>
-          ) : null}
-          {dogs.length === 0 ? (
-            <Pressable onPress={() => router.push('/(app)/(customer)/account')}>
-              <Text style={[styles.helperText, { color: palette.tint }]}
-              >
-                Add a dog profile to personalize insights.
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
 
-        <View style={[styles.captureCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-        >
-          {asset ? (
-            <Image
-              source={{ uri: asset.uri }}
-              style={styles.preview}
-            />
-          ) : (
-            <View style={[styles.previewPlaceholder, { borderColor: palette.border }]}
-            >
-              <FontAwesome name="camera" size={26} color={palette.muted} />
-              <Text style={[styles.previewText, { color: palette.muted }]}
-              >
-                Ready when you are
+          {multiDogLocked && (
+            <View style={[styles.infoBanner, { backgroundColor: `${Colors.brand.gold}15` }]}>
+              <FontAwesome name="star" size={12} color={Colors.brand.gold} />
+              <Text style={[styles.infoBannerText, { color: Colors.brand.gold }]}>
+                Premium unlocks per-dog tagging
               </Text>
             </View>
           )}
-          <View style={styles.captureActions}>
-            <Button
-              title={status === 'capturing' ? 'Opening camera...' : 'Capture stool'}
+
+          {dogs.length === 0 && (
+            <Pressable
+              onPress={() => router.push('/(app)/(customer)/account')}
+              style={[styles.addDogButton, { borderColor: palette.tint }]}
+            >
+              <FontAwesome name="plus" size={12} color={palette.tint} />
+              <Text style={[styles.addDogText, { color: palette.tint }]}>
+                Add a dog profile for personalized insights
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Capture Card */}
+        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIconContainer, { backgroundColor: `${Colors.brand.mint}15` }]}>
+              <FontAwesome name="search" size={16} color={Colors.brand.mint} />
+            </View>
+            <Text style={[styles.cardTitle, { color: palette.text }]}>Capture & Analyze</Text>
+          </View>
+
+          {asset ? (
+            <View style={styles.previewContainer}>
+              <Image source={{ uri: asset.uri }} style={styles.preview} />
+              <View style={[styles.previewBadge, { backgroundColor: Colors.brand.mint }]}>
+                <FontAwesome name="check" size={10} color="#FFFFFF" />
+                <Text style={styles.previewBadgeText}>Ready to analyze</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.previewPlaceholder, { borderColor: palette.border }]}>
+              <View style={[styles.previewIconWrap, { backgroundColor: `${palette.tint}10` }]}>
+                <FontAwesome name="camera" size={32} color={palette.tint} />
+              </View>
+              <Text style={[styles.previewTitle, { color: palette.text }]}>Ready when you are</Text>
+              <Text style={[styles.previewText, { color: palette.muted }]}>
+                Tap Capture to photograph a stool sample
+              </Text>
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtonsRow}>
+            <Pressable
               onPress={handleCapture}
               disabled={status === 'capturing' || status === 'uploading'}
-            />
-            <Button
-              title={status === 'uploading' ? 'Analyzing...' : 'Analyze stool'}
+              style={({ pressed }) => [
+                styles.actionButton,
+                { backgroundColor: palette.tint, opacity: pressed ? 0.85 : 1 },
+                (status === 'capturing' || status === 'uploading') && styles.actionButtonDisabled,
+              ]}
+            >
+              <View style={styles.actionButtonIcon}>
+                <FontAwesome
+                  name={status === 'capturing' ? 'spinner' : 'camera'}
+                  size={18}
+                  color="#FFFFFF"
+                />
+              </View>
+              <View style={styles.actionButtonText}>
+                <Text style={styles.actionButtonTitle}>
+                  {status === 'capturing' ? 'Opening...' : 'Capture'}
+                </Text>
+                <Text style={styles.actionButtonSubtitle}>Take photo</Text>
+              </View>
+            </Pressable>
+
+            <Pressable
               onPress={handleAnalyze}
               disabled={!isReadyToAnalyze || status === 'uploading'}
-              variant="secondary"
+              style={({ pressed }) => [
+                styles.actionButton,
+                {
+                  backgroundColor: isReadyToAnalyze ? Colors.brand.mint : palette.background,
+                  borderWidth: isReadyToAnalyze ? 0 : 1,
+                  borderColor: palette.border,
+                  opacity: pressed ? 0.85 : 1,
+                },
+                (!isReadyToAnalyze || status === 'uploading') && styles.actionButtonDisabled,
+              ]}
+            >
+              <View style={[styles.actionButtonIcon, { backgroundColor: isReadyToAnalyze ? 'rgba(255,255,255,0.2)' : `${palette.muted}20` }]}>
+                <FontAwesome
+                  name={status === 'uploading' ? 'spinner' : 'search'}
+                  size={18}
+                  color={isReadyToAnalyze ? '#FFFFFF' : palette.muted}
+                />
+              </View>
+              <View style={styles.actionButtonText}>
+                <Text style={[styles.actionButtonTitle, { color: isReadyToAnalyze ? '#FFFFFF' : palette.muted }]}>
+                  {status === 'uploading' ? 'Analyzing...' : 'Analyze'}
+                </Text>
+                <Text style={[styles.actionButtonSubtitle, { color: isReadyToAnalyze ? 'rgba(255,255,255,0.8)' : palette.muted }]}>
+                  {isReadyToAnalyze ? 'Run AI scan' : 'Capture first'}
+                </Text>
+              </View>
+            </Pressable>
+          </View>
+
+          {status === 'uploading' && (
+            <View style={[styles.statusCard, { backgroundColor: `${palette.tint}10`, borderColor: `${palette.tint}30` }]}>
+              <ActivityIndicator size="small" color={palette.tint} />
+              <View style={styles.statusText}>
+                <Text style={[styles.statusTitle, { color: palette.text }]}>Analyzing sample</Text>
+                <Text style={[styles.statusSubtitle, { color: palette.muted }]}>
+                  Checking hydration, firmness, and health indicators...
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {error && (
+            <View style={[styles.statusCard, { backgroundColor: `${palette.danger}10`, borderColor: `${palette.danger}30` }]}>
+              <FontAwesome name="exclamation-circle" size={16} color={palette.danger} />
+              <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Results Card */}
+        {selectedCapture && (
+          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.cardIconContainer, { backgroundColor: `${Colors.brand.coral}15` }]}>
+                <FontAwesome name="heartbeat" size={16} color={Colors.brand.coral} />
+              </View>
+              <Text style={[styles.cardTitle, { color: palette.text }]}>Analysis Results</Text>
+            </View>
+            <CaptureResultCard
+              analysis={analysis}
+              dogName={selectedCapture.dogId ? dogs.find(d => d.id === selectedCapture.dogId)?.name : null}
+              capturedAt={selectedCapture.capturedAt}
+              hasLocation={typeof selectedCapture.gpsLat === 'number' && typeof selectedCapture.gpsLng === 'number'}
+              onAdjustLocation={() => openPlacement(selectedCapture)}
             />
           </View>
-          {status === 'uploading' ? (
-            <View style={styles.inlineRow}>
-              <ActivityIndicator size="small" color={palette.tint} />
-              <Text style={[styles.helperText, { color: palette.muted }]}
-              >
-                Analyzing the capture...
-              </Text>
-            </View>
-          ) : null}
-          {error ? (
-            <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
-          ) : null}
-        </View>
+        )}
 
-        {selectedCapture ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>
-              Results
-            </Text>
-            <View style={[styles.indicatorCard, { borderColor: palette.border }]}
-            >
-              <IndicatorPill indicator={analysis?.indicator ?? null} />
-              <Text style={[styles.helperText, { color: palette.muted }]}>
-                This is not a diagnosis — use this as guidance only.
-              </Text>
-            </View>
-
-            <View style={styles.metricRow}>
-              <View style={[styles.metricCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-              >
-                <Text style={[styles.metricLabel, { color: palette.muted }]}>Hydration score</Text>
-                <Text style={[styles.metricValue, { color: palette.text }]}>
-                  {analysis?.hydrationScore ?? '--'}
+        {/* Recent Scans */}
+        {captures.length > 0 && (
+          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <Pressable onPress={() => setRecentOpen((prev) => !prev)} style={styles.cardHeader}>
+              <View style={[styles.cardIconContainer, { backgroundColor: `${palette.muted}15` }]}>
+                <FontAwesome name="history" size={16} color={palette.muted} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.cardTitle, { color: palette.text }]}>Recent Scans</Text>
+                <Text style={[styles.cardSubtitle, { color: palette.muted }]}>
+                  {captures.length} scan{captures.length !== 1 ? 's' : ''} available
                 </Text>
               </View>
-              <View style={[styles.metricCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-              >
-                <Text style={[styles.metricLabel, { color: palette.muted }]}>Firmness scale</Text>
-                <Text style={[styles.metricValue, { color: palette.text }]}>
-                  {analysis?.firmnessScale ?? '--'}
-                </Text>
-              </View>
-            </View>
+              <FontAwesome
+                name={recentOpen ? 'chevron-up' : 'chevron-down'}
+                size={14}
+                color={palette.muted}
+              />
+            </Pressable>
 
-            {analysis?.summary ? (
-              <View style={[styles.resultCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-              >
-                <Text style={[styles.resultTitle, { color: palette.text }]}
-                >
-                  What this could mean
-                </Text>
-                <Text style={[styles.resultBody, { color: palette.muted }]}>
-                  {analysis.summary}
-                </Text>
-              </View>
-            ) : null}
-
-            {analysis?.whatThisCouldMean ? (
-              <View style={[styles.resultCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-              >
-                <Text style={[styles.resultTitle, { color: palette.text }]}
-                >
-                  Watch for
-                </Text>
-                <Text style={[styles.resultBody, { color: palette.muted }]}>
-                  {analysis.whatThisCouldMean}
-                </Text>
-              </View>
-            ) : null}
-
-            {analysis?.tipsTonight?.length ? (
-              <View style={[styles.resultCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-              >
-                <Text style={[styles.resultTitle, { color: palette.text }]}
-                >
-                  What to do tonight
-                </Text>
-                {analysis.tipsTonight.map((tip, index) => (
-                  <Text key={`${tip}-${index}`} style={[styles.resultBody, { color: palette.muted }]}>
-                    • {tip}
-                  </Text>
-                ))}
-              </View>
-            ) : null}
-
-            {analysis?.redFlags?.length ? (
-              <View style={[styles.resultCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-              >
-                <Text style={[styles.resultTitle, { color: palette.text }]}
-                >
-                  Red flags
-                </Text>
-                {analysis.redFlags.map((flag, index) => (
-                  <Text key={`${flag}-${index}`} style={[styles.resultBody, { color: palette.muted }]}>
-                    • {flag}
-                  </Text>
-                ))}
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-
-        {captures.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.rowBetween}>
-              <Text style={[styles.sectionTitle, { color: palette.text }]}>Recent scans</Text>
-              <Pressable onPress={() => setRecentOpen((prev) => !prev)}>
-                <Text style={[styles.helperLink, { color: palette.tint }]}>
-                  {recentOpen ? 'Hide' : 'Show'}
-                </Text>
-              </Pressable>
-            </View>
-            {recentOpen ? (
-              captures.slice(0, 5).map((capture) => (
-                <View
-                  key={capture.id}
-                  style={[styles.captureRow, { borderColor: palette.border, backgroundColor: palette.card }]}
-                >
+            {recentOpen && (
+              <View style={styles.recentList}>
+                {captures.slice(0, 5).map((capture) => (
                   <Pressable
-                    style={styles.captureInfo}
+                    key={capture.id}
                     onPress={() => setSelectedCaptureId(capture.id)}
+                    style={[
+                      styles.recentItem,
+                      { borderColor: palette.border },
+                      selectedCaptureId === capture.id && { borderColor: palette.tint, backgroundColor: `${palette.tint}08` },
+                    ]}
                   >
-                    <Text style={[styles.cardTitle, { color: palette.text }]}>
-                      {new Date(capture.capturedAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </Text>
-                    <Text style={[styles.helperText, { color: palette.muted }]}>
-                      {capture.dogId ? 'Dog-specific' : 'Household'}
-                    </Text>
+                    <View style={styles.recentInfo}>
+                      <Text style={[styles.recentDate, { color: palette.text }]}>
+                        {new Date(capture.capturedAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                      <Text style={[styles.recentScope, { color: palette.muted }]}>
+                        {capture.dogId ? dogs.find(d => d.id === capture.dogId)?.name ?? 'Dog' : 'Household'}
+                      </Text>
+                    </View>
+                    <View style={styles.recentActions}>
+                      <IndicatorPill indicator={(capture.analysisResult as any)?.indicator} size="sm" />
+                      <Pressable
+                        onPress={() => handleDeleteCapture(capture)}
+                        disabled={deletingId === capture.id}
+                        hitSlop={8}
+                      >
+                        <FontAwesome
+                          name="trash-o"
+                          size={14}
+                          color={deletingId === capture.id ? palette.muted : palette.danger}
+                        />
+                      </Pressable>
+                    </View>
                   </Pressable>
-                  <View style={styles.captureActions}>
-                    <IndicatorPill indicator={(capture.analysisResult as any)?.indicator} size="sm" />
-                    <Pressable
-                      onPress={() => handleDeleteCapture(capture)}
-                      disabled={deletingId === capture.id}
-                      style={({ pressed }) => [
-                        styles.deleteButton,
-                        pressed && { opacity: 0.7 },
-                      ]}
-                    >
-                      <FontAwesome
-                        name="trash"
-                        size={14}
-                        color={deletingId === capture.id ? palette.muted : palette.danger}
-                      />
-                    </Pressable>
-                  </View>
-                </View>
-              ))
-            ) : (
-              <Text style={[styles.helperText, { color: palette.muted }]}>
-                View previous results without cluttering the capture flow.
-              </Text>
+                ))}
+              </View>
             )}
           </View>
-        ) : null}
+        )}
 
-        <View style={styles.section}>
-          <Text style={[styles.disclaimerTitle, { color: palette.text }]}>
-            Safety note
-          </Text>
-          <Text style={[styles.disclaimerText, { color: palette.muted }]}>
-            This is not a diagnosis. Seek veterinary care if there is blood,
-            black stool, repeated vomiting, severe diarrhea, or lethargy.
-          </Text>
+        {/* Safety Notice */}
+        <View style={[styles.safetyCard, { backgroundColor: `${Colors.brand.coral}08`, borderColor: `${Colors.brand.coral}25` }]}>
+          <View style={[styles.safetyIcon, { backgroundColor: `${Colors.brand.coral}15` }]}>
+            <FontAwesome name="exclamation-triangle" size={14} color={Colors.brand.coral} />
+          </View>
+          <View style={styles.safetyContent}>
+            <Text style={[styles.safetyTitle, { color: palette.text }]}>Safety Note</Text>
+            <Text style={[styles.safetyText, { color: palette.muted }]}>
+              This is not a diagnosis. Seek veterinary care if there is blood, black stool, repeated vomiting, severe diarrhea, or lethargy.
+            </Text>
+          </View>
         </View>
       </ScrollView>
+
+      {placementTarget && session?.token && (
+        <PoopMapPlacementModal
+          visible={placementOpen}
+          token={session.token}
+          mapEndpoint="/api/mobile/customer/poop-map"
+          initialLocation={{
+            lat: placementTarget.lat,
+            lng: placementTarget.lng,
+            accuracy: placementTarget.accuracy ?? null,
+          }}
+          onClose={() => setPlacementOpen(false)}
+          onSave={handlePlacementSave}
+        />
+      )}
     </Screen>
   );
 }
@@ -575,183 +687,253 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingBottom: 40,
+    gap: 16,
   },
-  header: {
-    marginBottom: 16,
+  heroCard: {
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  kicker: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.4,
-    fontWeight: '600',
+  heroIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  title: {
-    fontSize: 24,
+  heroContent: {
+    flex: 1,
+  },
+  heroTitle: {
+    fontSize: 22,
     fontWeight: '700',
-    marginTop: 6,
+    color: '#fff',
   },
-  subtitle: {
-    fontSize: 14,
-    marginTop: 6,
+  heroSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 4,
   },
-  section: {
-    marginTop: 20,
-    gap: 10,
+  card: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 16,
+    gap: 14,
   },
-  sectionTitle: {
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cardIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTitle: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
   },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  helperText: {
-    marginTop: 6,
-    fontSize: 12,
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
   },
-  helperLink: {
+  infoBannerText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  captureCard: {
-    marginTop: 12,
-    borderRadius: 16,
-    padding: 16,
+  addDogButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
-    gap: 10,
+    borderStyle: 'dashed',
+  },
+  addDogText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  previewContainer: {
+    position: 'relative',
   },
   preview: {
     width: '100%',
-    height: 220,
+    height: 200,
     borderRadius: 14,
-    marginBottom: 12,
+  },
+  previewBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  previewBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
   },
   previewPlaceholder: {
-    height: 220,
+    height: 180,
     borderRadius: 14,
     borderWidth: 1,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  previewText: {
-    fontSize: 13,
-  },
-  inlineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-  },
-  errorText: {
-    marginTop: 10,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  indicatorCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
-    gap: 8,
-  },
-  metricRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 12,
-  },
-  metricCard: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-  },
-  metricLabel: {
-    fontSize: 12,
-  },
-  metricValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginTop: 6,
-  },
-  resultCard: {
-    marginTop: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
-  },
-  resultTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  resultBody: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  disclaimerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  disclaimerText: {
-    fontSize: 12,
-    marginTop: 6,
-    lineHeight: 17,
-  },
-  accessCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 14,
-    gap: 6,
-  },
-  accessHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  accessTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  accessValue: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  captureRow: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  captureInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  captureActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 10,
   },
-  deleteButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  previewIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardTitle: {
-    fontSize: 14,
+  previewTitle: {
+    fontSize: 15,
     fontWeight: '600',
   },
-  rowBetween: {
+  previewText: {
+    fontSize: 13,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
+  },
+  actionButtonIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonText: {
+    flex: 1,
+    gap: 2,
+  },
+  actionButtonTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  actionButtonSubtitle: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  statusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  statusText: {
+    flex: 1,
+    gap: 2,
+  },
+  statusTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  statusSubtitle: {
+    fontSize: 11,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  recentList: {
+    gap: 8,
+  },
+  recentItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  recentInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  recentDate: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  recentScope: {
+    fontSize: 11,
+  },
+  recentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  safetyCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  safetyIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  safetyContent: {
+    flex: 1,
+    gap: 4,
+  },
+  safetyTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  safetyText: {
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

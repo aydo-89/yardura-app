@@ -69,11 +69,14 @@ export default function Services() {
     return "linear-gradient(145deg, rgba(8,16,12,0.1) 0%, rgba(8,18,12,0.09) 55%, rgba(6,12,9,0.08) 100%)";
   }, [theme]);
 
+  // Dark fallback ensures white text is always readable if image fails to load
+  const fallbackBackground = "linear-gradient(135deg, #1a2820 0%, #0d1a14 50%, #0a100c 100%)";
+
   return (
     <section
       id="services"
       className="relative overflow-hidden text-white"
-      style={{ backgroundColor: theme === "dark" ? "#050b08" : "#f8f5ee" }}
+      style={{ background: fallbackBackground }}
     >
       <div className="absolute inset-0">
         <Image
@@ -84,6 +87,7 @@ export default function Services() {
           className="object-cover"
           sizes="100vw"
           style={{ objectPosition: "45% center" }}
+          unoptimized
         />
         <div className="absolute inset-0" style={{ background: overlayStyle }} />
       </div>

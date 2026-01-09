@@ -1,20 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Button from '@/components/ui/Button';
-import ChoiceChip from '@/components/ui/ChoiceChip';
+import ReminderCard from '@/components/wellness/ReminderCard';
+import ReminderSheet from '@/components/wellness/ReminderSheet';
 import Screen from '@/components/ui/Screen';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -22,80 +20,11 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiRequest } from '@/lib/api/client';
 import type { CustomerSummary, DogSummary, WellnessReminder } from '@/lib/api/types';
 
-const CATEGORY_OPTIONS = [
-  { label: 'Meds', value: 'MEDS' },
-  { label: 'Vaccine', value: 'VACCINE' },
-  { label: 'Deworm', value: 'DEWORMING' },
-  { label: 'Flea/Tick', value: 'FLEA_TICK' },
-  { label: 'Food', value: 'FOOD_TRANSITION' },
-  { label: 'Vet', value: 'VET_VISIT' },
-  { label: 'Custom', value: 'CUSTOM' },
-] as const;
-
-const FREQUENCY_OPTIONS = [
-  { label: 'Daily', value: 1 },
-  { label: 'One-time', value: null },
-  { label: 'Weekly', value: 7 },
-  { label: 'Monthly', value: 30 },
-  { label: 'Quarterly', value: 90 },
-  { label: 'Yearly', value: 365 },
-];
-
-const QUICK_DUE_OPTIONS = [
-  { label: 'Tomorrow', offset: 1 },
-  { label: 'Next week', offset: 7 },
-  { label: 'Next month', offset: 30 },
-];
-
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTH_LABELS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-const formatDateDisplay = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${month}/${day}/${year}`;
-};
-
-const toDateKey = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const getCalendarDays = (month: Date) => {
-  const start = new Date(month.getFullYear(), month.getMonth(), 1, 12, 0, 0, 0);
-  const end = new Date(month.getFullYear(), month.getMonth() + 1, 0, 12, 0, 0, 0);
-  const cursor = new Date(start);
-  cursor.setDate(cursor.getDate() - cursor.getDay());
-  const last = new Date(end);
-  last.setDate(last.getDate() + (6 - last.getDay()));
-  const days: Date[] = [];
-  while (cursor <= last) {
-    days.push(new Date(cursor));
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return days;
-};
-
 export default function CustomerReminders() {
   const { session } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+
   const params = useLocalSearchParams<{
     prefillTitle?: string | string[];
     prefillCategory?: string | string[];
@@ -103,91 +32,87 @@ export default function CustomerReminders() {
     prefillFrequencyDays?: string | string[];
     prefillDueDate?: string | string[];
     prefillDogId?: string | string[];
+    prefillTimestamp?: string | string[];
   }>();
-  const prefillHandled = useRef(false);
+  const lastPrefillTimestamp = useRef<string | null>(null);
+
   const [reminders, setReminders] = useState<WellnessReminder[]>([]);
   const [dogs, setDogs] = useState<DogSummary[]>([]);
   const [summary, setSummary] = useState<CustomerSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [markingId, setMarkingId] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<WellnessReminder['category']>('CUSTOM');
-  const [dogId, setDogId] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
-  const [frequencyDays, setFrequencyDays] = useState<number | null>(null);
-  const [dueDate, setDueDate] = useState<Date>(() => {
-    const date = new Date();
-    date.setDate(date.getDate() + 7);
-    date.setHours(9, 0, 0, 0);
-    return date;
-  });
-  const [calendarMonth, setCalendarMonth] = useState(() => {
-    const date = new Date();
-    date.setDate(date.getDate() + 7);
-    date.setHours(9, 0, 0, 0);
-    return date;
-  });
-  const todayKey = toDateKey(new Date());
+  const [showPaused, setShowPaused] = useState(false);
+  const [prefillData, setPrefillData] = useState<{
+    title?: string;
+    category?: WellnessReminder['category'];
+    dogId?: string;
+    notes?: string;
+    dueDate?: Date;
+    frequencyDays?: number;
+  } | undefined>(undefined);
+
+  const validCategories = new Set([
+    'MEDS', 'VACCINE', 'DEWORMING', 'FLEA_TICK', 'FOOD_TRANSITION', 'VET_VISIT', 'CUSTOM',
+  ]);
 
   const readParam = (value: string | string[] | undefined) =>
     Array.isArray(value) ? value[0] : value;
-  const validCategories = new Set(CATEGORY_OPTIONS.map((option) => option.value));
 
+  // Handle prefill params
   useEffect(() => {
-    if (prefillHandled.current) return;
     const prefillTitle = readParam(params.prefillTitle);
     const prefillCategory = readParam(params.prefillCategory);
     const prefillNotes = readParam(params.prefillNotes);
     const prefillFrequencyDays = readParam(params.prefillFrequencyDays);
     const prefillDueDate = readParam(params.prefillDueDate);
     const prefillDogId = readParam(params.prefillDogId);
+    const prefillTimestamp = readParam(params.prefillTimestamp);
 
-    if (
-      !prefillTitle &&
-      !prefillCategory &&
-      !prefillNotes &&
-      !prefillFrequencyDays &&
-      !prefillDueDate &&
-      !prefillDogId
-    ) {
+    // Skip if no prefill data
+    if (!prefillTitle && !prefillCategory && !prefillNotes && !prefillFrequencyDays && !prefillDueDate && !prefillDogId) {
       return;
     }
 
-    prefillHandled.current = true;
-    setTitle(prefillTitle ?? '');
-    setCategory(
-      prefillCategory && validCategories.has(prefillCategory as any)
-        ? (prefillCategory as WellnessReminder['category'])
-        : 'CUSTOM',
-    );
-    setNotes(prefillNotes ?? '');
-    if (prefillDogId) {
-      setDogId(prefillDogId);
+    // Skip if we already processed this exact prefill (same timestamp)
+    if (prefillTimestamp && lastPrefillTimestamp.current === prefillTimestamp) {
+      return;
     }
-    if (prefillFrequencyDays) {
-      const parsed = Number(prefillFrequencyDays);
-      setFrequencyDays(Number.isFinite(parsed) ? parsed : null);
-    } else {
-      setFrequencyDays(null);
+
+    // Track this prefill to avoid re-processing
+    if (prefillTimestamp) {
+      lastPrefillTimestamp.current = prefillTimestamp;
     }
+
+    let dueDate: Date | undefined;
     if (prefillDueDate) {
       const parsed = new Date(prefillDueDate);
       if (!Number.isNaN(parsed.getTime())) {
-        setDueDate(parsed);
-        setCalendarMonth(parsed);
+        dueDate = parsed;
       }
-    } else {
-      const fallback = new Date();
-      fallback.setDate(fallback.getDate() + 7);
-      fallback.setHours(9, 0, 0, 0);
-      setDueDate(fallback);
-      setCalendarMonth(fallback);
     }
-    setFormError(null);
-    setModalOpen(true);
+
+    let frequencyDays: number | undefined;
+    if (prefillFrequencyDays) {
+      const parsed = Number(prefillFrequencyDays);
+      if (Number.isFinite(parsed)) {
+        frequencyDays = parsed;
+      }
+    }
+
+    setPrefillData({
+      title: prefillTitle,
+      category: prefillCategory && validCategories.has(prefillCategory)
+        ? (prefillCategory as WellnessReminder['category'])
+        : undefined,
+      notes: prefillNotes,
+      dogId: prefillDogId,
+      dueDate,
+      frequencyDays,
+    });
+    setSheetOpen(true);
   }, [params]);
 
   const loadData = useCallback(async () => {
@@ -196,23 +121,18 @@ export default function CustomerReminders() {
     setError(null);
     try {
       const [summaryPayload, reminderPayload, dogPayload] = await Promise.all([
-        apiRequest<CustomerSummary>('/api/mobile/customer/summary', {
-          token: session.token,
-        }),
+        apiRequest<CustomerSummary>('/api/mobile/customer/summary', { token: session.token }),
         apiRequest<{ reminders: WellnessReminder[] }>(
           '/api/mobile/customer/reminders?includeInactive=true',
           { token: session.token },
         ),
-        apiRequest<{ dogs: DogSummary[] }>('/api/mobile/customer/dogs', {
-          token: session.token,
-        }),
+        apiRequest<{ dogs: DogSummary[] }>('/api/mobile/customer/dogs', { token: session.token }),
       ]);
       setSummary(summaryPayload);
       setReminders(reminderPayload.reminders ?? []);
       setDogs(dogPayload.dogs ?? []);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to load reminders.';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'Unable to load reminders.');
     } finally {
       setLoading(false);
     }
@@ -222,62 +142,37 @@ export default function CustomerReminders() {
     loadData();
   }, [loadData]);
 
-  const resetForm = () => {
-    setTitle('');
-    setCategory('CUSTOM');
-    setDogId(null);
-    setNotes('');
-    setFrequencyDays(null);
-    const next = new Date();
-    next.setDate(next.getDate() + 7);
-    next.setHours(9, 0, 0, 0);
-    setDueDate(next);
-    setCalendarMonth(next);
-    setFormError(null);
-  };
-
-  const openModal = () => {
-    resetForm();
-    setModalOpen(true);
-  };
-
-  const handleDueQuickSelect = (offset: number) => {
-    const next = new Date();
-    next.setDate(next.getDate() + offset);
-    next.setHours(9, 0, 0, 0);
-    setDueDate(next);
-    setCalendarMonth(next);
-  };
-
-  const handleSave = async () => {
+  const handleSave = async (data: {
+    title: string;
+    category: WellnessReminder['category'];
+    dogId: string | null;
+    notes: string;
+    nextDueAt: Date;
+    frequencyDays: number | null;
+  }) => {
     if (!session?.token || saving) return;
-    if (!title.trim()) {
-      setFormError('Add a reminder title.');
-      return;
-    }
     setSaving(true);
-    setFormError(null);
     try {
-      const data = await apiRequest<{ reminder: WellnessReminder }>(
+      const result = await apiRequest<{ reminder: WellnessReminder }>(
         '/api/mobile/customer/reminders',
         {
           method: 'POST',
           token: session.token,
           body: {
-            title: title.trim(),
-            category,
-            dogId,
-            notes: notes.trim() ? notes.trim() : undefined,
-            nextDueAt: dueDate.toISOString(),
-            frequencyDays,
+            title: data.title,
+            category: data.category,
+            dogId: data.dogId,
+            notes: data.notes || undefined,
+            nextDueAt: data.nextDueAt.toISOString(),
+            frequencyDays: data.frequencyDays,
           },
         },
       );
-      setReminders((prev) => [data.reminder, ...prev]);
-      setModalOpen(false);
+      setReminders((prev) => [result.reminder, ...prev]);
+      setSheetOpen(false);
+      setPrefillData(undefined);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to save reminder.';
-      setFormError(message);
+      // Keep sheet open on error
     } finally {
       setSaving(false);
     }
@@ -307,7 +202,25 @@ export default function CustomerReminders() {
   };
 
   const handleMarkDone = async (reminder: WellnessReminder) => {
-    if (!session?.token) return;
+    if (!session?.token || markingId) return;
+    const now = new Date();
+    const nextDueAt = reminder.frequencyDays
+      ? new Date(now.getTime() + reminder.frequencyDays * 86400000)
+      : null;
+
+    setMarkingId(reminder.id);
+    setReminders((prev) =>
+      prev.map((item) =>
+        item.id === reminder.id
+          ? {
+              ...item,
+              lastCompletedAt: now.toISOString(),
+              nextDueAt: nextDueAt ? nextDueAt.toISOString() : item.nextDueAt,
+              active: Boolean(nextDueAt),
+            }
+          : item,
+      ),
+    );
     try {
       const data = await apiRequest<{ reminder: WellnessReminder }>(
         `/api/mobile/customer/reminders/${reminder.id}`,
@@ -322,6 +235,8 @@ export default function CustomerReminders() {
       );
     } catch (err) {
       await loadData();
+    } finally {
+      setMarkingId(null);
     }
   };
 
@@ -338,501 +253,327 @@ export default function CustomerReminders() {
     }
   };
 
-  const upcoming = useMemo(() => {
-    return reminders
-      .filter((reminder) => reminder.active)
-      .sort((a, b) => new Date(a.nextDueAt).getTime() - new Date(b.nextDueAt).getTime());
-  }, [reminders]);
-  const paused = useMemo(() => {
-    return reminders
-      .filter((reminder) => !reminder.active)
-      .sort((a, b) => new Date(a.nextDueAt).getTime() - new Date(b.nextDueAt).getTime());
+  const { upcoming, overdue, paused } = useMemo(() => {
+    const now = new Date();
+    const active = reminders.filter((r) => r.active);
+    const inactive = reminders.filter((r) => !r.active);
+
+    const overdueList: WellnessReminder[] = [];
+    const upcomingList: WellnessReminder[] = [];
+
+    for (const reminder of active) {
+      const dueDate = new Date(reminder.nextDueAt);
+      if (dueDate < now) {
+        overdueList.push(reminder);
+      } else {
+        upcomingList.push(reminder);
+      }
+    }
+
+    overdueList.sort((a, b) => new Date(a.nextDueAt).getTime() - new Date(b.nextDueAt).getTime());
+    upcomingList.sort((a, b) => new Date(a.nextDueAt).getTime() - new Date(b.nextDueAt).getTime());
+    inactive.sort((a, b) => new Date(a.nextDueAt).getTime() - new Date(b.nextDueAt).getTime());
+
+    return { upcoming: upcomingList, overdue: overdueList, paused: inactive };
   }, [reminders]);
 
   const multiDogLocked = summary?.wellnessAccess?.maxDogs === 1 && dogs.length > 1;
 
-  useEffect(() => {
-    if (!multiDogLocked) return;
-    setDogId(null);
-  }, [multiDogLocked]);
-
-  const calendarDays = useMemo(() => getCalendarDays(calendarMonth), [calendarMonth]);
-  const selectedKey = toDateKey(dueDate);
+  const heroBackground =
+    colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
 
   return (
     <Screen>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
-          <Text style={[styles.kicker, { color: palette.muted }]}>Care reminders</Text>
-          <Text style={[styles.title, { color: palette.text }]}>Stay on track</Text>
-          <Text style={[styles.subtitle, { color: palette.muted }]}>
-            Track meds, vaccines, and care milestones in one place.
+        {/* Hero */}
+        <View style={[styles.hero, { backgroundColor: heroBackground }]}>
+          <Text style={[styles.heroEyebrow, { color: 'rgba(255,255,255,0.65)' }]}>
+            Wellness
           </Text>
-          <Button title="Add reminder" onPress={openModal} />
+          <Text style={styles.heroTitle}>Reminders</Text>
+          <Text style={[styles.heroSubtitle, { color: 'rgba(255,255,255,0.7)' }]}>
+            Track meds, vaccines, and care milestones.
+          </Text>
         </View>
-        {multiDogLocked ? (
-          <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <Text style={[styles.helperText, { color: palette.muted }]}>
+
+        {/* Quick stats */}
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <Text style={[styles.statValue, { color: overdue.length > 0 ? palette.danger : palette.text }]}>
+              {overdue.length}
+            </Text>
+            <Text style={[styles.statLabel, { color: palette.muted }]}>Overdue</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <Text style={[styles.statValue, { color: palette.text }]}>{upcoming.length}</Text>
+            <Text style={[styles.statLabel, { color: palette.muted }]}>Upcoming</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <Text style={[styles.statValue, { color: palette.muted }]}>{paused.length}</Text>
+            <Text style={[styles.statLabel, { color: palette.muted }]}>Paused</Text>
+          </View>
+        </View>
+
+        {/* Add button */}
+        <Button
+          title="Add reminder"
+          onPress={() => {
+            setPrefillData(undefined);
+            setSheetOpen(true);
+          }}
+        />
+
+        {/* Premium notice */}
+        {multiDogLocked && (
+          <View style={[styles.noticeCard, { backgroundColor: `${palette.tint}10`, borderColor: palette.tint }]}>
+            <FontAwesome name="lock" size={14} color={palette.tint} />
+            <Text style={[styles.noticeText, { color: palette.tint }]}>
               Premium unlocks per-dog reminders for multi-dog households.
             </Text>
           </View>
-        ) : null}
+        )}
 
-        {loading ? (
-          <View style={styles.inlineRow}>
+        {/* Loading */}
+        {loading && (
+          <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color={palette.tint} />
-            <Text style={[styles.helperText, { color: palette.muted }]}>Loading reminders...</Text>
+            <Text style={[styles.loadingText, { color: palette.muted }]}>Loading...</Text>
           </View>
-        ) : error ? (
-          <Text style={[styles.helperText, { color: palette.danger }]}>{error}</Text>
-        ) : upcoming.length === 0 ? (
+        )}
+
+        {/* Error */}
+        {error && (
+          <View style={[styles.errorCard, { backgroundColor: `${palette.danger}10` }]}>
+            <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
+          </View>
+        )}
+
+        {/* Overdue section */}
+        {overdue.length > 0 && (
+          <View style={styles.section}>
+            <View style={[styles.overdueHeader, { backgroundColor: `${palette.danger}10` }]}>
+              <FontAwesome name="exclamation-circle" size={14} color={palette.danger} />
+              <Text style={[styles.overdueHeaderText, { color: palette.danger }]}>
+                {overdue.length} overdue
+              </Text>
+            </View>
+            {overdue.map((reminder) => (
+              <ReminderCard
+                key={reminder.id}
+                reminder={reminder}
+                marking={markingId === reminder.id}
+                onMarkDone={() => handleMarkDone(reminder)}
+                onToggleActive={() => handleToggleActive(reminder)}
+                onDelete={() => handleDelete(reminder)}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* Upcoming section */}
+        {upcoming.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: palette.text }]}>Upcoming</Text>
+            {upcoming.map((reminder) => (
+              <ReminderCard
+                key={reminder.id}
+                reminder={reminder}
+                marking={markingId === reminder.id}
+                onMarkDone={() => handleMarkDone(reminder)}
+                onToggleActive={() => handleToggleActive(reminder)}
+                onDelete={() => handleDelete(reminder)}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* Empty state */}
+        {!loading && upcoming.length === 0 && overdue.length === 0 && (
           <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>No reminders yet</Text>
-            <Text style={[styles.helperText, { color: palette.muted }]}>
+            <View style={[styles.emptyIcon, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="bell" size={24} color={palette.tint} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: palette.text }]}>No active reminders</Text>
+            <Text style={[styles.emptyDesc, { color: palette.muted }]}>
               Add a reminder to keep meds, vaccines, and routines on schedule.
             </Text>
           </View>
-        ) : (
-          upcoming.map((reminder) => (
-            <View
-              key={reminder.id}
-              style={[styles.reminderCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-            >
-              <View style={styles.reminderHeader}>
-                <View>
-                  <Text style={[styles.reminderTitle, { color: palette.text }]}>
-                    {reminder.title}
-                  </Text>
-                  <Text style={[styles.helperText, { color: palette.muted }]}>
-                    {reminder.category.replace('_', ' ').toLowerCase()} •{' '}
-                    {reminder.dogName ?? 'Household'}
-                  </Text>
-                </View>
-                <Text style={[styles.dueText, { color: palette.text }]}>
-                  {new Date(reminder.nextDueAt).toLocaleDateString('en-US')}
-                </Text>
-              </View>
-              {reminder.notes ? (
-                <Text style={[styles.helperText, { color: palette.muted }]}>{reminder.notes}</Text>
-              ) : null}
-              <View style={styles.actionRow}>
-                <Pressable
-                  style={[styles.actionChip, { borderColor: palette.border }]}
-                  onPress={() => handleMarkDone(reminder)}
-                >
-                  <Text style={[styles.actionText, { color: palette.text }]}>Mark done</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.actionChip, { borderColor: palette.border }]}
-                  onPress={() => handleToggleActive(reminder)}
-                >
-                  <Text style={[styles.actionText, { color: palette.text }]}>
-                    {reminder.active ? 'Pause' : 'Resume'}
-                  </Text>
-                </Pressable>
-                <Pressable onPress={() => handleDelete(reminder)}>
-                  <Text style={[styles.deleteText, { color: palette.danger }]}>Delete</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))
         )}
 
-        {paused.length > 0 ? (
-          <View style={styles.sectionBlock}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Paused reminders</Text>
-            {paused.map((reminder) => (
-              <View
-                key={reminder.id}
-                style={[styles.reminderCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-              >
-                <View style={styles.reminderHeader}>
-                  <View>
-                    <Text style={[styles.reminderTitle, { color: palette.text }]}>
-                      {reminder.title}
-                    </Text>
-                    <Text style={[styles.helperText, { color: palette.muted }]}>
-                      {reminder.category.replace('_', ' ').toLowerCase()} •{' '}
-                      {reminder.dogName ?? 'Household'}
-                    </Text>
-                  </View>
-                  <Text style={[styles.dueText, { color: palette.muted }]}>Paused</Text>
-                </View>
-                <View style={styles.actionRow}>
-                  <Pressable
-                    style={[styles.actionChip, { borderColor: palette.border }]}
-                    onPress={() => handleToggleActive(reminder)}
-                  >
-                    <Text style={[styles.actionText, { color: palette.text }]}>Resume</Text>
-                  </Pressable>
-                  <Pressable onPress={() => handleDelete(reminder)}>
-                    <Text style={[styles.deleteText, { color: palette.danger }]}>Delete</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ))}
+        {/* Paused section */}
+        {paused.length > 0 && (
+          <View style={styles.section}>
+            <Pressable
+              style={styles.pausedHeader}
+              onPress={() => setShowPaused(!showPaused)}
+            >
+              <Text style={[styles.sectionTitle, { color: palette.muted }]}>
+                Paused ({paused.length})
+              </Text>
+              <FontAwesome
+                name={showPaused ? 'chevron-up' : 'chevron-down'}
+                size={12}
+                color={palette.muted}
+              />
+            </Pressable>
+            {showPaused &&
+              paused.map((reminder) => (
+                <ReminderCard
+                  key={reminder.id}
+                  reminder={reminder}
+                  marking={markingId === reminder.id}
+                  onMarkDone={() => handleMarkDone(reminder)}
+                  onToggleActive={() => handleToggleActive(reminder)}
+                  onDelete={() => handleDelete(reminder)}
+                />
+              ))}
           </View>
-        ) : null}
+        )}
       </ScrollView>
 
-      <Modal transparent visible={modalOpen} animationType="slide" onRequestClose={() => setModalOpen(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalBackdrop}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 32 : 0}
-        >
-          <View style={styles.modalContent}>
-            <ScrollView
-              style={styles.modalScrollView}
-              contentContainerStyle={styles.modalScroll}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-            >
-              <View style={[styles.modalCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                <Text style={[styles.sectionTitle, { color: palette.text }]}>New reminder</Text>
-            <TextInput
-              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-              placeholder="Reminder title"
-              placeholderTextColor={palette.muted}
-              value={title}
-              onChangeText={setTitle}
-            />
-            <Text style={[styles.fieldLabel, { color: palette.muted }]}>Category</Text>
-            <View style={styles.chipRow}>
-              {CATEGORY_OPTIONS.map((option) => (
-                <ChoiceChip
-                  key={option.value}
-                  label={option.label}
-                  selected={category === option.value}
-                  onPress={() => setCategory(option.value)}
-                />
-              ))}
-            </View>
-
-            <Text style={[styles.fieldLabel, { color: palette.muted }]}>Dog (optional)</Text>
-            <View style={styles.chipRow}>
-              <ChoiceChip
-                label="Household"
-                selected={!dogId}
-                onPress={() => setDogId(null)}
-                disabled={multiDogLocked}
-              />
-              {dogs.map((dog) => (
-                <ChoiceChip
-                  key={dog.id}
-                  label={dog.name}
-                  selected={dogId === dog.id}
-                  onPress={() => setDogId(dog.id)}
-                  disabled={multiDogLocked}
-                />
-              ))}
-            </View>
-
-            <Text style={[styles.fieldLabel, { color: palette.muted }]}>Next due</Text>
-            <View style={styles.chipRow}>
-              {QUICK_DUE_OPTIONS.map((option) => (
-                <ChoiceChip
-                  key={option.label}
-                  label={option.label}
-                  selected={toDateKey(dueDate) === toDateKey(new Date(Date.now() + option.offset * 86400000))}
-                  onPress={() => handleDueQuickSelect(option.offset)}
-                />
-              ))}
-            </View>
-            <View style={styles.calendarHeaderRow}>
-              <Pressable
-                onPress={() =>
-                  setCalendarMonth(
-                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1),
-                  )
-                }
-              >
-                <Text style={[styles.calendarNav, { color: palette.tint }]}>Prev</Text>
-              </Pressable>
-              <Text style={[styles.calendarTitle, { color: palette.text }]}>
-                {MONTH_LABELS[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
-              </Text>
-              <Pressable
-                onPress={() =>
-                  setCalendarMonth(
-                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1),
-                  )
-                }
-              >
-                <Text style={[styles.calendarNav, { color: palette.tint }]}>Next</Text>
-              </Pressable>
-            </View>
-            <View style={styles.calendarHeader}>
-              {DAY_LABELS.map((label) => (
-                <Text key={label} style={[styles.calendarLabel, { color: palette.muted }]}>
-                  {label}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.calendarGrid}>
-              {calendarDays.map((date) => {
-                const key = toDateKey(date);
-                const isSelected = selectedKey === key;
-                const isCurrentMonth = date.getMonth() === calendarMonth.getMonth();
-                const isToday = key === todayKey;
-                const pickDate = new Date(date);
-                pickDate.setHours(9, 0, 0, 0);
-                return (
-                  <Pressable
-                    key={key}
-                    onPress={() => {
-                      setDueDate(pickDate);
-                      if (date.getMonth() !== calendarMonth.getMonth()) {
-                        setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
-                      }
-                    }}
-                    style={[
-                      styles.calendarCell,
-                      {
-                        borderColor: isSelected
-                          ? palette.tint
-                          : isToday
-                            ? palette.accent
-                            : palette.border,
-                        backgroundColor: isSelected ? palette.tint : palette.background,
-                        opacity: isCurrentMonth ? 1 : 0.4,
-                      },
-                    ]}
-                  >
-                    <Text style={{ color: isSelected ? '#FFFFFF' : palette.text, fontWeight: '600' }}>
-                      {date.getDate()}
-                    </Text>
-                    {isToday ? (
-                      <View style={[styles.todayDot, { backgroundColor: palette.accent }]} />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={[styles.calendarSelected, { color: palette.muted }]}>
-              Selected date: {formatDateDisplay(dueDate)}
-            </Text>
-
-            <Text style={[styles.fieldLabel, { color: palette.muted }]}>Repeat</Text>
-            <View style={styles.chipRow}>
-              {FREQUENCY_OPTIONS.map((option) => (
-                <ChoiceChip
-                  key={option.label}
-                  label={option.label}
-                  selected={frequencyDays === option.value}
-                  onPress={() => setFrequencyDays(option.value)}
-                />
-              ))}
-            </View>
-
-            <TextInput
-              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-              placeholder="Notes (optional)"
-              placeholderTextColor={palette.muted}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-            />
-
-            {formError ? (
-              <Text style={[styles.helperText, { color: palette.danger }]}>{formError}</Text>
-            ) : null}
-
-            <View style={styles.modalActions}>
-              <Button title="Cancel" onPress={() => setModalOpen(false)} variant="secondary" />
-              <Button
-                title={saving ? 'Saving...' : 'Save'}
-                onPress={handleSave}
-                disabled={saving}
-              />
-            </View>
-              </View>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* Sheet */}
+      <ReminderSheet
+        visible={sheetOpen}
+        onClose={() => {
+          setSheetOpen(false);
+          setPrefillData(undefined);
+        }}
+        dogs={dogs}
+        multiDogLocked={multiDogLocked}
+        saving={saving}
+        onSave={handleSave}
+        prefill={prefillData}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
     paddingBottom: 40,
     gap: 16,
   },
-  header: {
-    gap: 8,
+  hero: {
+    borderRadius: 24,
+    padding: 20,
+    paddingTop: 32,
   },
-  kicker: {
+  heroEyebrow: {
     fontSize: 12,
     textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    fontWeight: '600',
+    letterSpacing: 2,
   },
-  title: {
+  heroTitle: {
+    marginTop: 10,
     fontSize: 24,
     fontWeight: '700',
+    color: '#FFFFFF',
   },
-  subtitle: {
+  heroSubtitle: {
+    marginTop: 6,
+    fontSize: 14,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 11,
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  noticeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  noticeText: {
+    flex: 1,
     fontSize: 13,
   },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 14,
+  },
+  errorCard: {
+    padding: 14,
+    borderRadius: 12,
+  },
+  errorText: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  section: {
+    gap: 0,
+  },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
+    marginBottom: 12,
   },
-  helperText: {
-    fontSize: 12,
-  },
-  inlineRow: {
+  overdueHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  overdueHeaderText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  pausedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   emptyCard: {
     borderRadius: 16,
     borderWidth: 1,
-    padding: 16,
-    gap: 6,
-  },
-  reminderCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
+    padding: 24,
+    alignItems: 'center',
     gap: 10,
-    marginBottom: 12,
   },
-  sectionBlock: {
-    marginTop: 16,
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  reminderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  reminderTitle: {
+  emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
   },
-  dueText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  actionChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  deleteText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    padding: 20,
-    justifyContent: 'center',
-  },
-  modalContent: {
-    flex: 1,
-    justifyContent: 'flex-start',
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalScroll: {
-    paddingBottom: 24,
-  },
-  modalCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-    gap: 12,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 10,
-    fontSize: 14,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  fieldLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  calendarHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 6,
-  },
-  calendarTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  calendarNav: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginTop: 8,
-  },
-  calendarLabel: {
-    width: '14.2857%',
+  emptyDesc: {
+    fontSize: 13,
     textAlign: 'center',
-    fontSize: 11,
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  calendarCell: {
-    width: '14.2857%',
-    aspectRatio: 1,
-    borderWidth: 1,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  calendarSelected: {
-    fontSize: 12,
-  },
-  todayDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    position: 'absolute',
-    bottom: 6,
-    left: 6,
+    lineHeight: 18,
   },
 });

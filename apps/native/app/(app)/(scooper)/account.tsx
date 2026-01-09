@@ -8,7 +8,6 @@ import {
   Linking,
   Pressable,
   ScrollView,
-  Switch,
   StyleSheet,
   Text,
   TextInput,
@@ -16,7 +15,9 @@ import {
 } from 'react-native';
 
 import Button from '@/components/ui/Button';
+import CollapsibleSection from '@/components/ui/CollapsibleSection';
 import Screen from '@/components/ui/Screen';
+import Switch from '@/components/ui/ThemedSwitch';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -526,567 +527,409 @@ export default function ScooperAccount() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.pageHeader}>
-          <View style={styles.headerRow}>
-            <Image
-              source={require('../../../assets/images/logo-horizontal.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <View style={styles.headerCopy}>
-              <Text style={[styles.kicker, { color: palette.muted }]}>Scooper account</Text>
-              <Text style={[styles.title, { color: palette.text }]}>Account</Text>
-              <Text style={[styles.subtitle, { color: palette.muted }]}>
+        {/* Profile Card with Avatar */}
+        <View
+          style={[
+            styles.profileCard,
+            cardShadowStyle,
+            { backgroundColor: palette.card, borderColor: cardBorder },
+          ]}
+        >
+          <View style={styles.profileRow}>
+            <Pressable
+              onPress={handleProfilePhoto}
+              disabled={profilePhotoLoading}
+              style={styles.profileAvatarButton}
+            >
+              {profilePhotoUrl ? (
+                <Image source={{ uri: profilePhotoUrl }} style={styles.profileAvatar} />
+              ) : (
+                <View style={[styles.profileAvatar, { backgroundColor: palette.border }]}>
+                  <Text style={[styles.profileInitials, { color: palette.text }]}>
+                    {scooperNameLabel
+                      .split(' ')
+                      .map((part) => part[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={[styles.profileAvatarBadge, { backgroundColor: palette.tint }]}>
+                <FontAwesome name="camera" size={12} color="#FFFFFF" />
+              </View>
+            </Pressable>
+            <View style={styles.profileMeta}>
+              <Text style={[styles.profileName, { color: palette.text }]}>
+                {scooperNameLabel}
+              </Text>
+              <Text style={[styles.profileSubtitle, { color: palette.muted }]}>
                 {emailLabel}
               </Text>
-            </View>
-          </View>
-          <View style={styles.headerControls}>
-            <View style={styles.metaRow}>
               {activeRoleLabel ? (
-                <View
-                  style={[
-                    styles.metaPill,
-                    { backgroundColor: palette.card, borderColor: palette.border },
-                  ]}
-                >
-                  <Text style={[styles.metaText, { color: palette.text }]}>
-                    Active role: {activeRoleLabel}
+                <View style={[styles.roleBadge, { backgroundColor: `${palette.tint}15` }]}>
+                  <Text style={[styles.roleBadgeText, { color: palette.tint }]}>
+                    {activeRoleLabel}
                   </Text>
                 </View>
               ) : null}
             </View>
-            <View style={styles.themeToggleContainer}>
-              <View style={[styles.themeToggle, { borderColor: palette.border, backgroundColor: palette.card }]}>
-                <Pressable
-                  onPress={() => themePreference?.setPreference('system')}
-                  style={[
-                    styles.themeToggleButton,
-                    themeValue === 'system' && { backgroundColor: palette.tint },
-                  ]}
-                  disabled={themeLoading || !themePreference}
-                >
-                  <FontAwesome
-                    name="adjust"
-                    size={14}
-                    color={themeValue === 'system' ? '#FFFFFF' : palette.text}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => themePreference?.setPreference('light')}
-                  style={[
-                    styles.themeToggleButton,
-                    themeValue === 'light' && { backgroundColor: palette.tint },
-                  ]}
-                  disabled={themeLoading || !themePreference}
-                >
-                  <FontAwesome
-                    name="sun-o"
-                    size={14}
-                    color={themeValue === 'light' ? '#FFFFFF' : palette.text}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => themePreference?.setPreference('dark')}
-                  style={[
-                    styles.themeToggleButton,
-                    themeValue === 'dark' && { backgroundColor: palette.tint },
-                  ]}
-                  disabled={themeLoading || !themePreference}
-                >
-                  <FontAwesome
-                    name="moon-o"
-                    size={14}
-                    color={themeValue === 'dark' ? '#FFFFFF' : palette.text}
-                  />
-                </Pressable>
-              </View>
+            {/* Theme toggle */}
+            <View style={[styles.themeToggle, { borderColor: palette.border, backgroundColor: palette.background }]}>
+              <Pressable
+                onPress={() => themePreference?.setPreference('system')}
+                style={[
+                  styles.themeToggleButton,
+                  themeValue === 'system' && { backgroundColor: palette.tint },
+                ]}
+                disabled={themeLoading || !themePreference}
+              >
+                <FontAwesome
+                  name="adjust"
+                  size={12}
+                  color={themeValue === 'system' ? '#FFFFFF' : palette.muted}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => themePreference?.setPreference('light')}
+                style={[
+                  styles.themeToggleButton,
+                  themeValue === 'light' && { backgroundColor: palette.tint },
+                ]}
+                disabled={themeLoading || !themePreference}
+              >
+                <FontAwesome
+                  name="sun-o"
+                  size={12}
+                  color={themeValue === 'light' ? '#FFFFFF' : palette.muted}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => themePreference?.setPreference('dark')}
+                style={[
+                  styles.themeToggleButton,
+                  themeValue === 'dark' && { backgroundColor: palette.tint },
+                ]}
+                disabled={themeLoading || !themePreference}
+              >
+                <FontAwesome
+                  name="moon-o"
+                  size={12}
+                  color={themeValue === 'dark' ? '#FFFFFF' : palette.muted}
+                />
+              </Pressable>
             </View>
           </View>
+          {profilePhotoLoading ? (
+            <Text style={[styles.helperText, { color: palette.muted }]}>Updating photo...</Text>
+          ) : null}
+          {profilePhotoError ? (
+            <Text style={[styles.helperText, { color: palette.danger }]}>{profilePhotoError}</Text>
+          ) : null}
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Profile</Text>
-            <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
-              Keep your scooper details up to date.
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.profileCard,
-              cardShadowStyle,
+        {/* Stats Row: Credits | Streak | Standing */}
+        <View style={styles.statsRow}>
+          <Pressable
+            onPress={() => router.push('/(app)/(scooper)/rewards')}
+            style={({ pressed }) => [
+              styles.statCard,
               { backgroundColor: palette.card, borderColor: cardBorder },
+              pressed && { opacity: 0.8 },
             ]}
           >
-            <View style={styles.profileRow}>
-              <View style={styles.profileIdentity}>
-                <Pressable
-                  onPress={handleProfilePhoto}
-                  disabled={profilePhotoLoading}
-                  style={styles.profileAvatarButton}
-                >
-                  {profilePhotoUrl ? (
-                    <Image source={{ uri: profilePhotoUrl }} style={styles.profileAvatar} />
-                  ) : (
-                    <View style={[styles.profileAvatar, { backgroundColor: palette.border }]}>
-                      <Text style={[styles.profileInitials, { color: palette.text }]}>
-                        {scooperNameLabel
-                          .split(' ')
-                          .map((part) => part[0])
-                          .join('')
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={[styles.profileAvatarBadge, { backgroundColor: palette.tint }]}>
-                    <FontAwesome name="camera" size={12} color="#FFFFFF" />
-                  </View>
-                </Pressable>
-                <View style={styles.profileMeta}>
-                  <Text style={[styles.profileName, { color: palette.text }]}>
-                    {scooperNameLabel}
-                  </Text>
-                  <Text style={[styles.profileSubtitle, { color: palette.muted }]}>
-                    {emailLabel}
-                  </Text>
-                  {profilePhotoLoading ? (
-                    <Text style={[styles.profileSubtitle, { color: palette.muted }]}>
-                      Updating photo...
-                    </Text>
-                  ) : null}
-                  {profilePhotoError ? (
-                    <Text style={[styles.cardBody, { color: palette.danger }]}>
-                      {profilePhotoError}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
+            <View style={[styles.statIcon, { backgroundColor: `${Colors.brand.gold}15` }]}>
+              <FontAwesome name="star" size={14} color={Colors.brand.gold} />
             </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Performance</Text>
-            <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
-              Rewards momentum and streaks.
-            </Text>
-          </View>
-
-          <View
-            style={[
-              styles.heroCard,
-              cardShadowStyle,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
-            <View style={[styles.heroGlow, { backgroundColor: palette.tint }]} />
-            <Text style={[styles.heroKicker, { color: palette.muted }]}>Rewards balance</Text>
             {rewardsLoading ? (
-              <View style={styles.inlineRow}>
-                <ActivityIndicator size="small" color={palette.tint} />
-                <Text style={[styles.cardBody, { color: palette.muted }]}>Loading rewards...</Text>
+              <ActivityIndicator size="small" color={palette.tint} />
+            ) : (
+              <Text style={[styles.statValue, { color: palette.text }]}>{rewardsValueLabel}</Text>
+            )}
+            <Text style={[styles.statLabel, { color: palette.muted }]}>Credits</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(app)/(scooper)/daily-check')}
+            style={({ pressed }) => [
+              styles.statCard,
+              { backgroundColor: palette.card, borderColor: cardBorder },
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <View style={[styles.statIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+              <FontAwesome name="fire" size={14} color={Colors.brand.mint} />
+            </View>
+            <Text style={[styles.statValue, { color: palette.text }]}>
+              {rewardsStreak ?? '—'}
+            </Text>
+            <Text style={[styles.statLabel, { color: palette.muted }]}>Streak</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setStandingExpanded((prev) => !prev)}
+            style={({ pressed }) => [
+              styles.statCard,
+              { backgroundColor: palette.card, borderColor: cardBorder },
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <View style={[styles.statIcon, { backgroundColor: strikeSummary && strikeSummary.count > 0 ? `${Colors.brand.gold}15` : `${successTint}15` }]}>
+              <FontAwesome name="shield" size={14} color={strikeSummary && strikeSummary.count > 0 ? Colors.brand.gold : successTint} />
+            </View>
+            {strikeLoading ? (
+              <ActivityIndicator size="small" color={palette.tint} />
+            ) : (
+              <Text style={[styles.statValue, { color: strikeSummary && strikeSummary.count > 0 ? Colors.brand.gold : successTint }]}>
+                {strikeSummary ? `${strikeSummary.count}/${strikeSummary.limit}` : '—'}
+              </Text>
+            )}
+            <Text style={[styles.statLabel, { color: palette.muted }]}>Standing</Text>
+          </Pressable>
+        </View>
+
+        {/* Standing Details (expandable) */}
+        {standingExpanded ? (
+          <View style={[styles.standingCard, cardShadowStyle, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+            <View style={styles.standingHeader}>
+              <View style={styles.standingTitleRow}>
+                <View style={[styles.standingIcon, { backgroundColor: `${successTint}15` }]}>
+                  <FontAwesome name="shield" size={16} color={successTint} />
+                </View>
+                <Text style={[styles.cardTitle, { color: palette.text }]}>Account Standing</Text>
               </View>
-            ) : rewardsError ? (
-              <Text style={[styles.cardBody, { color: palette.danger }]}>{rewardsError}</Text>
+              <Pressable onPress={() => setStandingExpanded(false)} style={styles.closeButton}>
+                <FontAwesome name="times" size={16} color={palette.muted} />
+              </Pressable>
+            </View>
+            {strikeError ? (
+              <Text style={[styles.helperText, { color: palette.danger }]}>{strikeError}</Text>
             ) : (
               <>
-                <Text style={[styles.heroValue, { color: palette.text }]}>
-                  {rewardsValueLabel} pts
-                </Text>
-                <View style={styles.pillRow}>
-                  {tierLabel ? (
-                    <View style={[styles.pill, { borderColor: palette.border }]}>
-                      <Text style={[styles.pillText, { color: palette.text }]}>{tierLabel} tier</Text>
-                    </View>
-                  ) : null}
-                  {streakLabel ? (
-                    <View style={[styles.pill, { borderColor: palette.border }]}>
-                      <Text style={[styles.pillText, { color: palette.text }]}>{streakLabel}</Text>
-                    </View>
-                  ) : null}
-                </View>
-                {nextReward ? (
-                  <View style={styles.progressBlock}>
-                    <View style={[styles.progressTrack, { backgroundColor: palette.border }]}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: `${rewardsProgressPct}%`, backgroundColor: palette.tint },
-                        ]}
-                      />
-                    </View>
-                    <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                      Next reward: {nextReward.name} • {nextReward.remainingPoints} pts to unlock
+                <Text style={[styles.standingMainStat, { color: palette.text }]}>{strikeLabel}</Text>
+                <View style={styles.standingLimits}>
+                  <View style={[styles.limitItem, { backgroundColor: palette.background }]}>
+                    <FontAwesome name="clock-o" size={12} color={palette.muted} />
+                    <Text style={[styles.limitLabel, { color: palette.muted }]}>Late</Text>
+                    <Text style={[styles.limitValue, { color: palette.text }]}>
+                      {strikeSummary?.lateReleaseCount ?? 0}/{strikeSummary?.lateReleaseLimit ?? 0}
                     </Text>
                   </View>
+                  <View style={[styles.limitItem, { backgroundColor: palette.background }]}>
+                    <FontAwesome name="forward" size={12} color={palette.muted} />
+                    <Text style={[styles.limitLabel, { color: palette.muted }]}>Early</Text>
+                    <Text style={[styles.limitValue, { color: palette.text }]}>
+                      {strikeSummary?.earlyReleaseCount ?? 0}/{strikeSummary?.earlyReleaseLimit ?? 0}
+                    </Text>
+                  </View>
+                  <View style={[styles.limitItem, { backgroundColor: palette.background }]}>
+                    <FontAwesome name="briefcase" size={12} color={palette.muted} />
+                    <Text style={[styles.limitLabel, { color: palette.muted }]}>Jobs</Text>
+                    <Text style={[styles.limitValue, { color: palette.text }]}>
+                      {strikeSummary?.jobReleaseCount ?? 0}/{strikeSummary?.jobReleaseLimit ?? 0}
+                    </Text>
+                  </View>
+                </View>
+                {strikeWindowLabel ? (
+                  <Text style={[styles.helperText, { color: palette.muted }]}>{strikeWindowLabel}</Text>
                 ) : null}
               </>
             )}
-            <View style={styles.actionRow}>
-              <Button
-                title="Redeem rewards"
-                onPress={() => router.push('/(app)/(scooper)/rewards')}
-                variant="primary"
-              />
-              <Button
-                title="Daily check-in"
-                onPress={() => router.push('/(app)/(scooper)/daily-check')}
-                variant="secondary"
-              />
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
             <Pressable
-              onPress={() => setStandingExpanded((prev) => !prev)}
-              style={styles.collapseHeader}
+              onPress={() => Linking.openURL('mailto:support@yardura.com?subject=Account%20standing%20review')}
+              style={[styles.standingAction, { borderColor: palette.border }]}
             >
-              <View style={styles.collapseCopy}>
-                <Text style={[styles.cardTitle, { color: palette.text }]}>Reliability limits</Text>
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  Tap to review missed-visit limits and release caps.
-                </Text>
-              </View>
-              <View style={styles.collapseMeta}>
-                <Text style={[styles.collapseMetaText, { color: palette.muted }]}>
-                  {standingExpanded ? 'Hide' : 'View'}
-                </Text>
-                <FontAwesome
-                  name={standingExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={14}
-                  color={palette.muted}
-                />
-              </View>
+              <FontAwesome name="envelope-o" size={12} color={palette.tint} />
+              <Text style={[styles.standingActionText, { color: palette.tint }]}>Request review</Text>
             </Pressable>
-            {standingExpanded ? (
-              <>
-                {strikeLoading ? (
-                  <View style={styles.inlineRow}>
-                    <ActivityIndicator size="small" color={palette.tint} />
-                    <Text style={[styles.cardBody, { color: palette.muted }]}>Loading standing...</Text>
-                  </View>
-                ) : strikeError ? (
-                  <Text style={[styles.cardBody, { color: palette.danger }]}>{strikeError}</Text>
-                ) : (
-                  <>
-                    <Text style={[styles.cardValue, { color: palette.text }]}>{strikeLabel}</Text>
-                    <View style={styles.inlineRow}>
-                      <Text style={[styles.cardBody, { color: palette.muted }]}>
-                        Late releases: {strikeSummary?.lateReleaseCount ?? 0} / {strikeSummary?.lateReleaseLimit ?? 0}
-                      </Text>
-                    </View>
-                    <View style={styles.inlineRow}>
-                      <Text style={[styles.cardBody, { color: palette.muted }]}>
-                        Early releases: {strikeSummary?.earlyReleaseCount ?? 0} / {strikeSummary?.earlyReleaseLimit ?? 0}
-                      </Text>
-                    </View>
-                    <View style={styles.inlineRow}>
-                      <Text style={[styles.cardBody, { color: palette.muted }]}>
-                        Recurring job releases: {strikeSummary?.jobReleaseCount ?? 0} / {strikeSummary?.jobReleaseLimit ?? 0}
-                      </Text>
-                    </View>
-                    {strikeSummary?.lastReason ? (
-                      <Text style={[styles.cardBody, { color: palette.muted }]}>
-                        Last reason: {strikeSummary.lastReason}
-                      </Text>
-                    ) : null}
-                    {strikeLastUpdate ? (
-                      <Text style={[styles.cardBody, { color: palette.muted }]}>{strikeLastUpdate}</Text>
-                    ) : null}
-                    {strikeWindowLabel ? (
-                      <Text style={[styles.cardBody, { color: palette.muted }]}>{strikeWindowLabel}</Text>
-                    ) : null}
-                  </>
-                )}
-                <Button
-                  title="Request a standing review"
-                  variant="secondary"
-                  onPress={() =>
-                    Linking.openURL('mailto:support@yardura.com?subject=Account%20standing%20review')
-                  }
-                />
-              </>
-            ) : null}
           </View>
-        </View>
+        ) : null}
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Work setup</Text>
-            <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
-              Route details that affect offers and drive time.
-            </Text>
-          </View>
-
-          <View
-            style={[
-              styles.card,
-              cardShadowStyle,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Home base</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Routes start from your home base. Keep it updated for accurate drive times.
-            </Text>
+        {/* Collapsible Settings Sections */}
+        <View style={styles.settingsContainer}>
+          {/* Work Setup */}
+          <CollapsibleSection title="Work setup" subtitle="Home base and service areas">
             {anchorLoading ? (
               <View style={styles.inlineRow}>
                 <ActivityIndicator size="small" color={palette.tint} />
-                <Text style={[styles.cardBody, { color: palette.muted }]}>Loading home base...</Text>
+                <Text style={[styles.helperText, { color: palette.muted }]}>Loading...</Text>
               </View>
-            ) : null}
-            {homeAnchorAddress ? (
-              <Text style={[styles.helperText, { color: palette.muted }]}>
-                Current: {homeAnchorAddress}
-              </Text>
             ) : (
-              <Text style={[styles.helperText, { color: palette.muted }]}>Home base not set yet.</Text>
-            )}
-            <View
-              style={[
-                styles.formCard,
-                { backgroundColor: palette.background, borderColor: palette.border },
-              ]}
-            >
-              <View style={styles.formGrid}>
-                <View style={styles.inputBlock}>
-                  <Text style={[styles.label, { color: palette.text }]}>Street address</Text>
-                  <TextInput
-                    placeholder="123 Main St"
-                    placeholderTextColor={palette.muted}
-                    style={[
-                      styles.input,
-                      { color: palette.text, borderColor: palette.border, backgroundColor: palette.card },
-                    ]}
-                    value={address}
-                    onChangeText={(value) => {
-                      setAddress(value);
-                      setAddressLookupError(null);
-                      lastSelectedAddress.current = null;
-                    }}
-                  />
-                  {addressLookupLoading ? (
-                    <Text style={[styles.helperText, { color: palette.muted }]}>
-                      Searching addresses...
+              <>
+                {/* Home Base Setting */}
+                <View style={[styles.settingItem, { backgroundColor: palette.background }]}>
+                  <View style={[styles.settingItemIcon, { backgroundColor: `${palette.tint}15` }]}>
+                    <FontAwesome name="home" size={14} color={palette.tint} />
+                  </View>
+                  <View style={styles.settingItemCopy}>
+                    <Text style={[styles.settingLabel, { color: palette.text }]}>Home base</Text>
+                    <Text style={[styles.helperText, { color: palette.muted }]} numberOfLines={1}>
+                      {homeAnchorAddress ?? 'Not set — routes start here'}
                     </Text>
-                  ) : null}
-                  {addressLookupError ? (
-                    <Text style={[styles.helperText, { color: palette.danger }]}>
-                      {addressLookupError}
-                    </Text>
-                  ) : null}
-                  {addressSuggestions.length ? (
-                    <View
-                      style={[
-                        styles.suggestionList,
-                        { backgroundColor: palette.card, borderColor: palette.border },
-                      ]}
-                    >
-                      {addressSuggestions.map((suggestion) => (
-                        <Pressable
-                          key={suggestion.placeId}
-                          onPress={() => handleSelectSuggestion(suggestion)}
-                          style={({ pressed }) => [
-                            styles.suggestionRow,
-                            {
-                              backgroundColor: pressed ? palette.background : palette.card,
-                              borderColor: palette.border,
-                            },
-                          ]}
-                        >
-                          <Text style={[styles.suggestionText, { color: palette.text }]}>
-                            {suggestion.description}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  ) : null}
+                  </View>
                 </View>
-                <View style={styles.rowWrap}>
-                  <View style={styles.inputColumn}>
-                    <Text style={[styles.label, { color: palette.text }]}>City</Text>
+                <View style={[styles.formCard, { backgroundColor: palette.background, borderColor: palette.border }]}>
+                  <View style={styles.inputBlock}>
+                    <TextInput
+                      placeholder="Street address"
+                      placeholderTextColor={palette.muted}
+                      style={[styles.input, { color: palette.text, borderColor: palette.border, backgroundColor: palette.card }]}
+                      value={address}
+                      onChangeText={(value) => {
+                        setAddress(value);
+                        setAddressLookupError(null);
+                        lastSelectedAddress.current = null;
+                      }}
+                    />
+                    {addressSuggestions.length ? (
+                      <View style={[styles.suggestionList, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                        {addressSuggestions.map((suggestion) => (
+                          <Pressable
+                            key={suggestion.placeId}
+                            onPress={() => handleSelectSuggestion(suggestion)}
+                            style={[styles.suggestionRow, { borderColor: palette.border }]}
+                          >
+                            <Text style={[styles.suggestionText, { color: palette.text }]}>{suggestion.description}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={styles.rowWrap}>
                     <TextInput
                       placeholder="City"
                       placeholderTextColor={palette.muted}
-                      style={[
-                        styles.input,
-                        { color: palette.text, borderColor: palette.border, backgroundColor: palette.card },
-                      ]}
+                      style={[styles.input, styles.inputSmall, { color: palette.text, borderColor: palette.border, backgroundColor: palette.card }]}
                       value={city}
                       onChangeText={setCity}
                     />
-                  </View>
-                  <View style={styles.inputColumn}>
-                    <Text style={[styles.label, { color: palette.text }]}>State</Text>
                     <TextInput
                       placeholder="ST"
                       placeholderTextColor={palette.muted}
                       autoCapitalize="characters"
-                      style={[
-                        styles.input,
-                        { color: palette.text, borderColor: palette.border, backgroundColor: palette.card },
-                      ]}
+                      style={[styles.input, styles.inputTiny, { color: palette.text, borderColor: palette.border, backgroundColor: palette.card }]}
                       value={stateCode}
                       onChangeText={setStateCode}
                     />
-                  </View>
-                  <View style={styles.inputColumn}>
-                    <Text style={[styles.label, { color: palette.text }]}>ZIP</Text>
                     <TextInput
                       placeholder="ZIP"
                       placeholderTextColor={palette.muted}
                       keyboardType="number-pad"
-                      style={[
-                        styles.input,
-                        { color: palette.text, borderColor: palette.border, backgroundColor: palette.card },
-                      ]}
+                      style={[styles.input, styles.inputTiny, { color: palette.text, borderColor: palette.border, backgroundColor: palette.card }]}
                       value={zip}
                       onChangeText={setZip}
                     />
                   </View>
+                  {anchorError ? <Text style={[styles.helperText, { color: palette.danger }]}>{anchorError}</Text> : null}
+                  {anchorSaved ? <Text style={[styles.helperText, { color: successTint }]}>{anchorSaved}</Text> : null}
                 </View>
-              </View>
-            </View>
-            {anchorError ? (
-              <Text style={[styles.cardBody, { color: palette.danger }]}>{anchorError}</Text>
-            ) : null}
-            {anchorSaved ? (
-              <Text style={[styles.cardBody, { color: successTint }]}>{anchorSaved}</Text>
-            ) : null}
-            <Button
-              title={anchorLoading ? 'Saving...' : 'Save home base'}
-              onPress={handleSaveAnchor}
-              disabled={anchorLoading}
-            />
-          </View>
+                <Button title={anchorLoading ? 'Saving...' : 'Save home base'} onPress={handleSaveAnchor} disabled={anchorLoading} />
 
-          <View
-            style={[
-              styles.card,
-              cardShadowStyle,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Service areas</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Choose the tiles you want to serve and set the days and windows you are available.
-            </Text>
-            <Button
-              title="Manage service areas"
-              onPress={() => router.push('/(app)/(scooper)/availability')}
-              variant="secondary"
-            />
-          </View>
-        </View>
+                <View style={[styles.divider, { backgroundColor: palette.border }]} />
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Preferences</Text>
-            <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
-              Control alerts and device settings.
-            </Text>
-          </View>
+                {/* Service Areas Setting */}
+                <Pressable
+                  onPress={() => router.push('/(app)/(scooper)/availability')}
+                  style={({ pressed }) => [
+                    styles.settingItem,
+                    { backgroundColor: palette.background },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <View style={[styles.settingItemIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                    <FontAwesome name="map" size={14} color={Colors.brand.mint} />
+                  </View>
+                  <View style={styles.settingItemCopy}>
+                    <Text style={[styles.settingLabel, { color: palette.text }]}>Service areas</Text>
+                    <Text style={[styles.helperText, { color: palette.muted }]}>Tiles and availability windows</Text>
+                  </View>
+                  <FontAwesome name="chevron-right" size={12} color={palette.muted} />
+                </Pressable>
+              </>
+            )}
+          </CollapsibleSection>
 
-          <View
-            style={[
-              styles.card,
-              cardShadowStyle,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Notifications</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Control push alerts for offers, route updates, and daily check-ins.
-            </Text>
+          {/* Notifications */}
+          <CollapsibleSection title="Notifications" subtitle={pushEnabled ? 'Enabled' : 'Disabled'}>
             {pushLoading ? (
               <View style={styles.inlineRow}>
                 <ActivityIndicator size="small" color={palette.tint} />
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  Loading notification settings...
-                </Text>
+                <Text style={[styles.helperText, { color: palette.muted }]}>Loading...</Text>
               </View>
             ) : (
-              <View style={styles.toggleRow}>
-                <View style={styles.toggleText}>
-                  <Text style={[styles.cardBody, { color: palette.text }]}>Push alerts</Text>
-                  <Text style={[styles.toggleMeta, { color: palette.muted }]}>
-                    {pushEnabled ? 'On' : 'Off'}
+              <View style={[styles.settingItem, { backgroundColor: palette.background }]}>
+                <View style={[styles.settingItemIcon, { backgroundColor: pushEnabled ? `${Colors.brand.mint}15` : `${palette.muted}15` }]}>
+                  <FontAwesome name="bell" size={14} color={pushEnabled ? Colors.brand.mint : palette.muted} />
+                </View>
+                <View style={styles.settingItemCopy}>
+                  <Text style={[styles.settingLabel, { color: palette.text }]}>Push alerts</Text>
+                  <Text style={[styles.helperText, { color: palette.muted }]}>
+                    Offers, route updates, and check-ins
                   </Text>
                 </View>
                 <Switch
                   value={Boolean(pushEnabled)}
                   onValueChange={handlePushToggle}
                   disabled={pushUpdating || pushEnabled === null}
-                  trackColor={{ false: palette.border, true: palette.tint }}
-                  thumbColor={palette.card}
+                  trackColor={{ false: palette.border, true: Colors.brand.mint }}
+                  thumbColor="#FFFFFF"
                 />
               </View>
             )}
-            {pushUpdating ? (
-              <Text style={[styles.cardBody, { color: palette.muted }]}>
-                Saving notification preference...
-              </Text>
-            ) : null}
-            {pushError ? (
-              <Text style={[styles.cardBody, { color: palette.danger }]}>{pushError}</Text>
-            ) : null}
-            <Button
-              title="Manage device settings"
+            {pushError ? <Text style={[styles.helperText, { color: palette.danger }]}>{pushError}</Text> : null}
+            <Pressable
               onPress={() => Linking.openSettings()}
-              variant="ghost"
-            />
-          </View>
+              style={({ pressed }) => [
+                styles.settingItem,
+                { backgroundColor: palette.background },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <View style={[styles.settingItemIcon, { backgroundColor: `${palette.muted}15` }]}>
+                <FontAwesome name="cog" size={14} color={palette.muted} />
+              </View>
+              <View style={styles.settingItemCopy}>
+                <Text style={[styles.settingLabel, { color: palette.text }]}>Device settings</Text>
+                <Text style={[styles.helperText, { color: palette.muted }]}>Open system preferences</Text>
+              </View>
+              <FontAwesome name="external-link" size={12} color={palette.muted} />
+            </Pressable>
+          </CollapsibleSection>
+
+          {/* Role Access */}
+          {roles.length > 1 ? (
+            <CollapsibleSection title="Switch role" subtitle={activeRoleLabel ?? 'Select role'}>
+              <View style={styles.roleList}>
+                {roles.map((role) => {
+                  const isActive = role === session?.activeRole;
+                  const roleIcon = role === 'TECH' ? 'truck' : role === 'CUSTOMER' ? 'paw' : role === 'SALES_REP' ? 'handshake-o' : 'user-circle';
+                  return (
+                    <Pressable
+                      key={role}
+                      onPress={() => handleSwitch(role)}
+                      style={({ pressed }) => [
+                        styles.roleChip,
+                        { borderColor: isActive ? palette.tint : palette.border },
+                        isActive && { backgroundColor: `${palette.tint}15` },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <FontAwesome name={roleIcon} size={14} color={isActive ? palette.tint : palette.muted} />
+                      <Text style={[styles.roleChipText, { color: isActive ? palette.tint : palette.text }]}>
+                        {ROLE_LABELS[role]}
+                      </Text>
+                      {isActive ? (
+                        <FontAwesome name="check" size={12} color={palette.tint} />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </CollapsibleSection>
+          ) : null}
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>
-              Account & access
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
-              Manage roles and sign-in options.
-            </Text>
-          </View>
-
-          <View
-            style={[
-              styles.card,
-              cardShadowStyle,
-              { backgroundColor: palette.card, borderColor: cardBorder },
-            ]}
-          >
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Role access</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Switch roles if you manage multiple dashboards.
-            </Text>
-            <View style={styles.roleList}>
-              {roles.length === 0 ? (
-                <Text style={[styles.cardBody, { color: palette.muted }]}>No roles assigned.</Text>
-              ) : (
-                roles.map((role) => (
-                  <Button
-                    key={role}
-                    title={ROLE_LABELS[role]}
-                    onPress={() => handleSwitch(role)}
-                    variant={role === session?.activeRole ? 'primary' : 'secondary'}
-                    style={styles.roleButton}
-                  />
-                ))
-              )}
-            </View>
-          </View>
-
-          <View style={styles.actions}>
-            <Button title="Sign out" onPress={handleSignOut} variant="secondary" />
-          </View>
+        {/* Sign Out */}
+        <View style={styles.signOutContainer}>
+          <Button title="Sign out" onPress={handleSignOut} variant="secondary" />
         </View>
       </ScrollView>
     </Screen>
@@ -1096,116 +939,23 @@ export default function ScooperAccount() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
-  },
-  pageHeader: {
-    marginBottom: 22,
-    gap: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  headerControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  themeToggleContainer: {
-    alignItems: 'flex-end',
-  },
-  logo: {
-    width: 110,
-    height: 32,
-  },
-  headerCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  kicker: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 14,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  metaPill: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  metaText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    marginBottom: 10,
-    gap: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-  },
-  themeToggle: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  themeToggleButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  heroCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 18,
-    marginBottom: 16,
-    gap: 10,
-    position: 'relative',
-    overflow: 'hidden',
+    gap: 16,
   },
   profileCard: {
     borderRadius: 20,
     borderWidth: 1,
     padding: 16,
+    gap: 8,
   },
   profileRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  profileIdentity: {
-    flex: 1,
-    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
   profileAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1214,24 +964,24 @@ const styles = StyleSheet.create({
   },
   profileAvatarBadge: {
     position: 'absolute',
-    right: -4,
-    bottom: -4,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    right: -2,
+    bottom: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
   profileInitials: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   profileMeta: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
+    gap: 2,
   },
   profileName: {
     fontSize: 16,
@@ -1240,58 +990,79 @@ const styles = StyleSheet.create({
   profileSubtitle: {
     fontSize: 12,
   },
-  heroGlow: {
-    position: 'absolute',
-    top: -40,
-    right: -30,
-    width: 140,
-    height: 140,
-    borderRadius: 140,
-    opacity: 0.16,
-  },
-  heroKicker: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  heroValue: {
-    fontSize: 32,
-    fontWeight: '800',
-  },
-  pillRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  pill: {
-    borderWidth: 1,
+  roleBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    marginTop: 2,
   },
-  pillText: {
-    fontSize: 12,
+  roleBadgeText: {
+    fontSize: 10,
     fontWeight: '600',
   },
-  progressBlock: {
-    gap: 6,
-  },
-  progressTrack: {
-    height: 6,
+  themeToggle: {
+    flexDirection: 'row',
+    borderWidth: 1,
     borderRadius: 999,
     overflow: 'hidden',
   },
-  progressFill: {
-    height: 6,
-    borderRadius: 999,
+  themeToggleButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
-  card: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 14,
+  statsRow: {
+    flexDirection: 'row',
     gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  standingCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    gap: 8,
+  },
+  standingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  settingsContainer: {
+    gap: 12,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  settingCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  settingLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 4,
   },
   cardShadow: {
     shadowColor: '#0F172A',
@@ -1308,49 +1079,111 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cardValue: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
   },
   cardBody: {
     fontSize: 13,
     lineHeight: 18,
   },
-  cardMeta: {
-    fontSize: 12,
-  },
-  collapseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  collapseCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  collapseMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  collapseMetaText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
   roleList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  roleButton: {
-    borderRadius: 14,
-    paddingVertical: 12,
-    flexGrow: 1,
-    minWidth: 140,
+  roleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  roleChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  statIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 12,
+    padding: 12,
+  },
+  settingItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingItemCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  standingTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  standingIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  standingMainStat: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  standingLimits: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  limitItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  limitLabel: {
+    fontSize: 11,
+    flex: 1,
+  },
+  limitValue: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  standingAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  standingActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  closeButton: {
+    padding: 4,
   },
   inlineRow: {
     flexDirection: 'row',
@@ -1366,65 +1199,48 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  toggleText: {
-    flex: 1,
-    gap: 4,
-  },
-  toggleMeta: {
-    fontSize: 12,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  formGrid: {
-    gap: 10,
-  },
   formCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    padding: 12,
+    padding: 10,
+    gap: 8,
   },
   rowWrap: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
+    paddingVertical: 8,
+    fontSize: 14,
   },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
+  inputSmall: {
+    flex: 2,
   },
-  inputColumn: {
+  inputTiny: {
     flex: 1,
-    minWidth: 90,
-    gap: 6,
+    minWidth: 50,
   },
   inputBlock: {
     gap: 6,
   },
   suggestionList: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: 'hidden',
+    marginTop: 4,
   },
   suggestionRow: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderTopWidth: 1,
   },
   suggestionText: {
     fontSize: 13,
-    lineHeight: 18,
   },
-  actions: {
-    marginTop: 6,
+  signOutContainer: {
+    marginTop: 8,
   },
 });

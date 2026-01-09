@@ -3,8 +3,12 @@
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { format } from "date-fns";
+import { RefreshCcw, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -48,38 +52,28 @@ type ApplicantRow = {
   availabilities: Availability[];
 };
 
+const STATUS_OPTIONS = ["APPLICANT", "PENDING_REVIEW", "CERTIFIED", "PAUSED", "DEACTIVATED"];
+const BACKGROUND_OPTIONS = ["NOT_SUBMITTED", "PENDING", "PASSED", "FAILED"];
+
 const STATUS_BADGE: Record<string, string> = {
-  APPLICANT: "bg-sky-500/15 text-sky-700 border border-sky-500/30",
-  PENDING_REVIEW: "bg-amber-500/15 text-amber-700 border border-amber-500/30",
-  CERTIFIED: "bg-emerald-500/15 text-emerald-700 border border-emerald-500/30",
-  PAUSED: "bg-slate-500/15 text-slate-700 border border-slate-400/30",
-  DEACTIVATED: "bg-rose-500/15 text-rose-700 border border-rose-500/30",
+  APPLICANT: "border-sky-300 bg-sky-100 text-sky-700 dark:border-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+  PENDING_REVIEW: "border-amber-300 bg-amber-100 text-amber-700 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  CERTIFIED: "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+  PAUSED: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300",
+  DEACTIVATED: "border-rose-300 bg-rose-100 text-rose-700 dark:border-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
 };
 
 const BACKGROUND_BADGE: Record<string, string> = {
-  NOT_SUBMITTED: "bg-slate-200 text-slate-700 border border-slate-300",
-  PENDING: "bg-amber-200 text-amber-800 border border-amber-300",
-  PASSED: "bg-emerald-200 text-emerald-800 border border-emerald-300",
-  FAILED: "bg-rose-200 text-rose-800 border border-rose-300",
+  NOT_SUBMITTED: "border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  PENDING: "border-amber-300 bg-amber-100 text-amber-700 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  PASSED: "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+  FAILED: "border-rose-300 bg-rose-100 text-rose-700 dark:border-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
 };
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="admin-card rounded-2xl p-5">
-      <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-        {label}
-      </p>
-      <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
-        {value}
-      </p>
-    </div>
-  );
-}
-
 export default function ScooperApplicantsPage() {
-  const { data, isLoading, mutate } = useSWR<
+  const { data, isLoading, error, mutate } = useSWR<
     { ok: true; data: ApplicantRow[] } | { ok: false; error: string }
   >("/api/admin/scoopers/applications", fetcher, {
     revalidateOnFocus: false,
@@ -93,6 +87,14 @@ export default function ScooperApplicantsPage() {
   const statusCounts = useMemo(() => {
     return applicants.reduce<Record<string, number>>((acc, row) => {
       const key = row.status ?? "UNKNOWN";
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {});
+  }, [applicants]);
+
+  const backgroundCounts = useMemo(() => {
+    return applicants.reduce<Record<string, number>>((acc, row) => {
+      const key = row.backgroundCheckStatus ?? "UNKNOWN";
       acc[key] = (acc[key] ?? 0) + 1;
       return acc;
     }, {});
@@ -139,6 +141,7 @@ export default function ScooperApplicantsPage() {
       if (!response.ok || payload?.ok === false) {
         throw new Error(payload?.error || "Unable to update applicant.");
       }
+      toast.success("Applicant updated");
       await mutate();
       closeDialog();
     } catch (error) {
@@ -148,298 +151,391 @@ export default function ScooperApplicantsPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="h-28 rounded-2xl bg-slate-200/70 dark:bg-slate-800/60" />
-          ))}
-        </div>
-        <Skeleton className="h-80 rounded-2xl bg-slate-200/70 dark:bg-slate-800/60" />
-      </div>
-    );
-  }
-
-  if (!applicants.length) {
-    return (
-      <div className="admin-card rounded-2xl p-6 text-sm text-slate-600 dark:text-slate-300">
-        No scooper applications are waiting right now.
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-          Scooper onboarding
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-          Scooper applications
-        </h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-          Review new applicants, confirm background checks, and move scoopers into certification.
-        </p>
-      </div>
+    <div className="admin-surface min-h-screen">
+      <div className="container mx-auto space-y-8 px-6 pb-20 pt-16">
+        {/* Header */}
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+              Scooper onboarding
+            </div>
+            <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">
+              Scooper applications
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-300">
+              Review new applicants, confirm background checks, and move scoopers into certification.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="outline"
+              className="rounded-full border-slate-200 text-slate-600 hover:border-brand-mint/40 hover:text-brand-mint dark:border-slate-700 dark:text-slate-300"
+              onClick={() => mutate()}
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Applicants" value={statusCounts.APPLICANT ?? 0} />
-        <StatCard label="Pending review" value={statusCounts.PENDING_REVIEW ?? 0} />
-        <StatCard label="Certified" value={statusCounts.CERTIFIED ?? 0} />
-      </div>
+        {/* Stats */}
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-28 rounded-2xl bg-slate-200/70 dark:bg-slate-800/60" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="admin-card rounded-2xl">
+              <CardHeader className="pb-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Applicants
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <div className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  {statusCounts.APPLICANT ?? 0}
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-300">
+                  New applications
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="admin-card rounded-2xl">
+              <CardHeader className="pb-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Pending review
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <div className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  {statusCounts.PENDING_REVIEW ?? 0}
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-300">
+                  Awaiting vetting
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="admin-card rounded-2xl">
+              <CardHeader className="pb-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Background pending
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <div className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  {backgroundCounts.PENDING ?? 0}
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-300">
+                  Checks in progress
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="admin-card rounded-2xl">
+              <CardHeader className="pb-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Certified
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <div className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  {statusCounts.CERTIFIED ?? 0}
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-300">
+                  Ready to work
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-      <div className="admin-card overflow-hidden rounded-2xl">
-        <Table>
-          <TableHeader>
-            <TableRow className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-              <TableHead>Scooper</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Home base</TableHead>
-              <TableHead>Preferred tiles</TableHead>
-              <TableHead>Last update</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {applicants.map((row) => {
-              const applicantName = row.user?.name || row.user?.email || "Scooper";
-              const metadata = row.metadata ?? {};
-              const homeBaseParts = [
-                metadata.homeBaseAddress,
-                metadata.homeBaseCity,
-                metadata.homeBaseZip,
-              ]
-                .map((part) => (typeof part === "string" ? part.trim() : ""))
-                .filter(Boolean);
-              const homeBase = homeBaseParts.join(", ") || "Not provided";
-              const preferredTiles = Array.isArray(metadata.preferredTileSlugs)
-                ? metadata.preferredTileSlugs
-                : [];
-
-              return (
-                <TableRow key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/60">
-                  <TableCell className="font-medium text-slate-900 dark:text-white">
-                    <div>{applicantName}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {row.user?.email}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn("text-[11px] font-semibold", STATUS_BADGE[row.status] ?? "")}
-                    >
-                      {row.status.replaceAll("_", " ")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600 dark:text-slate-300">
-                    {homeBase}
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600 dark:text-slate-300">
-                    {preferredTiles.length ? preferredTiles.slice(0, 3).join(", ") : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-500 dark:text-slate-400">
-                    {format(new Date(row.updatedAt), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <button
-                      type="button"
-                      className="text-sm font-semibold text-emerald-600 hover:text-emerald-500"
-                      onClick={() => openApplicant(row)}
-                    >
-                      Review
-                    </button>
+        {/* Table */}
+        <Card className="admin-card overflow-hidden rounded-2xl">
+          <Table>
+            <TableHeader>
+              <TableRow className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                <TableHead>Scooper</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Background</TableHead>
+                <TableHead>Home base</TableHead>
+                <TableHead>Last update</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {error ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-10 text-center text-sm text-rose-600 dark:text-rose-300">
+                    {error instanceof Error ? error.message : "Failed to load applicants"}
                   </TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+              ) : null}
+              {!error && !applicants.length && !isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                    <div className="flex flex-col items-center gap-2">
+                      <UserPlus className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                      <span>No scooper applications are waiting right now.</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {applicants.map((row) => {
+                const applicantName = row.user?.name || row.user?.email || "Scooper";
+                const metadata = row.metadata ?? {};
+                const homeBaseParts = [
+                  metadata.homeBaseCity,
+                  metadata.homeBaseZip,
+                ]
+                  .map((part) => (typeof part === "string" ? part.trim() : ""))
+                  .filter(Boolean);
+                const homeBase = homeBaseParts.join(", ") || "Not provided";
 
-      <Dialog open={Boolean(activeApplicant)} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Review application</DialogTitle>
-            <DialogDescription>
-              Confirm coverage, notes, and onboarding readiness for this scooper.
-            </DialogDescription>
-          </DialogHeader>
-          {activeApplicant ? (
-            <div className="space-y-6">
-              {(() => {
-                const metadata = activeApplicant.metadata ?? {};
-                const application =
-                  metadata.application && typeof metadata.application === "object"
-                    ? (metadata.application as Record<string, any>)
-                    : {};
-                const experienceTags = Array.isArray(application.experienceTags)
-                  ? application.experienceTags
-                  : [];
                 return (
-                  <div className="rounded-2xl border border-slate-200/70 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Application signals
-                    </p>
-                    <div className="mt-3 grid gap-3 text-sm text-slate-700 dark:text-slate-200 md:grid-cols-2">
-                      <div>
-                        <strong>Preferred radius:</strong>{" "}
-                        {application.preferredRadiusMiles ?? "—"} mi
+                  <TableRow key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/60">
+                    <TableCell className="font-medium text-slate-900 dark:text-white">
+                      <div>{applicantName}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        {row.user?.email}
                       </div>
-                      <div>
-                        <strong>Availability notes:</strong>{" "}
-                        {application.availabilityNotes ?? "—"}
-                      </div>
-                      <div>
-                        <strong>Experience:</strong>{" "}
-                        {experienceTags.length ? experienceTags.join(", ") : "—"}
-                      </div>
-                      <div>
-                        <strong>Consents:</strong>{" "}
-                        {application.backgroundConsent ? "Background ok" : "Background pending"},{" "}
-                        {application.termsConsent ? "Terms ok" : "Terms pending"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn("text-[11px] font-semibold", STATUS_BADGE[row.status] ?? "")}
+                      >
+                        {row.status.replaceAll("_", " ")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn("text-[11px] font-semibold", BACKGROUND_BADGE[row.backgroundCheckStatus] ?? "")}
+                      >
+                        {row.backgroundCheckStatus.replaceAll("_", " ")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                      {homeBase}
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-500 dark:text-slate-400">
+                      {format(new Date(row.updatedAt), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-sm font-semibold text-brand-mint hover:text-brand-mint/80"
+                        onClick={() => openApplicant(row)}
+                      >
+                        Review
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+
+        {/* Review Dialog */}
+        <Dialog open={Boolean(activeApplicant)} onOpenChange={(open) => !open && closeDialog()}>
+          <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-slate-900 dark:text-white">
+                Review application
+              </DialogTitle>
+              <DialogDescription className="text-slate-500 dark:text-slate-400">
+                Confirm coverage, notes, and onboarding readiness for this scooper.
+              </DialogDescription>
+            </DialogHeader>
+            {activeApplicant ? (
+              <div className="space-y-6 pt-2">
+                {/* Application signals */}
+                {(() => {
+                  const metadata = activeApplicant.metadata ?? {};
+                  const application =
+                    metadata.application && typeof metadata.application === "object"
+                      ? (metadata.application as Record<string, any>)
+                      : {};
+                  const experienceTags = Array.isArray(application.experienceTags)
+                    ? application.experienceTags
+                    : [];
+                  return (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        Application signals
+                      </p>
+                      <div className="mt-3 grid gap-3 text-sm text-slate-700 dark:text-slate-200 md:grid-cols-2">
+                        <div>
+                          <span className="font-medium">Preferred radius:</span>{" "}
+                          {application.preferredRadiusMiles ?? "—"} mi
+                        </div>
+                        <div>
+                          <span className="font-medium">Availability notes:</span>{" "}
+                          {application.availabilityNotes ?? "—"}
+                        </div>
+                        <div>
+                          <span className="font-medium">Experience:</span>{" "}
+                          {experienceTags.length ? experienceTags.join(", ") : "—"}
+                        </div>
+                        <div>
+                          <span className="font-medium">Consents:</span>{" "}
+                          <span className={application.backgroundConsent ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
+                            {application.backgroundConsent ? "✓ Background" : "○ Background"}
+                          </span>
+                          {", "}
+                          <span className={application.termsConsent ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
+                            {application.termsConsent ? "✓ Terms" : "○ Terms"}
+                          </span>
+                        </div>
                       </div>
                     </div>
+                  );
+                })()}
+
+                {/* Applicant + Vehicle cards */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Applicant
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                      {activeApplicant.user?.name || activeApplicant.user?.email || "Scooper"}
+                    </p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                      {activeApplicant.user?.email}
+                    </p>
+                    {activeApplicant.user?.phone ? (
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {activeApplicant.user.phone}
+                      </p>
+                    ) : null}
                   </div>
-                );
-              })()}
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200/70 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Applicant
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
-                    {activeApplicant.user?.name || activeApplicant.user?.email || "Scooper"}
-                  </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    {activeApplicant.user?.email}
-                  </p>
-                  {activeApplicant.user?.phone ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {activeApplicant.user.phone}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Vehicle + insurance
                     </p>
-                  ) : null}
+                    <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+                      {activeApplicant.vehicleDetail || "No vehicle details submitted."}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                      Insurance proof:{" "}
+                      {activeApplicant.insuranceProofUrl ? (
+                        <a
+                          href={activeApplicant.insuranceProofUrl}
+                          className="font-medium text-brand-mint hover:underline"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View file
+                        </a>
+                      ) : (
+                        "Not provided"
+                      )}
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-slate-200/70 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+
+                {/* Coverage preferences */}
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
                   <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Vehicle + insurance
+                    Coverage preferences
                   </p>
-                  <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
-                    {activeApplicant.vehicleDetail || "No vehicle details submitted."}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                    Insurance proof:{" "}
-                    {activeApplicant.insuranceProofUrl ? (
-                      <a
-                        href={activeApplicant.insuranceProofUrl}
-                        className="text-emerald-600 hover:text-emerald-500"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        View file
-                      </a>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    {activeApplicant.availabilities.length ? (
+                      activeApplicant.availabilities.map((availability, index) => (
+                        <div
+                          key={`${availability.tile?.slug}-${index}`}
+                          className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200"
+                        >
+                          <div className="font-semibold">
+                            {availability.tile?.name ?? availability.tile?.slug ?? "Tile"}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {WEEKDAY_LABELS[availability.weekday] ?? availability.weekday} ·{" "}
+                            {availability.window}
+                            {availability.maxStops ? ` · Max ${availability.maxStops}` : ""}
+                          </div>
+                        </div>
+                      ))
                     ) : (
-                      "Not provided"
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        No availability blocks recorded.
+                      </p>
                     )}
-                  </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="rounded-2xl border border-slate-200/70 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  Coverage preferences
-                </p>
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  {activeApplicant.availabilities.length ? (
-                    activeApplicant.availabilities.map((availability, index) => (
-                      <div key={`${availability.tile?.slug}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
-                        <div className="font-semibold">
-                          {availability.tile?.name ?? availability.tile?.slug ?? "Tile"}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          {WEEKDAY_LABELS[availability.weekday] ?? availability.weekday} ·{" "}
-                          {availability.window}
-                          {availability.maxStops ? ` · Max ${availability.maxStops}` : ""}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      No availability blocks recorded.
-                    </p>
-                  )}
+                {/* Status controls */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                      Status
+                    </Label>
+                    <Select value={statusDraft} onValueChange={setStatusDraft}>
+                      <SelectTrigger className="rounded-lg border-slate-200 dark:border-slate-700">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status.replaceAll("_", " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                      Background check
+                    </Label>
+                    <Select value={backgroundDraft} onValueChange={setBackgroundDraft}>
+                      <SelectTrigger className="rounded-lg border-slate-200 dark:border-slate-700">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BACKGROUND_OPTIONS.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status.replaceAll("_", " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label>Status</Label>
-                  <Select value={statusDraft} onValueChange={setStatusDraft}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.keys(STATUS_BADGE).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status.replaceAll("_", " ")}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Ops notes
+                  </Label>
+                  <Textarea
+                    value={notesDraft}
+                    onChange={(event) => setNotesDraft(event.target.value)}
+                    className="min-h-[100px] rounded-lg border-slate-200 dark:border-slate-700"
+                    placeholder="Add internal review notes, next steps, or certification blockers."
+                  />
                 </div>
-                <div>
-                  <Label>Background check</Label>
-                  <Select value={backgroundDraft} onValueChange={setBackgroundDraft}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.keys(BACKGROUND_BADGE).map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status.replaceAll("_", " ")}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
-              <div>
-                <Label>Ops notes</Label>
-                <Textarea
-                  value={notesDraft}
-                  onChange={(event) => setNotesDraft(event.target.value)}
-                  className="mt-2 min-h-[120px]"
-                  placeholder="Add internal review notes, next steps, or certification blockers."
-                />
+                {saveError ? (
+                  <p className="text-sm text-rose-500">{saveError}</p>
+                ) : null}
               </div>
-
-              {saveError ? (
-                <p className="text-sm text-rose-500">{saveError}</p>
-              ) : null}
-            </div>
-          ) : null}
-          <DialogFooter className="mt-6 flex gap-2">
-            <button
-              type="button"
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 dark:border-slate-800 dark:text-slate-300"
-              onClick={closeDialog}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? "Saving..." : "Save updates"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            ) : null}
+            <DialogFooter className="mt-6 flex gap-2">
+              <Button
+                variant="outline"
+                className="rounded-full border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300"
+                onClick={closeDialog}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="rounded-full bg-brand-mint px-6 text-white hover:bg-brand-mint/90"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? "Saving..." : "Save updates"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

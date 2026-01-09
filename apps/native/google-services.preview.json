@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "111604617978",
+    "project_id": "insightscoop-96f61",
+    "storage_bucket": "insightscoop-96f61.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:111604617978:android:fb06fc2de205c14cc22f43",
+        "android_client_info": {
+          "package_name": "com.yardura.insightscoop.preview"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7Tlzasi81qmYU8MbEJmWFOISZZadOZ1A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

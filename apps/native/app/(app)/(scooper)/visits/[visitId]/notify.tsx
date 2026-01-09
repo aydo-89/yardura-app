@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Button from '@/components/ui/Button';
-import ChoiceChip from '@/components/ui/ChoiceChip';
-import Screen from '@/components/ui/Screen';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import VisitStepShell from '@/components/scooper/VisitStepShell';
 import { useVisitFlow } from '@/lib/scooper/visitFlow';
 import { useStepGuard } from '@/lib/scooper/useStepGuard';
 
 export default function NotifyStepScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const cardBorder = colorScheme === 'dark' ? '#233045' : palette.border;
+  const successTone = Colors.brand.mint;
+  const warningTone = Colors.brand.gold;
+
   const {
     steps,
     visitId,
@@ -30,16 +34,19 @@ export default function NotifyStepScreen() {
   useStepGuard('notify');
 
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const overlayScale = useRef(new Animated.Value(0.95)).current;
+  const overlayScale = useRef(new Animated.Value(0.9)).current;
+  const checkScale = useRef(new Animated.Value(0)).current;
 
-  const stepIndex = Math.max(
-    steps.findIndex((step) => step.id === 'notify'),
-    0,
+  const stepIndex = useMemo(
+    () => Math.max(steps.findIndex((step) => step.id === 'notify'), 0),
+    [steps],
   );
 
   const hasPhone = Boolean(visit?.customer?.phone);
   const hasEmail = Boolean(visit?.customer?.email);
+  const customerName = visit?.customer?.name?.split(' ')[0] || 'Customer';
 
   const handleBack = () => {
     const prev = getPreviousStep('notify');
@@ -59,24 +66,33 @@ export default function NotifyStepScreen() {
 
   useEffect(() => {
     if (!showCelebration) return;
-    Animated.parallel([
-      Animated.timing(overlayOpacity, {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(overlayScale, {
+          toValue: 1,
+          damping: 12,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.spring(checkScale, {
         toValue: 1,
-        duration: 260,
-        useNativeDriver: true,
-      }),
-      Animated.spring(overlayScale, {
-        toValue: 1,
+        damping: 8,
+        stiffness: 200,
         useNativeDriver: true,
       }),
     ]).start();
 
     const timer = setTimeout(() => {
       router.replace('/(app)/(scooper)');
-    }, 3200);
+    }, 3500);
 
     return () => clearTimeout(timer);
-  }, [showCelebration, overlayOpacity, overlayScale]);
+  }, [showCelebration, overlayOpacity, overlayScale, checkScale]);
 
   const payoutLabel = useMemo(() => {
     if (typeof payoutCents !== 'number') return null;
@@ -84,198 +100,455 @@ export default function NotifyStepScreen() {
   }, [payoutCents]);
 
   return (
-    <Screen padded={false} style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <Button title="Back" onPress={handleBack} variant="ghost" />
-          <Text style={[styles.stepLabel, { color: palette.muted }]}>
-            Step {stepIndex + 1} of {steps.length || 1}
-          </Text>
-        </View>
-        <Text style={[styles.title, { color: palette.text }]}>Notify & complete</Text>
-        <Text style={[styles.subtitle, { color: palette.muted }]}>
-          Send the wrap-up and mark the visit complete to unlock payout.
-        </Text>
+    <>
+      <VisitStepShell
+        title="Complete visit"
+        subtitle={`Send summary to ${customerName}`}
+        stepIndex={stepIndex}
+        stepCount={steps.length || 1}
+        onBack={handleBack}
+      >
+        {/* Delivery Channel */}
+        <View style={[styles.channelCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+          <View style={styles.channelHeader}>
+            <View style={[styles.channelIcon, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="send" size={18} color={palette.tint} />
+            </View>
+            <View style={styles.channelContent}>
+              <Text style={[styles.channelTitle, { color: palette.text }]}>Delivery method</Text>
+              <Text style={[styles.channelSubtitle, { color: palette.muted }]}>
+                How should we notify {customerName}?
+              </Text>
+            </View>
+          </View>
 
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-          <Text style={[styles.cardTitle, { color: palette.text }]}>Delivery channel</Text>
-          <Text style={[styles.cardBody, { color: palette.muted }]}>
-            We&apos;ll send the visit summary to the customer with media links.
-          </Text>
-          <View style={styles.rowWrap}>
-            <ChoiceChip
-              label="Text message"
-              selected={notificationChannel === 'SMS'}
+          <View style={styles.channelOptions}>
+            <Pressable
               onPress={() => setNotificationChannel('SMS')}
               disabled={!hasPhone}
-            />
-            <ChoiceChip
-              label="Email"
-              selected={notificationChannel === 'EMAIL'}
+              style={({ pressed }) => [
+                styles.channelOption,
+                {
+                  backgroundColor: notificationChannel === 'SMS' ? `${palette.tint}15` : palette.background,
+                  borderColor: notificationChannel === 'SMS' ? palette.tint : cardBorder,
+                  opacity: !hasPhone ? 0.5 : pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <FontAwesome
+                name="comment"
+                size={18}
+                color={notificationChannel === 'SMS' ? palette.tint : palette.muted}
+              />
+              <View style={styles.channelOptionContent}>
+                <Text
+                  style={[
+                    styles.channelOptionLabel,
+                    { color: notificationChannel === 'SMS' ? palette.tint : palette.text },
+                  ]}
+                >
+                  Text message
+                </Text>
+                <Text style={[styles.channelOptionHint, { color: palette.muted }]}>
+                  {hasPhone ? 'Recommended' : 'No phone on file'}
+                </Text>
+              </View>
+              {notificationChannel === 'SMS' ? (
+                <View style={[styles.channelCheck, { backgroundColor: palette.tint }]}>
+                  <FontAwesome name="check" size={10} color="#FFFFFF" />
+                </View>
+              ) : null}
+            </Pressable>
+
+            <Pressable
               onPress={() => setNotificationChannel('EMAIL')}
               disabled={!hasEmail}
-            />
+              style={({ pressed }) => [
+                styles.channelOption,
+                {
+                  backgroundColor: notificationChannel === 'EMAIL' ? `${palette.tint}15` : palette.background,
+                  borderColor: notificationChannel === 'EMAIL' ? palette.tint : cardBorder,
+                  opacity: !hasEmail ? 0.5 : pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <FontAwesome
+                name="envelope"
+                size={16}
+                color={notificationChannel === 'EMAIL' ? palette.tint : palette.muted}
+              />
+              <View style={styles.channelOptionContent}>
+                <Text
+                  style={[
+                    styles.channelOptionLabel,
+                    { color: notificationChannel === 'EMAIL' ? palette.tint : palette.text },
+                  ]}
+                >
+                  Email
+                </Text>
+                <Text style={[styles.channelOptionHint, { color: palette.muted }]}>
+                  {hasEmail ? 'With photos' : 'No email on file'}
+                </Text>
+              </View>
+              {notificationChannel === 'EMAIL' ? (
+                <View style={[styles.channelCheck, { backgroundColor: palette.tint }]}>
+                  <FontAwesome name="check" size={10} color="#FFFFFF" />
+                </View>
+              ) : null}
+            </Pressable>
           </View>
+
           {!hasPhone && !hasEmail ? (
-            <Text style={[styles.helperText, { color: palette.danger }]}>
-              Customer contact info missing. Update their profile before completing.
-            </Text>
+            <View style={[styles.warningBanner, { backgroundColor: `${palette.danger}10` }]}>
+              <FontAwesome name="exclamation-circle" size={14} color={palette.danger} />
+              <Text style={[styles.warningText, { color: palette.danger }]}>
+                No contact info available for this customer
+              </Text>
+            </View>
           ) : null}
         </View>
 
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-          <Text style={[styles.cardTitle, { color: palette.text }]}>Summary preview</Text>
-          <Text style={[styles.cardBody, { color: palette.muted }]}>
-            Color: {summaryDraft.color || '—'}
-          </Text>
-          <Text style={[styles.cardBody, { color: palette.muted }]}>
-            Consistency: {summaryDraft.consistency || '—'}
-          </Text>
-          <Text style={[styles.cardBody, { color: palette.muted }]}>
-            Content: {summaryDraft.content || '—'}
-          </Text>
-          <Text style={[styles.cardBody, { color: palette.muted }]}>
-            Notes: {summaryDraft.observations || '—'}
-          </Text>
-          {summaryDraft.wellnessFlag ? (
-            <Text style={[styles.cardBody, { color: palette.danger }]}>
-              Wellness flag: {summaryDraft.flagReason || 'Flagged'}
-            </Text>
-          ) : (
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Wellness flag: None
-            </Text>
-          )}
+        {/* Summary Preview (Collapsible) */}
+        <View style={styles.summarySection}>
+          <Pressable
+            onPress={() => setShowSummary(!showSummary)}
+            style={[styles.summaryHeader, { backgroundColor: palette.card, borderColor: cardBorder }]}
+          >
+            <View style={[styles.summaryIcon, { backgroundColor: `${successTone}15` }]}>
+              <FontAwesome name="file-text-o" size={16} color={successTone} />
+            </View>
+            <View style={styles.summaryHeaderContent}>
+              <Text style={[styles.summaryTitle, { color: palette.text }]}>Summary preview</Text>
+              <Text style={[styles.summarySubtitle, { color: palette.muted }]}>
+                Tap to {showSummary ? 'hide' : 'review'} details
+              </Text>
+            </View>
+            <FontAwesome
+              name={showSummary ? 'chevron-up' : 'chevron-down'}
+              size={12}
+              color={palette.muted}
+            />
+          </Pressable>
+
+          {showSummary ? (
+            <View style={[styles.summaryContent, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: palette.muted }]}>Color</Text>
+                <Text style={[styles.summaryValue, { color: palette.text }]}>
+                  {summaryDraft.color || '—'}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: palette.muted }]}>Consistency</Text>
+                <Text style={[styles.summaryValue, { color: palette.text }]}>
+                  {summaryDraft.consistency || '—'}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: palette.muted }]}>Content</Text>
+                <Text style={[styles.summaryValue, { color: palette.text }]}>
+                  {summaryDraft.content || '—'}
+                </Text>
+              </View>
+              {summaryDraft.observations ? (
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: palette.muted }]}>Notes</Text>
+                  <Text style={[styles.summaryValue, { color: palette.text }]}>
+                    {summaryDraft.observations}
+                  </Text>
+                </View>
+              ) : null}
+              {summaryDraft.wellnessFlag ? (
+                <View style={[styles.flagBanner, { backgroundColor: `${warningTone}10` }]}>
+                  <FontAwesome name="flag" size={12} color={warningTone} />
+                  <Text style={[styles.flagText, { color: warningTone }]}>
+                    {summaryDraft.flagReason || 'Wellness issue flagged'}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
         </View>
 
         {completeError ? (
-          <Text style={[styles.errorText, { color: palette.danger }]}>{completeError}</Text>
+          <View style={[styles.errorCard, { backgroundColor: `${palette.danger}10`, borderColor: palette.danger }]}>
+            <FontAwesome name="exclamation-circle" size={14} color={palette.danger} />
+            <Text style={[styles.errorText, { color: palette.danger }]}>{completeError}</Text>
+          </View>
         ) : null}
 
-        <Button
-          title={completing ? 'Completing...' : 'Send & complete visit'}
-          onPress={handleComplete}
-          disabled={completing}
-        />
-      </ScrollView>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Button
+            title={completing ? 'Completing...' : 'Complete visit'}
+            onPress={handleComplete}
+            variant="cta"
+            disabled={completing || (!hasPhone && !hasEmail)}
+            style={styles.ctaButton}
+          />
+          <Text style={[styles.footerHint, { color: palette.muted }]}>
+            Summary will be sent and visit marked complete
+          </Text>
+        </View>
+      </VisitStepShell>
 
+      {/* Celebration Overlay */}
       {showCelebration ? (
         <Animated.View
           style={[
             styles.overlay,
-            { backgroundColor: palette.background },
-            { opacity: overlayOpacity },
+            { backgroundColor: palette.background, opacity: overlayOpacity },
           ]}
         >
           <Animated.View
             style={[
               styles.celebrationCard,
-              { backgroundColor: palette.card, borderColor: palette.border, transform: [{ scale: overlayScale }] },
+              { backgroundColor: palette.card, borderColor: cardBorder },
+              { transform: [{ scale: overlayScale }] },
             ]}
           >
+            <Animated.View
+              style={[
+                styles.celebrationCheck,
+                { backgroundColor: successTone },
+                { transform: [{ scale: checkScale }] },
+              ]}
+            >
+              <FontAwesome name="check" size={32} color="#FFFFFF" />
+            </Animated.View>
             <Text style={[styles.celebrationTitle, { color: palette.text }]}>Visit complete!</Text>
             {payoutLabel ? (
-              <Text style={[styles.celebrationPayout, { color: palette.tint }]}>
-                {payoutLabel} earned
-              </Text>
+              <View style={[styles.payoutBadge, { backgroundColor: `${successTone}15` }]}>
+                <Text style={[styles.payoutAmount, { color: successTone }]}>{payoutLabel}</Text>
+                <Text style={[styles.payoutLabel, { color: successTone }]}>earned</Text>
+              </View>
             ) : (
-              <Text style={[styles.cardBody, { color: palette.muted }]}>
-                Payout is processing.
+              <Text style={[styles.celebrationSubtitle, { color: palette.muted }]}>
+                Payout is processing
               </Text>
             )}
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Nice work — we&apos;ll take it from here.
+            <Text style={[styles.celebrationMessage, { color: palette.muted }]}>
+              Great job! On to the next one.
             </Text>
           </Animated.View>
         </Animated.View>
       ) : null}
-    </Screen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  channelCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    gap: 14,
+  },
+  channelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  channelIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  channelContent: {
+    flex: 1,
+    gap: 2,
+  },
+  channelTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  channelSubtitle: {
+    fontSize: 12,
+  },
+  channelOptions: {
+    gap: 10,
+  },
+  channelOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    padding: 14,
+  },
+  channelOptionContent: {
+    flex: 1,
+    gap: 2,
+  },
+  channelOptionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  channelOptionHint: {
+    fontSize: 11,
+  },
+  channelCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
+  },
+  warningText: {
+    fontSize: 12,
     flex: 1,
   },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: 32,
+  summarySection: {
+    gap: 0,
   },
-  headerRow: {
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+  },
+  summaryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryHeaderContent: {
+    flex: 1,
+    gap: 2,
+  },
+  summaryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  summarySubtitle: {
+    fontSize: 12,
+  },
+  summaryContent: {
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    padding: 14,
+    marginTop: -16,
+    paddingTop: 20,
+    gap: 10,
+  },
+  summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  stepLabel: {
+  summaryLabel: {
     fontSize: 12,
     fontWeight: '600',
-    letterSpacing: 0.5,
     textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 16,
-    gap: 12,
-    marginBottom: 16,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cardBody: {
+  summaryValue: {
     fontSize: 13,
-    lineHeight: 18,
+    flex: 1,
+    textAlign: 'right',
   },
-  rowWrap: {
+  flagBanner: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 8,
+    padding: 10,
+    borderRadius: 10,
+    marginTop: 4,
   },
-  helperText: {
+  flagText: {
     fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
   },
   errorText: {
     fontSize: 12,
-    marginBottom: 12,
+    flex: 1,
+  },
+  footer: {
+    marginTop: 'auto',
+    gap: 8,
+  },
+  ctaButton: {
+    width: '100%',
+  },
+  footerHint: {
+    fontSize: 12,
+    textAlign: 'center',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+    zIndex: 100,
   },
   celebrationCard: {
     borderWidth: 1,
     borderRadius: 24,
-    paddingVertical: 24,
-    paddingHorizontal: 28,
+    paddingVertical: 32,
+    paddingHorizontal: 32,
     alignItems: 'center',
-    gap: 10,
+    gap: 16,
+    width: '100%',
+    maxWidth: 320,
+  },
+  celebrationCheck: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   celebrationTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
   },
-  celebrationPayout: {
-    fontSize: 28,
+  celebrationSubtitle: {
+    fontSize: 14,
+  },
+  payoutBadge: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
+  },
+  payoutAmount: {
+    fontSize: 32,
     fontWeight: '800',
+  },
+  payoutLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  celebrationMessage: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

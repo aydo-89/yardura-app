@@ -1,10 +1,19 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { ActivityIndicator, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  LayoutChangeEvent,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useIsFocused } from '@react-navigation/native';
 import * as Device from 'expo-device';
 import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Button from '@/components/ui/Button';
 import Colors from '@/constants/Colors';
@@ -14,6 +23,12 @@ import { useVisitFlow } from '@/lib/scooper/visitFlow';
 import { captureWithFallback } from '@/lib/media/imagePicker';
 import { useRemoteShutter } from '@/lib/media/remoteShutter';
 import { useStepGuard } from '@/lib/scooper/useStepGuard';
+import { apiRequest } from '@/lib/api/client';
+import PoopMapPlacementModal from '@/components/maps/PoopMapPlacementModal';
+import { LOW_CONFIDENCE_THRESHOLD_METERS } from '@/lib/maps/poopMap';
+import { useAuth } from '@/lib/auth/AuthProvider';
+
+const ZOOM_THUMB_SIZE = 20;
 
 type ImageAsset = {
   uri: string;
@@ -51,6 +66,7 @@ export default function CaptureStepScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
   const isFocused = useIsFocused();
+  const { session } = useAuth();
   const cameraRef = useRef<any>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
@@ -60,11 +76,27 @@ export default function CaptureStepScreen() {
   const [frameSize, setFrameSize] = useState<number | null>(null);
   const [guideVisible, setGuideVisible] = useState(true);
   const [pendingSampleId, setPendingSampleId] = useState<string | null>(null);
+  const [placementOpen, setPlacementOpen] = useState(false);
+  const [placementTarget, setPlacementTarget] = useState<{
+    id: string;
+    lat: number;
+    lng: number;
+    accuracy?: number | null;
+  } | null>(null);
+  // Calibration/test capture state
+  const [calibrationVisible, setCalibrationVisible] = useState(true);
+  const [testCapturing, setTestCapturing] = useState(false);
+  const [testSuccess, setTestSuccess] = useState(false);
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const testSuccessTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     steps,
     visitId,
     cameraZoom,
+    setCameraZoom,
+    testCaptureConfirmed,
+    setTestCaptureConfirmed,
     insightMedia,
     analyzedCount,
     analysisGoal,
@@ -125,6 +157,72 @@ export default function CaptureStepScreen() {
       ? 'Bluetooth: click once to capture. Double click skips cross section.'
       : 'Bluetooth: click once to capture.';
 
+  // Show calibration overlay if test capture not yet confirmed and user hasn't dismissed it
+  const showCalibration = calibrationVisible && !testCaptureConfirmed && Boolean(permission?.granted) && allowPreview;
+  const zoomLabel = `${Math.round(cameraZoom * 100)}%`;
+
+  // Zoom slider interaction
+  const updateZoomFromX = useCallback(
+    (x: number) => {
+      if (!sliderWidth) return;
+      const clamped = Math.min(Math.max(x, 0), sliderWidth);
+      const nextZoom = clamped / sliderWidth;
+      setCameraZoom(nextZoom);
+    },
+    [sliderWidth, setCameraZoom],
+  );
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (event) => updateZoomFromX(event.nativeEvent.locationX),
+        onPanResponderMove: (event) => updateZoomFromX(event.nativeEvent.locationX),
+      }),
+    [updateZoomFromX],
+  );
+
+  const handleSliderLayout = useCallback((event: LayoutChangeEvent) => {
+    setSliderWidth(event.nativeEvent.layout.width);
+  }, []);
+
+  // Test capture handler
+  const handleTestCapture = useCallback(
+    async (source: 'remote' | 'button') => {
+      if (!permission?.granted || !cameraReady || !cameraRef.current || testCapturing) {
+        return;
+      }
+      setTestCapturing(true);
+      try {
+        const photo = await cameraRef.current.takePictureAsync({ quality: 0.65 });
+        if (photo?.uri) {
+          setTestCaptureConfirmed(true);
+          setTestSuccess(true);
+          // Auto-dismiss after showing success
+          testSuccessTimer.current = setTimeout(() => {
+            setTestSuccess(false);
+            setCalibrationVisible(false);
+          }, 900);
+        }
+      } catch (err) {
+        console.warn('camera.test.failed', err);
+      } finally {
+        setTestCapturing(false);
+      }
+    },
+    [permission?.granted, cameraReady, testCapturing, setTestCaptureConfirmed],
+  );
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (testSuccessTimer.current) {
+        clearTimeout(testSuccessTimer.current);
+      }
+    };
+  }, []);
+
   const statusLabel = useMemo(() => {
     if (analysisGoal === 0) return 'No analysis goal set for this visit.';
     return `${analyzedCount} analyzed of ${analysisGoal} goal`;
@@ -182,12 +280,28 @@ export default function CaptureStepScreen() {
           stoolSampleView === 'SURFACE'
             ? generateSampleId()
             : pendingSampleId ?? generateSampleId();
-        await uploadMedia(asset, {
+        const created = await uploadMedia(asset, {
           assetType: 'INSIGHTSCOOP',
           analysisMode: 'analyze',
           stoolSampleView,
           stoolSampleId: sampleId,
         });
+        if (
+          created &&
+          typeof created.gpsLat === 'number' &&
+          typeof created.gpsLng === 'number'
+        ) {
+          const accuracy = created.gpsAccuracy ?? null;
+          if (typeof accuracy === 'number' && accuracy > LOW_CONFIDENCE_THRESHOLD_METERS) {
+            setPlacementTarget({
+              id: created.id,
+              lat: created.gpsLat,
+              lng: created.gpsLng,
+              accuracy,
+            });
+            setPlacementOpen(true);
+          }
+        }
         if (stoolSampleView === 'SURFACE') {
           setPendingSampleId(sampleId);
           setCaptureMode('CROSS_SECTION');
@@ -217,20 +331,31 @@ export default function CaptureStepScreen() {
   }, [isProcessing, captureMode]);
 
   const handleRemoteSinglePress = useCallback(() => {
+    // Handle calibration mode
+    if (showCalibration) {
+      handleTestCapture('remote');
+      return;
+    }
     if (showGuide) {
       setGuideVisible(false);
       return;
     }
     handleSinglePress();
-  }, [showGuide, handleSinglePress]);
+  }, [showCalibration, showGuide, handleTestCapture, handleSinglePress]);
 
   const handleRemoteDoublePress = useCallback(() => {
+    // Handle calibration mode - double click skips calibration
+    if (showCalibration) {
+      setTestCaptureConfirmed(true);
+      setCalibrationVisible(false);
+      return;
+    }
     if (showGuide) {
       setGuideVisible(false);
       return;
     }
     handleDoublePress();
-  }, [showGuide, handleDoublePress]);
+  }, [showCalibration, showGuide, setTestCaptureConfirmed, handleDoublePress]);
 
   useRemoteShutter({
     onSinglePress: handleRemoteSinglePress,
@@ -252,6 +377,32 @@ export default function CaptureStepScreen() {
     if (!next) return;
     router.push(`/(app)/(scooper)/visits/${visitId}/${next}`);
   };
+
+  const handlePlacementSave = useCallback(
+    async (nextLocation: { lat: number; lng: number; accuracy?: number | null }) => {
+      if (!visitId || !session?.token || !placementTarget) return;
+      try {
+        await apiRequest(`/api/field-tech/visits/${visitId}/media/${placementTarget.id}`, {
+          method: 'PATCH',
+          token: session.token,
+          body: {
+            lat: nextLocation.lat,
+            lng: nextLocation.lng,
+            accuracy: 3,
+            rawLat: placementTarget.lat,
+            rawLng: placementTarget.lng,
+            rawAccuracy: placementTarget.accuracy ?? null,
+          },
+        });
+      } catch (err) {
+        console.warn('visit.media.location.update.failed', err);
+      } finally {
+        setPlacementOpen(false);
+        setPlacementTarget(null);
+      }
+    },
+    [placementTarget, session?.token, visitId],
+  );
 
   const handleCameraLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -364,6 +515,16 @@ export default function CaptureStepScreen() {
               View poop map (optional)
             </Text>
           </Pressable>
+          {placementTarget ? (
+            <Pressable
+              onPress={() => setPlacementOpen(true)}
+              style={styles.mapLinkRow}
+            >
+              <Text style={[styles.mapLinkText, { color: overlayText }]}>
+                Adjust last capture location
+              </Text>
+            </Pressable>
+          ) : null}
 
           <View style={styles.actionRow}>
             <Button
@@ -421,7 +582,90 @@ export default function CaptureStepScreen() {
           ) : null}
         </View>
 
-        {showGuide ? (
+        {/* Calibration overlay - shows before first capture */}
+        {showCalibration ? (
+          <View style={[styles.guideOverlay, { backgroundColor: guideBackdrop }]}>
+            <View style={styles.calibrationFrameOverlay}>
+              <View style={styles.calibrationFrameStack}>
+                <View
+                  style={[
+                    styles.frame,
+                    {
+                      borderColor: Colors.brand.mint,
+                      width: frameSize ?? undefined,
+                      height: frameSize ?? undefined,
+                    },
+                  ]}
+                />
+                <Text style={[styles.frameHint, { color: overlayMuted }]}>Keep the bucket centered</Text>
+              </View>
+              <View style={[styles.testStamp, { borderColor: Colors.brand.coralInk }]}>
+                <Text style={[styles.testStampText, { color: Colors.brand.coralInk }]}>TEST</Text>
+              </View>
+            </View>
+            <View style={[styles.calibrationCard, { backgroundColor: panelBackground, borderColor: panelBorder }]}>
+              <Text style={[styles.guideTitle, { color: overlayText }]}>Calibrate zoom</Text>
+              <Text style={[styles.calibrationHint, { color: overlayMuted }]}>
+                Adjust so stool fills the frame, then test capture
+              </Text>
+              <View
+                style={styles.zoomSlider}
+                onLayout={handleSliderLayout}
+                {...panResponder.panHandlers}
+              >
+                <View style={[styles.zoomTrack, { backgroundColor: panelBorder }]} />
+                <View style={[styles.zoomFill, { width: sliderWidth * cameraZoom, backgroundColor: Colors.brand.mint }]} />
+                <View
+                  style={[
+                    styles.zoomThumb,
+                    {
+                      left: Math.min(
+                        Math.max(sliderWidth * cameraZoom - ZOOM_THUMB_SIZE / 2, 0),
+                        Math.max(sliderWidth - ZOOM_THUMB_SIZE, 0),
+                      ),
+                      borderColor: panelBorder,
+                      backgroundColor: panelBackground,
+                    },
+                  ]}
+                />
+                <Text style={[styles.zoomValue, { color: overlayText }]}>Zoom {zoomLabel}</Text>
+              </View>
+              <View style={styles.calibrationActions}>
+                <Button
+                  title={testCapturing ? 'Testing...' : 'Test capture'}
+                  onPress={() => handleTestCapture('button')}
+                  disabled={testCapturing || !cameraReady}
+                  style={styles.calibrationButton}
+                />
+                <Button
+                  title="Skip"
+                  onPress={() => {
+                    setTestCaptureConfirmed(true);
+                    setCalibrationVisible(false);
+                  }}
+                  variant="ghost"
+                  style={styles.calibrationButton}
+                />
+              </View>
+              <Text style={[styles.calibrationFootnote, { color: overlayMuted }]}>
+                Bluetooth: click to test, double-click to skip
+              </Text>
+            </View>
+
+            {/* Test success overlay */}
+            {testSuccess ? (
+              <View style={styles.testSuccessOverlay}>
+                <View style={[styles.testSuccessCard, { borderColor: Colors.brand.mint, backgroundColor: panelBackground }]}>
+                  <FontAwesome name="check-circle" size={56} color={Colors.brand.mint} />
+                  <Text style={[styles.testSuccessTitle, { color: Colors.brand.mint }]}>Bluetooth verified</Text>
+                  <Text style={[styles.testSuccessBody, { color: overlayText }]}>Starting sample capture...</Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {showGuide && !showCalibration ? (
           <View style={[styles.guideOverlay, { backgroundColor: guideBackdrop }]}>
             <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setGuideVisible(false)} />
             <View style={[styles.guideCard, { backgroundColor: panelBackground, borderColor: panelBorder }]}>
@@ -466,6 +710,22 @@ export default function CaptureStepScreen() {
             <ActivityIndicator size="large" color={palette.tint} />
             <Text style={[styles.processingText, { color: '#F8FAFC' }]}>{processingLabel}</Text>
           </View>
+        ) : null}
+        {placementTarget && session?.token ? (
+          <PoopMapPlacementModal
+            visible={placementOpen}
+            token={session.token}
+            mapEndpoint={`/api/field-tech/visits/${visitId}/poop-map`}
+            initialLocation={{
+              lat: placementTarget.lat,
+              lng: placementTarget.lng,
+              accuracy: placementTarget.accuracy ?? null,
+            }}
+            title="Adjust pin placement"
+            subtitle="Drag the pin to the exact spot. Accurate placement builds the hot-spot map so future visits here are faster."
+            onClose={() => setPlacementOpen(false)}
+            onSave={handlePlacementSave}
+          />
         ) : null}
       </View>
     </Screen>
@@ -717,5 +977,114 @@ const styles = StyleSheet.create({
   },
   guideButtonLabel: {
     fontSize: 15,
+  },
+  // Calibration overlay styles
+  calibrationFrameOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calibrationFrameStack: {
+    alignItems: 'center',
+    gap: 10,
+    transform: [{ translateY: -80 }],
+  },
+  testStamp: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    paddingHorizontal: 28,
+    paddingVertical: 6,
+    borderWidth: 3,
+    borderRadius: 8,
+    opacity: 0.35,
+    transform: [{ translateX: -120 }, { translateY: -118 }, { rotate: '-12deg' }],
+  },
+  testStampText: {
+    fontSize: 64,
+    fontWeight: '900',
+    letterSpacing: 8,
+  },
+  calibrationCard: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 24,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 16,
+    gap: 12,
+  },
+  calibrationHint: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  zoomSlider: {
+    height: 36,
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  zoomTrack: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 6,
+    borderRadius: 999,
+  },
+  zoomFill: {
+    position: 'absolute',
+    left: 0,
+    height: 6,
+    borderRadius: 999,
+  },
+  zoomThumb: {
+    position: 'absolute',
+    width: ZOOM_THUMB_SIZE,
+    height: ZOOM_THUMB_SIZE,
+    borderRadius: ZOOM_THUMB_SIZE / 2,
+    borderWidth: 2,
+  },
+  zoomValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    alignSelf: 'center',
+  },
+  calibrationActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  calibrationButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+  },
+  calibrationFootnote: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  testSuccessOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+  },
+  testSuccessCard: {
+    borderWidth: 2,
+    borderRadius: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    gap: 10,
+  },
+  testSuccessTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  testSuccessBody: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

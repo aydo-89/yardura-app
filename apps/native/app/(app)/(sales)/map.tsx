@@ -22,6 +22,7 @@ import type { OutboundLead, ServiceAreaSummary, TeamLocation } from '@/lib/api/t
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useSales } from '@/lib/sales/SalesProvider';
 import { formatLeadAddress, formatLeadName, getLeadCoordinates, stageColorToHex } from '@/lib/sales/utils';
+import { DARK_MAP_STYLE } from '@/lib/maps/style';
 
 type GeoJsonGeometry =
   | { type: 'Polygon'; coordinates: number[][][] }
@@ -282,12 +283,53 @@ export default function SalesMapScreen() {
     }, [session?.token, showTeamRadar]),
   );
 
-  const handleMapPress = (event: { nativeEvent: { coordinate: LatLng } }) => {
+  const handleMapPress = (event: { nativeEvent: { coordinate: LatLng; action?: string } }) => {
+    if (event.nativeEvent.action === 'marker-press') return;
     if (dropPinMode) {
       setPendingPin(event.nativeEvent.coordinate);
       return;
     }
     setSelectedLead(null);
+  };
+
+  const handleDropPinAtLocation = async () => {
+    if (Platform.OS === 'web') return;
+    setLocationError(null);
+
+    let currentLocation = location;
+    if (!currentLocation) {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationError('Location permission denied.');
+        return;
+      }
+      try {
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        currentLocation = {
+          latitude: current.coords.latitude,
+          longitude: current.coords.longitude,
+        };
+        setLocation(currentLocation);
+      } catch (err) {
+        setLocationError('Unable to fetch location.');
+        return;
+      }
+    }
+
+    if (!currentLocation) return;
+    setPendingPin(currentLocation);
+    setDropPinMode(false);
+    mapRef.current?.animateToRegion(
+      {
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        latitudeDelta: 0.06,
+        longitudeDelta: 0.06,
+      },
+      250,
+    );
   };
 
   const handleCreateFromPin = () => {
@@ -322,6 +364,8 @@ export default function SalesMapScreen() {
           ref={mapRef}
           style={styles.map}
           provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+          mapType={Platform.OS === 'ios' ? (colorScheme === 'dark' ? 'mutedStandard' : 'standard') : 'standard'}
+          customMapStyle={colorScheme === 'dark' ? DARK_MAP_STYLE : []}
           initialRegion={{
             latitude: location?.latitude ?? fallbackCenter?.latitude ?? 37.773972,
             longitude: location?.longitude ?? fallbackCenter?.longitude ?? -122.431297,
@@ -355,7 +399,10 @@ export default function SalesMapScreen() {
               pinColor={stageColorToHex(lead.stageColor)}
               title={formatLeadName(lead)}
               description={formatLeadAddress(lead)}
-              onPress={() => setSelectedLead(lead)}
+              onPress={(event) => {
+                event.stopPropagation?.();
+                setSelectedLead(lead);
+              }}
             />
           ))}
 
@@ -426,6 +473,16 @@ export default function SalesMapScreen() {
             <Text style={[styles.mapControlLabel, { color: palette.text }]}>
               {dropPinMode ? 'Drop pin on' : 'Drop pin'}
             </Text>
+          </Pressable>
+          <Pressable
+            onPress={handleDropPinAtLocation}
+            style={[
+              styles.mapControl,
+              { backgroundColor: palette.card, borderColor: palette.border },
+            ]}
+          >
+            <FontAwesome name="crosshairs" size={14} color={palette.text} />
+            <Text style={[styles.mapControlLabel, { color: palette.text }]}>Drop here</Text>
           </Pressable>
           <Pressable
             onPress={handleUseLocation}

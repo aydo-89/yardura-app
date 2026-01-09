@@ -1,14 +1,13 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE, type LatLng, type Region } from 'react-native-maps';
-import * as Location from 'expo-location';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
 
 import Button from '@/components/ui/Button';
-import ChoiceChip from '@/components/ui/ChoiceChip';
 import Screen from '@/components/ui/Screen';
+import WalkMapView from '@/components/wellness/WalkMapView';
+import WalkStatsCard from '@/components/wellness/WalkStatsCard';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -21,106 +20,37 @@ import {
   syncPassiveWalkDetection,
   type PassiveWalkPending,
 } from '@/lib/wellness/passiveWalk';
+import {
+  useWalkTracking,
+  toLatLng,
+  formatDistance,
+  formatDuration,
+} from '@/lib/wellness/useWalkTracking';
 import type { CustomerSummary, DogSummary, WellnessWalk } from '@/lib/api/types';
-
-type WalkPoint = {
-  lat: number;
-  lng: number;
-  accuracy?: number | null;
-  timestamp?: string | null;
-};
-
-type TrackingState = 'idle' | 'recording' | 'paused' | 'saving';
-
-const MAX_POINTS = 5000;
-const MIN_POINT_DISTANCE_METERS = 2;
-const MAX_ACCURACY_METERS = 50;
-
-const DARK_MAP_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#1f2937' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#111827' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
-  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#374151' }] },
-  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#1f2937' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#374151' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#111827' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#111827' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
-];
-
-const formatDistance = (meters: number) => {
-  if (!Number.isFinite(meters)) return '0.0 mi';
-  const miles = meters / 1609.34;
-  if (miles < 0.1) {
-    const feet = Math.round(meters * 3.28084);
-    return `${feet} ft`;
-  }
-  return `${miles.toFixed(2)} mi`;
-};
-
-const formatDuration = (seconds: number) => {
-  if (!Number.isFinite(seconds)) return '0:00';
-  const total = Math.max(0, Math.floor(seconds));
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const secs = total % 60;
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
-};
-
-const toLatLng = (point: WalkPoint): LatLng => ({
-  latitude: point.lat,
-  longitude: point.lng,
-});
-
-const haversineMeters = (a: WalkPoint, b: WalkPoint) => {
-  const toRad = (value: number) => (value * Math.PI) / 180;
-  const r = 6371000;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const sinLat = Math.sin(dLat / 2);
-  const sinLng = Math.sin(dLng / 2);
-  const h = sinLat * sinLat + Math.cos(lat1) * Math.cos(lat2) * sinLng * sinLng;
-  return 2 * r * Math.asin(Math.sqrt(h));
-};
 
 export default function WellnessWalksScreen() {
   const { session } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
-  const mapRef = useRef<MapView | null>(null);
-  const watchRef = useRef<Location.LocationSubscription | null>(null);
-  const lastPointRef = useRef<WalkPoint | null>(null);
-  const resumeSkipRef = useRef(true);
-  const distanceRef = useRef(0);
 
+  // Use the extracted walk tracking hook
+  const tracking = useWalkTracking();
+
+  // API state
   const [summary, setSummary] = useState<CustomerSummary | null>(null);
   const [dogs, setDogs] = useState<DogSummary[]>([]);
   const [walks, setWalks] = useState<WellnessWalk[]>([]);
   const [selectedWalkId, setSelectedWalkId] = useState<string | null>(null);
   const [selectedDogId, setSelectedDogId] = useState<string | null>(null);
-  const [trackingState, setTrackingState] = useState<TrackingState>('idle');
-  const [trackingError, setTrackingError] = useState<string | null>(null);
-  const [trackingPoints, setTrackingPoints] = useState<WalkPoint[]>([]);
-  const [distanceMeters, setDistanceMeters] = useState(0);
-  const [startedAt, setStartedAt] = useState<Date | null>(null);
-  const [pauseStartedAt, setPauseStartedAt] = useState<Date | null>(null);
-  const [pausedMs, setPausedMs] = useState(0);
-  const [ticker, setTicker] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Passive walk detection state
   const [passiveEnabled, setPassiveEnabled] = useState(false);
   const [pendingWalk, setPendingWalk] = useState<PassiveWalkPending | null>(null);
   const [pendingDogId, setPendingDogId] = useState<string | null>(null);
   const [passiveError, setPassiveError] = useState<string | null>(null);
   const [passiveLoading, setPassiveLoading] = useState(false);
   const [confirmingPending, setConfirmingPending] = useState(false);
-  const [mapRegion, setMapRegion] = useState<Region | null>(null);
 
   const access = summary?.wellnessAccess ?? null;
   const hasAccess = Boolean(access);
@@ -132,9 +62,10 @@ export default function WellnessWalksScreen() {
     [walks, selectedWalkId],
   );
 
+  // Convert tracking points or selected walk path to LatLng format
   const mapPoints = useMemo(() => {
-    if (trackingState !== 'idle' && trackingPoints.length) {
-      return trackingPoints.map(toLatLng);
+    if (tracking.state !== 'idle' && tracking.points.length) {
+      return tracking.points.map(toLatLng);
     }
     if (selectedWalk?.path?.length) {
       return selectedWalk.path.map((point) => ({
@@ -143,20 +74,16 @@ export default function WellnessWalksScreen() {
       }));
     }
     return [];
-  }, [trackingPoints, trackingState, selectedWalk]);
+  }, [tracking.points, tracking.state, selectedWalk]);
 
-  const elapsedSeconds = useMemo(() => {
-    if (!startedAt) return 0;
-    const now = pauseStartedAt ?? new Date();
-    const raw = now.getTime() - startedAt.getTime() - pausedMs;
-    return Math.max(0, Math.floor(raw / 1000));
-  }, [startedAt, pausedMs, pauseStartedAt, ticker]);
-
+  // Display values - show tracking values when active, otherwise selected walk
   const displayDistanceMeters =
-    trackingState === 'idle' ? selectedWalk?.distanceMeters ?? 0 : distanceMeters;
+    tracking.state === 'idle' ? selectedWalk?.distanceMeters ?? 0 : tracking.distanceMeters;
   const displayDurationSeconds =
-    trackingState === 'idle' ? selectedWalk?.durationSeconds ?? 0 : elapsedSeconds;
+    tracking.state === 'idle' ? selectedWalk?.durationSeconds ?? 0 : tracking.elapsedSeconds;
 
+  const distanceLabel = formatDistance(displayDistanceMeters);
+  const durationLabel = formatDuration(displayDurationSeconds);
   const paceLabel = useMemo(() => {
     if (!displayDistanceMeters || displayDistanceMeters <= 0) return '—';
     const miles = displayDistanceMeters / 1609.34;
@@ -166,16 +93,16 @@ export default function WellnessWalksScreen() {
   }, [displayDistanceMeters, displayDurationSeconds]);
 
   const activeDogLabel = useMemo(() => {
-    if (trackingState !== 'idle') {
+    if (tracking.state !== 'idle') {
       return selectedDogId ? dogs.find((dog) => dog.id === selectedDogId)?.name ?? 'Dog' : 'Household';
     }
     return selectedWalk?.dogName ?? 'Household';
-  }, [dogs, selectedDogId, selectedWalk, trackingState]);
+  }, [dogs, selectedDogId, selectedWalk, tracking.state]);
 
   const activeDateLabel = useMemo(() => {
-    if (trackingState !== 'idle') {
-      return startedAt
-        ? startedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    if (tracking.state !== 'idle') {
+      return tracking.startedAt
+        ? tracking.startedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
         : 'In progress';
     }
     if (!selectedWalk?.startedAt) return 'Route preview';
@@ -184,8 +111,23 @@ export default function WellnessWalksScreen() {
       day: 'numeric',
       year: 'numeric',
     });
-  }, [selectedWalk?.startedAt, startedAt, trackingState]);
+  }, [selectedWalk?.startedAt, tracking.startedAt, tracking.state]);
 
+  // Weekly stats
+  const weeklyStats = useMemo(() => {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thisWeekWalks = walks.filter((w) => new Date(w.startedAt) >= weekAgo);
+    const totalDistance = thisWeekWalks.reduce((sum, w) => sum + (w.distanceMeters ?? 0), 0);
+    const totalDuration = thisWeekWalks.reduce((sum, w) => sum + (w.durationSeconds ?? 0), 0);
+    return {
+      count: thisWeekWalks.length,
+      distance: totalDistance,
+      duration: totalDuration,
+    };
+  }, [walks]);
+
+  // API calls
   const loadSummary = useCallback(async () => {
     if (!session?.token) return;
     try {
@@ -238,6 +180,7 @@ export default function WellnessWalksScreen() {
     }
   }, [pendingDogId]);
 
+  // Effects
   useEffect(() => {
     loadSummary();
     loadDogs();
@@ -263,231 +206,42 @@ export default function WellnessWalksScreen() {
       .finally(() => setPassiveEnabled(false));
   }, [hasAccess, isPremium, passiveEnabled]);
 
-  useEffect(() => {
-    if (trackingState !== 'recording') return;
-    const interval = setInterval(() => setTicker((value) => value + 1), 1000);
-    return () => clearInterval(interval);
-  }, [trackingState]);
-
-  useEffect(() => {
-    return () => {
-      watchRef.current?.remove();
-      watchRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (mapPoints.length > 0 || mapRegion) return;
-    Location.getForegroundPermissionsAsync()
-      .then((permission) => {
-        if (!permission.granted) return null;
-        return Location.getLastKnownPositionAsync({});
-      })
-      .then((position) => {
-        if (!position?.coords) return;
-        setMapRegion({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        });
-      })
-      .catch(() => null);
-  }, [mapPoints.length, mapRegion]);
-
-  useEffect(() => {
-    if (!mapRef.current || mapPoints.length === 0) return;
-    if (mapPoints.length === 1) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: mapPoints[0].latitude,
-          longitude: mapPoints[0].longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        },
-        400,
-      );
-      return;
-    }
-    mapRef.current.fitToCoordinates(mapPoints, {
-      edgePadding: { top: 70, bottom: 120, left: 50, right: 50 },
-      animated: true,
-    });
-  }, [mapPoints]);
-
-  const clearTracking = () => {
-    watchRef.current?.remove();
-    watchRef.current = null;
-    lastPointRef.current = null;
-    resumeSkipRef.current = true;
-    distanceRef.current = 0;
-    setTrackingPoints([]);
-    setDistanceMeters(0);
-    setStartedAt(null);
-    setPauseStartedAt(null);
-    setPausedMs(0);
-    setTicker(0);
-  };
-
-  const appendPoint = (point: WalkPoint) => {
-    if (trackingPoints.length >= MAX_POINTS) return;
-    if (point.accuracy && point.accuracy > MAX_ACCURACY_METERS) return;
-
-    const last = lastPointRef.current;
-    if (resumeSkipRef.current || !last) {
-      lastPointRef.current = point;
-      resumeSkipRef.current = false;
-      setTrackingPoints((prev) => [...prev, point]);
-      return;
-    }
-    const delta = haversineMeters(last, point);
-    if (delta < MIN_POINT_DISTANCE_METERS) return;
-    lastPointRef.current = point;
-    distanceRef.current += delta;
-    setDistanceMeters(distanceRef.current);
-    setTrackingPoints((prev) => [...prev, point]);
-  };
-
-  const startLocationWatch = async () => {
-    watchRef.current?.remove();
-    watchRef.current = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.Highest,
-        distanceInterval: 5,
-        timeInterval: 4000,
-      },
-      (position) => {
-        const coords = position.coords;
-        if (!coords) return;
-        appendPoint({
-          lat: coords.latitude,
-          lng: coords.longitude,
-          accuracy: coords.accuracy ?? null,
-          timestamp: new Date(position.timestamp).toISOString(),
-        });
-      },
-    );
-  };
-
-  const handleStart = async () => {
-    if (trackingState !== 'idle') return;
-    setTrackingError(null);
-    const permission = await Location.requestForegroundPermissionsAsync();
-    if (!permission.granted) {
-      setTrackingError('Location permission is required to track walks.');
-      return;
-    }
-    clearTracking();
-    setStartedAt(new Date());
-    setTrackingState('recording');
-    resumeSkipRef.current = true;
-    await startLocationWatch();
-    const current = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Highest,
-    }).catch(() => null);
-    if (current?.coords) {
-      appendPoint({
-        lat: current.coords.latitude,
-        lng: current.coords.longitude,
-        accuracy: current.coords.accuracy ?? null,
-        timestamp: new Date(current.timestamp).toISOString(),
-      });
-    }
-  };
-
-  const handlePause = () => {
-    if (trackingState !== 'recording') return;
-    watchRef.current?.remove();
-    watchRef.current = null;
-    setPauseStartedAt(new Date());
-    setTrackingState('paused');
-  };
-
-  const handleResume = async () => {
-    if (trackingState !== 'paused') return;
-    if (pauseStartedAt) {
-      setPausedMs((prev) => prev + (new Date().getTime() - pauseStartedAt.getTime()));
-    }
-    setPauseStartedAt(null);
-    setTrackingState('recording');
-    resumeSkipRef.current = true;
-    await startLocationWatch();
-  };
-
+  // Handlers
   const handleFinish = async () => {
-    if (trackingState === 'saving' || trackingState === 'idle') return;
-    watchRef.current?.remove();
-    watchRef.current = null;
-    if (!session?.token || !startedAt) {
-      setTrackingError('Unable to save the walk. Please try again.');
-      setTrackingState('paused');
-      return;
-    }
-    setTrackingState('saving');
+    const result = await tracking.finish();
+    if (!result || !session?.token || !tracking.startedAt) return;
+
     try {
-      let points = trackingPoints;
-      let distance = distanceRef.current;
-      if (points.length < 2) {
-        const current = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Highest,
-        }).catch(() => null);
-        if (current?.coords) {
-          const newPoint = {
-            lat: current.coords.latitude,
-            lng: current.coords.longitude,
-            accuracy: current.coords.accuracy ?? null,
-            timestamp: new Date(current.timestamp).toISOString(),
-          };
-          if (points.length === 1) {
-            distance += haversineMeters(points[0], newPoint);
-          }
-          points = [...points, newPoint];
-          distanceRef.current = distance;
-          setDistanceMeters(distance);
-          setTrackingPoints(points);
-        }
-      }
-      if (points.length < 2) {
-        setTrackingError('Add a little more movement to save the walk.');
-        setTrackingState('paused');
-        return;
-      }
       const endedAt = new Date();
-      const durationSeconds = Math.max(1, Math.floor((endedAt.getTime() - startedAt.getTime() - pausedMs) / 1000));
       const payload = {
         dogId: selectedDogId ?? null,
-        startedAt: startedAt.toISOString(),
+        startedAt: tracking.startedAt.toISOString(),
         endedAt: endedAt.toISOString(),
-        durationSeconds,
-        distanceMeters: Math.max(0, distance),
-        path: points,
+        durationSeconds: Math.max(1, tracking.elapsedSeconds),
+        distanceMeters: Math.max(0, result.distance),
+        path: result.points,
         metadata: {
-          pointsCount: points.length,
+          pointsCount: result.points.length,
           avgAccuracyMeters:
-            points.length > 0
+            result.points.length > 0
               ? Math.round(
-                  points.reduce((sum, point) => sum + (point.accuracy ?? 0), 0) / points.length,
+                  result.points.reduce((sum, point) => sum + (point.accuracy ?? 0), 0) / result.points.length,
                 )
               : null,
         },
       };
-      const data = await apiRequest<{ walk: WellnessWalk }>(
-        '/api/mobile/customer/walks',
-        {
-          method: 'POST',
-          token: session.token,
-          body: payload,
-        },
-      );
+      const data = await apiRequest<{ walk: WellnessWalk }>('/api/mobile/customer/walks', {
+        method: 'POST',
+        token: session.token,
+        body: payload,
+      });
       if (data?.walk) {
         setWalks((prev) => [data.walk, ...prev]);
         setSelectedWalkId(data.walk.id);
       }
-      clearTracking();
-      setTrackingState('idle');
+      tracking.reset();
     } catch (err) {
-      setTrackingError(err instanceof Error ? err.message : 'Unable to save walk.');
-      setTrackingState('paused');
+      // Error handled by tracking hook
     }
   };
 
@@ -586,294 +340,290 @@ export default function WellnessWalksScreen() {
     }
   };
 
-  const distanceLabel = formatDistance(displayDistanceMeters);
-  const durationLabel = formatDuration(displayDurationSeconds);
   const pendingDistanceLabel = pendingWalk ? formatDistance(pendingWalk.distanceMeters) : null;
   const pendingDurationLabel = pendingWalk ? formatDuration(pendingWalk.durationSeconds) : null;
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.kicker, { color: palette.muted }]}>Premium walk tracker</Text>
-          <Text style={[styles.title, { color: palette.text }]}>Track every walk</Text>
-          <Text style={[styles.subtitle, { color: palette.muted }]}>
-            GPS distance, duration, and route history for your pup.
-          </Text>
+          <View style={[styles.headerIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+            <FontAwesome name="road" size={24} color={Colors.brand.mint} />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={[styles.title, { color: palette.text }]}>Walk Tracker</Text>
+            <Text style={[styles.subtitle, { color: palette.muted }]}>
+              GPS distance, duration, and route history
+            </Text>
+          </View>
         </View>
 
         {!isPremium ? (
-          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>Premium feature</Text>
-            <Text style={[styles.helperText, { color: palette.muted }]}>
+          // Premium gate
+          <View style={[styles.premiumGate, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <View style={[styles.premiumIcon, { backgroundColor: `${Colors.brand.gold}15` }]}>
+              <FontAwesome name="star" size={28} color={Colors.brand.gold} />
+            </View>
+            <Text style={[styles.premiumTitle, { color: palette.text }]}>Premium Feature</Text>
+            <Text style={[styles.premiumSubtitle, { color: palette.muted }]}>
               Upgrade to unlock GPS walk tracking, route history, and distance stats.
             </Text>
             <Button
-              title="Upgrade wellness"
-              onPress={() => {
-                router.push('/(app)/(customer)/wellness-upgrade' as any);
-              }}
+              title="Upgrade to Premium"
+              onPress={() => router.push('/(app)/(customer)/wellness-upgrade' as any)}
             />
           </View>
         ) : (
           <>
-            {pendingWalk ? (
-              <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                <Text style={[styles.sectionTitle, { color: palette.text }]}>We detected a walk</Text>
-                <Text style={[styles.helperText, { color: palette.muted }]}>
-                  {pendingDistanceLabel ?? '--'} · {pendingDurationLabel ?? '--'}
-                </Text>
-                <Text style={[styles.helperText, { color: palette.muted }]}>
-                  Confirm the walk and choose the dog that went with you.
-                </Text>
-                <View style={styles.chipRow}>
-                  <ChoiceChip
-                    label="Household"
-                    selected={!pendingDogId}
-                    onPress={() => setPendingDogId(null)}
-                  />
-                  {dogs.map((dog) => (
-                    <ChoiceChip
-                      key={dog.id}
-                      label={dog.name}
-                      selected={pendingDogId === dog.id}
-                      onPress={() => setPendingDogId(dog.id)}
-                    />
-                  ))}
-                </View>
-                <View style={styles.actionRow}>
-                  <Button
-                    title={confirmingPending ? 'Saving...' : 'Confirm walk'}
-                    onPress={handleConfirmPending}
-                    disabled={confirmingPending}
-                  />
-                  <Button
-                    title="Not a walk"
-                    onPress={handleDismissPending}
-                    variant="secondary"
-                    disabled={confirmingPending}
-                  />
-                </View>
-                {passiveError ? (
-                  <Text style={[styles.helperText, { color: palette.danger }]}>{passiveError}</Text>
-                ) : null}
+            {/* Weekly Summary */}
+            <View style={[styles.summaryCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+              <View style={styles.summaryHeader}>
+                <FontAwesome name="calendar" size={14} color={palette.tint} />
+                <Text style={[styles.summaryLabel, { color: palette.muted }]}>This week</Text>
               </View>
-            ) : null}
-
-            <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: palette.text }]}>
-                  Passive walk detection
-                </Text>
-                <Switch value={passiveEnabled} onValueChange={handlePassiveToggle} />
-              </View>
-              <Text style={[styles.helperText, { color: palette.muted }]}>
-                We will look for walking pace movement and prompt you to confirm.
-              </Text>
-              <Text style={[styles.helperText, { color: palette.muted }]}>
-                Requires background location permission and may increase battery usage.
-              </Text>
-              {passiveLoading ? (
-                <Text style={[styles.helperText, { color: palette.muted }]}>Updating...</Text>
-              ) : null}
-              {passiveError ? (
-                <Text style={[styles.helperText, { color: palette.danger }]}>{passiveError}</Text>
-              ) : null}
-            </View>
-
-            <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: palette.text }]}>Walk controls</Text>
-                {trackingState === 'recording' ? (
-                  <View style={[styles.liveBadge, { backgroundColor: palette.tint }]}>
-                    <Text style={styles.liveBadgeText}>Live</Text>
-                  </View>
-                ) : null}
-              </View>
-              <Text style={[styles.helperText, { color: palette.muted }]}>
-                Keep the app open while tracking for the most accurate route.
-              </Text>
-
-              <Text style={[styles.fieldLabel, { color: palette.muted }]}>Dog (optional)</Text>
-              <View style={styles.chipRow}>
-                <ChoiceChip
-                  label="Household"
-                  selected={!selectedDogId}
-                  onPress={() => setSelectedDogId(null)}
-                />
-                {dogs.map((dog) => (
-                  <ChoiceChip
-                    key={dog.id}
-                    label={dog.name}
-                    selected={selectedDogId === dog.id}
-                    onPress={() => setSelectedDogId(dog.id)}
-                  />
-                ))}
-              </View>
-
-              <View style={styles.statsRow}>
-                <View style={styles.statCard}>
-                  <Text style={[styles.statValue, { color: palette.text }]}>{distanceLabel}</Text>
-                  <Text style={[styles.statLabel, { color: palette.muted }]}>Distance</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={[styles.statValue, { color: palette.text }]}>{durationLabel}</Text>
-                  <Text style={[styles.statLabel, { color: palette.muted }]}>Time</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={[styles.statValue, { color: palette.text }]}>{paceLabel}</Text>
-                  <Text style={[styles.statLabel, { color: palette.muted }]}>Pace</Text>
-                </View>
-              </View>
-
-              <View style={styles.actionRow}>
-                {trackingState === 'idle' ? (
-                  <Button title="Start walk" onPress={handleStart} />
-                ) : trackingState === 'recording' ? (
-                  <>
-                    <Button title="Pause" onPress={handlePause} variant="secondary" />
-                    <Button title="Finish" onPress={handleFinish} />
-                  </>
-                ) : trackingState === 'paused' ? (
-                  <>
-                    <Button title="Resume" onPress={handleResume} />
-                    <Button title="Finish" onPress={handleFinish} variant="secondary" />
-                  </>
-                ) : (
-                  <View style={styles.inlineRow}>
-                    <ActivityIndicator size="small" color={palette.tint} />
-                    <Text style={[styles.helperText, { color: palette.muted }]}>Saving...</Text>
-                  </View>
-                )}
-              </View>
-              {trackingError ? (
-                <Text style={[styles.helperText, { color: palette.danger }]}>{trackingError}</Text>
-              ) : null}
-            </View>
-
-            <View style={[styles.mapCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-              <Text style={[styles.sectionTitle, { color: palette.text }]}>Route preview</Text>
-              <View style={styles.mapWrapper}>
-                <MapView
-                  ref={(ref) => {
-                    mapRef.current = ref;
-                  }}
-                  style={styles.map}
-                  provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-                  mapType={Platform.OS === 'ios' ? (colorScheme === 'dark' ? 'mutedStandard' : 'standard') : 'standard'}
-                  customMapStyle={colorScheme === 'dark' ? DARK_MAP_STYLE : []}
-                  showsUserLocation={trackingState !== 'idle'}
-                  showsMyLocationButton={trackingState !== 'idle'}
-                  initialRegion={
-                    mapRegion ?? {
-                      latitude: 44.98,
-                      longitude: -93.26,
-                      latitudeDelta: 0.02,
-                      longitudeDelta: 0.02,
-                    }
-                  }
-                >
-                  {mapPoints.length > 0 ? (
-                    <>
-                      <Polyline
-                        coordinates={mapPoints}
-                        strokeWidth={10}
-                        strokeColor={colorScheme === 'dark' ? 'rgba(244, 100, 91, 0.25)' : 'rgba(244, 100, 91, 0.2)'}
-                      />
-                      <Polyline coordinates={mapPoints} strokeWidth={4} strokeColor={palette.tint} />
-                      <Marker coordinate={mapPoints[0]} title="Start" pinColor="#22C55E" />
-                      <Marker
-                        coordinate={mapPoints[mapPoints.length - 1]}
-                        title="Finish"
-                        pinColor={palette.tint}
-                      />
-                    </>
-                  ) : null}
-                </MapView>
-                <View style={[styles.routeOverlay, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                  <Text style={[styles.routeLabel, { color: palette.muted }]}>
-                    {trackingState === 'idle' ? 'Route preview' : 'Live walk'}
+              <View style={styles.summaryStats}>
+                <View style={styles.summaryStatItem}>
+                  <Text style={[styles.summaryStatValue, { color: palette.text }]}>
+                    {weeklyStats.count}
                   </Text>
-                  <Text style={[styles.routeTitle, { color: palette.text }]}>{activeDogLabel}</Text>
-                  <Text style={[styles.routeMeta, { color: palette.muted }]}>{activeDateLabel}</Text>
-                  <View style={styles.routeStats}>
-                    <View style={styles.routeStat}>
-                      <Text style={[styles.routeStatValue, { color: palette.text }]}>{distanceLabel}</Text>
-                      <Text style={[styles.routeStatLabel, { color: palette.muted }]}>Distance</Text>
-                    </View>
-                    <View style={styles.routeStat}>
-                      <Text style={[styles.routeStatValue, { color: palette.text }]}>{durationLabel}</Text>
-                      <Text style={[styles.routeStatLabel, { color: palette.muted }]}>Time</Text>
-                    </View>
-                    <View style={styles.routeStat}>
-                      <Text style={[styles.routeStatValue, { color: palette.text }]}>{paceLabel}</Text>
-                      <Text style={[styles.routeStatLabel, { color: palette.muted }]}>Pace</Text>
-                    </View>
-                  </View>
+                  <Text style={[styles.summaryStatLabel, { color: palette.muted }]}>walks</Text>
                 </View>
-                {mapPoints.length === 0 ? (
-                  <View style={[styles.mapEmpty, { backgroundColor: colorScheme === 'dark' ? 'rgba(2,6,23,0.35)' : 'rgba(15,23,42,0.06)' }]}>
-                    <FontAwesome name="map" size={18} color={palette.muted} />
-                    <Text style={[styles.helperText, { color: palette.muted }]}>
-                      Start a walk to see the route.
+                <View style={[styles.summaryDivider, { backgroundColor: palette.border }]} />
+                <View style={styles.summaryStatItem}>
+                  <Text style={[styles.summaryStatValue, { color: palette.text }]}>
+                    {formatDistance(weeklyStats.distance)}
+                  </Text>
+                  <Text style={[styles.summaryStatLabel, { color: palette.muted }]}>distance</Text>
+                </View>
+                <View style={[styles.summaryDivider, { backgroundColor: palette.border }]} />
+                <View style={styles.summaryStatItem}>
+                  <Text style={[styles.summaryStatValue, { color: palette.text }]}>
+                    {formatDuration(weeklyStats.duration)}
+                  </Text>
+                  <Text style={[styles.summaryStatLabel, { color: palette.muted }]}>time</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Pending passive walk detection */}
+            {pendingWalk && (
+              <View style={[styles.pendingCard, { backgroundColor: `${Colors.brand.gold}08`, borderColor: Colors.brand.gold }]}>
+                <View style={styles.pendingHeader}>
+                  <View style={[styles.pendingIcon, { backgroundColor: `${Colors.brand.gold}15` }]}>
+                    <FontAwesome name="bell" size={18} color={Colors.brand.gold} />
+                  </View>
+                  <View style={styles.pendingHeaderText}>
+                    <Text style={[styles.pendingTitle, { color: palette.text }]}>Walk detected</Text>
+                    <Text style={[styles.pendingMeta, { color: palette.muted }]}>
+                      {pendingDistanceLabel} · {pendingDurationLabel}
                     </Text>
                   </View>
-                ) : null}
+                </View>
+                <Text style={[styles.pendingDescription, { color: palette.muted }]}>
+                  Choose which dog went with you:
+                </Text>
+                <View style={styles.dogChipRow}>
+                  <Pressable
+                    onPress={() => setPendingDogId(null)}
+                    style={[
+                      styles.dogChip,
+                      {
+                        backgroundColor: !pendingDogId ? `${palette.tint}15` : palette.background,
+                        borderColor: !pendingDogId ? palette.tint : palette.border,
+                      },
+                    ]}
+                  >
+                    <FontAwesome name="home" size={12} color={!pendingDogId ? palette.tint : palette.muted} />
+                    <Text style={[styles.dogChipText, { color: !pendingDogId ? palette.tint : palette.text }]}>
+                      Household
+                    </Text>
+                  </Pressable>
+                  {dogs.map((dog) => (
+                    <Pressable
+                      key={dog.id}
+                      onPress={() => setPendingDogId(dog.id)}
+                      style={[
+                        styles.dogChip,
+                        {
+                          backgroundColor: pendingDogId === dog.id ? `${palette.tint}15` : palette.background,
+                          borderColor: pendingDogId === dog.id ? palette.tint : palette.border,
+                        },
+                      ]}
+                    >
+                      <FontAwesome name="paw" size={12} color={pendingDogId === dog.id ? palette.tint : palette.muted} />
+                      <Text style={[styles.dogChipText, { color: pendingDogId === dog.id ? palette.tint : palette.text }]}>
+                        {dog.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.pendingActions}>
+                  <Pressable
+                    onPress={handleConfirmPending}
+                    disabled={confirmingPending}
+                    style={[styles.confirmButton, { backgroundColor: Colors.brand.gold }]}
+                  >
+                    <FontAwesome name="check" size={14} color="#fff" />
+                    <Text style={styles.confirmButtonText}>
+                      {confirmingPending ? 'Saving...' : 'Confirm walk'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleDismissPending}
+                    disabled={confirmingPending}
+                    style={[styles.dismissButton, { borderColor: palette.border }]}
+                  >
+                    <Text style={[styles.dismissButtonText, { color: palette.muted }]}>Not a walk</Text>
+                  </Pressable>
+                </View>
+                {passiveError && (
+                  <Text style={[styles.errorText, { color: palette.danger }]}>{passiveError}</Text>
+                )}
               </View>
-            </View>
+            )}
 
+            {/* Passive walk detection toggle */}
+            <Pressable
+              onPress={() => handlePassiveToggle(!passiveEnabled)}
+              style={[styles.passiveToggleCard, { backgroundColor: palette.card, borderColor: palette.border }]}
+            >
+              <View style={[styles.passiveIcon, { backgroundColor: passiveEnabled ? `${Colors.brand.mint}15` : `${palette.muted}15` }]}>
+                <FontAwesome name="magic" size={16} color={passiveEnabled ? Colors.brand.mint : palette.muted} />
+              </View>
+              <View style={styles.passiveContent}>
+                <Text style={[styles.passiveTitle, { color: palette.text }]}>Auto-detect walks</Text>
+                <Text style={[styles.passiveDescription, { color: palette.muted }]}>
+                  Detects walking pace and prompts to confirm
+                </Text>
+              </View>
+              <View style={[styles.toggleIndicator, { backgroundColor: passiveEnabled ? Colors.brand.mint : palette.border }]}>
+                <View style={[styles.toggleDot, { transform: [{ translateX: passiveEnabled ? 14 : 0 }] }]} />
+              </View>
+            </Pressable>
+            {passiveError && !pendingWalk && (
+              <Text style={[styles.errorText, { color: palette.danger }]}>{passiveError}</Text>
+            )}
+
+            {/* Walk stats and controls using extracted component */}
+            <WalkStatsCard
+              state={tracking.state}
+              distanceLabel={distanceLabel}
+              durationLabel={durationLabel}
+              paceLabel={paceLabel}
+              error={tracking.error}
+              dogs={dogs}
+              selectedDogId={selectedDogId}
+              onSelectDog={setSelectedDogId}
+              onStart={tracking.start}
+              onPause={tracking.pause}
+              onResume={tracking.resume}
+              onFinish={handleFinish}
+            />
+
+            {/* Route map using extracted component */}
+            <WalkMapView
+              points={mapPoints}
+              isTracking={tracking.state !== 'idle'}
+              trackingState={tracking.state}
+              distanceLabel={distanceLabel}
+              durationLabel={durationLabel}
+              paceLabel={paceLabel}
+              dogLabel={activeDogLabel}
+              dateLabel={activeDateLabel}
+            />
+
+            {/* Recent walks section */}
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: palette.text }]}>Recent walks</Text>
-              <Pressable onPress={loadWalks}>
-                <Text style={[styles.helperText, { color: palette.tint }]}>Refresh</Text>
+              <View style={styles.sectionHeaderLeft}>
+                <FontAwesome name="history" size={14} color={palette.muted} />
+                <Text style={[styles.sectionTitle, { color: palette.text }]}>Recent walks</Text>
+              </View>
+              <Pressable onPress={loadWalks} style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
+                <FontAwesome name="refresh" size={14} color={palette.tint} />
               </Pressable>
             </View>
 
             {loading ? (
-              <View style={styles.inlineRow}>
+              <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color={palette.tint} />
-                <Text style={[styles.helperText, { color: palette.muted }]}>Loading walks...</Text>
+                <Text style={[styles.loadingText, { color: palette.muted }]}>Loading walks...</Text>
               </View>
             ) : walks.length === 0 ? (
-              <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                <Text style={[styles.helperText, { color: palette.muted }]}>
-                  No walks logged yet. Start one to build your history.
+              <View style={[styles.emptyCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                <View style={[styles.emptyIcon, { backgroundColor: `${palette.muted}15` }]}>
+                  <FontAwesome name="road" size={24} color={palette.muted} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: palette.text }]}>No walks yet</Text>
+                <Text style={[styles.emptySubtitle, { color: palette.muted }]}>
+                  Start tracking to build your walk history
                 </Text>
               </View>
             ) : (
-              walks.map((walk) => {
-                const dogLabel = walk.dogName ?? 'Household';
-                const dateLabel = new Date(walk.startedAt).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                });
-                return (
-                  <Pressable
-                    key={walk.id}
-                    onPress={() => setSelectedWalkId(walk.id)}
-                    style={[
-                      styles.walkCard,
-                      {
-                        backgroundColor: palette.card,
-                        borderColor: walk.id === selectedWalk?.id ? palette.tint : palette.border,
-                      },
-                    ]}
-                  >
-                    <View style={styles.walkHeader}>
-                      <Text style={[styles.walkTitle, { color: palette.text }]}>{dateLabel}</Text>
-                      <Text style={[styles.helperText, { color: palette.muted }]}>{dogLabel}</Text>
-                    </View>
-                    <View style={styles.walkMetaRow}>
-                      <Text style={[styles.helperText, { color: palette.muted }]}>
-                        {formatDistance(walk.distanceMeters)} • {formatDuration(walk.durationSeconds)}
-                      </Text>
-                      <Pressable onPress={() => handleDeleteWalk(walk)}>
-                        <Text style={[styles.helperText, { color: palette.danger }]}>Delete</Text>
+              <View style={styles.walksList}>
+                {walks.map((walk) => {
+                  const isSelected = walk.id === selectedWalk?.id;
+                  const dogLabel = walk.dogName ?? 'Household';
+                  const dateLabel = new Date(walk.startedAt).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  });
+                  const timeLabel = new Date(walk.startedAt).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  });
+                  return (
+                    <Pressable
+                      key={walk.id}
+                      onPress={() => setSelectedWalkId(walk.id)}
+                      style={({ pressed }) => [
+                        styles.walkCard,
+                        {
+                          backgroundColor: isSelected ? `${palette.tint}08` : palette.card,
+                          borderColor: isSelected ? palette.tint : palette.border,
+                        },
+                        pressed && { opacity: 0.8 },
+                      ]}
+                    >
+                      <View style={[styles.walkIcon, { backgroundColor: isSelected ? `${palette.tint}15` : `${palette.muted}15` }]}>
+                        <FontAwesome name="map-marker" size={16} color={isSelected ? palette.tint : palette.muted} />
+                      </View>
+                      <View style={styles.walkContent}>
+                        <View style={styles.walkTopRow}>
+                          <Text style={[styles.walkDate, { color: palette.text }]}>{dateLabel}</Text>
+                          <Text style={[styles.walkTime, { color: palette.muted }]}>{timeLabel}</Text>
+                        </View>
+                        <View style={styles.walkBottomRow}>
+                          <View style={styles.walkStatChip}>
+                            <FontAwesome name="arrows-h" size={10} color={palette.muted} />
+                            <Text style={[styles.walkStatText, { color: palette.muted }]}>
+                              {formatDistance(walk.distanceMeters)}
+                            </Text>
+                          </View>
+                          <View style={styles.walkStatChip}>
+                            <FontAwesome name="clock-o" size={10} color={palette.muted} />
+                            <Text style={[styles.walkStatText, { color: palette.muted }]}>
+                              {formatDuration(walk.durationSeconds)}
+                            </Text>
+                          </View>
+                          <View style={styles.walkStatChip}>
+                            <FontAwesome name="paw" size={10} color={palette.muted} />
+                            <Text style={[styles.walkStatText, { color: palette.muted }]}>{dogLabel}</Text>
+                          </View>
+                        </View>
+                      </View>
+                      <Pressable
+                        onPress={() => handleDeleteWalk(walk)}
+                        hitSlop={8}
+                        style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.5 }]}
+                      >
+                        <FontAwesome name="trash-o" size={14} color={palette.danger} />
                       </Pressable>
-                    </View>
-                  </Pressable>
-                );
-              })
+                    </Pressable>
+                  );
+                })}
+              </View>
             )}
           </>
         )}
@@ -889,182 +639,307 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   header: {
-    gap: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
-  kicker: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    fontWeight: '600',
+  headerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerText: {
+    flex: 1,
+    gap: 4,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
   },
-  card: {
+  premiumGate: {
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    gap: 14,
   },
-  mapCard: {
+  premiumIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  premiumSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  summaryCard: {
     borderWidth: 1,
     borderRadius: 18,
     padding: 16,
     gap: 12,
   },
-  mapWrapper: {
-    height: 220,
-    borderRadius: 16,
-    overflow: 'hidden',
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  map: {
-    flex: 1,
-  },
-  routeOverlay: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 12,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-    gap: 4,
-  },
-  routeLabel: {
-    fontSize: 10,
+  summaryLabel: {
+    fontSize: 12,
     textTransform: 'uppercase',
-    letterSpacing: 0.9,
+    letterSpacing: 0.5,
     fontWeight: '600',
   },
-  routeTitle: {
+  summaryStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  summaryStatItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  summaryStatValue: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  summaryStatLabel: {
+    fontSize: 11,
+  },
+  summaryDivider: {
+    width: 1,
+    height: 32,
+    marginHorizontal: 12,
+  },
+  pendingCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 16,
+    gap: 12,
+  },
+  pendingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  pendingIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingHeaderText: {
+    flex: 1,
+    gap: 2,
+  },
+  pendingTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  pendingMeta: {
+    fontSize: 13,
+  },
+  pendingDescription: {
+    fontSize: 13,
+  },
+  dogChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  dogChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  dogChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  pendingActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  confirmButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    flex: 1,
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dismissButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+  dismissButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  passiveToggleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+  },
+  passiveIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  passiveContent: {
+    flex: 1,
+    gap: 2,
+  },
+  passiveTitle: {
     fontSize: 15,
     fontWeight: '600',
   },
-  routeMeta: {
+  passiveDescription: {
     fontSize: 12,
   },
-  routeStats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 6,
-  },
-  routeStat: {
-    flex: 1,
-    minWidth: 90,
-    gap: 2,
-  },
-  routeStatValue: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  routeStatLabel: {
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  mapEmpty: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    alignItems: 'center',
+  toggleIndicator: {
+    width: 40,
+    height: 24,
+    borderRadius: 12,
+    padding: 2,
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.04)',
+  },
+  toggleDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
   },
-  helperText: {
-    fontSize: 12,
-  },
-  fieldLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  chipRow: {
+  loadingRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    minWidth: 90,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: 'rgba(15, 23, 42, 0.04)',
-    gap: 4,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  statLabel: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 10,
-    alignItems: 'center',
+    paddingVertical: 20,
   },
-  inlineRow: {
-    flexDirection: 'row',
+  loadingText: {
+    fontSize: 13,
+  },
+  emptyCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 24,
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  walksList: {
+    gap: 10,
   },
   walkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     borderWidth: 1,
     borderRadius: 16,
     padding: 14,
+  },
+  walkIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walkContent: {
+    flex: 1,
     gap: 6,
   },
-  walkHeader: {
+  walkTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  walkTitle: {
-    fontSize: 15,
+  walkDate: {
+    fontSize: 14,
     fontWeight: '600',
   },
-  walkMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  walkTime: {
+    fontSize: 12,
   },
-  sectionHeader: {
+  walkBottomRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
   },
-  liveBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  walkStatChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  liveBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
+  walkStatText: {
+    fontSize: 12,
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  errorText: {
+    fontSize: 12,
   },
 });

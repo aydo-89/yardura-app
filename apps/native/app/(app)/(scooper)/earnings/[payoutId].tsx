@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import Button from '@/components/ui/Button';
 import Screen from '@/components/ui/Screen';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -16,6 +17,8 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiRequest } from '@/lib/api/client';
 import type { ScooperPayoutDetail } from '@/lib/api/types';
 import { parseDateInput } from '@/lib/dates';
+
+type BreakdownIcon = 'money' | 'star' | 'car' | 'shield' | 'heart' | 'exchange';
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pending',
@@ -69,162 +72,175 @@ export default function ScooperPayoutDetailScreen() {
   const breakdownRows = useMemo(() => {
     if (!detail) return [];
     return [
-      { label: 'Base payout', value: detail.baseAmountCents },
-      { label: 'Bonus', value: detail.bonusAmountCents },
-      { label: 'Mileage', value: detail.mileageAmountCents },
-      { label: 'PPE', value: detail.ppeAmountCents },
-      { label: 'Tips', value: detail.tipsAmountCents },
-      { label: 'Adjustments', value: detail.adjustmentsCents },
-    ];
-  }, [detail]);
+      { label: 'Base payout', value: detail.baseAmountCents, icon: 'money' as BreakdownIcon, color: palette.tint },
+      { label: 'Bonus', value: detail.bonusAmountCents, icon: 'star' as BreakdownIcon, color: Colors.brand.gold },
+      { label: 'Mileage', value: detail.mileageAmountCents, icon: 'car' as BreakdownIcon, color: palette.muted },
+      { label: 'PPE', value: detail.ppeAmountCents, icon: 'shield' as BreakdownIcon, color: palette.muted },
+      { label: 'Tips', value: detail.tipsAmountCents, icon: 'heart' as BreakdownIcon, color: Colors.brand.mint },
+      { label: 'Adjustments', value: detail.adjustmentsCents, icon: 'exchange' as BreakdownIcon, color: palette.muted },
+    ].filter((row) => row.value !== 0);
+  }, [detail, palette.tint, palette.muted]);
 
   const statusLabel = detail
     ? STATUS_LABELS[detail.status] ?? detail.status
     : null;
   const visitDate = detail?.serviceVisit?.scheduledDate
-    ? parseDateInput(detail.serviceVisit.scheduledDate).toLocaleDateString()
+    ? parseDateInput(detail.serviceVisit.scheduledDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      })
     : null;
+
+  const resolveStatusTone = (status: string) => {
+    switch (status) {
+      case 'READY':
+        return { bg: Colors.brand.mint, text: '#FFFFFF' };
+      case 'PENDING':
+      case 'PENDING_REVIEW':
+        return { bg: Colors.brand.gold, text: Colors.brand.graphite };
+      case 'RELEASED':
+      case 'CLEARED':
+        return { bg: palette.tint, text: '#FFFFFF' };
+      case 'CANCELLED':
+        return { bg: palette.danger, text: '#FFFFFF' };
+      default:
+        return { bg: palette.tint, text: '#FFFFFF' };
+    }
+  };
+
+  const statusTone = detail ? resolveStatusTone(detail.status) : null;
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.pageHeader}>
-          <Button title="Back to earnings" onPress={() => router.back()} variant="ghost" />
-          <Text style={[styles.kicker, { color: palette.muted }]}>Payout details</Text>
-          <Text style={[styles.title, { color: palette.text }]}>Payment breakdown</Text>
-          <Text style={[styles.subtitle, { color: palette.muted }]}>
-            Review the exact payout components for this visit.
-          </Text>
-        </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Header with back button */}
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <FontAwesome name="chevron-left" size={14} color={palette.tint} />
+          <Text style={[styles.backText, { color: palette.tint }]}>Earnings</Text>
+        </Pressable>
 
         {loading ? (
-          <View style={styles.inlineRow}>
-            <ActivityIndicator size="small" color={palette.tint} />
-            <Text style={[styles.cardBody, { color: palette.muted }]}>Loading payout...</Text>
+          <View style={styles.loadingState}>
+            <ActivityIndicator size="large" color={palette.tint} />
+            <Text style={[styles.loadingText, { color: palette.muted }]}>Loading payout...</Text>
           </View>
         ) : error ? (
-          <Text style={[styles.cardBody, { color: palette.danger }]}>{error}</Text>
+          <View style={[styles.errorCard, { backgroundColor: `${palette.danger}15`, borderColor: palette.danger }]}>
+            <FontAwesome name="exclamation-circle" size={20} color={palette.danger} />
+            <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
+          </View>
         ) : detail ? (
           <>
-            <View
-              style={[
-                styles.card,
-                cardShadowStyle,
-                { backgroundColor: palette.card, borderColor: cardBorder },
-              ]}
-            >
-              <View style={styles.rowBetween}>
-                <View>
-                  <Text style={[styles.cardTitle, { color: palette.text }]}>
+            {/* Hero Card with Total */}
+            <View style={[styles.heroCard, cardShadowStyle, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+              <View style={[styles.heroGlow, { backgroundColor: palette.tint }]} />
+              <View style={styles.heroHeader}>
+                <View style={styles.heroMeta}>
+                  <Text style={[styles.heroCustomer, { color: palette.text }]}>
                     {detail.serviceVisit?.customer?.name ?? 'Customer'}
                   </Text>
                   {visitDate ? (
-                    <Text style={[styles.cardBody, { color: palette.muted }]}>{visitDate}</Text>
+                    <Text style={[styles.heroDate, { color: palette.muted }]}>{visitDate}</Text>
                   ) : null}
                 </View>
-                {statusLabel ? (
-                  <View style={[styles.statusPill, { backgroundColor: palette.tint }]}>
-                    <Text style={styles.statusPillText}>{statusLabel}</Text>
+                {statusLabel && statusTone ? (
+                  <View style={[styles.statusPill, { backgroundColor: statusTone.bg }]}>
+                    <Text style={[styles.statusPillText, { color: statusTone.text }]}>{statusLabel}</Text>
                   </View>
                 ) : null}
               </View>
-              <Text style={[styles.amountText, { color: palette.text }]}>
+              <Text style={[styles.heroAmount, { color: palette.text }]}>
                 {formatCents(detail.totalAmountCents)}
               </Text>
-              <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                Generated {new Date(detail.generatedAt).toLocaleString()}
+              <Text style={[styles.heroGenerated, { color: palette.muted }]}>
+                Generated {new Date(detail.generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </Text>
             </View>
 
-            <View
-              style={[
-                styles.card,
-                cardShadowStyle,
-                { backgroundColor: palette.card, borderColor: cardBorder },
-              ]}
-            >
-              <Text style={[styles.cardTitle, { color: palette.text }]}>Breakdown</Text>
+            {/* Breakdown Card */}
+            <View style={[styles.breakdownCard, cardShadowStyle, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+              <Text style={[styles.sectionTitle, { color: palette.text }]}>Breakdown</Text>
               {breakdownRows.map((row) => (
-                <View key={row.label} style={styles.rowBetween}>
-                  <Text style={[styles.cardBody, { color: palette.text }]}>{row.label}</Text>
-                  <Text style={[styles.cardBody, { color: palette.text }]}>
-                    {formatCents(row.value)}
+                <View key={row.label} style={styles.breakdownRow}>
+                  <View style={styles.breakdownLabel}>
+                    <View style={[styles.breakdownIcon, { backgroundColor: `${row.color}15` }]}>
+                      <FontAwesome name={row.icon} size={12} color={row.color} />
+                    </View>
+                    <Text style={[styles.breakdownText, { color: palette.text }]}>{row.label}</Text>
+                  </View>
+                  <Text style={[styles.breakdownValue, { color: row.value > 0 ? Colors.brand.mint : palette.text }]}>
+                    {row.value > 0 ? '+' : ''}{formatCents(row.value)}
                   </Text>
                 </View>
               ))}
               <View style={[styles.totalRow, { borderTopColor: palette.border }]}>
-                <Text style={[styles.totalLabel, { color: palette.text }]}>Total</Text>
+                <Text style={[styles.totalLabel, { color: palette.text }]}>Total earned</Text>
                 <Text style={[styles.totalValue, { color: palette.text }]}>
                   {formatCents(detail.totalAmountCents)}
                 </Text>
               </View>
             </View>
 
+            {/* Metrics Card */}
             {(detail.milesDriven || detail.minutesOnSite) ? (
-              <View
-                style={[
-                  styles.card,
-                  cardShadowStyle,
-                  { backgroundColor: palette.card, borderColor: cardBorder },
-                ]}
-              >
-                <Text style={[styles.cardTitle, { color: palette.text }]}>Visit metrics</Text>
+              <View style={[styles.metricsCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
                 {detail.milesDriven ? (
-                  <View style={styles.rowBetween}>
-                    <Text style={[styles.cardBody, { color: palette.text }]}>Miles driven</Text>
-                    <Text style={[styles.cardBody, { color: palette.text }]}>
-                      {detail.milesDriven.toFixed(1)} mi
-                    </Text>
+                  <View style={styles.metricItem}>
+                    <View style={[styles.metricIcon, { backgroundColor: `${palette.tint}15` }]}>
+                      <FontAwesome name="road" size={14} color={palette.tint} />
+                    </View>
+                    <View>
+                      <Text style={[styles.metricValue, { color: palette.text }]}>
+                        {detail.milesDriven.toFixed(1)} mi
+                      </Text>
+                      <Text style={[styles.metricLabel, { color: palette.muted }]}>Driven</Text>
+                    </View>
                   </View>
                 ) : null}
                 {detail.minutesOnSite ? (
-                  <View style={styles.rowBetween}>
-                    <Text style={[styles.cardBody, { color: palette.text }]}>Minutes on site</Text>
-                    <Text style={[styles.cardBody, { color: palette.text }]}>
-                      {detail.minutesOnSite} min
-                    </Text>
+                  <View style={styles.metricItem}>
+                    <View style={[styles.metricIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                      <FontAwesome name="clock-o" size={14} color={Colors.brand.mint} />
+                    </View>
+                    <View>
+                      <Text style={[styles.metricValue, { color: palette.text }]}>
+                        {detail.minutesOnSite} min
+                      </Text>
+                      <Text style={[styles.metricLabel, { color: palette.muted }]}>On site</Text>
+                    </View>
                   </View>
                 ) : null}
               </View>
             ) : null}
 
-            {detail.serviceVisit?.tile || detail.serviceVisit?.customer ? (
-              <View
-                style={[
-                  styles.card,
-                  cardShadowStyle,
-                  { backgroundColor: palette.card, borderColor: cardBorder },
-                ]}
-              >
-                <Text style={[styles.cardTitle, { color: palette.text }]}>Visit info</Text>
-                {detail.serviceVisit?.tile?.name ? (
-                  <Text style={[styles.cardBody, { color: palette.muted }]}>
-                    Tile: {detail.serviceVisit.tile.name}
-                  </Text>
-                ) : null}
-                {detail.serviceVisit?.customer?.addressLine1 ? (
-                  <Text style={[styles.cardBody, { color: palette.muted }]}>
-                    {detail.serviceVisit.customer.addressLine1}
-                    {detail.serviceVisit.customer.city
-                      ? `, ${detail.serviceVisit.customer.city}`
-                      : ''}
-                  </Text>
-                ) : null}
+            {/* Visit Info Card */}
+            {(detail.serviceVisit?.tile || detail.serviceVisit?.customer?.addressLine1) ? (
+              <View style={[styles.infoCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+                <View style={[styles.infoIcon, { backgroundColor: `${palette.muted}20` }]}>
+                  <FontAwesome name="map-marker" size={14} color={palette.muted} />
+                </View>
+                <View style={styles.infoCopy}>
+                  {detail.serviceVisit?.tile?.name ? (
+                    <Text style={[styles.infoTitle, { color: palette.text }]}>
+                      {detail.serviceVisit.tile.name}
+                    </Text>
+                  ) : null}
+                  {detail.serviceVisit?.customer?.addressLine1 ? (
+                    <Text style={[styles.infoSubtitle, { color: palette.muted }]}>
+                      {detail.serviceVisit.customer.addressLine1}
+                      {detail.serviceVisit.customer.city ? `, ${detail.serviceVisit.customer.city}` : ''}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             ) : null}
 
+            {/* Notes Card */}
             {detail.notes ? (
-              <View
-                style={[
-                  styles.card,
-                  cardShadowStyle,
-                  { backgroundColor: palette.card, borderColor: cardBorder },
-                ]}
-              >
-                <Text style={[styles.cardTitle, { color: palette.text }]}>Notes</Text>
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  {detail.notes}
-                </Text>
+              <View style={[styles.notesCard, { backgroundColor: `${palette.tint}08`, borderColor: palette.border }]}>
+                <FontAwesome name="file-text-o" size={14} color={palette.muted} />
+                <Text style={[styles.notesText, { color: palette.muted }]}>{detail.notes}</Text>
               </View>
             ) : null}
           </>
@@ -235,29 +251,210 @@ export default function ScooperPayoutDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  pageHeader: {
-    marginBottom: 18,
+  scrollContent: {
+    paddingBottom: 32,
+    gap: 14,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
   },
-  kicker: {
-    fontSize: 12,
+  backText: {
+    fontSize: 14,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 60,
   },
-  subtitle: {
+  loadingText: {
     fontSize: 14,
   },
-  card: {
-    borderRadius: 20,
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+  },
+  heroCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 18,
+    gap: 8,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  heroGlow: {
+    position: 'absolute',
+    top: -50,
+    right: -40,
+    width: 150,
+    height: 150,
+    borderRadius: 150,
+    opacity: 0.12,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  heroMeta: {
+    flex: 1,
+    gap: 4,
+  },
+  heroCustomer: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  heroDate: {
+    fontSize: 13,
+  },
+  heroAmount: {
+    fontSize: 36,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+  heroGenerated: {
+    fontSize: 12,
+  },
+  statusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  breakdownCard: {
+    borderRadius: 18,
     borderWidth: 1,
     padding: 16,
-    marginBottom: 12,
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  breakdownLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
+  },
+  breakdownIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  breakdownText: {
+    fontSize: 14,
+  },
+  breakdownValue: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  totalRow: {
+    borderTopWidth: 1,
+    marginTop: 4,
+    paddingTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  metricsCard: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 24,
+  },
+  metricItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  metricIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  metricLabel: {
+    fontSize: 11,
+  },
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+  },
+  infoIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  infoSubtitle: {
+    fontSize: 12,
+  },
+  notesCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  notesText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
   },
   cardShadow: {
     shadowColor: '#0F172A',
@@ -272,60 +469,5 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 10 },
     elevation: 6,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cardBody: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  cardMeta: {
-    fontSize: 12,
-  },
-  inlineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  statusPill: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  amountText: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  totalRow: {
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    marginTop: 4,
-    paddingTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  totalLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  totalValue: {
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

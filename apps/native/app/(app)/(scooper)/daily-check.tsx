@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { CameraType } from 'expo-image-picker';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Button from '@/components/ui/Button';
 import Screen from '@/components/ui/Screen';
@@ -95,6 +96,19 @@ const HAUL_AWAY_ITEM = {
 
 type ChecklistKey = (typeof BASE_CHECKLIST_ITEMS)[number]['key'] | typeof HAUL_AWAY_ITEM.key;
 type ChecklistItem = (typeof BASE_CHECKLIST_ITEMS)[number] | typeof HAUL_AWAY_ITEM;
+
+const CHECKLIST_ICONS: Record<ChecklistKey, string> = {
+  uniform: 'id-badge',
+  scooperKit: 'trash',
+  mount: 'mobile',
+  remote: 'bluetooth',
+  glovesReady: 'hand-paper-o',
+  sanitizer: 'tint',
+  deodorizer: 'leaf',
+  deodorizerSprayer: 'shower',
+  bags: 'shopping-bag',
+  haulAwayContainer: 'cube',
+};
 
 const buildChecklistDefaults = (items: ChecklistItem[]) =>
   items.reduce(
@@ -324,85 +338,87 @@ export default function DailyCheckScreen() {
     }
   };
 
+  const cardBorder = colorScheme === 'dark' ? '#233045' : palette.border;
+  const cardShadowStyle = colorScheme === 'dark' ? styles.cardShadowDark : styles.cardShadow;
+
   return (
     <Screen padded={false} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.title, { color: palette.text }]}>Daily check-in</Text>
-        <Text style={[styles.subtitle, { color: palette.muted }]}>
-          {isOffDay
-            ? 'No stops today. Check-ins are optional unless you want to run a prep check.'
-            : 'Confirm your gear and take a quick selfie before starting routes.'}
-        </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <FontAwesome name="chevron-left" size={14} color={palette.tint} />
+            <Text style={[styles.backText, { color: palette.tint }]}>Jobs</Text>
+          </Pressable>
+          <Text style={[styles.title, { color: palette.text }]}>Daily Check-in</Text>
+        </View>
 
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-          <View style={styles.rewardHeader}>
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Check-in rewards</Text>
-            <View style={[styles.rewardBadge, { backgroundColor: Colors.brand.mint }]}>
-              <Text style={styles.rewardBadgeLabel}>Daily</Text>
-            </View>
-          </View>
-          {rewardLoading ? (
-            <Text style={[styles.cardBody, { color: palette.muted }]}>Loading rewards...</Text>
-          ) : rewardContext ? (
-            <View style={styles.rewardContent}>
-              <Text style={[styles.rewardHeadline, { color: Colors.brand.mint }]}>
-                Earn {rewardContext.pointsPreview.totalPoints} points today
+        {/* Progress Hero */}
+        <View style={[styles.heroCard, cardShadowStyle, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+          <View style={styles.heroContent}>
+            <View style={styles.heroLeft}>
+              <Text style={[styles.heroKicker, { color: palette.muted }]}>
+                {isOffDay ? 'Optional today' : 'Required'}
               </Text>
-              <Text style={[styles.cardBody, { color: palette.muted }]}>
-                {isOffDay && !prepCheckEnabled
-                  ? 'Run a prep check today to keep your streak and earn points.'
-                  : `Base ${rewardContext.pointsPreview.basePoints} + streak bonus ${
-                      rewardContext.pointsPreview.streakBonus
-                    }${
-                      rewardContext.pointsPreview.milestoneBonus > 0
-                        ? ` + milestone ${rewardContext.pointsPreview.milestoneBonus}`
-                        : ''
-                    }`}
+              <Text style={[styles.heroTitle, { color: palette.text }]}>
+                {checklistComplete ? 'Checklist complete' : `${completedCount} of ${totalSteps} ready`}
               </Text>
-              {!isOffDay || prepCheckEnabled ? (
-                <>
-                  <Text style={[styles.cardBody, { color: palette.muted }]}>
-                    Redeem points for Amazon gift cards.
+              {rewardContext && (!isOffDay || prepCheckEnabled) ? (
+                <View style={[styles.pointsChip, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                  <FontAwesome name="star" size={12} color={Colors.brand.mint} />
+                  <Text style={[styles.pointsChipText, { color: Colors.brand.mint }]}>
+                    +{rewardContext.pointsPreview.totalPoints} pts
                   </Text>
-                  <View style={styles.rewardMetrics}>
-                    <View style={[styles.rewardMetricCard, { backgroundColor: palette.background, borderColor: palette.border }]}>
-                      <Text style={[styles.rewardMetricLabel, { color: palette.muted }]}>Streak</Text>
-                      <Text style={[styles.rewardMetricValue, { color: palette.text }]}>
-                        {rewardContext.streakIfSubmit} days
-                      </Text>
-                    </View>
-                    <View style={[styles.rewardMetricCard, { backgroundColor: palette.background, borderColor: palette.border }]}>
-                      <Text style={[styles.rewardMetricLabel, { color: palette.muted }]}>Total points</Text>
-                      <Text style={[styles.rewardMetricValue, { color: palette.text }]}>
-                        {rewardContext.pointsBalance}
-                      </Text>
-                    </View>
-                  </View>
-                  {rewardContext.nextMilestone ? (
-                    <Text style={[styles.cardBody, { color: palette.muted }]}>
-                      Next bonus at {rewardContext.nextMilestone.days}-day streak (
-                      +{rewardContext.nextMilestone.bonusPoints}).
-                    </Text>
-                  ) : null}
-                  {rewardContext.lastPointsAwarded !== null ? (
-                    <Text style={[styles.cardBody, { color: palette.muted }]}>
-                      Last check-in earned {rewardContext.lastPointsAwarded} points.
-                    </Text>
-                  ) : null}
-                  <Button
-                    title="View rewards"
-                    variant="secondary"
-                    onPress={() => router.push('/(app)/(scooper)/rewards')}
-                  />
-                </>
+                </View>
               ) : null}
             </View>
-          ) : (
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Rewards appear after your first check-in.
-            </Text>
-          )}
+            <View style={[styles.progressCircle, { borderColor: checklistComplete ? Colors.brand.mint : palette.border }]}>
+              <Text style={[styles.progressCircleText, { color: checklistComplete ? Colors.brand.mint : palette.text }]}>
+                {progressPercent}%
+              </Text>
+            </View>
+          </View>
         </View>
+
+        {/* Stats Row */}
+        {rewardContext ? (
+          <View style={styles.statsRow}>
+            <Pressable
+              onPress={() => router.push('/(app)/(scooper)/rewards')}
+              style={({ pressed }) => [
+                styles.statCard,
+                { backgroundColor: palette.card, borderColor: cardBorder },
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <View style={[styles.statIcon, { backgroundColor: `${Colors.brand.gold}15` }]}>
+                <FontAwesome name="star" size={14} color={Colors.brand.gold} />
+              </View>
+              <Text style={[styles.statValue, { color: palette.text }]}>
+                {rewardContext.pointsBalance}
+              </Text>
+              <Text style={[styles.statLabel, { color: palette.muted }]}>Points</Text>
+            </Pressable>
+            <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+              <View style={[styles.statIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                <FontAwesome name="fire" size={14} color={Colors.brand.mint} />
+              </View>
+              <Text style={[styles.statValue, { color: Colors.brand.mint }]}>
+                {rewardContext.streakIfSubmit}
+              </Text>
+              <Text style={[styles.statLabel, { color: palette.muted }]}>Streak</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+              <View style={[styles.statIcon, { backgroundColor: `${palette.tint}15` }]}>
+                <FontAwesome name="plus" size={14} color={palette.tint} />
+              </View>
+              <Text style={[styles.statValue, { color: palette.tint }]}>
+                +{rewardContext.pointsPreview.totalPoints}
+              </Text>
+              <Text style={[styles.statLabel, { color: palette.muted }]}>Today</Text>
+            </View>
+          </View>
+        ) : null}
 
         {isOffDay && !prepCheckEnabled ? (
           <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
@@ -425,93 +441,160 @@ export default function DailyCheckScreen() {
         ) : null}
 
         {showChecklist ? (
-          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-          <View style={styles.checklistHeader}>
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Gear checklist</Text>
-            <Text style={[styles.checklistCount, { color: palette.muted }]}>
-              {completedCount}/{totalSteps} ready
-            </Text>
-          </View>
-          <View style={[styles.progressTrack, { backgroundColor: palette.border }]}>
-            <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: palette.tint }]} />
-          </View>
-
-          {currentStep >= totalSteps ? (
-            <View style={[styles.stepCard, { backgroundColor: palette.background, borderColor: palette.border }]}>
-              <Text style={[styles.stepTitle, { color: palette.text }]}>
-                Checklist complete
-              </Text>
-              <Text style={[styles.checkDescription, { color: palette.muted }]}>
-                Nice work. You're ready for your routes.
-              </Text>
-              <Button title="Edit checklist" variant="ghost" onPress={handleEditChecklist} />
+          <View style={[styles.card, cardShadowStyle, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+            <View style={styles.checklistHeader}>
+              <Text style={[styles.cardTitle, { color: palette.text }]}>Gear checklist</Text>
+              <View style={[styles.checklistBadge, { backgroundColor: `${palette.tint}15` }]}>
+                <Text style={[styles.checklistBadgeText, { color: palette.tint }]}>
+                  {completedCount}/{totalSteps}
+                </Text>
+              </View>
             </View>
-          ) : (
-            <View style={[styles.stepCard, { backgroundColor: palette.background, borderColor: palette.border }]}>
-              <Text style={[styles.stepLabel, { color: palette.muted }]}>
-                Step {currentStep + 1} of {totalSteps}
-              </Text>
-              <Text style={[styles.stepTitle, { color: palette.text }]}>{currentItem.label}</Text>
-              <Text style={[styles.checkDescription, { color: palette.muted }]}>
-                {currentItem.description}
-              </Text>
 
-              {currentMissing ? (
-                <View style={[styles.missingBox, { borderColor: palette.border, backgroundColor: palette.card }]}>
-                  <Text style={[styles.missingTitle, { color: palette.text }]}>Restock needed</Text>
-                  <Text style={[styles.missingText, { color: palette.text }]}>
-                    {currentItem.fallback ?? 'Restock before continuing.'}
-                  </Text>
-                  <Button title="I've restocked" onPress={handleRestocked} />
-                </View>
-              ) : (
-                <View style={styles.stepActions}>
-                  <Button title="I have this" onPress={handleConfirmReady} />
-                  <Button title="I don't have this" variant="secondary" onPress={handleMissing} />
-                </View>
-              )}
-
-              {currentStep > 0 ? (
-                <View style={styles.stepFooter}>
-                  <Button title="Back" variant="ghost" onPress={handleBack} />
-                </View>
-              ) : null}
+            {/* Mini progress dots */}
+            <View style={styles.progressDots}>
+              {checklistItems.map((item, idx) => (
+                <View
+                  key={item.key}
+                  style={[
+                    styles.progressDot,
+                    {
+                      backgroundColor: checklist[item.key]
+                        ? Colors.brand.mint
+                        : idx === currentStep
+                          ? palette.tint
+                          : palette.border,
+                    },
+                  ]}
+                />
+              ))}
             </View>
-          )}
-        </View>
+
+            {currentStep >= totalSteps ? (
+              <View style={[styles.stepCard, { backgroundColor: `${Colors.brand.mint}10`, borderColor: Colors.brand.mint }]}>
+                <View style={styles.stepHeaderRow}>
+                  <View style={[styles.stepIcon, { backgroundColor: `${Colors.brand.mint}20` }]}>
+                    <FontAwesome name="check" size={18} color={Colors.brand.mint} />
+                  </View>
+                  <View style={styles.stepHeaderText}>
+                    <Text style={[styles.stepTitle, { color: palette.text }]}>All set</Text>
+                    <Text style={[styles.checkDescription, { color: palette.muted }]}>
+                      You're ready for your routes
+                    </Text>
+                  </View>
+                </View>
+                <Pressable onPress={handleEditChecklist} style={styles.editLink}>
+                  <FontAwesome name="pencil" size={12} color={palette.tint} />
+                  <Text style={[styles.editLinkText, { color: palette.tint }]}>Review checklist</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={[styles.stepCard, { backgroundColor: palette.background, borderColor: palette.border }]}>
+                <View style={styles.stepHeaderRow}>
+                  <View style={[styles.stepIcon, { backgroundColor: `${palette.tint}15` }]}>
+                    <FontAwesome
+                      name={CHECKLIST_ICONS[currentItem.key] as any}
+                      size={18}
+                      color={palette.tint}
+                    />
+                  </View>
+                  <View style={styles.stepHeaderText}>
+                    <Text style={[styles.stepLabel, { color: palette.muted }]}>
+                      {currentStep + 1} of {totalSteps}
+                    </Text>
+                    <Text style={[styles.stepTitle, { color: palette.text }]}>{currentItem.label}</Text>
+                  </View>
+                </View>
+                <Text style={[styles.checkDescription, { color: palette.muted }]}>
+                  {currentItem.description}
+                </Text>
+
+                {currentMissing ? (
+                  <View style={[styles.missingBox, { borderColor: palette.danger, backgroundColor: `${palette.danger}10` }]}>
+                    <View style={styles.missingHeader}>
+                      <FontAwesome name="exclamation-circle" size={14} color={palette.danger} />
+                      <Text style={[styles.missingTitle, { color: palette.danger }]}>Restock needed</Text>
+                    </View>
+                    <Text style={[styles.missingText, { color: palette.text }]}>
+                      {currentItem.fallback ?? 'Restock before continuing.'}
+                    </Text>
+                    <Button title="I've restocked" onPress={handleRestocked} />
+                  </View>
+                ) : (
+                  <View style={styles.stepActions}>
+                    <Button title="I have this" onPress={handleConfirmReady} />
+                    <Button title="Missing" variant="secondary" onPress={handleMissing} />
+                  </View>
+                )}
+
+                {currentStep > 0 ? (
+                  <Pressable onPress={handleBack} style={styles.backLink}>
+                    <FontAwesome name="chevron-left" size={10} color={palette.muted} />
+                    <Text style={[styles.backLinkText, { color: palette.muted }]}>Previous item</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            )}
+          </View>
         ) : null}
 
         {showChecklist ? (
           requiresSelfie ? (
-          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Selfie proof</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              Show your InsightScoop hat/hoodie/shirt or branded badge in the selfie so customers can identify you.
-            </Text>
-            {photoPreview ? (
-              <Image source={{ uri: photoPreview }} style={styles.preview} />
-            ) : (
-              <View style={[styles.previewPlaceholder, { borderColor: palette.border }]}>
-                <Text style={[styles.previewLabel, { color: palette.muted }]}>No selfie yet</Text>
+            <View style={[styles.card, cardShadowStyle, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+              <View style={styles.selfieHeader}>
+                <View style={[styles.selfieIcon, { backgroundColor: `${palette.tint}15` }]}>
+                  <FontAwesome name="camera" size={16} color={palette.tint} />
+                </View>
+                <View style={styles.selfieHeaderText}>
+                  <Text style={[styles.cardTitle, { color: palette.text }]}>Selfie proof</Text>
+                  <Text style={[styles.cardBody, { color: palette.muted }]}>
+                    Show your uniform or badge
+                  </Text>
+                </View>
+                {photoPreview ? (
+                  <View style={[styles.selfieBadge, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                    <FontAwesome name="check" size={10} color={Colors.brand.mint} />
+                  </View>
+                ) : null}
               </View>
-            )}
-            <View style={styles.rowWrap}>
-              <Button
-                title={photoPreview ? 'Retake selfie' : 'Capture selfie'}
-                onPress={photoPreview ? handleRetake : handleCapture}
-                variant="primary"
-                style={styles.captureButton}
-              />
+              {photoPreview ? (
+                <View style={styles.previewContainer}>
+                  <Image source={{ uri: photoPreview }} style={styles.preview} />
+                  <Pressable
+                    onPress={handleRetake}
+                    style={[styles.retakeButton, { backgroundColor: palette.card }]}
+                  >
+                    <FontAwesome name="refresh" size={12} color={palette.tint} />
+                    <Text style={[styles.retakeText, { color: palette.tint }]}>Retake</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={handleCapture}
+                  style={[styles.captureArea, { borderColor: palette.border, backgroundColor: palette.background }]}
+                >
+                  <View style={[styles.captureIconCircle, { backgroundColor: `${palette.tint}15` }]}>
+                    <FontAwesome name="camera" size={24} color={palette.tint} />
+                  </View>
+                  <Text style={[styles.captureLabel, { color: palette.text }]}>Tap to capture</Text>
+                  <Text style={[styles.captureHint, { color: palette.muted }]}>Front camera</Text>
+                </Pressable>
+              )}
             </View>
-          </View>
           ) : (
-          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Selfie not required</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              There are no stops today, so a selfie isn&apos;t required. If new visits are added later,
-              you&apos;ll need to check in again with a selfie.
-            </Text>
-          </View>
+            <View style={[styles.card, { backgroundColor: `${palette.muted}10`, borderColor: palette.border }]}>
+              <View style={styles.selfieHeader}>
+                <View style={[styles.selfieIcon, { backgroundColor: `${palette.muted}20` }]}>
+                  <FontAwesome name="camera" size={16} color={palette.muted} />
+                </View>
+                <View style={styles.selfieHeaderText}>
+                  <Text style={[styles.cardTitle, { color: palette.muted }]}>Selfie not required</Text>
+                  <Text style={[styles.cardBody, { color: palette.muted }]}>
+                    No stops scheduled today
+                  </Text>
+                </View>
+              </View>
+            </View>
           )
         ) : null}
 
@@ -548,11 +631,119 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     paddingBottom: 32,
+    gap: 14,
+  },
+  header: {
+    paddingTop: 8,
+    gap: 4,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+  },
+  backText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: 8,
+  },
+  heroCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 18,
+  },
+  heroContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  heroLeft: {
+    flex: 1,
+    gap: 6,
+  },
+  heroKicker: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  heroTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  pointsChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    marginTop: 4,
+  },
+  pointsChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  progressCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressCircleText: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  cardShadow: {
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
+  cardShadowDark: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
   subtitle: {
     fontSize: 14,
@@ -564,7 +755,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
     gap: 12,
-    marginBottom: 16,
   },
   cardTitle: {
     fontSize: 16,
@@ -620,28 +810,79 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 4,
   },
-  preview: {
-    width: '100%',
-    height: 220,
-    borderRadius: 16,
+  selfieHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  previewPlaceholder: {
-    height: 220,
-    borderWidth: 1,
-    borderRadius: 16,
+  selfieIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  previewLabel: {
+  selfieHeaderText: {
+    flex: 1,
+    gap: 2,
+  },
+  selfieBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewContainer: {
+    position: 'relative',
+  },
+  preview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 14,
+  },
+  retakeButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  retakeText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  captureArea: {
+    height: 160,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  captureIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  captureLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  captureHint: {
     fontSize: 12,
   },
   rowWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-  },
-  captureButton: {
-    flex: 1,
   },
   checkDescription: {
     fontSize: 12,
@@ -650,26 +891,48 @@ const styles = StyleSheet.create({
   checklistHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
-  checklistCount: {
+  checklistBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  checklistBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  progressTrack: {
-    height: 6,
-    borderRadius: 999,
-    overflow: 'hidden',
+  progressDots: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
   },
-  progressFill: {
-    height: 6,
-    borderRadius: 999,
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   stepCard: {
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
-    gap: 10,
+    gap: 12,
+  },
+  stepHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stepIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepHeaderText: {
+    flex: 1,
+    gap: 2,
   },
   stepLabel: {
     fontSize: 11,
@@ -677,28 +940,52 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   stepTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
   },
   stepActions: {
     gap: 8,
   },
-  stepFooter: {
-    alignItems: 'flex-start',
+  editLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+  },
+  editLinkText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  backLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingTop: 4,
+  },
+  backLinkText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
   missingBox: {
     borderWidth: 1,
     borderRadius: 14,
     padding: 12,
+    gap: 10,
+  },
+  missingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   missingTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
   missingText: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
   },
   errorText: {
     fontSize: 12,

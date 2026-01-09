@@ -62,6 +62,7 @@ const statusMessages: Record<string, string> = {
   already_paid: "This request is already marked as paid.",
   invalid_status: "This request is not in a payable state.",
   release_failed: "Release failed. Please retry or check server logs.",
+  insufficient_funds: "Insufficient funds in Stripe. Add funds or wait for payments to settle.",
 };
 
 function formatMoney(cents: number) {
@@ -141,6 +142,17 @@ export default function AdminPayoutRequestsPage() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
+        
+        // Special handling for insufficient funds - show more context
+        if (payload?.error === "insufficient_funds") {
+          const amount = payload.amountCents ? `$${(payload.amountCents / 100).toFixed(2)}` : "";
+          toast.error(
+            `Insufficient Stripe funds${amount ? ` to pay ${amount}` : ""}. Check your Stripe balance or wait for pending payments to settle.`,
+            { duration: 8000 }
+          );
+          return;
+        }
+        
         const message = payload?.error ? statusMessages[payload.error] ?? payload.error : "Request failed";
         toast.error(message);
         return;

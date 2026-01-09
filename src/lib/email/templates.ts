@@ -7,7 +7,6 @@ import type { BillingPreference } from "@/lib/billing/types";
 import type { PricingData } from "@/types/quote";
 import {
   renderRadialGauge,
-  renderBristolScale,
   renderHorizontalBars,
   renderDonutChart,
   renderActivityDots,
@@ -1188,19 +1187,25 @@ export interface CustomerEmailReportEmailOptions {
     accent?: HeroAccent;
   }>;
   photos?: Array<{ url: string; caption: string }>;
+  poopMap?: { url: string; pointsCount: number; ownerCount?: number; proCount?: number };
   dashboardUrl: string;
   manageUrl?: string | null;
   // Enhanced visualization data
   visualizations?: {
     wellnessScore?: number;
     wellnessLabel?: string;
-    bristolAvg?: number | null;
     hydrationLevel?: number | null;
     issues?: Array<{ label: string; count: number }>;
     checkInDays?: number[];
     periodDays?: number;
     foodBreakdown?: Record<string, number>;
     walkStats?: { total: number; distanceMiles: number; durationMinutes: number };
+    walkRouteMap?: {
+      url: string;
+      dogName?: string | null;
+      distanceMiles?: number | null;
+      durationMinutes?: number | null;
+    };
     activitySummary?: Array<{ label: string; value: number; color?: string }>;
   };
 }
@@ -1283,6 +1288,60 @@ function renderPhotoStrip(photos: CustomerEmailReportEmailOptions["photos"]): st
   `;
 }
 
+function renderPoopMapSection(poopMap: CustomerEmailReportEmailOptions["poopMap"]): string {
+  if (!poopMap?.url) return "";
+  const countLabel =
+    poopMap.pointsCount === 1
+      ? "1 capture mapped"
+      : `${poopMap.pointsCount} captures mapped`;
+  
+  // Build legend based on whether we have both owner and pro captures
+  const ownerCount = poopMap.ownerCount ?? 0;
+  const proCount = poopMap.proCount ?? 0;
+  const hasBothSources = ownerCount > 0 && proCount > 0;
+  
+  // Always show legend with owner/pro colors (matching the app)
+  // Mint (#19B4A3) = Owner, Coral (#F3645B) = Pro/Scooper
+  const legendItems: string[] = [];
+  if (ownerCount > 0) {
+    legendItems.push(`
+      <span style="display:inline-flex;align-items:center;gap:4px;">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#19B4A3;"></span>
+        Owner${hasBothSources ? ` (${ownerCount})` : ""}
+      </span>
+    `);
+  }
+  if (proCount > 0) {
+    legendItems.push(`
+      <span style="display:inline-flex;align-items:center;gap:4px;">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F3645B;"></span>
+        Scooper${hasBothSources ? ` (${proCount})` : ""}
+      </span>
+    `);
+  }
+  
+  const legendHtml = legendItems.length > 0
+    ? `
+      <div style="margin:12px 0 0;display:flex;justify-content:center;gap:16px;font-size:11px;color:${BRAND.subdued};">
+        ${legendItems.join("")}
+      </div>
+    `
+    : `
+      <p style="margin:12px 0 0;font-size:11px;color:${BRAND.subdued};text-align:center;">
+        Each marker shows where poop was captured this period
+      </p>
+    `;
+
+  return `
+    <div style="margin:0 0 24px;padding:20px;background-color:#FFFFFF;border-radius:16px;border:1px solid rgba(0,0,0,0.06);">
+      <h3 style="margin:0 0 10px;font-size:16px;color:${BRAND.ink};font-family:${BRAND.fontHeading};">Yard hot spots</h3>
+      <p style="margin:0 0 12px;font-size:12px;color:${BRAND.subdued};">${escapeHtml(countLabel)} this period.</p>
+      <img src="${poopMap.url}" alt="Yard hot spot heatmap" width="520" style="width:100%;max-width:520px;height:auto;border-radius:16px;display:block;" />
+      ${legendHtml}
+    </div>
+  `;
+}
+
 export function buildCustomerEmailReportEmail(
   options: CustomerEmailReportEmailOptions,
 ): ActionEmailResult {
@@ -1294,6 +1353,7 @@ export function buildCustomerEmailReportEmail(
     highlights,
     sections,
     photos,
+    poopMap,
     dashboardUrl,
     manageUrl,
     visualizations,
@@ -1343,16 +1403,7 @@ export function buildCustomerEmailReportEmail(
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // BRISTOL SCALE VISUALIZATION
-  // ─────────────────────────────────────────────────────────────
-  const bristolHtml = visualizations?.bristolAvg != null
-    ? `
-      <div style="margin:0 0 24px;padding:20px;background-color:#FFFFFF;border-radius:16px;border:1px solid rgba(0,0,0,0.06);">
-        ${renderBristolScale({ value: visualizations.bristolAvg, showLabels: true })}
-      </div>
-    `
-    : "";
+  // Bristol scale removed - not helpful in email format
 
   // ─────────────────────────────────────────────────────────────
   // ISSUES BUBBLES
@@ -1458,6 +1509,42 @@ export function buildCustomerEmailReportEmail(
     `
     : "";
 
+  // ─────────────────────────────────────────────────────────────
+  // WALK ROUTE MAP
+  // Shows the latest walk route on a map
+  // ─────────────────────────────────────────────────────────────
+  const walkRouteMapHtml = visualizations?.walkRouteMap?.url
+    ? (() => {
+        const route = visualizations.walkRouteMap;
+        const dogLabel = route.dogName ? ` with ${route.dogName}` : "";
+        const distanceLabel = route.distanceMiles
+          ? `${route.distanceMiles.toFixed(1)} mi`
+          : "";
+        const durationLabel = route.durationMinutes
+          ? `${Math.round(route.durationMinutes)} min`
+          : "";
+        const statsLabel = [distanceLabel, durationLabel].filter(Boolean).join(" · ");
+        
+        return `
+          <div style="margin:0 0 24px;padding:20px;background-color:#FFFFFF;border-radius:16px;border:1px solid rgba(0,0,0,0.06);">
+            <h3 style="margin:0 0 4px;font-size:16px;color:${BRAND.ink};font-family:${BRAND.fontHeading};">Latest walk${dogLabel}</h3>
+            ${statsLabel ? `<p style="margin:0 0 12px;font-size:12px;color:${BRAND.subdued};">${statsLabel}</p>` : ""}
+            <img src="${route.url}" alt="Walk route map" width="520" style="width:100%;max-width:520px;height:auto;border-radius:12px;display:block;" />
+            <div style="margin:10px 0 0;display:flex;justify-content:center;gap:16px;font-size:11px;color:${BRAND.subdued};">
+              <span style="display:inline-flex;align-items:center;gap:4px;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10B981;"></span>
+                Start
+              </span>
+              <span style="display:inline-flex;align-items:center;gap:4px;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F3645B;"></span>
+                End
+              </span>
+            </div>
+          </div>
+        `;
+      })()
+    : "";
+
   const highlightHtml = highlights.length
     ? `
       <div style="margin:0 0 24px;padding:18px 22px;border-radius:18px;background:linear-gradient(135deg, #FFF6E6 0%, #FFFBEB 100%);border:1px solid rgba(255,194,77,0.3);">
@@ -1472,12 +1559,13 @@ export function buildCustomerEmailReportEmail(
     <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Here's your ${escapeHtml(cadenceLabel)} wellness report for <strong>${escapeHtml(periodLabel)}</strong>.</p>
     
     ${heroVisualsHtml}
-    ${bristolHtml}
     ${issuesHtml}
     ${activityDotsHtml}
     ${foodBreakdownHtml}
     ${walkStatsHtml}
+    ${walkRouteMapHtml}
     ${activityBarsHtml}
+    ${renderPoopMapSection(poopMap)}
     
     ${renderStatGrid(stats)}
     ${highlightHtml}
@@ -1502,6 +1590,7 @@ export function buildCustomerEmailReportEmail(
     `Here's your ${cadenceLabel} wellness report for ${periodLabel}.`,
     "",
     visualizations?.wellnessScore ? `Wellness Score: ${visualizations.wellnessScore}` : "",
+    poopMap?.pointsCount ? `Yard hot spots: ${poopMap.pointsCount} captures mapped` : "",
     "",
     "Highlights:",
     ...highlights.map((item) => `- ${item}`),

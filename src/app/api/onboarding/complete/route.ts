@@ -38,6 +38,7 @@ import {
 import { addDays, startOfDay } from "date-fns";
 import { constructZonedDate, getZonedWeekday, SERVICE_TIME_ZONE } from "@/lib/timezone";
 import { sortRoles, type AppUserRole } from "@/lib/auth/roles";
+import { normalizeAddressParts } from "@/lib/address/normalize";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-08-27.basil",
@@ -452,6 +453,17 @@ async function handleOnboardingComplete(request: NextRequest): Promise<NextRespo
         : null,
     );
 
+    const normalizedAddress = normalizeAddressParts({
+      addressLine1: lead.address ?? null,
+      city: lead.city ?? null,
+      state: lead.state ?? null,
+      zip: lead.zipCode ?? null,
+    });
+    const leadAddressLine1 = normalizedAddress.addressLine1 ?? lead.address ?? null;
+    const leadCity = normalizedAddress.city ?? lead.city ?? null;
+    const leadState = normalizedAddress.state ?? lead.state ?? null;
+    const leadZip = normalizedAddress.zip ?? lead.zipCode ?? null;
+
     // Get or create user
     let user = await prisma.user.findFirst({
       where: { email: effectiveEmail },
@@ -471,9 +483,9 @@ async function handleOnboardingComplete(request: NextRequest): Promise<NextRespo
           email: effectiveEmail,
           name: fullName || effectiveEmail,
           phone: lead.phone,
-          address: lead.address,
-          city: lead.city,
-          zipCode: lead.zipCode,
+          address: leadAddressLine1,
+          city: leadCity,
+          zipCode: leadZip,
           role: "CUSTOMER",
           roles: ["CUSTOMER"],
           orgId,
@@ -505,14 +517,14 @@ async function handleOnboardingComplete(request: NextRequest): Promise<NextRespo
       if (lead.phone && lead.phone !== user.phone) {
         userUpdate.phone = lead.phone;
       }
-      if (lead.address && lead.address !== user.address) {
-        userUpdate.address = lead.address;
+      if (leadAddressLine1 && leadAddressLine1 !== user.address) {
+        userUpdate.address = leadAddressLine1;
       }
-      if (lead.city && lead.city !== user.city) {
-        userUpdate.city = lead.city;
+      if (leadCity && leadCity !== user.city) {
+        userUpdate.city = leadCity;
       }
-      if (lead.zipCode && lead.zipCode !== user.zipCode) {
-        userUpdate.zipCode = lead.zipCode;
+      if (leadZip && leadZip !== user.zipCode) {
+        userUpdate.zipCode = leadZip;
       }
       if (!user.orgId && orgId) {
         userUpdate.orgId = orgId;
@@ -567,9 +579,10 @@ async function handleOnboardingComplete(request: NextRequest): Promise<NextRespo
             effectiveEmail,
           phone: lead.phone || undefined,
           address: {
-            line1: lead.address || undefined,
-            city: lead.city || undefined,
-            postal_code: lead.zipCode || undefined,
+            line1: leadAddressLine1 || undefined,
+            city: leadCity || undefined,
+            state: leadState || undefined,
+            postal_code: leadZip || undefined,
             country: "US",
           },
           metadata: {
@@ -839,10 +852,10 @@ async function handleOnboardingComplete(request: NextRequest): Promise<NextRespo
           name: fullName || effectiveEmail,
           email: effectiveEmail,
           phone: lead.phone,
-          addressLine1: lead.address || "",
-          city: lead.city || "",
-          state: lead.state || "",
-          zip: lead.zipCode || "",
+          addressLine1: leadAddressLine1 || "",
+          city: leadCity || "",
+          state: leadState || "",
+          zip: leadZip || "",
           latitude: lead.latitude,
           longitude: lead.longitude,
         },
@@ -859,17 +872,17 @@ async function handleOnboardingComplete(request: NextRequest): Promise<NextRespo
       if (lead.phone && lead.phone !== customer.phone) {
         customerUpdate.phone = lead.phone;
       }
-      if (lead.address && lead.address !== customer.addressLine1) {
-        customerUpdate.addressLine1 = lead.address;
+      if (leadAddressLine1 && leadAddressLine1 !== customer.addressLine1) {
+        customerUpdate.addressLine1 = leadAddressLine1;
       }
-      if (lead.city && lead.city !== customer.city) {
-        customerUpdate.city = lead.city;
+      if (leadCity && leadCity !== customer.city) {
+        customerUpdate.city = leadCity;
       }
-      if (lead.state && lead.state !== customer.state) {
-        customerUpdate.state = lead.state;
+      if (leadState && leadState !== customer.state) {
+        customerUpdate.state = leadState;
       }
-      if (lead.zipCode && lead.zipCode !== customer.zip) {
-        customerUpdate.zip = lead.zipCode;
+      if (leadZip && leadZip !== customer.zip) {
+        customerUpdate.zip = leadZip;
       }
       if (lead.latitude != null && lead.latitude !== customer.latitude) {
         customerUpdate.latitude = lead.latitude;

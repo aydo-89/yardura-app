@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Yardura Production Deployment Script
+# InsightScoop Production Deployment Script
 set -e
 
-echo '🚀 Starting Yardura Production Deployment...'
+echo '🚀 Starting InsightScoop Production Deployment...'
 
 # Colors for output
 RED='\033[0;31m'
@@ -12,14 +12,14 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-SERVER='root@159.223.197.13'
-KEY_PATH='/Users/aydendunham/.ssh/id_ed25519'
-REMOTE_DEPLOY_DIR='/var/tmp/yardura'
-WEB_DIR='/var/www/yardura.com'
+SERVER='deploy@146.190.240.179'
+KEY_PATH="$HOME/.ssh/id_ed25519"
+REMOTE_DEPLOY_DIR='/var/tmp/insightscoop-deploy'
+WEB_DIR='/var/www/insightscoop'
 
-# Build locally (skip type-check for faster deploys)
+# Build locally
 echo -e "${YELLOW}📦 Building application locally...${NC}"
-npm run build:deploy
+npm run build
 
 # Create deployment package
 echo -e "${YELLOW}📦 Creating deployment package...${NC}"
@@ -31,169 +31,45 @@ cp -r .next dist/
 cp -r public dist/
 cp -r prisma dist/
 cp -r src dist/
-cp -r data dist/
-cp -r config dist/
-cp -r voice-agent dist/
+[ -d data ] && cp -r data dist/ || true
+[ -d config ] && cp -r config dist/ || true
+[ -d voice-agent ] && cp -r voice-agent dist/ || true
+[ -d jobs ] && cp -r jobs dist/ || true
+[ -d infra ] && cp -r infra dist/ || true
 
 # Copy configuration files (do NOT bundle local .env to avoid overwriting server prod env)
 cp package.json dist/
 cp package-lock.json dist/
 cp next.config.mjs dist/
-cp replicate-proxy.js dist/
 cp tsconfig.json dist/
 cp tailwind.config.ts dist/
 cp postcss.config.mjs dist/
+[ -f replicate-proxy.js ] && cp replicate-proxy.js dist/ || true
 
 # Create tar.gz (without local .env files and macOS metadata files)
 echo -e "${YELLOW}📦 Creating tar.gz archive...${NC}"
-tar -czf yardura-production.tar.gz --exclude='._*' --exclude='.DS_Store' dist/ package.json package-lock.json replicate-proxy.js
+tar -czf insightscoop-production.tar.gz --exclude='._*' --exclude='.DS_Store' --exclude='node_modules' -C dist .
+
+# Prepare remote staging directory
+echo -e "${YELLOW}📤 Preparing remote staging dir...${NC}"
+ssh -i "$KEY_PATH" "$SERVER" "mkdir -p $REMOTE_DEPLOY_DIR && rm -f $REMOTE_DEPLOY_DIR/*.tar.gz"
 
 # Upload to server
-echo -e "${YELLOW}📤 Preparing remote staging dir and uploading...${NC}"
-# Ensure remote staging directory exists and is writable
-ssh -i "$KEY_PATH" "$SERVER" "sudo mkdir -p $REMOTE_DEPLOY_DIR && sudo chmod 777 $REMOTE_DEPLOY_DIR || true"
-# Optional: quick disk space check
-ssh -i "$KEY_PATH" "$SERVER" "df -h / /tmp /var/tmp 2>/dev/null || true"
-# Prune stale artifacts and old backups before upload
-ssh -i "$KEY_PATH" "$SERVER" "\
-  echo '🧹 Pruning old staging tarballs and backups...'; \
-  rm -f $REMOTE_DEPLOY_DIR/*.tar.gz 2>/dev/null || true; \
-  # Remove backups older than 7 days
-  find /var/www -maxdepth 1 -type d -name 'yardura.com.backup.*' -mtime +7 -exec rm -rf {} + 2>/dev/null || true; \
-  # Keep only latest 3 backups (defensive)
-  ls -1dt /var/www/yardura.com.backup.* 2>/dev/null | tail -n +4 | xargs -r rm -rf \
-"
-# Upload with an explicit destination filename to avoid directory write quirks
-scp -i "$KEY_PATH" yardura-production.tar.gz "$SERVER:$REMOTE_DEPLOY_DIR/yardura-production.tar.gz"
+echo -e "${YELLOW}📤 Uploading deployment package...${NC}"
+scp -i "$KEY_PATH" insightscoop-production.tar.gz "$SERVER:$REMOTE_DEPLOY_DIR/"
 
-# Deploy on server
-echo -e "${YELLOW}🚀 Deploying on server...${NC}"
-ssh -i "$KEY_PATH" "$SERVER" "
-  set -e
-  echo '📦 Extracting files...'
-  cd $REMOTE_DEPLOY_DIR
-  rm -rf dist
-  tar -xzf yardura-production.tar.gz
-
-  echo '📋 Creating backup...'
-  sudo cp -r $WEB_DIR \"${WEB_DIR}.backup.\$(date +%Y%m%d_%H%M%S)\" 2>/dev/null || true
-
-  echo '🧹 Pruning old backups (post-backup)...'
-  # Remove backups older than 7 days
-  sudo find /var/www -maxdepth 1 -type d -name 'yardura.com.backup.*' -mtime +7 -exec rm -rf {} + 2>/dev/null || true
-  # Keep only latest 3 backups
-  ls -1dt /var/www/yardura.com.backup.* 2>/dev/null | tail -n +4 | xargs -r sudo rm -rf
-
-  echo '📂 Deploying files...'
-  # Stop services first
-  pm2 stop yardura 2>/dev/null || true
-  pm2 stop yardura-proxy 2>/dev/null || true
-
-  # Backup image directories before deployment
-  echo '📸 Backing up image directories...'
-  sudo mkdir -p $REMOTE_DEPLOY_DIR/image_backup
-  sudo cp -r $WEB_DIR/public/dog_images $REMOTE_DEPLOY_DIR/image_backup/ 2>/dev/null || true
-  sudo cp -r $WEB_DIR/public/dog_images2 $REMOTE_DEPLOY_DIR/image_backup/ 2>/dev/null || true
-  sudo cp -r $WEB_DIR/public/brand $REMOTE_DEPLOY_DIR/image_backup/ 2>/dev/null || true
-  sudo cp -r $WEB_DIR/public/sections $REMOTE_DEPLOY_DIR/image_backup/ 2>/dev/null || true
-
-  # Remove old build files (preserve node_modules and .env files)
-  sudo rm -rf $WEB_DIR/.next
-  sudo rm -rf $WEB_DIR/public
-  sudo rm -rf $WEB_DIR/prisma
-  sudo rm -rf $WEB_DIR/src
-  sudo rm -rf $WEB_DIR/config
-  sudo rm -f $WEB_DIR/*.js $WEB_DIR/*.mjs $WEB_DIR/*.json $WEB_DIR/*.ts
-
-  # Copy new files
-  sudo cp -r $REMOTE_DEPLOY_DIR/dist/* $WEB_DIR/
-  sudo cp -r $REMOTE_DEPLOY_DIR/dist/.next $WEB_DIR/ 2>/dev/null || true
-
-  # Restore image directories after deployment
-  echo '📸 Restoring image directories...'
-  sudo cp -r $REMOTE_DEPLOY_DIR/image_backup/dog_images $WEB_DIR/public/ 2>/dev/null || true
-  sudo cp -r $REMOTE_DEPLOY_DIR/image_backup/dog_images2 $WEB_DIR/public/ 2>/dev/null || true
-  sudo cp -r $REMOTE_DEPLOY_DIR/image_backup/brand $WEB_DIR/public/ 2>/dev/null || true
-  sudo cp -r $REMOTE_DEPLOY_DIR/image_backup/sections $WEB_DIR/public/ 2>/dev/null || true
-  sudo rm -rf $REMOTE_DEPLOY_DIR/image_backup
-
-  echo '🔐 Setting permissions...'
-  sudo chown -R www-data:www-data $WEB_DIR
-
-  echo '🧹 Removing macOS metadata files...'
-  sudo find $WEB_DIR/public -name '._*' -type f -delete 2>/dev/null || true
-  sudo find $WEB_DIR/public -name '.DS_Store' -type f -delete 2>/dev/null || true
-
-  echo '📥 Installing dependencies...'
-  cd $WEB_DIR
-  npm install
-
-  echo '🔧 Generating Prisma client...'
-  npx prisma generate
-
-  echo '🛑 Starting services...'
-  pm2 delete yardura 2>/dev/null || true
-  pm2 start npm --name yardura -- start
-  pm2 restart yardura-proxy 2>/dev/null || true
-
-  echo '🔄 Reloading nginx...'
-  sudo systemctl reload nginx 2>/dev/null || true
-
-  echo '✅ Deployment complete!'
-  pm2 list
-"
-
-# Sync all public image directories to ensure they're always up-to-date
-echo -e "${YELLOW}📸 Syncing image directories to server...${NC}"
-
-# Sync seasonal background images in root public/
-echo "Syncing seasonal backgrounds..."
-rsync -avz -e "ssh -i $KEY_PATH" \
-  --exclude='._*' \
-  --exclude='.DS_Store' \
-  public/grass-field.jpg \
-  public/leaves_background.jpg \
-  public/snow_background.jpg \
-  "$SERVER:$WEB_DIR/public/"
-
-# Sync image directories
-rsync -avz --delete -e "ssh -i $KEY_PATH" \
-  --exclude='._*' \
-  --exclude='.DS_Store' \
-  public/dog_images/ "$SERVER:$WEB_DIR/public/dog_images/"
-
-rsync -avz --delete -e "ssh -i $KEY_PATH" \
-  --exclude='._*' \
-  --exclude='.DS_Store' \
-  public/dog_images2/ "$SERVER:$WEB_DIR/public/dog_images2/"
-
-rsync -avz --delete -e "ssh -i $KEY_PATH" \
-  --exclude='._*' \
-  --exclude='.DS_Store' \
-  public/brand/ "$SERVER:$WEB_DIR/public/brand/"
-
-rsync -avz --delete -e "ssh -i $KEY_PATH" \
-  --exclude='._*' \
-  --exclude='.DS_Store' \
-  public/sections/ "$SERVER:$WEB_DIR/public/sections/"
-
-# Fix permissions after rsync
-ssh -i "$KEY_PATH" "$SERVER" "sudo chown -R www-data:www-data $WEB_DIR/public"
-
-echo -e "${GREEN}✅ Image sync complete!${NC}"
-
-# Ensure ecosystem.config.js has all environment variables for BOTH apps
-# CRITICAL: Include restart limits to prevent infinite crash loops that freeze the server!
-echo -e "${YELLOW}📝 Updating PM2 ecosystem config...${NC}"
-ssh -i "$KEY_PATH" "$SERVER" "cd $WEB_DIR && cat > ecosystem.config.js.full << 'EOFCONFIG'
+# Create ecosystem config for PM2 with crash loop protection
+echo -e "${YELLOW}📝 Creating PM2 ecosystem config...${NC}"
+cat > /tmp/ecosystem.config.js << 'ECOSYSTEM_EOF'
 module.exports = {
   apps: [
     {
-      name: 'yardura',
+      name: 'insightscoop',
       script: 'npm',
       args: 'start',
-      cwd: '$WEB_DIR',
+      cwd: '/var/www/insightscoop',
       instances: 1,
+      exec_mode: 'cluster',
       autorestart: true,
       // CRITICAL: Prevent infinite restart loops
       max_restarts: 10,
@@ -204,83 +80,277 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000
-        // Other env vars loaded from .env.production on server
       }
     },
     {
-      name: 'yardura-voice-agent',
+      name: 'worker-billing',
       script: 'npx',
-      args: 'tsx voice-agent/server.ts',
-      cwd: '$WEB_DIR',
+      args: 'tsx jobs/start-billing-automation.ts',
+      cwd: '/var/www/insightscoop',
       instances: 1,
-      exec_mode: 'fork',
+      exec_mode: 'cluster',
       autorestart: true,
       max_restarts: 5,
       min_uptime: '10s',
-      restart_delay: 5000,
-      env: {
-        NODE_ENV: 'production',
-        PORT: 4001
-        // Other env vars loaded from .env.production on server
-      }
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-customer-email-reports',
+      script: 'npx',
+      args: 'tsx jobs/start-customer-email-reports.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-media-analysis',
+      script: 'npx',
+      args: 'tsx jobs/start-media-analysis-worker.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-offers',
+      script: 'npx',
+      args: 'tsx jobs/start-marketplace-offers.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-offer-sweeper',
+      script: 'npx',
+      args: 'tsx jobs/start-marketplace-offer-sweeper.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-offer-auto-assign',
+      script: 'npx',
+      args: 'tsx jobs/start-marketplace-offer-auto-assign.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-push-notifications',
+      script: 'npx',
+      args: 'tsx jobs/start-push-notifications.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-visit-generator',
+      script: 'npx',
+      args: 'tsx jobs/start-visit-generator-worker.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-visit-summary',
+      script: 'npx',
+      args: 'tsx jobs/start-visit-summary-worker.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-wellness-embeddings',
+      script: 'npx',
+      args: 'tsx jobs/start-wellness-embeddings.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-payout-release',
+      script: 'npx',
+      args: 'tsx jobs/start-payout-release.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-route-drafts',
+      script: 'npx',
+      args: 'tsx jobs/start-route-drafts-worker.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
+    },
+    {
+      name: 'worker-outbound-transcription',
+      script: 'npx',
+      args: 'tsx jobs/start-outbound-transcription-worker.ts',
+      cwd: '/var/www/insightscoop',
+      instances: 1,
+      exec_mode: 'cluster',
+      autorestart: true,
+      max_restarts: 5,
+      min_uptime: '10s',
+      restart_delay: 10000
     }
   ]
-}
-EOFCONFIG
-"
+};
+ECOSYSTEM_EOF
 
-# Ensure nginx proxies WebSocket traffic to the voice agent server
-echo -e "${YELLOW}📝 Checking nginx configuration...${NC}"
+scp -i "$KEY_PATH" /tmp/ecosystem.config.js "$SERVER:$WEB_DIR/ecosystem.config.js"
+
+# Deploy on server
+echo -e "${YELLOW}🚀 Deploying on server...${NC}"
 ssh -i "$KEY_PATH" "$SERVER" "
-if ! grep -q 'location /voice/stream' /etc/nginx/sites-available/yardura.com 2>/dev/null; then
-  echo 'Adding /voice/stream proxy to nginx...'
-  sudo sed -i '/location \\/ {/i\\
-    # Voice agent WebSocket proxy\\
-    location /voice/stream {\\
-        proxy_pass http://127.0.0.1:4001/stream;\\
-        proxy_http_version 1.1;\\
-        proxy_set_header Upgrade \$http_upgrade;\\
-        proxy_set_header Connection \"upgrade\";\\
-        proxy_set_header Host \$host;\\
-        proxy_set_header X-Real-IP \$remote_addr;\\
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\\
-        proxy_set_header X-Forwarded-Proto \$scheme;\\
-        proxy_set_header X-Twilio-Signature \$http_x_twilio_signature;\\
-        proxy_read_timeout 300s;\\
-        proxy_send_timeout 300s;\\
-        proxy_connect_timeout 75s;\\
-        proxy_buffering off;\\
-    }\\
-' /etc/nginx/sites-available/yardura.com
-  sudo nginx -t && sudo systemctl reload nginx
-  echo 'Nginx updated.'
-else
-  echo 'Nginx WebSocket proxy already present.'
-fi
+  set -e
+  cd $WEB_DIR
+  
+  echo '📦 Extracting files...'
+  cd $REMOTE_DEPLOY_DIR
+  rm -rf extracted
+  mkdir -p extracted
+  tar -xzf insightscoop-production.tar.gz -C extracted
+  
+  echo '📋 Creating backup...'
+  BACKUP_NAME=\"insightscoop.backup.\$(date +%Y%m%d_%H%M%S)\"
+  cp -r $WEB_DIR/.next /var/tmp/\$BACKUP_NAME-next 2>/dev/null || true
+  
+  echo '🧹 Cleaning up old backups (keeping last 2)...'
+  cd /var/tmp && ls -dt insightscoop.backup.*-next 2>/dev/null | tail -n +3 | xargs rm -rf 2>/dev/null || true
+  
+  echo '🛑 Stopping services gracefully...'
+  # Stop workers first, then main app
+  pm2 stop all --silent 2>/dev/null || true
+  sleep 2
+  
+  echo '📂 Deploying files...'
+  # Use rsync to overwrite files (works even if owned by different user)
+  # Remove .next build files but PRESERVE the image cache
+  rm -rf $WEB_DIR/.next/server 2>/dev/null || true
+  rm -rf $WEB_DIR/.next/static 2>/dev/null || true
+  rm -f $WEB_DIR/.next/*.json 2>/dev/null || true
+  rm -f $WEB_DIR/.next/*.js 2>/dev/null || true
+  # Keep .next/cache/images to prevent image 404s after deploy
+  
+  # Rsync new files (overwrites existing, doesn't need delete permission)
+  rsync -a --no-perms --no-owner --no-group $REMOTE_DEPLOY_DIR/extracted/ $WEB_DIR/
+  
+  echo '🔐 Setting file permissions...'
+  # Ensure public folder is readable by nginx
+  chmod -R 755 $WEB_DIR/public 2>/dev/null || true
+  find $WEB_DIR/public -type f -exec chmod 644 {} \\; 2>/dev/null || true
+  
+  echo '📥 Installing dependencies...'
+  cd $WEB_DIR
+  npm install --omit=dev
+  
+  echo '🔧 Generating Prisma client...'
+  npx prisma generate
+  
+  echo '🗃️ Running Prisma migrations...'
+  npx prisma migrate deploy
+  
+  echo '🔄 Starting services with safe restart...'
+  # Delete all existing processes to ensure clean state
+  pm2 delete all 2>/dev/null || true
+  
+  # Start with ecosystem config (has crash loop protection)
+  pm2 start ecosystem.config.js
+  
+  # Save PM2 config
+  pm2 save
+  
+  echo '🔄 Reloading nginx to clear any cached responses...'
+  sudo systemctl reload nginx 2>/dev/null || sudo nginx -s reload 2>/dev/null || true
+  
+  echo '🧹 Clearing Next.js image optimization cache (stale entries only)...'
+  # Only clear cache entries older than 7 days to prevent image 404s
+  find $WEB_DIR/.next/cache/images -type f -mtime +7 -delete 2>/dev/null || true
+  
+  echo '🧹 Cleaning up deployment staging files...'
+  rm -rf $REMOTE_DEPLOY_DIR/extracted 2>/dev/null || true
+  rm -f $REMOTE_DEPLOY_DIR/*.tar.gz 2>/dev/null || true
+  
+  echo '✅ Deployment complete!'
+  echo ''
+  pm2 list
 "
 
-# Clear Next.js image cache and restart BOTH apps
-echo -e "${YELLOW}🧹 Clearing Next.js image cache and restarting services...${NC}"
-ssh -i "$KEY_PATH" "$SERVER" "sudo rm -rf $WEB_DIR/.next/cache/images && cd $WEB_DIR && sudo pm2 delete yardura yardura-voice-agent 2>/dev/null || true && sudo pm2 start ecosystem.config.js.full && sudo pm2 save"
+# Verify images are accessible
+echo -e "${YELLOW}🖼️ Verifying images are accessible...${NC}"
+ssh -i "$KEY_PATH" "$SERVER" "
+  # Ensure public folder has correct ownership
+  sudo chown -R deploy:deploy $WEB_DIR/public 2>/dev/null || true
+  
+  # Quick sanity check
+  if [ -f $WEB_DIR/public/hero_backgrounds/arlo_coral_left_light.jpeg ]; then
+    echo '✅ Hero backgrounds exist'
+  else
+    echo '⚠️ Warning: Hero backgrounds may be missing'
+  fi
+  
+  if [ -d $WEB_DIR/public/stool-library ]; then
+    echo '✅ Stool library exists'
+  else
+    echo '⚠️ Warning: Stool library may be missing'
+  fi
+"
+
+# Cleanup local files
+echo -e "${YELLOW}🧹 Cleaning up local files...${NC}"
+rm -f insightscoop-production.tar.gz
+rm -rf dist
+rm -f /tmp/ecosystem.config.js
 
 echo -e "${GREEN}✅ Deployment successful!${NC}"
 echo ""
-echo -e "${GREEN}📋 Next steps:${NC}"
-echo "1. Update Twilio webhooks:"
-echo "   Inbound:  https://www.getinsightscoop.com/api/twilio/voice/inbound"
-echo "   Status:   https://www.getinsightscoop.com/api/twilio/voice/status"
-echo ""
-echo "2. Test the webhook:"
-echo "   curl -X POST https://www.getinsightscoop.com/api/twilio/voice/inbound -d 'CallSid=TEST&From=+16125819812&To=+18774179273'"
-echo ""
-echo "3. Call 1-877-417-YARD to test!"
-echo ""
-echo "4. Monitor logs:"
-echo "   ssh -i ~/.ssh/id_ed25519 root@159.223.197.13"
-echo "   sudo pm2 logs yardura-voice-agent"
-
-# Cleanup
-rm -f yardura-production.tar.gz
-rm -rf dist
-
-echo -e "${GREEN}🧹 Cleanup complete!${NC}"
+echo -e "${GREEN}📋 Useful commands:${NC}"
+echo "  Monitor logs:     ssh deploy@146.190.240.179 'pm2 logs'"
+echo "  Check status:     ssh deploy@146.190.240.179 'pm2 list'"
+echo "  Restart app:      ssh deploy@146.190.240.179 'pm2 restart insightscoop'"
+echo "  Restart workers:  ssh deploy@146.190.240.179 'pm2 restart all'"

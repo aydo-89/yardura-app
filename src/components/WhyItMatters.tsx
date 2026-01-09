@@ -97,12 +97,15 @@ export default function WhyItMatters({
     }
   };
 
+  // Dark fallback ensures white text is always readable if image fails to load
+  const fallbackBackground = "linear-gradient(135deg, #1a2820 0%, #0d1a14 50%, #0a100c 100%)";
+
   return (
     <section
       id="why-matters"
       aria-labelledby="why-matters-heading"
       className="landing-section section-modern relative overflow-hidden"
-      style={{ backgroundColor: theme === "dark" ? "#0a100c" : "#f8f5ee" }}
+      style={{ background: fallbackBackground }}
     >
       <MotionDiv
         className="pointer-events-none absolute inset-x-0 -top-12 h-16 z-[1]"
@@ -123,23 +126,39 @@ export default function WhyItMatters({
         <div className="w-full h-full bg-gradient-to-t from-[rgba(var(--vanilla-rgb-commas),0.85)] via-[rgba(var(--gold-rgb-commas),0.3)] to-transparent" />
       </MotionDiv>
 
+      {/* Background: solid color on mobile, image on desktop */}
       <div className="absolute inset-0 z-0">
-        <Image
-          src={background}
-          alt="Happy dog enjoying outdoor wellness activities"
-          fill
-          priority
-          className="object-cover"
-          sizes="100vw"
-          style={{ objectPosition: "50% center" }}
-        />
-        <MotionDiv
-          className="absolute inset-0"
-          style={{ background: overlay }}
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-        />
+        {!isMobile ? (
+          <>
+            <Image
+              src={background}
+              alt="Happy dog enjoying outdoor wellness activities"
+              fill
+              priority
+              className="object-cover"
+              sizes="100vw"
+              style={{ objectPosition: "50% center" }}
+              unoptimized
+            />
+            <MotionDiv
+              className="absolute inset-0"
+              style={{ background: overlay }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+            />
+          </>
+        ) : (
+          /* Solid gradient background for mobile - matches the theme */
+          <div
+            className="absolute inset-0"
+            style={{
+              background: theme === "dark"
+                ? "linear-gradient(165deg, #0a1410 0%, #0d1a14 35%, #101e18 70%, #0a1410 100%)"
+                : "linear-gradient(165deg, #1a2e24 0%, #1f3a2e 35%, #24453a 70%, #1a2e24 100%)",
+            }}
+          />
+        )}
       </div>
 
       <div className="container relative z-10 py-20">

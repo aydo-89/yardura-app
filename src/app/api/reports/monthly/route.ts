@@ -3,6 +3,25 @@ import { prisma } from "@/lib/prisma";
 import { createSignedUrl, getSupabaseAdmin } from "@/lib/supabase-admin";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
+/**
+ * Sanitize text for PDF WinAnsi encoding.
+ * Replaces or removes characters that cannot be encoded in Windows-1252.
+ */
+function sanitizeForPdf(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/\u2011/g, "-")
+    .replace(/\u2013/g, "-")
+    .replace(/\u2014/g, "--")
+    .replace(/[\u2018\u2019\u201A]/g, "'")
+    .replace(/[\u201C\u201D\u201E]/g, '"')
+    .replace(/\u2026/g, "...")
+    .replace(/\u2022/g, "*")
+    .replace(/\u00A0/g, " ")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
+}
+
 async function generatePdf(params: {
   orgId: string;
   customerId?: string | null;
@@ -12,7 +31,8 @@ async function generatePdf(params: {
   const page = pdfDoc.addPage([612, 792]);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const draw = (text: string, x: number, y: number, size = 12) => {
-    page.drawText(text, { x, y, size, font, color: rgb(0.1, 0.1, 0.1) });
+    const safeText = sanitizeForPdf(text);
+    page.drawText(safeText, { x, y, size, font, color: rgb(0.1, 0.1, 0.1) });
   };
 
   draw("Yardura Monthly Report", 50, 740, 18);

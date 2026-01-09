@@ -115,8 +115,12 @@ export function JobVisitManager({ job, visits, timeZone }: JobVisitManagerProps)
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<VisitFormState>(() => {
     const initialDate = formatDateInput(job.nextVisitAt ?? new Date().toISOString(), timeZone);
-    const initialTime = formatTimeInput(job.nextVisitAt ?? new Date().toISOString(), timeZone);
-    const initialWindow = resolveWindowSlug(job.preferredTimeWindow);
+  const initialWindow = resolveWindowSlug(job.preferredTimeWindow);
+  const initialTime = formatTimeInput(
+    job.nextVisitAt ?? new Date().toISOString(),
+    timeZone,
+    initialWindow,
+  );
     return {
       date: initialDate,
       time: initialTime,
@@ -141,11 +145,14 @@ export function JobVisitManager({ job, visits, timeZone }: JobVisitManagerProps)
   }, [visits]);
 
   const openEditDialog = (visit: Visit) => {
+    const windowSlug = resolveWindowSlug(
+      visit.preferredTimeWindowSlug ?? visit.preferredTimeWindow ?? null,
+    );
     setEditTarget(visit);
     setEditForm({
       date: formatDateInput(visit.scheduledDate, timeZone),
-      time: formatTimeInput(visit.scheduledDate, timeZone),
-      windowSlug: resolveWindowSlug(visit.preferredTimeWindowSlug ?? visit.preferredTimeWindow ?? null),
+      time: formatTimeInput(visit.scheduledDate, timeZone, windowSlug),
+      windowSlug,
       status: visit.status,
     });
   };
@@ -447,7 +454,7 @@ export function JobVisitManager({ job, visits, timeZone }: JobVisitManagerProps)
             const seed = job.nextVisitAt ?? new Date().toISOString();
             setCreateForm({
               date: formatDateInput(seed, timeZone),
-              time: formatTimeInput(seed, timeZone),
+              time: formatTimeInput(seed, timeZone, resolveWindowSlug(job.preferredTimeWindow)),
               windowSlug: resolveWindowSlug(job.preferredTimeWindow),
               status: "SCHEDULED",
             });
@@ -654,8 +661,16 @@ function formatDateInput(iso: string, timeZone: string): string {
   return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
 }
 
-function formatTimeInput(iso: string, timeZone: string): string {
+function formatTimeInput(
+  iso: string,
+  timeZone: string,
+  windowSlug?: string | null,
+): string {
   const parts = convertUtcToZonedParts(new Date(iso), timeZone);
+  if (parts.hour === 0 && parts.minute === 0) {
+    const anchor = resolveWindowAnchorTime(windowSlug ?? null);
+    if (anchor) return anchor;
+  }
   return `${pad(parts.hour)}:${pad(parts.minute)}`;
 }
 

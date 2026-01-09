@@ -114,12 +114,6 @@ export default function CustomerLayout() {
         }}
       />
       <Tabs.Screen
-        name="wellness-food-log"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
         name="wellness-poop-map"
         options={{
           href: null,
@@ -156,6 +150,12 @@ export default function CustomerLayout() {
         }}
       />
       <Tabs.Screen
+        name="wellness-sample"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="wellness-upgrade"
         options={{
           href: null,
@@ -163,6 +163,36 @@ export default function CustomerLayout() {
       />
       <Tabs.Screen
         name="service-plan"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="address"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="food-pantry"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="food-scan"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="food-log"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="report-settings"
         options={{
           href: null,
         }}

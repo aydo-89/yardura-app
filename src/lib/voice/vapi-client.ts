@@ -166,7 +166,7 @@ export function createYarduraAssistantConfig(): VapiAssistantConfig {
     name: "InsightScoop Receptionist",
     model: {
       provider: "openai",
-      model: "gpt-4o-mini", // Fast and cost-effective
+      model: "gpt-5-mini", // Fast and cost-effective
       temperature: 0.7,
       maxTokens: 150, // Increased for tool responses
       toolIds: [

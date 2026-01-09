@@ -5,8 +5,9 @@ import {
 } from "@prisma/client";
 
 import { env } from "@/lib/env";
+import { query as geoQuery } from "@/lib/geo/postgis";
 import { prisma } from "@/lib/prisma";
-import { createSignedUrl } from "@/lib/supabase-admin";
+import { createSignedUrl, uploadFile } from "@/lib/supabase-admin";
 import {
   SERVICE_TIME_ZONE,
   constructZonedDateFromParts,
@@ -17,6 +18,10 @@ import {
   buildWellnessReadingsFromCaptures,
   buildWellnessReadingsFromMedia,
 } from "@/lib/wellness/readings";
+
+// Check at runtime, not at module load time (for scripts using dotenv)
+const isPostgisEnabled = () => process.env.ENABLE_POSTGIS_GEO === "true";
+const PARCEL_QUERY_TIMEOUT_MS = 5000;
 
 export type EmailReportSections = {
   includeWellness: boolean;
@@ -88,6 +93,10 @@ export type CustomerEmailReportData = {
     total: number;
     distanceMiles: number;
     durationMinutes: number;
+    latestRouteMapUrl?: string | null;
+    latestRouteDogName?: string | null;
+    latestRouteDistanceMiles?: number | null;
+    latestRouteDurationMinutes?: number | null;
   };
   reminders?: {
     upcoming: Array<{ title: string; dueAt: string }>;
@@ -111,11 +120,323 @@ export type CustomerEmailReportData = {
     owner: Array<{ url: string; caption: string }>;
     pro: Array<{ url: string; caption: string }>;
   };
+  poopMap?: {
+    heatmapUrl: string;
+    pointsCount: number;
+    ownerCount: number;
+    proCount: number;
+  };
 };
 
 const MAX_PHOTOS_PER_SOURCE = 2;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const HEATMAP_MAX_ACCURACY = 30;
+const HEATMAP_DEFAULT_ACCURACY = 8;
+
+const computeHeatmapWeight = (accuracy?: number | null) => {
+  const raw = typeof accuracy === "number" && Number.isFinite(accuracy)
+    ? accuracy
+    : HEATMAP_DEFAULT_ACCURACY;
+  const safe = clamp(raw, 2, HEATMAP_MAX_ACCURACY);
+  return 1 / (safe * safe);
+};
+
+type ParcelGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
+
+/**
+ * Load parcel boundary from PostGIS for a given lat/lng.
+ * Optimized query using centroid index for faster lookups.
+ */
+async function loadParcelBoundary(
+  lat: number,
+  lng: number,
+): Promise<ParcelGeometry | null> {
+  if (!isPostgisEnabled()) {
+    console.log('[email-report] PostGIS disabled, skipping parcel lookup');
+    return null;
+  }
+
+  try {
+    // Optimized query: Uses bounding box for index, centroid for ordering (faster than geom::geography)
+    const sql = `
+      SELECT ST_AsGeoJSON(geom) AS geom_geojson
+      FROM geo.parcel
+      WHERE 
+        -- Bounding box filter (uses GIST index, very fast)
+        geom && ST_Expand(ST_SetSRID(ST_Point($1, $2), 4326), 0.0003)
+        AND (
+          -- Exact containment check
+          ST_Contains(geom, ST_SetSRID(ST_Point($1, $2), 4326))
+          OR 
+          -- Fallback: within 30m of centroid (uses centroid index)
+          ST_DWithin(
+            centroid::geography,
+            ST_SetSRID(ST_Point($1, $2), 4326)::geography,
+            30
+          )
+        )
+      ORDER BY ST_Distance(
+        centroid,
+        ST_SetSRID(ST_Point($1, $2), 4326)
+      ) ASC
+      LIMIT 1`;
+
+    const { rows } = await geoQuery(sql, [lng, lat], {
+      timeoutMs: PARCEL_QUERY_TIMEOUT_MS,
+    });
+    if (!rows.length || !rows[0]?.geom_geojson) {
+      console.log('[email-report] No parcel found for', lat, lng);
+      return null;
+    }
+    return JSON.parse(rows[0].geom_geojson) as ParcelGeometry;
+  } catch (err) {
+    console.warn('[email-report] Parcel lookup failed:', err);
+    return null;
+  }
+}
+
+/**
+ * Convert GeoJSON polygon to Google Static Maps path format
+ * Returns simplified path string for URL (max ~50 points to avoid URL length issues)
+ */
+function polygonToStaticMapPath(geometry: ParcelGeometry): string | null {
+  let coords: number[][];
+
+  if (geometry.type === "Polygon") {
+    coords = geometry.coordinates[0] as number[][];
+  } else if (geometry.type === "MultiPolygon") {
+    // Use the largest polygon
+    let largest = geometry.coordinates[0][0] as number[][];
+    for (const poly of geometry.coordinates) {
+      if ((poly[0] as number[][]).length > largest.length) {
+        largest = poly[0] as number[][];
+      }
+    }
+    coords = largest;
+  } else {
+    return null;
+  }
+
+  // Simplify to max 40 points to keep URL short
+  const step = Math.max(1, Math.floor(coords.length / 40));
+  const simplified = coords.filter((_, i) => i % step === 0 || i === coords.length - 1);
+
+  // Format: lat,lng|lat,lng|...
+  const pathPoints = simplified
+    .map((coord) => `${coord[1].toFixed(6)},${coord[0].toFixed(6)}`)
+    .join("|");
+
+  return pathPoints;
+}
+
+// Brand colors matching the native app
+const COLORS = {
+  mint: "0x19B4A3",      // Owner captures - teal/mint
+  coral: "0xF3645B",     // Pro/scooper captures - coral/red
+  parcel: "0x22C55E",    // Parcel boundary - green
+};
+
+/**
+ * Build a Google Static Maps URL with markers for poop locations.
+ * This generates a real map image that works in all email clients.
+ * Uses different colors for OWNER vs PRO captures to match the native app.
+ */
+const buildStaticMapUrl = (
+  points: Array<{ lat: number; lng: number; weight: number; source: "OWNER" | "PRO" }>,
+  apiKey: string,
+  parcelGeometry?: ParcelGeometry | null,
+): string | null => {
+  if (points.length === 0) return null;
+
+  // Group points into buckets by source to reduce markers (Static Maps has a URL length limit)
+  const GRID_SIZE = 0.00005; // ~5m grid
+  const ownerBuckets = new Map<string, { lat: number; lng: number; count: number }>();
+  const proBuckets = new Map<string, { lat: number; lng: number; count: number }>();
+  
+  points.forEach((point) => {
+    const bx = Math.round(point.lat / GRID_SIZE);
+    const by = Math.round(point.lng / GRID_SIZE);
+    const key = `${bx}:${by}`;
+    const buckets = point.source === "OWNER" ? ownerBuckets : proBuckets;
+    const bucket = buckets.get(key);
+    if (bucket) {
+      bucket.count++;
+    } else {
+      buckets.set(key, {
+        lat: bx * GRID_SIZE,
+        lng: by * GRID_SIZE,
+        count: 1,
+      });
+    }
+  });
+
+  const ownerLocations = Array.from(ownerBuckets.values());
+  const proLocations = Array.from(proBuckets.values());
+  const allLocations = [...ownerLocations, ...proLocations];
+
+  // Calculate center and appropriate zoom based on spread
+  const lats = allLocations.map((loc) => loc.lat);
+  const lngs = allLocations.map((loc) => loc.lng);
+  const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+  
+  // Calculate spread to determine zoom level
+  const latSpread = Math.max(...lats) - Math.min(...lats);
+  const lngSpread = Math.max(...lngs) - Math.min(...lngs);
+  const maxSpread = Math.max(latSpread, lngSpread);
+  
+  // Zoom: larger spread = lower zoom. Default to 20 for yard-level detail (shows house/garage)
+  let zoom = 20;
+  if (maxSpread > 0.0005) zoom = 19;
+  if (maxSpread > 0.001) zoom = 18;
+  if (maxSpread > 0.002) zoom = 17;
+  if (maxSpread > 0.004) zoom = 16;
+
+  // Build URL with styled markers
+  const params = new URLSearchParams({
+    center: `${centerLat.toFixed(6)},${centerLng.toFixed(6)}`,
+    zoom: String(zoom),
+    size: "600x360",
+    scale: "2", // High-res
+    maptype: "roadmap", // Clean roadmap view - trees don't block the yard
+    key: apiKey,
+  });
+
+  // Clean map styling - light background, subtle roads
+  params.append("style", "feature:poi|visibility:off");
+  params.append("style", "feature:transit|visibility:off");
+  params.append("style", "feature:road|element:labels|visibility:off");
+  params.append("style", "feature:landscape|element:geometry.fill|color:0xE8F5E9"); // Light green for lawns
+  params.append("style", "feature:road|element:geometry|color:0xffffff");
+  params.append("style", "feature:water|element:geometry|color:0xB3E5FC");
+
+  // Add parcel boundary if available (green outline)
+  if (parcelGeometry) {
+    const parcelPath = polygonToStaticMapPath(parcelGeometry);
+    if (parcelPath) {
+      // Green outline with slight fill, 3px weight
+      params.append("path", `color:${COLORS.parcel}FF|weight:3|fillcolor:${COLORS.parcel}20|${parcelPath}`);
+    }
+  }
+
+  // Add markers by source - limit each group to 25 to avoid URL length issues
+  // Owner captures = mint (teal)
+  const ownerCoords = ownerLocations
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 25)
+    .map((loc) => `${loc.lat.toFixed(6)},${loc.lng.toFixed(6)}`);
+  
+  // Pro captures = coral (red)
+  const proCoords = proLocations
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 25)
+    .map((loc) => `${loc.lat.toFixed(6)},${loc.lng.toFixed(6)}`);
+
+  if (ownerCoords.length > 0) {
+    params.append("markers", `color:${COLORS.mint}|size:small|${ownerCoords.join("|")}`);
+  }
+  if (proCoords.length > 0) {
+    params.append("markers", `color:${COLORS.coral}|size:small|${proCoords.join("|")}`);
+  }
+
+  const url = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+  
+  // Static Maps URLs have a ~16KB limit. Check and warn.
+  if (url.length > 16000) {
+    console.warn("[buildStaticMapUrl] URL exceeds 16KB, may fail");
+  }
+
+  return url;
+};
+
+/**
+ * Build a Google Static Maps URL for a walk route polyline.
+ */
+const buildWalkRouteMapUrl = (
+  path: Array<{ lat: number; lng: number }>,
+  apiKey: string,
+): string | null => {
+  if (path.length < 2) return null;
+
+  // Simplify path to max 100 points to keep URL short
+  const step = Math.max(1, Math.floor(path.length / 100));
+  const simplified = path.filter((_, i) => i % step === 0 || i === path.length - 1);
+
+  // Calculate bounds for center
+  const lats = simplified.map((p) => p.lat);
+  const lngs = simplified.map((p) => p.lng);
+  const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+
+  // Calculate spread to determine zoom level
+  const latSpread = Math.max(...lats) - Math.min(...lats);
+  const lngSpread = Math.max(...lngs) - Math.min(...lngs);
+  const maxSpread = Math.max(latSpread, lngSpread);
+
+  let zoom = 17;
+  if (maxSpread > 0.002) zoom = 16;
+  if (maxSpread > 0.004) zoom = 15;
+  if (maxSpread > 0.008) zoom = 14;
+  if (maxSpread > 0.016) zoom = 13;
+  if (maxSpread > 0.032) zoom = 12;
+
+  const params = new URLSearchParams({
+    center: `${centerLat.toFixed(6)},${centerLng.toFixed(6)}`,
+    zoom: String(zoom),
+    size: "600x300",
+    scale: "2",
+    maptype: "roadmap",
+    key: apiKey,
+  });
+
+  // Clean map styling
+  params.append("style", "feature:poi|visibility:off");
+  params.append("style", "feature:transit|visibility:off");
+
+  // Build the path parameter - coral/emerald gradient line
+  const pathPoints = simplified
+    .map((p) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)
+    .join("|");
+  
+  // Coral walking route line
+  params.append("path", `color:0xF3645BFF|weight:4|${pathPoints}`);
+
+  // Start marker (green)
+  const start = simplified[0];
+  params.append("markers", `color:0x10B981|label:S|${start.lat.toFixed(6)},${start.lng.toFixed(6)}`);
+
+  // End marker (coral)
+  const end = simplified[simplified.length - 1];
+  if (end.lat !== start.lat || end.lng !== start.lng) {
+    params.append("markers", `color:0xF3645B|label:E|${end.lat.toFixed(6)},${end.lng.toFixed(6)}`);
+  }
+
+  const url = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+  if (url.length > 16000) {
+    console.warn("[buildWalkRouteMapUrl] URL exceeds 16KB, may fail");
+  }
+  return url;
+};
+
+/**
+ * Fetch the static map image and return as a Buffer.
+ */
+const fetchStaticMapImage = async (url: string): Promise<Buffer | null> => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.warn(`[fetchStaticMapImage] Failed to fetch: ${response.status}`);
+      return null;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    console.warn("[fetchStaticMapImage] Error fetching map:", error);
+    return null;
+  }
+};
 
 const formatRangeLabel = (start: Date, end: Date) => {
   const startLabel = formatZonedDate(start, { month: "short", day: "numeric" });
@@ -189,6 +510,8 @@ export async function buildCustomerEmailReportData(options: {
       email: true,
       city: true,
       state: true,
+      latitude: true,
+      longitude: true,
       dogs: { select: { id: true, name: true } },
     },
   });
@@ -317,6 +640,7 @@ export async function buildCustomerEmailReportData(options: {
           stoolSampleId: media.stoolSampleId ?? null,
           stoolSampleView: media.stoolSampleView ?? null,
           assetType: media.assetType ?? null,
+          reviewStatus: media.reviewStatus ?? null,
         })),
       )
     : [];
@@ -361,7 +685,9 @@ export async function buildCustomerEmailReportData(options: {
     .sort((a, b) => b[1] - a[1])
     .map(([label, count]) => ({ label, count }));
 
-  const hydrationAvg = hydrationCount ? hydrationTotal / hydrationCount : null;
+  // Calculate hydration average, but treat values <= 5 as invalid (AI couldn't determine)
+  const rawHydrationAvg = hydrationCount ? hydrationTotal / hydrationCount : null;
+  const hydrationAvg = rawHydrationAvg != null && rawHydrationAvg > 5 ? rawHydrationAvg : null;
   const firmnessAvg = firmnessCount ? firmnessTotal / firmnessCount : null;
 
   const latestOwnerReading = ownerReadings[0];
@@ -528,6 +854,76 @@ export async function buildCustomerEmailReportData(options: {
     }
   }
 
+  let poopMap: CustomerEmailReportData["poopMap"] | undefined;
+  // Use process.env directly as fallback since env module may be cached before dotenv loads in scripts
+  const mapsApiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY
+    ?? process.env.GOOGLE_MAPS_API_KEY
+    ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  
+  if (shouldFetchWellness && mapsApiKey) {
+    const mapPoints: Array<{ lat: number; lng: number; weight: number; source: "OWNER" | "PRO" }> = [
+      ...ownerCaptures
+        .filter((capture) => typeof capture.gpsLat === "number" && typeof capture.gpsLng === "number")
+        .map((capture) => ({
+          lat: capture.gpsLat as number,
+          lng: capture.gpsLng as number,
+          weight: computeHeatmapWeight(capture.gpsAccuracy ?? null),
+          source: "OWNER" as const,
+        })),
+      ...proMedia
+        .filter((media) => typeof media.gpsLat === "number" && typeof media.gpsLng === "number")
+        .map((media) => ({
+          lat: media.gpsLat as number,
+          lng: media.gpsLng as number,
+          weight: computeHeatmapWeight(media.gpsAccuracy ?? null),
+          source: "PRO" as const,
+        })),
+    ];
+    
+    // Count by source for legend display
+    const ownerCount = mapPoints.filter((p) => p.source === "OWNER").length;
+    const proCount = mapPoints.filter((p) => p.source === "PRO").length;
+
+    if (mapPoints.length > 0) {
+      // Use customer's home location for parcel lookup (like the app does)
+      const homeLocation = typeof customer.latitude === "number" && typeof customer.longitude === "number"
+        ? { lat: customer.latitude, lng: customer.longitude }
+        : null;
+      
+      let parcelGeometry: ParcelGeometry | null = null;
+      if (homeLocation) {
+        parcelGeometry = await loadParcelBoundary(homeLocation.lat, homeLocation.lng);
+      }
+      
+      const staticMapUrl = buildStaticMapUrl(mapPoints, mapsApiKey, parcelGeometry);
+      
+      if (staticMapUrl && bucket) {
+        // Fetch the static map image and store it for reliable email delivery
+        const imageBuffer = await fetchStaticMapImage(staticMapUrl);
+        if (imageBuffer) {
+          const storagePath = `reports/poop-maps/${orgId}/${customerId}/${period.periodKey}.png`;
+          try {
+            await uploadFile(bucket, storagePath, imageBuffer, "image/png");
+            const url = await createSignedUrl(bucket, storagePath, 60 * 60 * 24 * 7); // 7 days
+            if (url) {
+              poopMap = { heatmapUrl: url, pointsCount: mapPoints.length, ownerCount, proCount };
+            }
+          } catch {
+            // ignore storage failures, fall back to direct URL
+          }
+        }
+        
+        // If storage failed, use the static map URL directly (less reliable for some email clients)
+        if (!poopMap && staticMapUrl) {
+          poopMap = { heatmapUrl: staticMapUrl, pointsCount: mapPoints.length, ownerCount, proCount };
+        }
+      } else if (staticMapUrl) {
+        // No storage bucket, use direct URL
+        poopMap = { heatmapUrl: staticMapUrl, pointsCount: mapPoints.length, ownerCount, proCount };
+      }
+    }
+  }
+
   const reportData: CustomerEmailReportData = {
     customer: {
       id: customer.id,
@@ -548,6 +944,7 @@ export async function buildCustomerEmailReportData(options: {
       foodLogCount,
     },
     highlights: highlightList.slice(0, 4),
+    poopMap,
   };
 
   if (sections.includeWellness) {
@@ -587,10 +984,46 @@ export async function buildCustomerEmailReportData(options: {
   }
 
   if (sections.includeWalks) {
+    let latestRouteMapUrl: string | null = null;
+    const latestWalk = walks[0]; // Already sorted by startedAt desc
+    
+    // Generate route map for the latest walk if it has a path
+    if (latestWalk?.path && mapsApiKey) {
+      const pathData = latestWalk.path as Array<{ lat: number; lng: number }>;
+      if (Array.isArray(pathData) && pathData.length >= 2) {
+        const routeMapUrl = buildWalkRouteMapUrl(pathData, mapsApiKey);
+        
+        if (routeMapUrl && bucket) {
+          const imageBuffer = await fetchStaticMapImage(routeMapUrl);
+          if (imageBuffer) {
+            const storagePath = `reports/walk-routes/${orgId}/${customerId}/${period.periodKey}-latest.png`;
+            try {
+              await uploadFile(bucket, storagePath, imageBuffer, "image/png");
+              const url = await createSignedUrl(bucket, storagePath, 60 * 60 * 24 * 7);
+              if (url) {
+                latestRouteMapUrl = url;
+              }
+            } catch {
+              // Fall back to direct URL
+            }
+          }
+          if (!latestRouteMapUrl && routeMapUrl) {
+            latestRouteMapUrl = routeMapUrl;
+          }
+        } else if (routeMapUrl) {
+          latestRouteMapUrl = routeMapUrl;
+        }
+      }
+    }
+
     reportData.walks = {
       total: walks.length,
       distanceMiles: Number.isFinite(walkDistanceMeters) ? toMiles(walkDistanceMeters) : 0,
       durationMinutes: walkDurationSeconds / 60,
+      latestRouteMapUrl,
+      latestRouteDogName: latestWalk?.dogId ? customer.dogs.find(d => d.id === latestWalk.dogId)?.name ?? null : null,
+      latestRouteDistanceMiles: latestWalk ? toMiles(latestWalk.distanceMeters) : null,
+      latestRouteDurationMinutes: latestWalk ? latestWalk.durationSeconds / 60 : null,
     };
   }
 

@@ -7,13 +7,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
 import Button from '@/components/ui/Button';
-import ChoiceChip from '@/components/ui/ChoiceChip';
 import Screen from '@/components/ui/Screen';
+import CheckInCard from '@/components/wellness/CheckInCard';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -21,8 +20,6 @@ import { apiRequest } from '@/lib/api/client';
 import { isCustomerSetupRequired } from '@/lib/customer/setup';
 import { parseDateInput } from '@/lib/dates';
 import type { WellnessCheckInContext } from '@/lib/api/types';
-import { symptomOptions } from '@/lib/wellness/options';
-import { assessSymptomRisk, guidanceForSymptomRisk, labelForSymptomRisk } from '@/lib/wellness/symptomRisk';
 
 type DogCheckInState = {
   dogId: string;
@@ -64,29 +61,6 @@ const formatWeekRange = (startIso: string, endIso: string) => {
   return `${start.toLocaleDateString(undefined, options)} - ${end.toLocaleDateString(undefined, options)}`;
 };
 
-const PRIMARY_SYMPTOMS = new Set([
-  'VOMITING',
-  'LETHARGY',
-  'APPETITE_LOSS',
-  'THIRST_INCREASE',
-  'THIRST_DECREASE',
-  'ACCIDENTS',
-]);
-
-const primarySymptomOptions = symptomOptions.filter((option) => PRIMARY_SYMPTOMS.has(option.value));
-const SYMPTOM_LABELS = symptomOptions.reduce<Record<string, string>>((acc, option) => {
-  acc[option.value] = option.label;
-  return acc;
-}, {});
-const SYMPTOM_GROUPS = [
-  { title: 'Digestive', values: ['VOMITING', 'ACCIDENTS'] },
-  { title: 'Energy & appetite', values: ['LETHARGY', 'APPETITE_LOSS', 'APPETITE_INCREASE'] },
-  { title: 'Hydration & weight', values: ['THIRST_INCREASE', 'THIRST_DECREASE', 'WEIGHT_LOSS', 'WEIGHT_GAIN'] },
-  { title: 'Respiratory', values: ['COUGHING', 'SNEEZING'] },
-  { title: 'Skin & behavior', values: ['ITCHING', 'SKIN_IRRITATION', 'BEHAVIOR_CHANGE'] },
-  { title: 'Other', values: ['OTHER'] },
-] as const;
-
 export default function CustomerCheckIn() {
   const { session } = useAuth();
   const { weekStart: weekStartParam } = useLocalSearchParams<{ weekStart?: string }>();
@@ -100,8 +74,6 @@ export default function CustomerCheckIn() {
   const [error, setError] = useState<string | null>(null);
   const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
-  const [expandedSymptoms, setExpandedSymptoms] = useState<Record<string, boolean>>({});
-  const [vetDetailsExpanded, setVetDetailsExpanded] = useState<Record<string, boolean>>({});
   const [activeDogId, setActiveDogId] = useState<string | null>(null);
 
   const flaggedSummary = context?.aiFlags ?? null;
@@ -148,12 +120,6 @@ export default function CustomerCheckIn() {
         streakIfSubmit: dog.streakIfSubmit,
       }));
       setDogStates(nextStates);
-      setVetDetailsExpanded(
-        nextStates.reduce<Record<string, boolean>>((acc, dog) => {
-          acc[dog.dogId] = dog.vetConfirmed;
-          return acc;
-        }, {}),
-      );
       setActiveDogId((prev) => {
         if (prev && nextStates.some((dog) => dog.dogId === prev)) return prev;
         const firstPending = nextStates.find((dog) => !dog.submitted || dog.dirty);
@@ -229,7 +195,6 @@ export default function CustomerCheckIn() {
       diagnosisLabel: '',
       diagnosisNotes: '',
     });
-    setVetDetailsExpanded((prev) => ({ ...prev, [dogId]: false }));
   };
 
   const pendingDogs = useMemo(
@@ -240,10 +205,6 @@ export default function CustomerCheckIn() {
   const activeDog = useMemo(
     () => dogStates.find((dog) => dog.dogId === activeDogId) ?? dogStates[0] ?? null,
     [activeDogId, dogStates],
-  );
-  const activeRisk = useMemo(
-    () => assessSymptomRisk(activeDog?.symptoms ?? []),
-    [activeDog?.symptoms],
   );
   const activeIndex = useMemo(
     () => dogStates.findIndex((dog) => dog.dogId === activeDog?.dogId),
@@ -450,193 +411,23 @@ export default function CustomerCheckIn() {
             ) : null}
 
             {activeDog ? (
-              <View
+              <CheckInCard
                 key={activeDog.dogId}
-                style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}
-              >
-                <Text style={[styles.cardTitle, { color: palette.text }]}>
-                  How was {activeDog.name} this week?
-                </Text>
-                {activeDog.submitted && !activeDog.dirty ? (
-                  <Text style={[styles.cardBody, { color: palette.tint }]}>
-                    Submitted this week
-                  </Text>
-                ) : null}
-
-                <View style={styles.rowWrap}>
-                  <ChoiceChip
-                    label="All good"
-                    selected={activeDog.noIssues}
-                    onPress={() => setNoIssuesForDog(activeDog.dogId, true)}
-                  />
-                  <ChoiceChip
-                    label="I noticed something"
-                    selected={!activeDog.noIssues}
-                    onPress={() => setNoIssuesForDog(activeDog.dogId, false)}
-                  />
-                </View>
-
-                {!activeDog.noIssues ? (
-                  <View style={[styles.noticeCard, { borderColor: palette.border }]}>
-                    <Text style={[styles.inputLabel, { color: palette.text }]}>
-                      What did you notice?
-                    </Text>
-                    <Text style={[styles.helperText, { color: palette.muted }]}>
-                      Start with a few quick picks, then add a note if needed.
-                    </Text>
-
-                    <Text style={[styles.sectionLabel, { color: palette.muted }]}>Common symptoms</Text>
-                    <View style={styles.rowWrap}>
-                      {primarySymptomOptions.map((option) => (
-                        <ChoiceChip
-                          key={option.value}
-                          label={option.label}
-                          selected={activeDog.symptoms.includes(option.value)}
-                          onPress={() => {
-                            const next = activeDog.symptoms.includes(option.value)
-                              ? activeDog.symptoms.filter((item) => item !== option.value)
-                              : [...activeDog.symptoms, option.value];
-                            updateDogState(activeDog.dogId, { symptoms: next });
-                          }}
-                        />
-                      ))}
-                    </View>
-
-                    <Pressable
-                      onPress={() =>
-                        setExpandedSymptoms((prev) => ({
-                          ...prev,
-                          [activeDog.dogId]: !prev[activeDog.dogId],
-                        }))
-                      }
-                    >
-                      <Text style={[styles.expandLink, { color: palette.tint }]}>
-                        {expandedSymptoms[activeDog.dogId] ? 'Hide full list' : 'See more symptoms'}
-                      </Text>
-                    </Pressable>
-
-                    {expandedSymptoms[activeDog.dogId] ? (
-                      <View style={styles.symptomGroupStack}>
-                        <Text style={[styles.sectionLabel, { color: palette.muted }]}>
-                          More symptoms by category
-                        </Text>
-                        {SYMPTOM_GROUPS.filter((group) =>
-                          group.values.some((value) => !PRIMARY_SYMPTOMS.has(value)),
-                        ).map((group) => (
-                          <View key={group.title} style={styles.symptomGroup}>
-                            <Text style={[styles.symptomGroupTitle, { color: palette.muted }]}>
-                              {group.title}
-                            </Text>
-                            <View style={styles.rowWrap}>
-                              {group.values.map((value) => {
-                                if (PRIMARY_SYMPTOMS.has(value)) return null;
-                                const label = SYMPTOM_LABELS[value] ?? value;
-                                const selected = activeDog.symptoms.includes(value);
-                                return (
-                                  <ChoiceChip
-                                    key={value}
-                                    label={label}
-                                    selected={selected}
-                                    onPress={() => {
-                                      const next = selected
-                                        ? activeDog.symptoms.filter((item) => item !== value)
-                                        : [...activeDog.symptoms, value];
-                                      updateDogState(activeDog.dogId, { symptoms: next });
-                                    }}
-                                  />
-                                );
-                              })}
-                            </View>
-                          </View>
-                        ))}
-                      </View>
-                    ) : null}
-
-                    {activeDog.symptoms.length > 0 ? (
-                      <View
-                        style={[
-                          styles.riskCard,
-                          {
-                            borderColor:
-                              activeRisk.level === 'vet_now'
-                                ? palette.danger
-                                : Colors.brand.gold,
-                            backgroundColor:
-                              activeRisk.level === 'vet_now'
-                                ? 'rgba(225, 29, 72, 0.08)'
-                                : 'rgba(255, 194, 77, 0.12)',
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.riskTitle, { color: palette.text }]}>
-                          {labelForSymptomRisk(activeRisk.level)}
-                        </Text>
-                        <Text style={[styles.helperText, { color: palette.muted }]}>
-                          {guidanceForSymptomRisk(activeRisk.level)}
-                        </Text>
-                      </View>
-                    ) : null}
-
-                    <Text style={[styles.inputLabel, { color: palette.text }]}>Notes (optional)</Text>
-                    <TextInput
-                      placeholder="Add details, diet changes, or behavior shifts"
-                      placeholderTextColor={palette.muted}
-                      value={activeDog.behaviorNotes}
-                      onChangeText={(value) => updateDogState(activeDog.dogId, { behaviorNotes: value })}
-                      style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                      multiline
-                    />
-
-                    <Pressable
-                      onPress={() => {
-                        const next = !vetDetailsExpanded[activeDog.dogId];
-                        setVetDetailsExpanded((prev) => ({ ...prev, [activeDog.dogId]: next }));
-                        updateDogState(activeDog.dogId, {
-                          vetConfirmed: next,
-                          ...(next
-                            ? {}
-                            : {
-                                diagnosisLabel: '',
-                                diagnosisNotes: '',
-                              }),
-                        });
-                      }}
-                    >
-                      <Text style={[styles.expandLink, { color: palette.tint }]}>
-                        {vetDetailsExpanded[activeDog.dogId]
-                          ? 'Remove vet visit details'
-                          : 'Add vet visit details'}
-                      </Text>
-                    </Pressable>
-                    {vetDetailsExpanded[activeDog.dogId] ? (
-                      <View style={styles.stack}>
-                        <Text style={[styles.inputLabel, { color: palette.text }]}>
-                          Diagnosis (optional)
-                        </Text>
-                        <TextInput
-                          placeholder="Diagnosis or condition name"
-                          placeholderTextColor={palette.muted}
-                          value={activeDog.diagnosisLabel}
-                          onChangeText={(value) => updateDogState(activeDog.dogId, { diagnosisLabel: value })}
-                          style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                        />
-                        <Text style={[styles.inputLabel, { color: palette.text }]}>
-                          Vet notes (optional)
-                        </Text>
-                        <TextInput
-                          placeholder="Optional notes from the visit"
-                          placeholderTextColor={palette.muted}
-                          value={activeDog.diagnosisNotes}
-                          onChangeText={(value) => updateDogState(activeDog.dogId, { diagnosisNotes: value })}
-                          style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                          multiline
-                        />
-                      </View>
-                    ) : null}
-                  </View>
-                ) : null}
-
-              </View>
+                dogName={activeDog.name}
+                noIssues={activeDog.noIssues}
+                symptoms={activeDog.symptoms}
+                behaviorNotes={activeDog.behaviorNotes}
+                diagnosisLabel={activeDog.diagnosisLabel}
+                diagnosisNotes={activeDog.diagnosisNotes}
+                isSubmitted={activeDog.submitted}
+                isDirty={activeDog.dirty}
+                streakCount={activeDog.streakCount}
+                onNoIssuesChange={(value) => setNoIssuesForDog(activeDog.dogId, value)}
+                onSymptomsChange={(symptoms) => updateDogState(activeDog.dogId, { symptoms })}
+                onBehaviorNotesChange={(notes) => updateDogState(activeDog.dogId, { behaviorNotes: notes })}
+                onDiagnosisLabelChange={(label) => updateDogState(activeDog.dogId, { diagnosisLabel: label })}
+                onDiagnosisNotesChange={(notes) => updateDogState(activeDog.dogId, { diagnosisNotes: notes })}
+              />
             ) : null}
           </>
         )}
@@ -698,12 +489,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 12,
   },
-  noticeCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 12,
-    gap: 10,
-  },
   progressCard: {
     borderWidth: 1,
   },
@@ -714,53 +499,9 @@ const styles = StyleSheet.create({
   cardBody: {
     fontSize: 14,
   },
-  helperText: {
-    fontSize: 12,
-  },
-  rowWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  symptomGroupStack: {
-    gap: 12,
-  },
-  symptomGroup: {
-    gap: 8,
-  },
-  symptomGroupTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  expandLink: {
-    fontSize: 12,
-    fontWeight: '600',
-    paddingVertical: 6,
-  },
-  stack: {
-    gap: 12,
-  },
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  riskCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 10,
-    gap: 4,
-  },
-  riskTitle: {
-    fontSize: 13,
-    fontWeight: '700',
   },
   dogSelectorSection: {
     marginBottom: 16,
@@ -785,14 +526,6 @@ const styles = StyleSheet.create({
   dogTabStatus: {
     fontSize: 11,
     fontWeight: '600',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    minHeight: 44,
   },
   inlineRow: {
     flexDirection: 'row',

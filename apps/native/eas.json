@@ -9,7 +9,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://www.getinsightscoop.com",
-        "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCos6ZLi5Cg0U1qpraxI0QlQCjPW-5LjxU",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCeIVXC9xY6hNMXoS_FAB0smDAe7ia_EOc",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb"
       },
@@ -28,7 +28,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://www.getinsightscoop.com",
-        "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCos6ZLi5Cg0U1qpraxI0QlQCjPW-5LjxU",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCeIVXC9xY6hNMXoS_FAB0smDAe7ia_EOc",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb"
       },
@@ -40,7 +40,9 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://www.getinsightscoop.com",
-        "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCos6ZLi5Cg0U1qpraxI0QlQCjPW-5LjxU"
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCeIVXC9xY6hNMXoS_FAB0smDAe7ia_EOc",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_YOUR_PRODUCTION_IOS_KEY",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_YOUR_PRODUCTION_ANDROID_KEY"
       }
     }
   },

@@ -157,10 +157,13 @@ export default function Differentiators() {
     return "linear-gradient(160deg, rgba(8,16,12,0.1) 0%, rgba(8,18,12,0.09) 45%, rgba(10,18,12,0.08) 100%)";
   }, [theme]);
 
+  // Dark fallback ensures white text is always readable if image fails to load
+  const fallbackBackground = "linear-gradient(135deg, #1a2820 0%, #0d1a14 50%, #0a100c 100%)";
+
   return (
     <section
       className="landing-section section-modern relative overflow-hidden"
-      style={{ backgroundColor: theme === "dark" ? "#0a100c" : "#f8f5ee" }}
+      style={{ background: fallbackBackground }}
     >
       <motion.div
         className="pointer-events-none absolute inset-x-0 -top-12 h-16 z-[1]"
@@ -190,6 +193,7 @@ export default function Differentiators() {
           className="object-cover"
           sizes="100vw"
           style={{ objectPosition: "40% center" }}
+          unoptimized
         />
         <motion.div
           className="absolute inset-0"

@@ -103,17 +103,38 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   let releasedCount = 0;
   const errors: string[] = [];
+  let hasInsufficientFunds = false;
 
   for (const payout of eligiblePayouts) {
     try {
       await releaseVisitPayout(payout.id);
       releasedCount += 1;
     } catch (error) {
-      errors.push(error instanceof Error ? error.message : "unknown_error");
+      const errorMessage = error instanceof Error ? error.message : "unknown_error";
+      errors.push(errorMessage);
+      
+      // Check for Stripe insufficient funds error
+      if (errorMessage.toLowerCase().includes("insufficient funds")) {
+        hasInsufficientFunds = true;
+      }
     }
   }
 
   if (errors.length) {
+    // Return more specific error codes for known issues
+    if (hasInsufficientFunds) {
+      const totalCents = eligiblePayouts.reduce((sum, p) => sum + (p.totalAmountCents || 0), 0);
+      return NextResponse.json(
+        { 
+          error: "insufficient_funds", 
+          amountCents: totalCents,
+          message: `Your Stripe account has insufficient available funds to transfer $${(totalCents / 100).toFixed(2)}. Check your Stripe balance.`,
+          details: errors,
+        },
+        { status: 402 }, // 402 Payment Required
+      );
+    }
+    
     return NextResponse.json(
       { error: "release_failed", details: errors },
       { status: 500 },

@@ -9,7 +9,6 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   View,
   type LayoutChangeEvent,
 } from 'react-native';
@@ -19,14 +18,14 @@ import * as Location from 'expo-location';
 import * as Device from 'expo-device';
 
 import Button from '@/components/ui/Button';
-import ChoiceChip from '@/components/ui/ChoiceChip';
 import Screen from '@/components/ui/Screen';
+import TileScheduleSheet, { type TileSchedule, type AvailabilityWindow } from '@/components/scooper/TileScheduleSheet';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiRequest } from '@/lib/api/client';
+import { DARK_MAP_STYLE } from '@/lib/maps/style';
 
-type AvailabilityWindow = 'AM' | 'PM' | 'FULL';
 type ServiceTileStatus = 'LIVE' | 'WAITLIST' | 'DRAFT' | 'SUSPENDED';
 
 type TileGeometry =
@@ -90,22 +89,16 @@ type TileSelection = {
   maxStops: number;
 };
 
-const WEEKDAYS = [
-  { label: 'Sun', value: 0 },
-  { label: 'Mon', value: 1 },
-  { label: 'Tue', value: 2 },
-  { label: 'Wed', value: 3 },
-  { label: 'Thu', value: 4 },
-  { label: 'Fri', value: 5 },
-  { label: 'Sat', value: 6 },
-];
-const ALL_WEEKDAYS = WEEKDAYS.map((day) => day.value);
-
-const WINDOW_OPTIONS: Array<{ label: string; value: AvailabilityWindow }> = [
-  { label: 'Full day', value: 'FULL' },
-  { label: 'Morning', value: 'AM' },
-  { label: 'Afternoon', value: 'PM' },
-];
+const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
+const WEEKDAY_LABELS: Record<number, string> = {
+  0: 'Sun',
+  1: 'Mon',
+  2: 'Tue',
+  3: 'Wed',
+  4: 'Thu',
+  5: 'Fri',
+  6: 'Sat',
+};
 
 const STATUS_LABELS: Record<ServiceTileStatus, string> = {
   LIVE: 'Live',
@@ -186,8 +179,7 @@ function formatWeekdaySummary(weekdays: number[]) {
   const sorted = [...weekdays].sort((a, b) => a - b);
   if (sorted.length === ALL_WEEKDAYS.length) return 'All days';
   if (sorted.length === 0) return 'No days selected';
-  const lookup = new Map(WEEKDAYS.map((day) => [day.value, day.label]));
-  return sorted.map((day) => lookup.get(day) ?? day).join(', ');
+  return sorted.map((day) => WEEKDAY_LABELS[day] ?? String(day)).join(', ');
 }
 
 function formatWindowSummary(window: AvailabilityWindow) {
@@ -218,7 +210,7 @@ export default function ScooperAvailability() {
   const [tiles, setTiles] = useState<TileDisplay[]>([]);
   const [selections, setSelections] = useState<Record<string, TileSelection>>({});
   const [focusedSlug, setFocusedSlug] = useState<string | null>(null);
-  const [expandedSchedules, setExpandedSchedules] = useState<Record<string, boolean>>({});
+  const [scheduleSheetSlug, setScheduleSheetSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -495,7 +487,7 @@ export default function ScooperAvailability() {
         slug,
         selected: value,
         weekdays: DEFAULT_WEEKDAYS,
-        window: 'FULL',
+        window: 'FULL' as AvailabilityWindow,
         maxStops: defaultMaxStops,
       };
       return {
@@ -506,37 +498,16 @@ export default function ScooperAvailability() {
         },
       };
     });
-    if (!value) {
-      setExpandedSchedules((prev) => ({ ...prev, [slug]: false }));
-    }
     if (value) {
       focusTile(slug);
     }
   };
 
-  const toggleSchedule = (slug: string) => {
-    setExpandedSchedules((prev) => ({ ...prev, [slug]: !prev[slug] }));
+  const openScheduleSheet = (slug: string) => {
+    setScheduleSheetSlug(slug);
   };
 
-  const toggleWeekday = (slug: string, weekday: number) => {
-    setSelections((prev) => {
-      const current = prev[slug];
-      if (!current) return prev;
-      const nextDays = current.weekdays.includes(weekday)
-        ? current.weekdays.filter((day) => day !== weekday)
-        : [...current.weekdays, weekday];
-      nextDays.sort((a, b) => a - b);
-      return {
-        ...prev,
-        [slug]: {
-          ...current,
-          weekdays: nextDays,
-        },
-      };
-    });
-  };
-
-  const updateWindow = (slug: string, window: AvailabilityWindow) => {
+  const handleScheduleSave = (slug: string, schedule: TileSchedule) => {
     setSelections((prev) => {
       const current = prev[slug];
       if (!current) return prev;
@@ -544,26 +515,18 @@ export default function ScooperAvailability() {
         ...prev,
         [slug]: {
           ...current,
-          window,
+          weekdays: schedule.weekdays,
+          window: schedule.window,
+          maxStops: schedule.maxStops,
         },
       };
     });
+    setScheduleSheetSlug(null);
   };
 
-  const updateMaxStops = (slug: string, value: string) => {
-    const parsed = Number.parseInt(value, 10);
-    setSelections((prev) => {
-      const current = prev[slug];
-      if (!current || Number.isNaN(parsed)) return prev;
-      const clamped = Math.max(1, Math.min(60, parsed));
-      return {
-        ...prev,
-        [slug]: {
-          ...current,
-          maxStops: clamped,
-        },
-      };
-    });
+  const handleRemoveTile = (slug: string) => {
+    toggleTile(slug, false);
+    setScheduleSheetSlug(null);
   };
 
   const handleSave = async () => {
@@ -700,6 +663,8 @@ export default function ScooperAvailability() {
         ref={mapRef}
         style={styles.map}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        mapType={Platform.OS === 'ios' ? (colorScheme === 'dark' ? 'mutedStandard' : 'standard') : 'standard'}
+        customMapStyle={colorScheme === 'dark' ? DARK_MAP_STYLE : []}
         initialRegion={mapRegion}
         onMapReady={handleMapReady}
         onLayout={handleMapLayout}
@@ -853,7 +818,6 @@ export default function ScooperAvailability() {
               selection?.window === 'FULL' &&
               (selection?.maxStops ?? defaultMaxStops) === defaultMaxStops;
             const hasCustomSchedule = isSelected && !isFullSchedule;
-            const scheduleExpanded = isSelected && (expandedSchedules[tile.slug] ?? false);
             const scheduleSummary = !isSelected
               ? 'Off • Turn on to receive offers from this tile.'
               : isFullSchedule
@@ -915,7 +879,7 @@ export default function ScooperAvailability() {
                     </Pressable>
                     {isSelected ? (
                       <Pressable
-                        onPress={() => toggleSchedule(tile.slug)}
+                        onPress={() => openScheduleSheet(tile.slug)}
                         style={[styles.scheduleButton, { borderColor: palette.border }]}
                       >
                         <Text style={[styles.scheduleButtonText, { color: palette.text }]}>
@@ -928,46 +892,6 @@ export default function ScooperAvailability() {
                     {scheduleSummary}
                   </Text>
                 </View>
-                {isSelected && scheduleExpanded ? (
-                  <View
-                    style={[
-                      styles.selectionBlock,
-                      { borderColor: palette.border, backgroundColor: palette.background },
-                    ]}
-                  >
-                    <Text style={[styles.label, { color: palette.text }]}>Available days</Text>
-                    <View style={styles.rowWrap}>
-                      {WEEKDAYS.map((day) => (
-                        <ChoiceChip
-                          key={day.value}
-                          label={day.label}
-                          selected={selection.weekdays.includes(day.value)}
-                          onPress={() => toggleWeekday(tile.slug, day.value)}
-                        />
-                      ))}
-                    </View>
-
-                    <Text style={[styles.label, { color: palette.text }]}>Time window</Text>
-                    <View style={styles.rowWrap}>
-                      {WINDOW_OPTIONS.map((option) => (
-                        <ChoiceChip
-                          key={option.value}
-                          label={option.label}
-                          selected={selection.window === option.value}
-                          onPress={() => updateWindow(tile.slug, option.value)}
-                        />
-                      ))}
-                    </View>
-
-                    <Text style={[styles.label, { color: palette.text }]}>Max stops per day</Text>
-                    <TextInput
-                      value={String(selection.maxStops)}
-                      onChangeText={(value) => updateMaxStops(tile.slug, value)}
-                      keyboardType="number-pad"
-                      style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                    />
-                  </View>
-                ) : null}
               </View>
             );
           })
@@ -1013,6 +937,8 @@ export default function ScooperAvailability() {
               ref={fullMapRef}
               style={styles.map}
               provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+              mapType={Platform.OS === 'ios' ? (colorScheme === 'dark' ? 'mutedStandard' : 'standard') : 'standard'}
+              customMapStyle={colorScheme === 'dark' ? DARK_MAP_STYLE : []}
               initialRegion={mapRegion}
               onMapReady={handleFullMapReady}
               showsUserLocation={Boolean(location)}
@@ -1052,6 +978,25 @@ export default function ScooperAvailability() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* Schedule Sheet */}
+      {scheduleSheetSlug ? (
+        <TileScheduleSheet
+          visible={Boolean(scheduleSheetSlug)}
+          tileName={tileLookup[scheduleSheetSlug]?.name ?? 'Schedule'}
+          tileStatus={tileLookup[scheduleSheetSlug]?.status ?? 'LIVE'}
+          schedule={{
+            weekdays: selections[scheduleSheetSlug]?.weekdays ?? ALL_WEEKDAYS,
+            window: selections[scheduleSheetSlug]?.window ?? 'FULL',
+            maxStops: selections[scheduleSheetSlug]?.maxStops ?? 20,
+          }}
+          palette={palette}
+          colorScheme={colorScheme}
+          onClose={() => setScheduleSheetSlug(null)}
+          onSave={(schedule) => handleScheduleSave(scheduleSheetSlug, schedule)}
+          onRemove={() => handleRemoveTile(scheduleSheetSlug)}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -1243,27 +1188,6 @@ const styles = StyleSheet.create({
   },
   toggleButton: {
     minWidth: 88,
-  },
-  selectionBlock: {
-    gap: 10,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-  },
-  rowWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
   inlineRow: {
     flexDirection: 'row',

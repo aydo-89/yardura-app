@@ -71,6 +71,7 @@
     "jobs:customer-reports": "tsx -r dotenv/config jobs/start-customer-email-reports.ts",
     "jobs:visit-generator": "tsx -r dotenv/config jobs/start-visit-generator-worker.ts",
     "jobs:offer-sweeper": "tsx -r dotenv/config jobs/start-marketplace-offer-sweeper.ts",
+    "jobs:missed-visits": "tsx -r dotenv/config jobs/start-missed-visit-monitor.ts",
     "jobs:geo-snapshot": "tsx -r dotenv/config jobs/start-geo-snapshot-worker.ts",
     "jobs:route-drafts": "tsx -r dotenv/config jobs/start-route-drafts-worker.ts",
     "jobs:outbound-cadence": "tsx -r dotenv/config jobs/start-outbound-cadence-worker.ts",

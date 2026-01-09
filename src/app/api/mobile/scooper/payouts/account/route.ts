@@ -34,6 +34,12 @@ function extractStripeErrorDetails(error: unknown): StripeErrorDetails | null {
   };
 }
 
+function isMissingAccountError(error: unknown): boolean {
+  const details = extractStripeErrorDetails(error);
+  const message = details?.message?.toLowerCase() ?? "";
+  return details?.code === "resource_missing" || message.includes("no such account");
+}
+
 function resolveStripeSetupError(error: unknown): { message: string; code: string } | null {
   if (isStripeMissingError(error)) {
     return { message: "Stripe is not configured for payouts yet.", code: "stripe_unconfigured" };
@@ -44,10 +50,22 @@ function resolveStripeSetupError(error: unknown): { message: string; code: strin
   if (message.includes("invalid api key")) {
     return { message: "Stripe is not configured for payouts yet.", code: "stripe_invalid_key" };
   }
-  if (message.includes("connect") && (message.includes("access") || message.includes("enable"))) {
+  if (
+    message.includes("connect") &&
+    (message.includes("access") ||
+      message.includes("enable") ||
+      message.includes("signed up for connect") ||
+      message.includes("sign up for connect"))
+  ) {
     return {
       message: "Stripe Connect is not enabled for this account yet.",
       code: "stripe_connect_unavailable",
+    };
+  }
+  if (details?.code === "resource_missing" || message.includes("no such account")) {
+    return {
+      message: "Payout setup needs a reset. Please try again.",
+      code: "stripe_account_missing",
     };
   }
   return {
@@ -188,17 +206,42 @@ export async function POST(request: NextRequest) {
 
   try {
     const stripeConnect = await loadStripeConnect();
-    const accountId = await stripeConnect.ensureStripeConnectAccount({
+    let accountId = await stripeConnect.ensureStripeConnectAccount({
       userId,
       email: user.email,
       name: user.name,
     });
 
-    const status = await stripeConnect.fetchStripeConnectStatus(accountId);
-    const link =
-      intent === "update" && status.detailsSubmitted
-        ? await stripeConnect.createStripeConnectLoginLink(accountId)
-        : await stripeConnect.createStripeConnectAccountLink(accountId);
+    let status;
+    try {
+      status = await stripeConnect.fetchStripeConnectStatus(accountId);
+    } catch (error) {
+      if (isMissingAccountError(error)) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { stripeConnectAccountId: null },
+        });
+        accountId = await stripeConnect.ensureStripeConnectAccount({
+          userId,
+          email: user.email,
+          name: user.name,
+        });
+        status = await stripeConnect.fetchStripeConnectStatus(accountId);
+      } else {
+        throw error;
+      }
+    }
+    const hasRequirements = status.requirements.length > 0;
+    const needsDetails = !status.detailsSubmitted;
+    const needsPayoutEnable = !status.payoutsEnabled;
+    const needsAttention =
+      intent === "onboarding" || needsDetails || needsPayoutEnable || hasRequirements;
+    const linkType = needsAttention
+      ? "account_onboarding"
+      : intent === "update"
+        ? "account_update"
+        : "account_onboarding";
+    const link = await stripeConnect.createStripeConnectAccountLink(accountId, linkType);
 
     return NextResponse.json({
       ok: true,

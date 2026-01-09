@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-01-06T12:55:26.722Z",
+  "generatedAt": "2026-01-08T14:05:44.135Z",
   "source": {
     "listUrl": "https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2023/delineation-files/list1_2023.xlsx",
     "populationUrl": "https://api.census.gov/data/2022/acs/acs5?get=NAME,B01001_001E&for=metropolitan%20statistical%20area/micropolitan%20statistical%20area:*",
     "includeMicro": false,
-    "top": 100
+    "top": 100,
+    "notes": "Updated with 66 additional major city counties"
   },
   "metros": [
     {
@@ -4488,6 +4489,336 @@
       "countyFips": "39155",
       "state": "OH",
       "stateFips": "39"
+    },
+    {
+      "countyFips": "36061",
+      "countyName": "New York County",
+      "state": "NY"
+    },
+    {
+      "countyFips": "36047",
+      "countyName": "Kings County",
+      "state": "NY"
+    },
+    {
+      "countyFips": "36081",
+      "countyName": "Queens County",
+      "state": "NY"
+    },
+    {
+      "countyFips": "36005",
+      "countyName": "Bronx County",
+      "state": "NY"
+    },
+    {
+      "countyFips": "36085",
+      "countyName": "Richmond County",
+      "state": "NY"
+    },
+    {
+      "countyFips": "06037",
+      "countyName": "Los Angeles County",
+      "state": "CA"
+    },
+    {
+      "countyFips": "06075",
+      "countyName": "San Francisco County",
+      "state": "CA"
+    },
+    {
+      "countyFips": "06001",
+      "countyName": "Alameda County",
+      "state": "CA"
+    },
+    {
+      "countyFips": "06059",
+      "countyName": "Orange County",
+      "state": "CA"
+    },
+    {
+      "countyFips": "06107",
+      "countyName": "Tulare County",
+      "state": "CA"
+    },
+    {
+      "countyFips": "06013",
+      "countyName": "Contra Costa County",
+      "state": "CA"
+    },
+    {
+      "countyFips": "06081",
+      "countyName": "San Mateo County",
+      "state": "CA"
+    },
+    {
+      "countyFips": "17031",
+      "countyName": "Cook County",
+      "state": "IL"
+    },
+    {
+      "countyFips": "17197",
+      "countyName": "Will County",
+      "state": "IL"
+    },
+    {
+      "countyFips": "17043",
+      "countyName": "DuPage County",
+      "state": "IL"
+    },
+    {
+      "countyFips": "17167",
+      "countyName": "Sangamon County",
+      "state": "IL"
+    },
+    {
+      "countyFips": "17089",
+      "countyName": "Kane County",
+      "state": "IL"
+    },
+    {
+      "countyFips": "48113",
+      "countyName": "Dallas County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48439",
+      "countyName": "Tarrant County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48085",
+      "countyName": "Collin County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48303",
+      "countyName": "Lubbock County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48375",
+      "countyName": "Potter County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48061",
+      "countyName": "Cameron County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48027",
+      "countyName": "Bell County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48121",
+      "countyName": "Denton County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48441",
+      "countyName": "Taylor County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48245",
+      "countyName": "Jefferson County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "48451",
+      "countyName": "Tom Green County",
+      "state": "TX"
+    },
+    {
+      "countyFips": "12086",
+      "countyName": "Miami-Dade County",
+      "state": "FL"
+    },
+    {
+      "countyFips": "12057",
+      "countyName": "Hillsborough County",
+      "state": "FL"
+    },
+    {
+      "countyFips": "12103",
+      "countyName": "Pinellas County",
+      "state": "FL"
+    },
+    {
+      "countyFips": "12011",
+      "countyName": "Broward County",
+      "state": "FL"
+    },
+    {
+      "countyFips": "12099",
+      "countyName": "Palm Beach County",
+      "state": "FL"
+    },
+    {
+      "countyFips": "42101",
+      "countyName": "Philadelphia County",
+      "state": "PA"
+    },
+    {
+      "countyFips": "53033",
+      "countyName": "King County",
+      "state": "WA"
+    },
+    {
+      "countyFips": "53053",
+      "countyName": "Pierce County",
+      "state": "WA"
+    },
+    {
+      "countyFips": "53061",
+      "countyName": "Snohomish County",
+      "state": "WA"
+    },
+    {
+      "countyFips": "39035",
+      "countyName": "Cuyahoga County",
+      "state": "OH"
+    },
+    {
+      "countyFips": "13121",
+      "countyName": "Fulton County",
+      "state": "GA"
+    },
+    {
+      "countyFips": "13215",
+      "countyName": "Muscogee County",
+      "state": "GA"
+    },
+    {
+      "countyFips": "26163",
+      "countyName": "Wayne County",
+      "state": "MI"
+    },
+    {
+      "countyFips": "26099",
+      "countyName": "Macomb County",
+      "state": "MI"
+    },
+    {
+      "countyFips": "25025",
+      "countyName": "Suffolk County",
+      "state": "MA"
+    },
+    {
+      "countyFips": "25017",
+      "countyName": "Middlesex County",
+      "state": "MA"
+    },
+    {
+      "countyFips": "47125",
+      "countyName": "Montgomery County",
+      "state": "TN"
+    },
+    {
+      "countyFips": "11001",
+      "countyName": "District of Columbia",
+      "state": "DC"
+    },
+    {
+      "countyFips": "51510",
+      "countyName": "Alexandria City",
+      "state": "VA"
+    },
+    {
+      "countyFips": "37129",
+      "countyName": "New Hanover County",
+      "state": "NC"
+    },
+    {
+      "countyFips": "34013",
+      "countyName": "Essex County",
+      "state": "NJ"
+    },
+    {
+      "countyFips": "34017",
+      "countyName": "Hudson County",
+      "state": "NJ"
+    },
+    {
+      "countyFips": "34031",
+      "countyName": "Passaic County",
+      "state": "NJ"
+    },
+    {
+      "countyFips": "34039",
+      "countyName": "Union County",
+      "state": "NJ"
+    },
+    {
+      "countyFips": "34023",
+      "countyName": "Middlesex County",
+      "state": "NJ"
+    },
+    {
+      "countyFips": "09001",
+      "countyName": "Fairfield County",
+      "state": "CT"
+    },
+    {
+      "countyFips": "09009",
+      "countyName": "New Haven County",
+      "state": "CT"
+    },
+    {
+      "countyFips": "09003",
+      "countyName": "Hartford County",
+      "state": "CT"
+    },
+    {
+      "countyFips": "41039",
+      "countyName": "Lane County",
+      "state": "OR"
+    },
+    {
+      "countyFips": "08069",
+      "countyName": "Larimer County",
+      "state": "CO"
+    },
+    {
+      "countyFips": "08123",
+      "countyName": "Weld County",
+      "state": "CO"
+    },
+    {
+      "countyFips": "20177",
+      "countyName": "Shawnee County",
+      "state": "KS"
+    },
+    {
+      "countyFips": "22055",
+      "countyName": "Lafayette Parish",
+      "state": "LA"
+    },
+    {
+      "countyFips": "19113",
+      "countyName": "Linn County",
+      "state": "IA"
+    },
+    {
+      "countyFips": "46099",
+      "countyName": "Minnehaha County",
+      "state": "SD"
+    },
+    {
+      "countyFips": "55009",
+      "countyName": "Brown County",
+      "state": "WI"
+    },
+    {
+      "countyFips": "55059",
+      "countyName": "Kenosha County",
+      "state": "WI"
+    },
+    {
+      "countyFips": "36119",
+      "countyName": "Westchester County",
+      "state": "NY"
     }
   ]
 }

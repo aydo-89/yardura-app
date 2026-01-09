@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, WellnessReportScope } from "@prisma/client";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 import { authOptions, safeGetServerSession } from "@/lib/auth";
@@ -8,6 +9,34 @@ import { env } from "@/lib/env";
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
+
+/**
+ * Sanitize text for PDF WinAnsi encoding.
+ * Replaces or removes characters that cannot be encoded in Windows-1252.
+ */
+function sanitizeForPdf(text: string): string {
+  if (!text) return "";
+  return text
+    // Non-breaking hyphen (U+2011) → regular hyphen
+    .replace(/\u2011/g, "-")
+    // En dash (U+2013) → regular hyphen
+    .replace(/\u2013/g, "-")
+    // Em dash (U+2014) → double hyphen
+    .replace(/\u2014/g, "--")
+    // Smart quotes → regular quotes
+    .replace(/[\u2018\u2019\u201A]/g, "'")
+    .replace(/[\u201C\u201D\u201E]/g, '"')
+    // Ellipsis (U+2026) → three dots
+    .replace(/\u2026/g, "...")
+    // Bullet (U+2022) → asterisk
+    .replace(/\u2022/g, "*")
+    // Non-breaking space → regular space
+    .replace(/\u00A0/g, " ")
+    // Zero-width spaces and joiners
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    // Any remaining non-WinAnsi characters → remove them
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
+}
 
 function parseDaysParam(value: string | null) {
   const parsed = Number(value ?? 14);
@@ -43,11 +72,12 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const dogId = searchParams.get("dogId");
+  const normalizedDogId = dogId?.trim() || null;
   const days = parseDaysParam(searchParams.get("days"));
 
-  const dog = dogId
+  const dog = normalizedDogId
     ? await prisma.dog.findFirst({
-        where: { id: dogId, customerId: customer.id },
+        where: { id: normalizedDogId, customerId: customer.id },
         select: { name: true, breed: true, age: true, weight: true },
       })
     : null;
@@ -55,10 +85,35 @@ export async function GET(request: NextRequest) {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
+  const dogOrHouseholdFilter = normalizedDogId
+    ? { OR: [{ dogId: normalizedDogId }, { dogId: null }] }
+    : {};
+  const householdScope: WellnessReportScope = WellnessReportScope.HOUSEHOLD;
+  const dogOrHouseholdCaptureFilter: Prisma.CustomerWellnessCaptureWhereInput =
+    normalizedDogId
+      ? {
+          OR: [
+            { dogId: normalizedDogId },
+            { suspectedDogIds: { has: normalizedDogId } },
+            { scope: householdScope },
+          ],
+        }
+      : {};
+  const dogOrHouseholdWeeklyFilter: Prisma.WeeklyWellnessReportWhereInput =
+    normalizedDogId
+      ? {
+          OR: [
+            { dogId: normalizedDogId },
+            { suspectedDogIds: { has: normalizedDogId } },
+            { scope: householdScope },
+          ],
+        }
+      : {};
+
   const latestReport = await prisma.weeklyWellnessReport.findFirst({
     where: {
       customerId: customer.id,
-      ...(dogId ? { OR: [{ dogId }, { suspectedDogIds: { has: dogId } }] } : {}),
+      ...dogOrHouseholdWeeklyFilter,
     },
     orderBy: { weekStart: "desc" },
   });
@@ -71,7 +126,7 @@ export async function GET(request: NextRequest) {
       where: {
         customerId: customer.id,
         capturedAt: { gte: windowStart, lte: windowEnd },
-        ...(dogId ? { OR: [{ dogId }, { suspectedDogIds: { has: dogId } }] } : {}),
+        ...dogOrHouseholdCaptureFilter,
       },
       orderBy: { capturedAt: "desc" },
       take: 4,
@@ -91,7 +146,7 @@ export async function GET(request: NextRequest) {
       where: {
         customerId: customer.id,
         loggedAt: { gte: windowStart, lte: windowEnd },
-        ...(dogId ? { dogId } : {}),
+        ...dogOrHouseholdFilter,
       },
       orderBy: { loggedAt: "desc" },
       take: 4,
@@ -103,7 +158,9 @@ export async function GET(request: NextRequest) {
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
   const drawText = (text: string, x: number, y: number, size = 12, color = rgb(0.1, 0.1, 0.1)) => {
-    page.drawText(text, { x, y, size, font, color });
+    // Sanitize text to remove characters not supported by WinAnsi encoding
+    const safeText = sanitizeForPdf(text);
+    page.drawText(safeText, { x, y, size, font, color });
   };
 
   drawText("Wellness Report", 50, 750, 20);

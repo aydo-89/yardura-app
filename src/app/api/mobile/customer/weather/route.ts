@@ -102,8 +102,8 @@ export async function GET(request: NextRequest) {
       : NextResponse.json({ ok: false, error: 'Customer access required' }, { status: 403 });
   }
 
-  let lat = customer.latitude;
-  let lng = customer.longitude;
+  const lat = customer.latitude;
+  const lng = customer.longitude;
 
   let weather: WeatherData | null = null;
   if (typeof lat === 'number' && typeof lng === 'number') {

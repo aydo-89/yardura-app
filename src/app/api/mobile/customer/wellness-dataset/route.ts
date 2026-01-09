@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma, WellnessReportScope } from '@prisma/client';
 
 import { buildCustomerSetupResponse, canSetupCustomer } from '@/lib/mobile/customer-setup';
 import { prisma } from '@/lib/prisma';
@@ -18,6 +19,13 @@ function parseDate(value: string | null) {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
+
+type WeeklyReportWithLinks = Prisma.WeeklyWellnessReportGetPayload<{
+  include: {
+    captures: { select: { captureId: true } };
+    dailyCheckIns: { select: { checkInId: true } };
+  };
+}>;
 
 export async function GET(request: NextRequest) {
   const token = getBearerToken(request);
@@ -51,6 +59,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const dogId = searchParams.get('dogId');
+  const normalizedDogId = dogId?.trim() || null;
   const from = parseDate(searchParams.get('from'));
   const to = parseDate(searchParams.get('to'));
   const limitRaw = Number(searchParams.get('limit') ?? 200);
@@ -61,16 +70,64 @@ export async function GET(request: NextRequest) {
   const dateFilter = from || to ? { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } : null;
 
   const dogWhere =
-    dogId && dogId.trim()
+    normalizedDogId
       ? {
           OR: [
-            { id: dogId.trim(), customerId: customer.id },
-            ...(customer.userId ? [{ id: dogId.trim(), userId: customer.userId }] : []),
+            { id: normalizedDogId, customerId: customer.id },
+            ...(customer.userId ? [{ id: normalizedDogId, userId: customer.userId }] : []),
           ],
         }
       : customer.userId
         ? { OR: [{ customerId: customer.id }, { userId: customer.userId }] }
         : { customerId: customer.id };
+
+  const dogOrHouseholdFilter = normalizedDogId
+    ? { OR: [{ dogId: normalizedDogId }, { dogId: null }] }
+    : {};
+  const dogOrHouseholdWithSuspectsFilter = normalizedDogId
+    ? {
+        OR: [
+          { dogId: normalizedDogId },
+          { suspectedDogIds: { has: normalizedDogId } },
+          { dogId: null },
+        ],
+      }
+    : {};
+  const householdScope: WellnessReportScope = WellnessReportScope.HOUSEHOLD;
+  const dogOrHouseholdCaptureFilter: Prisma.CustomerWellnessCaptureWhereInput =
+    normalizedDogId
+      ? {
+          OR: [
+            { dogId: normalizedDogId },
+            { suspectedDogIds: { has: normalizedDogId } },
+            { scope: householdScope },
+          ],
+        }
+      : {};
+  const dogOrHouseholdWeeklyFilter: Prisma.WeeklyWellnessReportWhereInput =
+    normalizedDogId
+      ? {
+          OR: [
+            { dogId: normalizedDogId },
+            { suspectedDogIds: { has: normalizedDogId } },
+            { scope: householdScope },
+          ],
+        }
+      : {};
+
+  const weeklyReportsPromise = prisma.weeklyWellnessReport.findMany({
+    where: {
+      customerId: customer.id,
+      ...dogOrHouseholdWeeklyFilter,
+      ...(dateFilter ? { weekStart: dateFilter } : {}),
+    },
+    orderBy: { weekStart: 'desc' },
+    take: limit,
+    include: {
+      captures: { select: { captureId: true } },
+      dailyCheckIns: { select: { checkInId: true } },
+    },
+  }) as Prisma.PrismaPromise<WeeklyReportWithLinks[]>;
 
   const [
     dogs,
@@ -92,7 +149,7 @@ export async function GET(request: NextRequest) {
     prisma.customerWellnessCapture.findMany({
       where: {
         customerId: customer.id,
-        ...(dogId ? { OR: [{ dogId }, { suspectedDogIds: { has: dogId } }] } : {}),
+        ...dogOrHouseholdCaptureFilter,
         ...(dateFilter ? { capturedAt: dateFilter } : {}),
       },
       orderBy: { capturedAt: 'desc' },
@@ -109,23 +166,11 @@ export async function GET(request: NextRequest) {
       orderBy: { capturedAt: 'desc' },
       take: limit,
     }),
-    prisma.weeklyWellnessReport.findMany({
-      where: {
-        customerId: customer.id,
-        ...(dogId ? { OR: [{ dogId }, { suspectedDogIds: { has: dogId } }] } : {}),
-        ...(dateFilter ? { weekStart: dateFilter } : {}),
-      },
-      orderBy: { weekStart: 'desc' },
-      take: limit,
-      include: {
-        captures: { select: { captureId: true } },
-        dailyCheckIns: { select: { checkInId: true } },
-      },
-    }),
+    weeklyReportsPromise,
     prisma.customerWellnessDailyCheckIn.findMany({
       where: {
         customerId: customer.id,
-        ...(dogId ? { OR: [{ dogId }, { suspectedDogIds: { has: dogId } }] } : {}),
+        ...dogOrHouseholdWithSuspectsFilter,
         ...(dateFilter ? { loggedAt: dateFilter } : {}),
       },
       orderBy: { loggedAt: 'desc' },
@@ -134,14 +179,14 @@ export async function GET(request: NextRequest) {
     prisma.customerWellnessReminder.findMany({
       where: {
         customerId: customer.id,
-        ...(dogId ? { dogId } : {}),
+        ...dogOrHouseholdFilter,
       },
       orderBy: { nextDueAt: 'asc' },
     }),
     prisma.customerFoodLog.findMany({
       where: {
         customerId: customer.id,
-        ...(dogId ? { dogId } : {}),
+        ...dogOrHouseholdFilter,
         ...(dateFilter ? { loggedAt: dateFilter } : {}),
       },
       orderBy: { loggedAt: 'desc' },
@@ -150,7 +195,7 @@ export async function GET(request: NextRequest) {
     prisma.customerWellnessChatLog.findMany({
       where: {
         customerId: customer.id,
-        ...(dogId ? { dogId } : {}),
+        ...dogOrHouseholdFilter,
         ...(dateFilter ? { createdAt: dateFilter } : {}),
       },
       orderBy: { createdAt: 'desc' },
@@ -159,7 +204,7 @@ export async function GET(request: NextRequest) {
     prisma.dogWeightEntry.findMany({
       where: {
         customerId: customer.id,
-        ...(dogId ? { dogId } : {}),
+        ...(normalizedDogId ? { dogId: normalizedDogId } : {}),
         ...(dateFilter ? { recordedAt: dateFilter } : {}),
       },
       orderBy: { recordedAt: 'desc' },
@@ -168,7 +213,7 @@ export async function GET(request: NextRequest) {
     prisma.customerWellnessWalk.findMany({
       where: {
         customerId: customer.id,
-        ...(dogId ? { dogId } : {}),
+        ...dogOrHouseholdFilter,
         ...(dateFilter ? { startedAt: dateFilter } : {}),
       },
       orderBy: { startedAt: 'desc' },

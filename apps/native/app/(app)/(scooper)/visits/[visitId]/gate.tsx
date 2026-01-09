@@ -1,6 +1,7 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Button from '@/components/ui/Button';
 import Colors from '@/constants/Colors';
@@ -27,14 +28,17 @@ function resolveAsset(asset: ImageAsset) {
 export default function GateStepScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const cardBorder = colorScheme === 'dark' ? '#233045' : palette.border;
+  const successTone = Colors.brand.mint;
+
   const { steps, visitId, gateMedia, uploadingType, uploadMedia, getNextStep, getPreviousStep } = useVisitFlow();
   const [previewSeed, setPreviewSeed] = useState(0);
 
   useStepGuard('gate');
 
-  const stepIndex = Math.max(
-    steps.findIndex((step) => step.id === 'gate'),
-    0,
+  const stepIndex = useMemo(
+    () => Math.max(steps.findIndex((step) => step.id === 'gate'), 0),
+    [steps],
   );
 
   const handleCapture = async () => {
@@ -53,15 +57,8 @@ export default function GateStepScreen() {
     router.push(`/(app)/(scooper)/visits/${visitId}/${stepId}`);
   };
 
-  const handleBack = () => {
-    const prev = getPreviousStep('gate');
-    goToStep(prev);
-  };
-
-  const handleNext = () => {
-    const next = getNextStep('gate');
-    goToStep(next);
-  };
+  const handleBack = () => goToStep(getPreviousStep('gate'));
+  const handleNext = () => goToStep(getNextStep('gate'));
 
   const latestMedia = useMemo(() => {
     if (gateMedia.length === 0) return null;
@@ -80,6 +77,7 @@ export default function GateStepScreen() {
       return aTime - bTime;
     }).at(-1);
   }, [gateMedia]);
+
   const hasPhoto = Boolean(latestMedia);
   const cacheBuster = [
     latestMedia?.uploadedAt ?? latestMedia?.capturedAt ?? latestMedia?.updatedAt ?? latestMedia?.createdAt ?? latestMedia?.id,
@@ -90,80 +88,197 @@ export default function GateStepScreen() {
   const previewUrl = latestMedia?.url
     ? `${latestMedia.url}${latestMedia.url.includes('?') ? '&' : '?'}v=${cacheBuster || '1'}`
     : null;
+  const isUploading = uploadingType === 'GATE';
 
   return (
     <VisitStepShell
       title="Secure the gate"
-      subtitle="Capture the closed latch before you exit."
+      subtitle="Confirm gate is properly latched before leaving"
       stepIndex={stepIndex}
       stepCount={steps.length || 1}
       onBack={handleBack}
     >
-      <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}
-      >
-        <Text style={[styles.cardTitle, { color: palette.text }]}>Gate photo</Text>
-        <Text style={[styles.cardBody, { color: palette.muted }]}>Make sure the latch and lock are visible.</Text>
-        {hasPhoto ? (
-          <Text style={[styles.status, { color: palette.tint }]}>Gate photo captured.</Text>
-        ) : null}
-        {previewUrl ? (
-          <Image key={previewUrl} source={{ uri: previewUrl }} style={styles.previewImage} />
-        ) : hasPhoto ? (
-          <Text style={[styles.previewHint, { color: palette.muted }]}>Preview will appear once synced.</Text>
-        ) : null}
-        <Button
-          title={uploadingType === 'GATE' ? 'Uploading...' : 'Capture photo'}
-          onPress={handleCapture}
-          disabled={uploadingType === 'GATE'}
-        />
+      {/* Instruction Card */}
+      <View style={[styles.instructionCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+        <View style={[styles.iconCircle, { backgroundColor: `${palette.tint}15` }]}>
+          <FontAwesome name="lock" size={20} color={palette.tint} />
+        </View>
+        <View style={styles.instructionContent}>
+          <Text style={[styles.instructionTitle, { color: palette.text }]}>Gate verification</Text>
+          <Text style={[styles.instructionBody, { color: palette.muted }]}>
+            Photo should show latch and lock clearly
+          </Text>
+        </View>
       </View>
 
-      <Button
-        title="Continue to next step"
-        onPress={handleNext}
-        disabled={!hasPhoto}
-        variant="cta"
-      />
-      {!hasPhoto ? (
-        <Text style={[styles.helperText, { color: palette.muted }]}>Capture a gate photo before continuing.</Text>
-      ) : null}
+      {/* Photo Preview or Capture Area */}
+      {hasPhoto ? (
+        <View style={styles.previewSection}>
+          {previewUrl ? (
+            <Pressable onPress={handleCapture} disabled={isUploading}>
+              <Image key={previewUrl} source={{ uri: previewUrl }} style={styles.previewImage} />
+              <View style={styles.retakeBadge}>
+                <FontAwesome name="refresh" size={10} color="#FFFFFF" />
+                <Text style={styles.retakeText}>Tap to retake</Text>
+              </View>
+            </Pressable>
+          ) : (
+            <View style={[styles.pendingPreview, { backgroundColor: palette.background }]}>
+              <FontAwesome name="clock-o" size={20} color={palette.muted} />
+              <Text style={[styles.pendingText, { color: palette.muted }]}>Preview syncing...</Text>
+            </View>
+          )}
+          <View style={[styles.successBadge, { backgroundColor: `${successTone}15` }]}>
+            <FontAwesome name="check-circle" size={14} color={successTone} />
+            <Text style={[styles.successText, { color: successTone }]}>Gate photo captured</Text>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          onPress={handleCapture}
+          disabled={isUploading}
+          style={({ pressed }) => [
+            styles.captureCard,
+            { borderColor: palette.tint, opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <View style={[styles.captureIcon, { backgroundColor: `${palette.tint}15` }]}>
+            <FontAwesome name="camera" size={24} color={palette.tint} />
+          </View>
+          <Text style={[styles.captureTitle, { color: palette.text }]}>
+            {isUploading ? 'Uploading...' : 'Take photo'}
+          </Text>
+          <Text style={[styles.captureBody, { color: palette.muted }]}>
+            Show the secured latch in frame
+          </Text>
+        </Pressable>
+      )}
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Button
+          title="Continue"
+          onPress={handleNext}
+          variant={hasPhoto ? 'cta' : 'secondary'}
+          disabled={!hasPhoto}
+          style={styles.ctaButton}
+        />
+        {!hasPhoto ? (
+          <Text style={[styles.footerHint, { color: palette.muted }]}>
+            Capture gate photo to continue
+          </Text>
+        ) : null}
+      </View>
     </VisitStepShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 16,
+  instructionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cardBody: {
-    fontSize: 13,
-    lineHeight: 18,
+  instructionContent: {
+    flex: 1,
+    gap: 4,
   },
-  status: {
-    fontSize: 12,
+  instructionTitle: {
+    fontSize: 15,
     fontWeight: '600',
+  },
+  instructionBody: {
+    fontSize: 12,
+  },
+  previewSection: {
+    gap: 10,
   },
   previewImage: {
     width: '100%',
-    height: 180,
-    borderRadius: 14,
+    height: 200,
+    borderRadius: 16,
   },
-  previewHint: {
+  retakeBadge: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  retakeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  pendingPreview: {
+    height: 160,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  pendingText: {
     fontSize: 12,
   },
-  helperText: {
+  successBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  successText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  captureCard: {
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    gap: 12,
+  },
+  captureIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  captureTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  captureBody: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  footer: {
+    marginTop: 'auto',
+    gap: 8,
+  },
+  ctaButton: {
+    width: '100%',
+  },
+  footerHint: {
     fontSize: 12,
+    textAlign: 'center',
   },
 });

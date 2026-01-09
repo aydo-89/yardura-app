@@ -331,6 +331,7 @@ enum WellnessPlanSource {
 enum WellnessEmbeddingSource {
   DOG_PROFILE
   WEEKLY_REPORT
+  DAILY_CHECK_IN
   OWNER_CAPTURE
   PRO_CAPTURE
   FOOD_PRODUCT
@@ -1635,6 +1636,7 @@ model ServiceVisitMedia {
   gpsLat              Float?
   gpsLng              Float?
   gpsAccuracy         Float?
+  locationMetadata    Json?
   fileHash            String?
   notes               String?
   stoolSampleId       String?

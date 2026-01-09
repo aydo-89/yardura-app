@@ -92,6 +92,7 @@ export default async function MobileWellnessPage() {
           stoolSampleId: m.stoolSampleId,
           stoolSampleView: m.stoolSampleView,
           assetType: m.assetType,
+          reviewStatus: m.reviewStatus ?? null,
         })),
       ),
     ),

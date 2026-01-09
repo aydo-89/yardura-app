@@ -54,6 +54,20 @@ export const pipelineStageOptions = [
   { value: 'lost', label: 'Lost' },
 ];
 
+function humanizeToken(value: string): string {
+  const normalized = value.replace(/_/g, ' ').trim();
+  if (!normalized) return value;
+  if (/^[A-Z0-9 ]+$/.test(normalized)) {
+    if (normalized.length <= 4) return normalized;
+    return normalized
+      .split(' ')
+      .filter(Boolean)
+      .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+      .join(' ');
+  }
+  return normalized;
+}
+
 const objectionValueByLabel = new Map(
   objectionOptions.map((option) => [option.label.toLowerCase(), option.value]),
 );
@@ -68,6 +82,21 @@ export function normalizeResultValue(result?: string | null): string | null {
   if (lower.includes('flyer') || lower.includes('door hanger')) return 'LEFT_FLYER';
   if (lower.includes('interested') || lower.includes('follow')) return 'INTERESTED';
   return result.toUpperCase().replace(/[^A-Z_]/g, '');
+}
+
+export function formatActivityType(value?: string | null): string | null {
+  if (!value) return null;
+  const match = activityTypes.find((option) => option.value === value);
+  if (match) return match.label;
+  return humanizeToken(value);
+}
+
+export function formatEncounterLabel(value?: string | null): string | null {
+  if (!value) return null;
+  const normalized = normalizeResultValue(value) ?? value;
+  const match = encounterOptions.find((option) => option.value === normalized);
+  if (match) return match.label;
+  return humanizeToken(value);
 }
 
 export function parseTagLine(notes?: string | null): Record<string, string> {

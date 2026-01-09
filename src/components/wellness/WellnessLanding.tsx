@@ -65,31 +65,31 @@ const CORE_FEATURES = [
   {
     icon: Camera,
     title: "1 tap stool capture",
-    copy: "Instant AI analysis with color, consistency, and content plus a watch, monitor, or vet now indicator.",
+    copy: "Instant AI analysis for color, consistency, and content with a watch, monitor, or vet now indicator.",
     accent: "coral",
   },
   {
     icon: Sparkles,
-    title: "What this could mean",
-    copy: "Plain language summaries with hydration and firmness scoring—always informational, never a diagnosis.",
+    title: "Holistic AI summary",
+    copy: "Links stool, symptoms, food, meds, walks, weight, weather, and parasite risk into plain language insights.",
     accent: "mint",
   },
   {
     icon: ClipboardCheck,
-    title: "Weekly 10 second check ins",
-    copy: "Quick taps for appetite, energy, water intake, stool frequency, vomiting/diarrhea, and meds.",
+    title: "Weekly 10-second check-ins",
+    copy: "Quick taps for appetite, energy, water intake, stool frequency, vomiting, diarrhea, and meds.",
     accent: "gold",
   },
   {
     icon: Bot,
-    title: "Symptom aware chat",
-    copy: "Guided Q and A with red flag alerts and what to do tonight tips. Not a diagnosis.",
+    title: "Context-aware AI chat",
+    copy: "Ask about any dog, log, or trend. Replies pull from the full wellness timeline.",
     accent: "evergreen",
   },
   {
     icon: PawPrint,
     title: "Dog profile hub",
-    copy: "Breed, age, weight trend, allergies, meds, diet, vet contact, and photos.",
+    copy: "Breed, age, weight trends, allergies, meds, diet, vet contact, and photos.",
     accent: "coral",
   },
   {
@@ -101,7 +101,7 @@ const CORE_FEATURES = [
   {
     icon: FileText,
     title: "Vet ready report",
-    copy: "Export a clean one page PDF with symptoms, stool images, and notes.",
+    copy: "Export a clean one-page PDF with symptoms, stool images, notes, and logs.",
     accent: "gold",
   },
 ] as const;
@@ -110,7 +110,7 @@ const TOOLKIT_FEATURES = [
   {
     icon: Utensils,
     title: "Food, treat, supplement, and med log",
-    copy: "Scan product + ingredients for a wellness score, flag allergens/fillers/preservatives, and highlight good ingredients.",
+    copy: "Scan labels, save to inventory, and set auto-log routines. Highlights key ingredients and sensitivities.",
     accent: "mint",
   },
   {
@@ -148,40 +148,87 @@ const TOOLKIT_FEATURES = [
 const FLOW_STEPS = [
   {
     icon: Camera,
-    title: "Capture in seconds",
-    copy: "1 tap stool capture with hydration, firmness, and watch or vet now guidance.",
+    title: "Scan + check in",
+    copy: "1-tap stool scan plus a 10-second symptom check-in.",
     accent: "coral",
   },
   {
-    icon: ClipboardCheck,
-    title: "Check in weekly",
-    copy: "A 10 second pulse for appetite, energy, water intake, stool frequency, and meds.",
+    icon: Utensils,
+    title: "Log nutrition + routines",
+    copy: "Scan ingredients, add to inventory, and auto-log daily or weekly items.",
     accent: "mint",
   },
   {
     icon: Bot,
-    title: "Ask the AI chat",
-    copy: "Guided Q and A with red flags and what to do tonight support.",
+    title: "Ask with full context",
+    copy: "AI chat uses stool, food, meds, walks, weight, weather, and reports.",
     accent: "gold",
   },
 ] as const;
 
+const HOLISTIC_SIGNALS = [
+  {
+    icon: Utensils,
+    title: "Nutrition + ingredients",
+    copy: "Scan food, treats, supplements, and meds for ingredient highlights.",
+    accent: "gold",
+  },
+  {
+    icon: Camera,
+    title: "Stool + symptoms",
+    copy: "3C scans paired with quick check-ins for clean GI tracking.",
+    accent: "coral",
+  },
+  {
+    icon: HeartPulse,
+    title: "Meds + supplements",
+    copy: "Track doses, notes, and reminders by dog profile.",
+    accent: "mint",
+  },
+  {
+    icon: Route,
+    title: "Walks + activity",
+    copy: "Distance, pace, and optional passive tracking build baselines.",
+    accent: "evergreen",
+  },
+  {
+    icon: TrendingUp,
+    title: "Weight + trends",
+    copy: "See weight changes alongside food and stool history.",
+    accent: "gold",
+  },
+  {
+    icon: ThermometerSun,
+    title: "Weather + parasite risk",
+    copy: "Heat, cold, and seasonal risk alerts keep care proactive.",
+    accent: "coral",
+  },
+] as const;
+
+const DASHBOARD_HIGHLIGHTS = [
+  { icon: Utensils, label: "Ingredient highlights" },
+  { icon: Route, label: "Activity baselines" },
+  { icon: TrendingUp, label: "Weight trends" },
+  { icon: FileText, label: "Vet-ready reports" },
+  { icon: Bug, label: "Parasite season alerts" },
+  { icon: ThermometerSun, label: "Weather safety" },
+] as const;
+
 const PREMIUM_FEATURES = [
-  "Unlimited stool scans with higher resolution analysis",
-  "Long term trends with early warning insights",
+  "Unlimited stool scans + AI chat",
+  "Long-term trends and early warnings",
   "Wellness Risk Score with proactive nudges",
-  "GPS walk tracking with distance, route, and pace history",
-  "Unlimited AI chat plus personalized plans",
-  "Multi dog households, family sharing, cross device sync",
-  "Vet ready reporting with timelines and diet changes",
+  "GPS walk tracking with distance, route, pace, and passive mode",
+  "Multi-dog households, family sharing, cross-device sync",
+  "Vet-ready reporting with food and symptom context",
 ];
 
 const PRO_ASSISTED_FEATURES = [
   "Auto capture by a pro scooper for consistent data quality",
   "Higher accuracy from standard capture distance and lighting",
   "Reliable pickup schedule improves frequency tracking",
-  "Pro verified wellness timeline and optional sample collection",
-  "Clean yard results plus actionable GI insights",
+  "Pro verified wellness timeline with shareable notes",
+  "Clean yard results plus actionable wellness insights",
 ];
 
 const PREMIUM_HIGHLIGHTS = [
@@ -219,8 +266,8 @@ const REPORT_FEATURES = [
   },
   {
     icon: HeartPulse,
-    title: "Weekly wellness recap",
-    copy: "Email report with trends, red flags, and progress you can show a vet.",
+    title: "Weekly + monthly wellness recap",
+    copy: "Email reports with trends, red flags, and progress you can show a vet.",
   },
   {
     icon: Users,
@@ -274,6 +321,42 @@ function FeatureCard({
   );
 }
 
+function SignalCard({
+  icon: Icon,
+  title,
+  copy,
+  accent,
+}: {
+  icon: typeof Camera;
+  title: string;
+  copy: string;
+  accent: Accent;
+}) {
+  const palette = ACCENT_STYLES[accent];
+
+  return (
+    <div
+      className="flex items-start gap-3 rounded-2xl border bg-white/90 p-4 shadow-sm dark:bg-slate-900/80"
+      style={{ borderColor: palette.border }}
+    >
+      <div
+        className="rounded-xl p-2"
+        style={{ backgroundColor: palette.glow }}
+      >
+        <Icon className="size-4" style={{ color: palette.base }} />
+      </div>
+      <div>
+        <div className="text-sm font-semibold text-slate-900 dark:text-white">
+          {title}
+        </div>
+        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+          {copy}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function WellnessLanding() {
   const { theme } = useTheme();
   const [isMobile, setIsMobile] = useState(false);
@@ -318,6 +401,7 @@ export default function WellnessLanding() {
             priority
             className="object-cover"
             sizes="100vw"
+            style={{ objectPosition: "72% center" }}
           />
           <div className="absolute inset-0" style={{ background: heroOverlay }} />
           <div
@@ -336,16 +420,35 @@ export default function WellnessLanding() {
                 variant="outline"
                 className="border-white/30 bg-white/10 px-4 py-1 text-xs uppercase tracking-[0.32em] text-white"
               >
-                Free wellness app
+                Holistic wellness tracking
               </Badge>
               <h1 className="text-4xl font-black leading-tight md:text-5xl">
-                Turn stool into a clear gut health signal.
+                Every health signal, one timeline.
               </h1>
               <p className="text-base text-white/85 md:text-lg">
-                InsightScoop helps pet owners log symptoms, capture stool, and
-                spot changes early. Get hydration, firmness, and watch, monitor,
-                or vet now guidance in minutes per week.
+                Stool scans, symptoms, food, treats, meds, supplements, walks,
+                weight, weather, and parasite risk live together. The AI
+                connects the dots so you can spot changes early and share clean
+                vet-ready reports.
               </p>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-white/85">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-brand-gold" />
+                  Ingredient scan + auto-log routines
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-brand-gold" />
+                  Stool + symptom tracking
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-brand-gold" />
+                  Walks, weight, and trends
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-brand-gold" />
+                  Weekly + monthly email reports
+                </span>
+              </div>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <a
                   href="#download"
@@ -368,55 +471,129 @@ export default function WellnessLanding() {
           </Reveal>
 
           <Reveal variant="scaleIn">
-            <div className="relative">
-              <div className="relative overflow-hidden rounded-[36px] border border-white/25 bg-white/10 p-6 shadow-[0_32px_80px_rgba(4,12,10,0.6)] backdrop-blur">
-                <div className="absolute inset-0 opacity-80">
+            <div className="relative lg:mr-auto lg:max-w-[460px]">
+              <div className="relative overflow-hidden rounded-[38px] border border-white/30 bg-slate-950/70 p-6 shadow-[0_40px_110px_rgba(4,12,10,0.65)] backdrop-blur-2xl">
+                <div className="absolute inset-0 opacity-90">
                   <div className="absolute -left-20 top-10 h-44 w-44 rounded-full bg-brand-mint/25 blur-3xl" />
                   <div className="absolute -right-16 bottom-10 h-48 w-48 rounded-full bg-[rgba(var(--gold-rgb-commas),0.22)] blur-3xl" />
                 </div>
-                <div className="relative grid gap-4">
-                  {[
-                    {
-                      label: "Hydration score",
-                      value: "86",
-                      note: "Well hydrated",
-                      accent: "bg-brand-mint/20 text-brand-mint",
-                    },
-                    {
-                      label: "Firmness",
-                      value: "4 / 7",
-                      note: "Normal range",
-                      accent: "bg-[rgba(var(--gold-rgb-commas),0.25)] text-slate-900",
-                    },
-                    {
-                      label: "Watch or vet now",
-                      value: "Watch",
-                      note: "Monitor and recheck tomorrow",
-                      accent: "bg-brand-coral/20 text-brand-coral",
-                    },
-                  ].map((card) => (
-                    <div
-                      key={card.label}
-                      className="rounded-2xl border border-white/20 bg-white/15 p-4 text-white/90 shadow-sm"
-                    >
-                      <div className="text-xs uppercase tracking-[0.28em] text-white/70">
-                        {card.label}
+                <div className="relative space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.32em] text-white/60">
+                        InsightScoop Wellness
+                      </p>
+                      <p className="text-base font-semibold text-white">
+                        Stool scan summary
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                      Today
+                    </span>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-4 text-white/90">
+                    <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.28em] text-white/60">
+                      <span>Capture</span>
+                      <span>9:12 AM</span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-4">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/15 bg-white/5">
+                        <Camera className="size-6 text-white/70" />
                       </div>
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className="text-3xl font-semibold text-white">
-                          {card.value}
-                        </span>
-                        <span
-                          className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${card.accent}`}
-                        >
-                          {card.note}
-                        </span>
+                      <div className="space-y-1">
+                        <div className="text-lg font-semibold text-white">
+                          Normal range
+                        </div>
+                        <div className="text-xs text-white/70">
+                          Color: Brown | Consistency: 4/7
+                        </div>
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                          Indicator: watch
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-                <div className="mt-5 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-xs uppercase tracking-[0.2em] text-white/80">
-                  What this could mean summary
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[
+                      {
+                        label: "Color",
+                        value: "Brown",
+                        note: "Normal range",
+                        accent: "bg-brand-mint/35 text-white",
+                      },
+                      {
+                        label: "Firmness",
+                        value: "4 / 7",
+                        note: "Normal range",
+                        accent: "bg-[rgba(var(--gold-rgb-commas),0.35)] text-white",
+                      },
+                      {
+                        label: "Content",
+                        value: "Typical",
+                        note: "No issues",
+                        accent: "bg-brand-coral/35 text-white",
+                      },
+                      {
+                        label: "Indicator",
+                        value: "Watch",
+                        note: "Recheck tomorrow",
+                        accent: "bg-white/15 text-white",
+                      },
+                    ].map((card) => (
+                      <div
+                        key={card.label}
+                        className="rounded-2xl border border-white/20 bg-white/12 p-4 text-white/90 shadow-sm"
+                      >
+                        <div className="text-[10px] uppercase tracking-[0.28em] text-white/65">
+                          {card.label}
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <span className="text-2xl font-semibold text-white">
+                            {card.value}
+                          </span>
+                          <span
+                            className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${card.accent}`}
+                          >
+                            {card.note}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-white/80">
+                    <div className="text-[10px] uppercase tracking-[0.28em] text-white/60">
+                      What this could mean
+                    </div>
+                    <p className="mt-2 text-sm text-white/85">
+                      Stool looks steady. Food log shows salmon kibble + probiotic,
+                      2.1 mi walk today, no symptoms logged.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-white/80">
+                    <div className="text-[10px] uppercase tracking-[0.28em] text-white/60">
+                      Context used
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
+                      {[
+                        "Stool scans",
+                        "Food log",
+                        "Walks",
+                        "Symptoms",
+                        "Weather",
+                      ].map((label) => (
+                        <span
+                          key={label}
+                          className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="absolute -bottom-6 -right-4 hidden rounded-3xl border border-white/20 bg-white/10 p-4 text-xs text-white/80 shadow-lg backdrop-blur lg:block">
@@ -430,77 +607,240 @@ export default function WellnessLanding() {
         </div>
       </section>
 
-      <section id="flow" className="py-20">
-        <div className="container space-y-10">
-          <div className="text-center space-y-4">
-            <span className="text-xs uppercase tracking-[0.32em] text-brand-mint">
-              Your wellness loop
-            </span>
-            <h2 className="text-3xl font-black md:text-4xl">
-              A 10 second routine that adds up.
-            </h2>
-            <p className="mx-auto max-w-3xl text-base text-slate-600 dark:text-slate-300">
-              Capture, check in, and ask questions in under a minute. The app
-              links stool images to symptoms, food, meds, walks, and routines
-              so patterns are easy to spot.
-            </p>
+      <section id="flow" className="relative overflow-hidden py-20">
+        <div className="absolute inset-0 opacity-80">
+          <div className="absolute left-0 top-0 h-64 w-64 rounded-full bg-brand-mint/15 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-[rgba(var(--gold-rgb-commas),0.16)] blur-3xl" />
+        </div>
+        <div className="container relative z-10 grid gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="space-y-10">
+            <div className="space-y-4 text-center lg:text-left">
+              <span className="text-xs uppercase tracking-[0.32em] text-brand-mint">
+                Holistic wellness loop
+              </span>
+              <h2 className="text-3xl font-black md:text-4xl">
+                One timeline that connects every signal.
+              </h2>
+              <p className="mx-auto max-w-3xl text-base text-slate-600 dark:text-slate-300 lg:mx-0">
+                Stool scans, symptoms, nutrition, meds, walks, weight, weather,
+                and parasite risk live together so patterns are clear and easy
+                to share.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {HOLISTIC_SIGNALS.map((signal, index) => (
+                <Reveal key={signal.title} delay={index * 0.03}>
+                  <SignalCard {...signal} />
+                </Reveal>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              {[
+                "Scan once, auto-log routines",
+                "Optional passive walk tracking",
+                "Weekly + monthly email recaps",
+              ].map((label) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white px-3 py-1 dark:border-white/10 dark:bg-slate-900/60"
+                >
+                  <CheckCircle2 className="size-3.5 text-brand-mint" />
+                  {label}
+                </span>
+              ))}
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-center text-xs uppercase tracking-[0.32em] text-brand-mint lg:text-left">
+                Simple workflow
+              </div>
+              <div className="grid gap-6 md:grid-cols-3">
+                {FLOW_STEPS.map((step, index) => {
+                  const palette = ACCENT_STYLES[step.accent];
+                  return (
+                    <Reveal key={step.title} delay={index * 0.05}>
+                      <div
+                        className="relative h-full rounded-3xl border bg-white/90 p-6 shadow-lg dark:bg-slate-900/80"
+                        style={{ borderColor: palette.border }}
+                      >
+                        <div
+                          className="mb-4 inline-flex items-center gap-3 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.28em]"
+                          style={{
+                            borderColor: palette.border,
+                            color: palette.base,
+                            backgroundColor: palette.glow,
+                          }}
+                        >
+                          Step {index + 1}
+                        </div>
+                        <div className="flex items-start gap-4">
+                          <div
+                            className="rounded-2xl p-3"
+                            style={{ backgroundColor: palette.glow }}
+                          >
+                            <step.icon
+                              className="size-5"
+                              style={{ color: palette.base }}
+                            />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                              {step.title}
+                            </h3>
+                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                              {step.copy}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </Reveal>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {FLOW_STEPS.map((step, index) => {
-              const palette = ACCENT_STYLES[step.accent];
-              return (
-                <Reveal key={step.title} delay={index * 0.05}>
-                  <div
-                    className="relative h-full rounded-3xl border bg-white/90 p-6 shadow-lg dark:bg-slate-900/80"
-                    style={{ borderColor: palette.border }}
-                  >
-                    <div
-                      className="mb-4 inline-flex items-center gap-3 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.28em]"
-                      style={{
-                        borderColor: palette.border,
-                        color: palette.base,
-                        backgroundColor: palette.glow,
-                      }}
-                    >
-                      Step {index + 1}
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div
-                        className="rounded-2xl p-3"
-                        style={{ backgroundColor: palette.glow }}
-                      >
-                        <step.icon
-                          className="size-5"
-                          style={{ color: palette.base }}
-                        />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                          {step.title}
-                        </h3>
-                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                          {step.copy}
-                        </p>
-                      </div>
-                    </div>
+          <Reveal variant="scaleIn">
+            <div className="relative mx-auto flex w-full max-w-lg flex-col gap-6">
+              <div className="relative">
+                <div className="relative aspect-[3/4] overflow-hidden rounded-[32px] border border-white/25 bg-white/90 shadow-[0_28px_80px_rgba(10,18,14,0.25)] dark:border-white/10 dark:bg-slate-900/80">
+                  <Image
+                    src="/sections/tech_insights.png"
+                    alt="Wellness dashboard in the app"
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 1024px) 420px, 90vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
+                </div>
+                <div className="absolute -right-6 top-8 hidden w-24 rounded-3xl border border-white/20 bg-white/90 p-3 shadow-lg dark:border-white/10 dark:bg-slate-900/80 lg:block">
+                  <Image
+                    src="/hero_backgrounds/gate_notification.png"
+                    alt=""
+                    width={120}
+                    height={200}
+                    className="h-auto w-full object-contain"
+                  />
+                  <div className="mt-2 text-[9px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300">
+                    Walk logged
                   </div>
-                </Reveal>
-              );
-            })}
-          </div>
+                </div>
+                <div className="absolute -bottom-6 -left-6 w-60 rounded-[26px] border border-white/30 bg-white/95 p-4 shadow-[0_24px_60px_rgba(10,18,14,0.25)] dark:border-white/10 dark:bg-slate-900/90">
+                  <div className="text-[10px] uppercase tracking-[0.26em] text-slate-500 dark:text-slate-300">
+                    Holistic snapshot
+                  </div>
+                  <div className="mt-3 space-y-2 text-xs font-semibold text-slate-900 dark:text-white">
+                    {[
+                      { label: "Stool", value: "Brown 4/7" },
+                      { label: "Food", value: "Salmon kibble" },
+                      { label: "Walk", value: "2.1 mi" },
+                      { label: "Weight", value: "57.2 lb" },
+                    ].map((row) => (
+                      <div
+                        key={row.label}
+                        className="flex items-center justify-between rounded-full border border-slate-200/60 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900"
+                      >
+                        <span>{row.label}</span>
+                        <span className="text-slate-700 dark:text-slate-200">
+                          {row.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 rounded-full border border-brand-mint/25 bg-brand-mint/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-mint">
+                    Auto-log: probiotic daily
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-[28px] border border-white/20 bg-slate-950/90 shadow-[0_22px_60px_rgba(6,12,10,0.35)]">
+                <video
+                  className="h-full w-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                >
+                  <source src="/hero-video-health-app.mp4" type="video/mp4" />
+                </video>
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/85">
+                  Passive walks + yard context
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      <section id="features" className="relative py-24">
-        <div className="container space-y-12">
+      <section id="features" className="relative overflow-hidden py-24">
+        <div className="absolute inset-0 opacity-70">
+          <div className="absolute left-0 top-10 h-72 w-72 rounded-full bg-brand-coral/10 blur-3xl" />
+          <div className="absolute right-0 bottom-0 h-72 w-72 rounded-full bg-brand-mint/15 blur-3xl" />
+        </div>
+        <div className="container relative space-y-12">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="space-y-5 text-center lg:text-left">
+              <span className="text-xs uppercase tracking-[0.32em] text-brand-coral">
+                Holistic wellness hub
+              </span>
+              <h2 className="text-3xl font-black md:text-4xl">
+                See the full story, not single events.
+              </h2>
+              <p className="mx-auto max-w-3xl text-base text-slate-600 dark:text-slate-300 lg:mx-0">
+                Everything lives in one timeline so patterns show up early. The
+                AI chat and your reports pull from the same data, so nothing
+                gets lost between logs.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {DASHBOARD_HIGHLIGHTS.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm dark:border-white/10 dark:bg-slate-900/80 dark:text-white"
+                  >
+                    <div className="rounded-xl bg-brand-mint/15 p-2 text-brand-mint">
+                      <item.icon className="size-4" />
+                    </div>
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="relative mx-auto w-full max-w-lg">
+              <div className="relative overflow-hidden rounded-[32px] border border-white/25 bg-white/90 shadow-[0_28px_80px_rgba(10,18,14,0.25)] dark:border-white/10 dark:bg-slate-900/80">
+                <Image
+                  src="/sections/peaceofmind.png"
+                  alt="Owner using the wellness app with a dog"
+                  width={960}
+                  height={640}
+                  className="h-auto w-full object-cover"
+                />
+              </div>
+              <div className="absolute -bottom-5 left-6 rounded-full border border-white/30 bg-white/95 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-600 shadow-lg dark:border-white/10 dark:bg-slate-900/90 dark:text-slate-200">
+                Weekly + monthly recaps
+              </div>
+              <div className="absolute -top-6 right-6 hidden rounded-3xl border border-white/20 bg-white/90 p-3 shadow-lg dark:border-white/10 dark:bg-slate-900/80 lg:block">
+                <Image
+                  src="/hero_backgrounds/gate_notification.png"
+                  alt=""
+                  width={96}
+                  height={160}
+                  className="h-auto w-16 object-contain"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-4 text-center">
             <span className="text-xs uppercase tracking-[0.32em] text-brand-coral">
               Freemium core value
             </span>
-            <h2 className="text-3xl font-black md:text-4xl">
+            <h3 className="text-3xl font-black md:text-4xl">
               Everything you need for everyday wellness, free.
-            </h2>
+            </h3>
             <p className="mx-auto max-w-3xl text-base text-slate-600 dark:text-slate-300">
               Designed for owners, not clinicians. Capture, check in, chat, and
               share results without searching for answers on your own.
@@ -531,11 +871,11 @@ export default function WellnessLanding() {
               Wellness toolkit
             </span>
             <h2 className="text-3xl font-black md:text-4xl">
-              Extra tools that keep you ahead.
+              Tools that remove manual work.
             </h2>
             <p className="mx-auto max-w-3xl text-base text-slate-600 dark:text-slate-300">
-              Food, meds, environment, and education in one place, with privacy
-              controls built in.
+              Scan once, auto-log routines, and keep food, meds, environment,
+              and education in one place with privacy controls built in.
             </p>
           </div>
 
@@ -587,15 +927,16 @@ export default function WellnessLanding() {
               </div>
               <h3 className="mt-4 text-2xl font-semibold">Core wellness</h3>
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                Capture, check ins, chat, reminders, and reports for weekly
+                Capture, check-ins, chat, reminders, and reports for weekly
                 peace of mind.
               </p>
               <ul className="mt-6 space-y-3 text-sm text-slate-700 dark:text-slate-200">
                 {[
+                  "5 stool scans + 12 chats per month",
                   "Weekly check-ins in 10 seconds",
-                  "AI stool analysis with hydration + firmness scoring",
-                  "Symptom aware chat and red flags",
-                  "Food, med, and stool library tools",
+                  "AI stool analysis with 3C recap + watch/monitor/vet now",
+                  "Context-aware AI chat",
+                  "Food log, meds, and stool library tools",
                   "Poop map, parasite risk, and weather safety alerts",
                   "PDF vet report",
                   "Privacy-first storage with auto-blur",
@@ -790,9 +1131,9 @@ export default function WellnessLanding() {
               Share updates that vets actually use.
             </h2>
             <p className="mx-auto max-w-3xl text-base text-slate-600 dark:text-slate-300">
-              Export, email, or share only the data you want. Every report
-              highlights trends, symptoms, stool images, and key notes in plain
-              language.
+              Export, email, or share only the data you want. Weekly and
+              monthly reports highlight trends, symptoms, stool images, and key
+              notes in plain language.
             </p>
           </div>
 
@@ -837,8 +1178,9 @@ export default function WellnessLanding() {
               Download InsightScoop Wellness.
             </h2>
             <p className="max-w-xl text-base text-slate-600 dark:text-slate-300">
-              Get immediate value with free stool capture, weekly check-ins,
-              and a guided AI chat. Upgrade when you are ready for premium insights.
+              Get immediate value with stool scans, ingredient logging,
+              check-ins, and a context-aware AI chat. Upgrade when you are
+              ready for long-term trends and passive walk insights.
             </p>
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-300">
               <div className="flex items-center gap-2">

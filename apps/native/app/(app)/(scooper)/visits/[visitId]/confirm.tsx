@@ -1,6 +1,14 @@
-import { useMemo } from 'react';
-import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import Button from '@/components/ui/Button';
 import Colors from '@/constants/Colors';
@@ -9,9 +17,139 @@ import VisitStepShell from '@/components/scooper/VisitStepShell';
 import { useVisitFlow } from '@/lib/scooper/visitFlow';
 import { useStepGuard } from '@/lib/scooper/useStepGuard';
 
+type CheckKey = 'allDeposits' | 'analyzedFresh' | 'finalSweep';
+
+type CheckItemConfig = {
+  key: CheckKey;
+  icon: string;
+  title: string;
+  description: string;
+};
+
+const CHECKLIST_ITEMS: CheckItemConfig[] = [
+  {
+    key: 'allDeposits',
+    icon: 'check-circle',
+    title: 'Every deposit removed',
+    description: 'Walk the full yard, including corners',
+  },
+  {
+    key: 'analyzedFresh',
+    icon: 'flask',
+    title: 'Fresh samples analyzed',
+    description: 'Best samples captured for wellness',
+  },
+  {
+    key: 'finalSweep',
+    icon: 'search',
+    title: 'Final sweep complete',
+    description: 'Confirm nothing was missed',
+  },
+];
+
+function AnimatedCheckCard({
+  item,
+  checked,
+  detail,
+  onToggle,
+  palette,
+  colorScheme,
+}: {
+  item: CheckItemConfig;
+  checked: boolean;
+  detail?: string;
+  onToggle: () => void;
+  palette: typeof Colors.light;
+  colorScheme: 'light' | 'dark';
+}) {
+  const cardBorder = colorScheme === 'dark' ? '#233045' : palette.border;
+  const successTone = Colors.brand.mint;
+  const scale = useSharedValue(1);
+  const checkScale = useSharedValue(checked ? 1 : 0);
+
+  const handlePress = useCallback(() => {
+    if (!checked) {
+      scale.value = withSequence(
+        withSpring(0.97, { damping: 15 }),
+        withSpring(1, { damping: 10 }),
+      );
+      checkScale.value = withSequence(
+        withTiming(0, { duration: 50 }),
+        withSpring(1.2, { damping: 8, stiffness: 300 }),
+        withSpring(1, { damping: 12 }),
+      );
+    } else {
+      checkScale.value = withTiming(0, { duration: 150 });
+    }
+    onToggle();
+  }, [checked, onToggle, scale, checkScale]);
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const checkStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: checkScale.value }],
+    opacity: checkScale.value,
+  }));
+
+  return (
+    <Pressable onPress={handlePress}>
+      <Animated.View
+        style={[
+          styles.checkCard,
+          cardStyle,
+          {
+            backgroundColor: checked ? `${successTone}10` : palette.card,
+            borderColor: checked ? successTone : cardBorder,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.iconCircle,
+            {
+              backgroundColor: checked ? `${successTone}20` : `${palette.tint}15`,
+            },
+          ]}
+        >
+          <FontAwesome
+            name={item.icon as 'check-circle'}
+            size={18}
+            color={checked ? successTone : palette.tint}
+          />
+        </View>
+        <View style={styles.checkContent}>
+          <Text style={[styles.checkTitle, { color: checked ? successTone : palette.text }]}>
+            {item.title}
+          </Text>
+          <Text style={[styles.checkDescription, { color: palette.muted }]}>
+            {detail || item.description}
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.checkbox,
+            {
+              borderColor: checked ? successTone : cardBorder,
+              backgroundColor: checked ? successTone : 'transparent',
+            },
+          ]}
+        >
+          <Animated.View style={checkStyle}>
+            <FontAwesome name="check" size={12} color="#FFFFFF" />
+          </Animated.View>
+        </View>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 export default function ConfirmStepScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const cardBorder = colorScheme === 'dark' ? '#233045' : palette.border;
+
   const {
     steps,
     visitId,
@@ -25,11 +163,15 @@ export default function ConfirmStepScreen() {
     getPreviousStep,
   } = useVisitFlow();
 
+  const [showInsufficientNote, setShowInsufficientNote] = useState(
+    confirmChecklist.insufficientSamples,
+  );
+
   useStepGuard('confirm');
 
-  const stepIndex = Math.max(
-    steps.findIndex((step) => step.id === 'confirm'),
-    0,
+  const stepIndex = useMemo(
+    () => Math.max(steps.findIndex((step) => step.id === 'confirm'), 0),
+    [steps],
   );
 
   const goToStep = (stepId: string | null) => {
@@ -40,15 +182,8 @@ export default function ConfirmStepScreen() {
     router.push(`/(app)/(scooper)/visits/${visitId}/${stepId}`);
   };
 
-  const handleBack = () => {
-    const prev = getPreviousStep('confirm');
-    goToStep(prev);
-  };
-
-  const handleNext = () => {
-    const next = getNextStep('confirm');
-    goToStep(next);
-  };
+  const handleBack = () => goToStep(getPreviousStep('confirm'));
+  const handleNext = () => goToStep(getNextStep('confirm'));
 
   const confirmationsReady =
     confirmChecklist.allDeposits &&
@@ -60,189 +195,348 @@ export default function ConfirmStepScreen() {
   const requiredSamples = analysisGoal > 0 ? analysisGoal : 1;
   const missingSamples = Math.max(requiredSamples - analyzedCount, 0);
   const showAnalysisAlert =
-    confirmationsReady &&
-    !hasMetAnalysisMinimum &&
-    !confirmChecklist.insufficientSamples;
+    confirmationsReady && !hasMetAnalysisMinimum && !confirmChecklist.insufficientSamples;
 
-  const analysisStatus = useMemo(() => {
-    if (analysisGoal === 0) return 'Analyze at least one fresh sample.';
-    return `Analyzed ${analyzedCount} of ${analysisGoal} goal.`;
+  const checkedCount = [
+    confirmChecklist.allDeposits,
+    confirmChecklist.analyzedFresh,
+    confirmChecklist.finalSweep,
+  ].filter(Boolean).length;
+  const progressPct = Math.round((checkedCount / CHECKLIST_ITEMS.length) * 100);
+
+  const analysisDetail = useMemo(() => {
+    if (analysisGoal === 0) return 'Analyze at least one fresh sample';
+    return `${analyzedCount} of ${analysisGoal} analyzed`;
   }, [analysisGoal, analyzedCount]);
 
   return (
     <VisitStepShell
       title="Confirm yard is clear"
-      subtitle="Verify the yard is clear and the best samples are analyzed."
+      subtitle="Verify yard completion and sample quality"
       stepIndex={stepIndex}
       stepCount={steps.length || 1}
       onBack={handleBack}
     >
-      <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}
-      >
-        <View style={styles.rowBetween}>
-          <View style={styles.rowText}>
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Every deposit removed</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>Walk the full yard, including corners.</Text>
-          </View>
-          <Switch
-            value={confirmChecklist.allDeposits}
-            onValueChange={(value) => setConfirmChecklist({ allDeposits: value })}
-          />
+      {/* Sample Badge */}
+      <View style={[styles.sampleBadge, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+        <View style={[styles.sampleIcon, { backgroundColor: `${palette.tint}15` }]}>
+          <FontAwesome name="flask" size={16} color={palette.tint} />
         </View>
-        <View style={styles.rowBetween}>
-          <View style={styles.rowText}>
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Fresh samples analyzed</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>{analysisStatus}</Text>
-          </View>
-          <Switch
-            value={confirmChecklist.analyzedFresh}
-            onValueChange={(value) => setConfirmChecklist({ analyzedFresh: value })}
-          />
+        <View style={styles.sampleInfo}>
+          <Text style={[styles.sampleCount, { color: palette.text }]}>
+            {analyzedCount} of {requiredSamples}
+          </Text>
+          <Text style={[styles.sampleLabel, { color: palette.muted }]}>samples analyzed</Text>
         </View>
-        <View style={styles.rowBetween}>
-          <View style={styles.rowText}>
-            <Text style={[styles.cardTitle, { color: palette.text }]}>Final sweep complete</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>Confirm nothing was missed.</Text>
+        {analysisPending ? (
+          <View style={[styles.pendingBadge, { backgroundColor: `${palette.tint}20` }]}>
+            <Text style={[styles.pendingText, { color: palette.tint }]}>Processing</Text>
           </View>
-          <Switch
-            value={confirmChecklist.finalSweep}
-            onValueChange={(value) => setConfirmChecklist({ finalSweep: value })}
+        ) : hasMetAnalysisMinimum ? (
+          <View style={[styles.pendingBadge, { backgroundColor: `${Colors.brand.mint}20` }]}>
+            <Text style={[styles.pendingText, { color: Colors.brand.mint }]}>Goal met</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {/* Progress Card */}
+      <View style={[styles.progressCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
+        <View style={styles.progressHeader}>
+          <Text style={[styles.progressLabel, { color: palette.muted }]}>Confirmation progress</Text>
+          <Text style={[styles.progressValue, { color: palette.text }]}>
+            {checkedCount} / {CHECKLIST_ITEMS.length}
+          </Text>
+        </View>
+        <View style={[styles.progressTrack, { backgroundColor: palette.border }]}>
+          <View
+            style={[
+              styles.progressFill,
+              {
+                width: `${progressPct}%`,
+                backgroundColor: progressPct === 100 ? Colors.brand.mint : palette.tint,
+              },
+            ]}
           />
         </View>
       </View>
 
-      <Text style={[styles.noticeText, { color: palette.muted }]}>
-        Quality assurance review applies to every visit. Missed deposits, skipped sanitation, or
-        invalid proof photos can require a return trip and may reduce payout for the visit (up to 50%)
-        or result in removal from routes or the platform.
-      </Text>
+      {/* Checklist */}
+      <View style={styles.checklist}>
+        {CHECKLIST_ITEMS.map((item) => (
+          <AnimatedCheckCard
+            key={item.key}
+            item={item}
+            checked={confirmChecklist[item.key]}
+            detail={item.key === 'analyzedFresh' ? analysisDetail : undefined}
+            onToggle={() => setConfirmChecklist({ [item.key]: !confirmChecklist[item.key] })}
+            palette={palette}
+            colorScheme={colorScheme}
+          />
+        ))}
+      </View>
 
+      {/* Analysis Alert */}
       {showAnalysisAlert ? (
-        <View style={[styles.alert, { borderColor: palette.danger, backgroundColor: palette.card }]}>
-          <Text style={[styles.alertTitle, { color: palette.danger }]}>
-            More samples needed
-          </Text>
-          <Text style={[styles.alertBody, { color: palette.text }]}>
-            Analyze {missingSamples} more fresh sample{missingSamples === 1 ? '' : 's'} before completing
-            the yard confirmation.
-          </Text>
-        </View>
-      ) : null}
-      {!hasMetAnalysisMinimum ? (
-        <View style={[styles.alert, { borderColor: palette.border, backgroundColor: palette.card }]}>
-          <View style={styles.rowBetween}>
-            <View style={styles.rowText}>
-              <Text style={[styles.cardTitle, { color: palette.text }]}>Not enough samples today</Text>
-              <Text style={[styles.cardBody, { color: palette.muted }]}>
-                Confirm there were not enough fresh samples to meet the goal. This may require a return visit.
-              </Text>
-            </View>
-            <Switch
-              value={confirmChecklist.insufficientSamples}
-              onValueChange={(value) =>
-                setConfirmChecklist({
-                  insufficientSamples: value,
-                  insufficientSamplesNote: value ? confirmChecklist.insufficientSamplesNote : '',
-                })
-              }
-            />
+        <View style={[styles.alertCard, { borderColor: palette.danger, backgroundColor: `${palette.danger}10` }]}>
+          <FontAwesome name="exclamation-triangle" size={16} color={palette.danger} />
+          <View style={styles.alertContent}>
+            <Text style={[styles.alertTitle, { color: palette.danger }]}>More samples needed</Text>
+            <Text style={[styles.alertBody, { color: palette.text }]}>
+              Analyze {missingSamples} more fresh sample{missingSamples === 1 ? '' : 's'} before
+              completing.
+            </Text>
           </View>
-          {confirmChecklist.insufficientSamples ? (
-            <TextInput
-              value={confirmChecklist.insufficientSamplesNote}
-              onChangeText={(value) => setConfirmChecklist({ insufficientSamplesNote: value })}
-              placeholder="Optional note about what you found"
-              placeholderTextColor={palette.muted}
-              style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-            />
-          ) : null}
         </View>
-      ) : null}
-      {analysisPending ? (
-        <Text style={[styles.pendingText, { color: palette.muted }]}>
-          Analysis is still running. Counts will update automatically.
-        </Text>
       ) : null}
 
-      <Button
-        title="Continue to next step"
-        onPress={handleNext}
-        disabled={!canContinue}
-        variant="cta"
-      />
-      {!hasMetAnalysisMinimum && !confirmChecklist.insufficientSamples ? (
-        <Text style={[styles.helperText, { color: palette.muted }]}
+      {/* Insufficient Samples Override */}
+      {!hasMetAnalysisMinimum ? (
+        <Pressable
+          onPress={() => {
+            const newValue = !confirmChecklist.insufficientSamples;
+            setConfirmChecklist({
+              insufficientSamples: newValue,
+              insufficientSamplesNote: newValue ? confirmChecklist.insufficientSamplesNote : '',
+            });
+            setShowInsufficientNote(newValue);
+          }}
         >
-          Analyze at least {analysisGoal || 1} fresh sample before continuing.
-        </Text>
+          <View
+            style={[
+              styles.overrideCard,
+              {
+                backgroundColor: confirmChecklist.insufficientSamples ? `${Colors.brand.gold}10` : palette.card,
+                borderColor: confirmChecklist.insufficientSamples ? Colors.brand.gold : cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.overrideHeader}>
+              <View style={[styles.overrideIcon, { backgroundColor: `${Colors.brand.gold}20` }]}>
+                <FontAwesome name="info-circle" size={16} color={Colors.brand.evergreen} />
+              </View>
+              <View style={styles.overrideContent}>
+                <Text style={[styles.overrideTitle, { color: palette.text }]}>
+                  Not enough samples today
+                </Text>
+                <Text style={[styles.overrideDescription, { color: palette.muted }]}>
+                  Toggle if there weren't enough fresh samples
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.checkbox,
+                  {
+                    borderColor: confirmChecklist.insufficientSamples ? Colors.brand.gold : cardBorder,
+                    backgroundColor: confirmChecklist.insufficientSamples ? Colors.brand.gold : 'transparent',
+                  },
+                ]}
+              >
+                {confirmChecklist.insufficientSamples ? (
+                  <FontAwesome name="check" size={12} color="#FFFFFF" />
+                ) : null}
+              </View>
+            </View>
+            {showInsufficientNote && confirmChecklist.insufficientSamples ? (
+              <TextInput
+                value={confirmChecklist.insufficientSamplesNote}
+                onChangeText={(value) => setConfirmChecklist({ insufficientSamplesNote: value })}
+                placeholder="Optional note about what you found"
+                placeholderTextColor={palette.muted}
+                style={[styles.noteInput, { color: palette.text, borderColor: cardBorder, backgroundColor: palette.background }]}
+              />
+            ) : null}
+          </View>
+        </Pressable>
       ) : null}
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Button
+          title="Continue"
+          onPress={handleNext}
+          variant={canContinue ? 'cta' : 'secondary'}
+          disabled={!canContinue}
+          style={styles.ctaButton}
+        />
+        {!canContinue ? (
+          <Text style={[styles.footerHint, { color: palette.muted }]}>
+            {!confirmationsReady
+              ? 'Complete all confirmations'
+              : 'Analyze samples or mark as insufficient'}
+          </Text>
+        ) : null}
+      </View>
     </VisitStepShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 16,
-    gap: 16,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-  rowBetween: {
+  sampleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
   },
-  rowText: {
+  sampleIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sampleInfo: {
     flex: 1,
   },
-  cardTitle: {
+  sampleCount: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  sampleLabel: {
+    fontSize: 12,
+  },
+  pendingBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  pendingText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  progressCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  progressValue: {
     fontSize: 14,
     fontWeight: '700',
-    marginBottom: 4,
   },
-  cardBody: {
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  checklist: {
+    gap: 10,
+  },
+  checkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1.5,
+    borderRadius: 16,
+    padding: 14,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkContent: {
+    flex: 1,
+    gap: 2,
+  },
+  checkTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  checkDescription: {
+    fontSize: 12,
+  },
+  checkbox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+  },
+  alertContent: {
+    flex: 1,
+    gap: 4,
+  },
+  alertTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  alertBody: {
     fontSize: 12,
     lineHeight: 16,
   },
-  input: {
+  overrideCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+  },
+  overrideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  overrideIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overrideContent: {
+    flex: 1,
+    gap: 2,
+  },
+  overrideTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  overrideDescription: {
+    fontSize: 12,
+  },
+  noteInput: {
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
-    marginTop: 10,
   },
-  helperText: {
+  footer: {
+    marginTop: 'auto',
+    gap: 8,
+  },
+  ctaButton: {
+    width: '100%',
+  },
+  footerHint: {
     fontSize: 12,
-  },
-  pendingText: {
-    fontSize: 12,
-    marginTop: 6,
-  },
-  noticeText: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginBottom: 8,
-  },
-  alert: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 8,
-  },
-  alertTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  alertBody: {
-    fontSize: 12,
-    lineHeight: 16,
+    textAlign: 'center',
   },
 });

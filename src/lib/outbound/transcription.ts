@@ -23,7 +23,7 @@ export const objectionValues = [
 
 export const dogPresenceValues = ["HAS_DOG", "NO_DOG", "UNKNOWN"] as const;
 
-const TRANSCRIBE_MODEL = "gpt-4o-mini-transcribe";
+const TRANSCRIBE_MODEL = "gpt-5-mini-transcribe";
 const ANALYSIS_MODEL = "gpt-5-nano";
 
 export interface OutboundTranscriptionInput {

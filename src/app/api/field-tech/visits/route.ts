@@ -927,6 +927,12 @@ export async function GET(request: NextRequest) {
     if (resolvedStartLeg) {
       startToFirstDistanceMeters += resolvedStartLeg.distanceMeters;
       startToFirstDurationSeconds += resolvedStartLeg.durationSeconds;
+      (firstVisit as any).travelFromHome = {
+        distanceMeters: resolvedStartLeg.distanceMeters,
+        durationSeconds: resolvedStartLeg.durationSeconds,
+        origin: startOrigin,
+        destination: startDestination,
+      };
     }
 
     const endLeg = await fetchAnchorLeg(endOrigin, endDestination);
@@ -934,6 +940,12 @@ export async function GET(request: NextRequest) {
     if (resolvedEndLeg) {
       endToHomeDistanceMeters += resolvedEndLeg.distanceMeters;
       endToHomeDurationSeconds += resolvedEndLeg.durationSeconds;
+      (lastVisit as any).travelToHome = {
+        distanceMeters: resolvedEndLeg.distanceMeters,
+        durationSeconds: resolvedEndLeg.durationSeconds,
+        origin: endOrigin,
+        destination: endDestination,
+      };
     }
   }
 
@@ -952,6 +964,8 @@ export async function GET(request: NextRequest) {
   const visitsResponse = visitsWithProjection.map((visit) => ({
     ...visit,
     travelFromPrevious: (visit as any).travelFromPrevious ?? null,
+    travelFromHome: (visit as any).travelFromHome ?? null,
+    travelToHome: (visit as any).travelToHome ?? null,
     routeSequence: (visit as any).routeSequence ?? null,
   }));
 

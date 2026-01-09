@@ -33,36 +33,47 @@ export function renderRadialGauge(options: {
   const normalizedValue = Math.max(0, Math.min(100, value));
   
   // Ring geometry
-  const strokeWidth = 12;
+  const strokeWidth = 14;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - normalizedValue / 100);
   
-  // Color based on score
+  // Color and status based on score
   const color = normalizedValue >= 85 ? COLORS.mint 
     : normalizedValue >= 70 ? COLORS.gold 
+    : normalizedValue >= 55 ? COLORS.rose
     : COLORS.coral;
   
-  const glowColor = normalizedValue >= 85 ? 'rgba(52,211,153,0.3)' 
-    : normalizedValue >= 70 ? 'rgba(251,191,36,0.3)' 
-    : 'rgba(255,107,107,0.3)';
+  // Status emoji and description
+  const statusIcon = normalizedValue >= 85 ? '✓' 
+    : normalizedValue >= 70 ? '●' 
+    : normalizedValue >= 55 ? '!' 
+    : '⚠';
+  
+  const statusDescription = normalizedValue >= 85 ? 'Excellent! Your pet is thriving.' 
+    : normalizedValue >= 70 ? 'Looking good overall.' 
+    : normalizedValue >= 55 ? 'A few things to watch.' 
+    : 'Some concerns noted this period.';
+
+  // Create a lighter version of the color for background (email-safe)
+  const lightBg = color === COLORS.mint ? '#E6F9F1' 
+    : color === COLORS.gold ? '#FEF3C7' 
+    : color === COLORS.rose ? '#FDE8E8'
+    : '#FEE2E2';
 
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
       <tr>
         <td align="center" style="padding:16px;">
+          <!--[if mso]>
+          <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" style="width:${size}px;height:${size}px;" arcsize="50%" strokecolor="${COLORS.background}" strokeweight="2pt" fillcolor="${COLORS.white}">
+            <v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0">
+              <center style="font-size:32px;font-weight:bold;color:${COLORS.ink}">${normalizedValue}</center>
+            </v:textbox>
+          </v:roundrect>
+          <![endif]-->
+          <!--[if !mso]><!-->
           <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-            <!-- Glow effect -->
-            <defs>
-              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-            
             <!-- Background ring -->
             <circle 
               cx="${size/2}" cy="${size/2}" r="${radius}"
@@ -71,7 +82,7 @@ export function renderRadialGauge(options: {
               stroke-width="${strokeWidth}"
             />
             
-            <!-- Progress ring -->
+            <!-- Progress ring (no filter for email compatibility) -->
             <circle 
               cx="${size/2}" cy="${size/2}" r="${radius}"
               fill="none" 
@@ -81,27 +92,38 @@ export function renderRadialGauge(options: {
               stroke-dasharray="${circumference}"
               stroke-dashoffset="${dashOffset}"
               transform="rotate(-90 ${size/2} ${size/2})"
-              filter="url(#glow)"
             />
             
             <!-- Center value -->
-            <text x="${size/2}" y="${size/2 - 8}" 
+            <text x="${size/2}" y="${size/2 - 4}" 
               text-anchor="middle" 
-              font-family="system-ui, -apple-system, sans-serif" 
-              font-size="32" 
-              font-weight="700" 
+              font-family="Arial, Helvetica, sans-serif" 
+              font-size="36" 
+              font-weight="bold" 
               fill="${COLORS.ink}">${normalizedValue}</text>
             
             <!-- Label -->
-            <text x="${size/2}" y="${size/2 + 14}" 
+            <text x="${size/2}" y="${size/2 + 18}" 
               text-anchor="middle" 
-              font-family="system-ui, -apple-system, sans-serif" 
-              font-size="11" 
-              fill="${COLORS.muted}"
-              text-transform="uppercase"
-              letter-spacing="0.08em">${label}</text>
+              font-family="Arial, Helvetica, sans-serif" 
+              font-size="10" 
+              fill="${COLORS.muted}">${label.toUpperCase()}</text>
           </svg>
-          ${sublabel ? `<p style="margin:8px 0 0;font-size:13px;color:${color};font-weight:600;">${sublabel}</p>` : ''}
+          <!--<![endif]-->
+        </td>
+      </tr>
+      <tr>
+        <td align="center" style="padding:4px 16px 0;">
+          ${sublabel ? `
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 6px;">
+              <tr>
+                <td style="background-color:${lightBg};border-radius:20px;padding:6px 16px;">
+                  <span style="font-size:14px;color:${color};font-weight:bold;">${statusIcon} ${sublabel}</span>
+                </td>
+              </tr>
+            </table>
+          ` : ''}
+          <p style="margin:4px 0 0;font-size:12px;color:${COLORS.muted};max-width:180px;">${statusDescription}</p>
         </td>
       </tr>
     </table>
@@ -110,7 +132,7 @@ export function renderRadialGauge(options: {
 
 // ─────────────────────────────────────────────────────────────
 // BRISTOL SCALE METER
-// Visual representation of stool firmness (1-7)
+// Visual representation of stool firmness (1-7) with sausage shapes
 // ─────────────────────────────────────────────────────────────
 export function renderBristolScale(options: {
   value: number | null;
@@ -119,61 +141,144 @@ export function renderBristolScale(options: {
   const { value, showLabels = true } = options;
   const normalizedValue = value != null ? Math.max(1, Math.min(7, Math.round(value))) : null;
   
-  // Bristol scale colors and dots
+  // Bristol scale with more distinctive shapes and better colors
   const scalePoints = [
-    { value: 1, label: 'Hard', color: '#8B4513' },
-    { value: 2, label: 'Lumpy', color: '#A0522D' },
-    { value: 3, label: 'Cracked', color: '#CD853F' },
-    { value: 4, label: 'Ideal', color: COLORS.emerald },
-    { value: 5, label: 'Soft', color: '#D4A574' },
-    { value: 6, label: 'Mushy', color: '#DEB887' },
-    { value: 7, label: 'Liquid', color: '#F5DEB3' },
+    { value: 1, label: 'Hard lumps', color: '#5D4037', zone: 'constipated', shape: 'lumps' },
+    { value: 2, label: 'Lumpy', color: '#795548', zone: 'constipated', shape: 'sausage-lumpy' },
+    { value: 3, label: 'Cracked', color: '#8D6E63', zone: 'normal', shape: 'sausage-cracked' },
+    { value: 4, label: 'Smooth', color: COLORS.emerald, zone: 'ideal', shape: 'sausage-smooth' },
+    { value: 5, label: 'Soft', color: '#BCAAA4', zone: 'normal', shape: 'soft-blobs' },
+    { value: 6, label: 'Mushy', color: '#D7CCC8', zone: 'loose', shape: 'mushy' },
+    { value: 7, label: 'Liquid', color: '#EFEBE9', zone: 'loose', shape: 'liquid' },
   ];
 
-  const dotSize = 24;
-  const spacing = 36;
-  const totalWidth = (scalePoints.length - 1) * spacing + dotSize;
-  const height = showLabels ? 80 : 50;
+  const itemWidth = 60;
+  const itemHeight = 40;
+  const spacing = 8;
+  const totalWidth = scalePoints.length * itemWidth + (scalePoints.length - 1) * spacing;
 
-  const dots = scalePoints.map((point, i) => {
-    const x = dotSize/2 + i * spacing;
+  // Render shape for each type
+  const renderShape = (point: typeof scalePoints[0], x: number, isActive: boolean) => {
+    const opacity = normalizedValue === null || isActive ? 1 : 0.35;
+    const cx = x + itemWidth / 2;
+    const cy = 20;
+    
+    // Draw different shapes based on type
+    switch (point.shape) {
+      case 'lumps':
+        return `
+          <g opacity="${opacity}">
+            <circle cx="${cx - 10}" cy="${cy}" r="6" fill="${point.color}" />
+            <circle cx="${cx + 2}" cy="${cy - 4}" r="5" fill="${point.color}" />
+            <circle cx="${cx + 10}" cy="${cy + 2}" r="5" fill="${point.color}" />
+          </g>
+        `;
+      case 'sausage-lumpy':
+        return `
+          <g opacity="${opacity}">
+            <ellipse cx="${cx}" cy="${cy}" rx="22" ry="8" fill="${point.color}" />
+            <circle cx="${cx - 12}" cy="${cy - 3}" r="4" fill="${point.color}" stroke="#fff" stroke-width="1" />
+            <circle cx="${cx}" cy="${cy + 3}" r="4" fill="${point.color}" stroke="#fff" stroke-width="1" />
+            <circle cx="${cx + 12}" cy="${cy - 2}" r="4" fill="${point.color}" stroke="#fff" stroke-width="1" />
+          </g>
+        `;
+      case 'sausage-cracked':
+        return `
+          <g opacity="${opacity}">
+            <ellipse cx="${cx}" cy="${cy}" rx="22" ry="8" fill="${point.color}" />
+            <line x1="${cx - 8}" y1="${cy - 4}" x2="${cx - 6}" y2="${cy + 4}" stroke="#fff" stroke-width="1" />
+            <line x1="${cx + 4}" y1="${cy - 3}" x2="${cx + 6}" y2="${cy + 3}" stroke="#fff" stroke-width="1" />
+          </g>
+        `;
+      case 'sausage-smooth':
+        return `
+          <g opacity="${opacity}">
+            <ellipse cx="${cx}" cy="${cy}" rx="22" ry="8" fill="${point.color}" />
+            ${isActive ? `<text x="${cx}" y="${cy + 3}" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">✓</text>` : ''}
+          </g>
+        `;
+      case 'soft-blobs':
+        return `
+          <g opacity="${opacity}">
+            <ellipse cx="${cx - 8}" cy="${cy - 2}" rx="12" ry="6" fill="${point.color}" />
+            <ellipse cx="${cx + 10}" cy="${cy + 3}" rx="10" ry="5" fill="${point.color}" />
+          </g>
+        `;
+      case 'mushy':
+        return `
+          <g opacity="${opacity}">
+            <path d="M${cx - 18} ${cy + 4} Q${cx - 12} ${cy - 6} ${cx} ${cy + 2} Q${cx + 12} ${cy - 4} ${cx + 18} ${cy + 6} Q${cx + 8} ${cy + 10} ${cx - 10} ${cy + 8} Z" fill="${point.color}" />
+          </g>
+        `;
+      case 'liquid':
+        return `
+          <g opacity="${opacity}">
+            <ellipse cx="${cx}" cy="${cy + 2}" rx="20" ry="6" fill="${point.color}" />
+            <ellipse cx="${cx - 10}" cy="${cy + 6}" rx="8" ry="3" fill="${point.color}" />
+            <ellipse cx="${cx + 14}" cy="${cy + 7}" rx="6" ry="2" fill="${point.color}" />
+          </g>
+        `;
+      default:
+        return `<circle cx="${cx}" cy="${cy}" r="12" fill="${point.color}" opacity="${opacity}" />`;
+    }
+  };
+
+  const items = scalePoints.map((point, i) => {
+    const x = i * (itemWidth + spacing);
     const isActive = normalizedValue === point.value;
     const isIdeal = point.value === 4;
     
     return `
-      <!-- Dot ${point.value} -->
-      <circle 
-        cx="${x}" cy="20" r="${isActive ? 12 : 10}"
-        fill="${point.color}" 
-        stroke="${isActive ? COLORS.ink : 'transparent'}"
-        stroke-width="${isActive ? 2 : 0}"
-        opacity="${normalizedValue === null || isActive ? 1 : 0.4}"
-      />
-      ${isIdeal ? `<text x="${x}" y="23" text-anchor="middle" font-size="8" fill="${COLORS.white}" font-weight="700">✓</text>` : ''}
-      ${showLabels ? `<text x="${x}" y="52" text-anchor="middle" font-size="9" fill="${COLORS.muted}">${point.label}</text>` : ''}
+      <!-- Type ${point.value} -->
+      <g>
+        ${isActive ? `<rect x="${x - 2}" y="0" width="${itemWidth + 4}" height="${itemHeight}" rx="8" fill="${isIdeal ? 'rgba(16,185,129,0.15)' : 'rgba(0,0,0,0.06)'}" />` : ''}
+        ${renderShape(point, x, isActive)}
+        ${showLabels ? `
+          <text x="${x + itemWidth / 2}" y="${itemHeight + 14}" text-anchor="middle" font-size="9" fill="${isActive ? COLORS.ink : COLORS.muted}" font-weight="${isActive ? '600' : '400'}">${point.label}</text>
+          <text x="${x + itemWidth / 2}" y="${itemHeight + 26}" text-anchor="middle" font-size="8" fill="${COLORS.muted}">Type ${point.value}</text>
+        ` : ''}
+      </g>
     `;
   }).join('');
 
-  const pointerX = normalizedValue ? dotSize/2 + (normalizedValue - 1) * spacing : null;
-  const pointer = pointerX != null ? `
-    <polygon 
-      points="${pointerX - 6},65 ${pointerX + 6},65 ${pointerX},55" 
-      fill="${COLORS.ink}"
-    />
-  ` : '';
+  // Zone indicators
+  const zoneLabels = `
+    <g>
+      <text x="${itemWidth * 0.5 + spacing * 0.5}" y="-8" text-anchor="middle" font-size="8" fill="${COLORS.coral}" font-weight="500">Constipation</text>
+      <text x="${itemWidth * 3.5 + spacing * 2.5}" y="-8" text-anchor="middle" font-size="8" fill="${COLORS.emerald}" font-weight="500">Ideal</text>
+      <text x="${itemWidth * 6 + spacing * 5.5}" y="-8" text-anchor="middle" font-size="8" fill="#F59E0B" font-weight="500">Loose</text>
+    </g>
+  `;
+
+  const height = showLabels ? 90 : 50;
+
+  // Average indicator with description
+  const getZoneDescription = (v: number) => {
+    if (v <= 2) return { text: 'indicates constipation', color: COLORS.coral };
+    if (v === 3 || v === 4 || v === 5) return { text: 'healthy range', color: COLORS.emerald };
+    return { text: 'indicates loose stool', color: '#F59E0B' };
+  };
+
+  const avgDescription = normalizedValue ? getZoneDescription(normalizedValue) : null;
 
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
       <tr>
         <td align="center" style="padding:16px 0;">
-          <p style="margin:0 0 12px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.muted};">Bristol Stool Scale</p>
-          <svg width="${totalWidth + 20}" height="${height}" viewBox="-10 0 ${totalWidth + 20} ${height}" xmlns="http://www.w3.org/2000/svg">
-            <!-- Track line -->
-            <line x1="${dotSize/2}" y1="20" x2="${totalWidth - dotSize/2}" y2="20" stroke="${COLORS.background}" stroke-width="4" stroke-linecap="round"/>
-            ${dots}
-            ${pointer}
+          <p style="margin:0 0 16px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.muted};">Bristol Stool Scale</p>
+          <svg width="${totalWidth + 20}" height="${height}" viewBox="-10 -12 ${totalWidth + 20} ${height + 12}" xmlns="http://www.w3.org/2000/svg">
+            ${zoneLabels}
+            ${items}
           </svg>
-          ${normalizedValue ? `<p style="margin:8px 0 0;font-size:12px;color:${normalizedValue === 4 ? COLORS.emerald : COLORS.muted};">Average: Type ${normalizedValue} (${scalePoints[normalizedValue - 1].label})</p>` : ''}
+          ${normalizedValue && avgDescription ? `
+            <p style="margin:12px 0 0;font-size:13px;font-weight:600;color:${avgDescription.color};">
+              Average: Type ${normalizedValue} — ${avgDescription.text}
+            </p>
+          ` : `
+            <p style="margin:12px 0 0;font-size:12px;color:${COLORS.muted};">
+              Types 3-4 are ideal for healthy dogs
+            </p>
+          `}
         </td>
       </tr>
     </table>
@@ -282,8 +387,8 @@ export function renderDonutChart(options: {
           <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
             ${segments}
             ${centerValue ? `
-              <text x="${size/2}" y="${size/2 - 4}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="${COLORS.ink}">${centerValue}</text>
-              <text x="${size/2}" y="${size/2 + 12}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="${COLORS.muted}">${centerLabel || ''}</text>
+              <text x="${size/2}" y="${size/2 - 4}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="${COLORS.ink}">${centerValue}</text>
+              <text x="${size/2}" y="${size/2 + 12}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="${COLORS.muted}">${centerLabel || ''}</text>
             ` : ''}
           </svg>
         </td>
@@ -452,7 +557,8 @@ export function renderStatCard(options: {
 
 // ─────────────────────────────────────────────────────────────
 // HYDRATION METER
-// Visual water drop indicator
+// Visual water drop indicator with percentage (email-safe version)
+// Uses simple shapes instead of clipPath for compatibility
 // ─────────────────────────────────────────────────────────────
 export function renderHydrationMeter(options: {
   level: number; // 0-100
@@ -460,44 +566,56 @@ export function renderHydrationMeter(options: {
   const { level } = options;
   const normalizedLevel = Math.max(0, Math.min(100, level));
   
+  // Don't render if level is too low (likely invalid data)
+  if (normalizedLevel <= 5) {
+    return '';
+  }
+  
   const color = normalizedLevel >= 70 ? COLORS.sky 
-    : normalizedLevel >= 40 ? COLORS.gold 
+    : normalizedLevel >= 50 ? COLORS.gold 
     : COLORS.coral;
   
-  const label = normalizedLevel >= 70 ? 'Well hydrated' 
-    : normalizedLevel >= 40 ? 'Moderate' 
+  const label = normalizedLevel >= 70 ? 'Good hydration' 
+    : normalizedLevel >= 50 ? 'Monitor hydration' 
     : 'Low hydration';
+  
+  // Light background version for email compatibility
+  const lightBg = color === COLORS.sky ? '#E0F2FE' 
+    : color === COLORS.gold ? '#FEF3C7' 
+    : '#FEE2E2';
+
+  // Simple horizontal bar instead of complex water drop for email compatibility
+  const barWidth = 80;
+  const barHeight = 12;
+  const filledWidth = (normalizedLevel / 100) * barWidth;
 
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px auto;">
       <tr>
-        <td align="center">
-          <svg width="48" height="60" viewBox="0 0 48 60" xmlns="http://www.w3.org/2000/svg">
-            <!-- Drop outline -->
-            <path d="M24 4 C12 20 8 32 8 40 C8 50 15 56 24 56 C33 56 40 50 40 40 C40 32 36 20 24 4Z" 
-              fill="${COLORS.background}" 
-              stroke="rgba(0,0,0,0.1)" 
-              stroke-width="1"/>
-            
-            <!-- Fill mask -->
-            <clipPath id="dropMask">
-              <path d="M24 4 C12 20 8 32 8 40 C8 50 15 56 24 56 C33 56 40 50 40 40 C40 32 36 20 24 4Z"/>
-            </clipPath>
-            
-            <!-- Fill level -->
-            <rect 
-              x="0" y="${56 - (normalizedLevel / 100) * 52}" 
-              width="48" height="${(normalizedLevel / 100) * 52}" 
-              fill="${color}" 
-              clip-path="url(#dropMask)"
-              opacity="0.8"
-            />
-          </svg>
+        <td align="center" style="padding:8px;">
+          <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.muted};">Stool Hydration</p>
+          
+          <!-- Simple progress bar (email-safe) -->
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+            <tr>
+              <td style="background-color:${COLORS.background};border-radius:${barHeight/2}px;padding:0;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${barWidth}">
+                  <tr>
+                    <td width="${filledWidth}" height="${barHeight}" style="background-color:${color};border-radius:${barHeight/2}px;"></td>
+                    <td width="${barWidth - filledWidth}" height="${barHeight}" style="background-color:${COLORS.background};border-radius:0 ${barHeight/2}px ${barHeight/2}px 0;"></td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+          
+          <!-- Percentage -->
+          <p style="margin:6px 0 0;font-size:18px;font-weight:bold;color:${color};">${Math.round(normalizedLevel)}%</p>
         </td>
       </tr>
       <tr>
-        <td style="padding-top:6px;text-align:center;">
-          <span style="font-size:11px;color:${color};font-weight:500;">${label}</span>
+        <td style="padding-top:4px;text-align:center;">
+          <span style="font-size:12px;color:${color};font-weight:bold;">${label}</span>
         </td>
       </tr>
     </table>

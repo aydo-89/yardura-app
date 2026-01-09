@@ -7,7 +7,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -20,9 +19,11 @@ import { router } from 'expo-router';
 import Button from '@/components/ui/Button';
 import ChoiceChip from '@/components/ui/ChoiceChip';
 import Screen from '@/components/ui/Screen';
+import Switch from '@/components/ui/ThemedSwitch';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { apiRequest } from '@/lib/api/client';
+import { DARK_MAP_STYLE } from '@/lib/maps/style';
 
 type AvailabilityWindow = 'AM' | 'PM' | 'FULL';
 
@@ -718,7 +719,9 @@ export default function ScooperApplyScreen() {
                   <MapView
                     ref={mapRef}
                     style={styles.map}
-                    provider={PROVIDER_GOOGLE}
+                    provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                    mapType={Platform.OS === 'ios' ? (colorScheme === 'dark' ? 'mutedStandard' : 'standard') : 'standard'}
+                    customMapStyle={colorScheme === 'dark' ? DARK_MAP_STYLE : []}
                     initialRegion={mapRegion}
                   >
                     {tiles.map((tile) => {

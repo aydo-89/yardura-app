@@ -46,6 +46,9 @@ const HERO_BACKGROUNDS = {
   },
 } as const;
 
+// Dark fallback gradient for when images fail to load (ensures white text readability)
+const IMAGE_FALLBACK_BG = "linear-gradient(135deg, #1a2820 0%, #0d1a14 50%, #0a100c 100%)";
+
 type CityInfo = {
   city: string;
   state: string;
@@ -246,14 +249,15 @@ export default function Hero() {
     section?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  const backgroundBase = theme === "dark" ? "#050b08" : "#f8f5ee";
-  const separatorColor = backgroundBase;
+  // Use dark background as fallback since text is white - ensures readability if image fails
+  const backgroundBase = theme === "dark" ? "#050b08" : "#1a2820";
+  const separatorColor = theme === "dark" ? "#050b08" : "#f8f5ee";
 
   return (
     <section
       id="hero"
       className="relative overflow-hidden text-white"
-      style={{ backgroundColor: backgroundBase }}
+      style={{ background: IMAGE_FALLBACK_BG }}
     >
       <div className="absolute inset-0">
         <AnimatePresence mode="wait">
@@ -273,6 +277,7 @@ export default function Hero() {
               className="object-cover"
               style={{ objectPosition: "40% center" }}
               sizes="100vw"
+              unoptimized
             />
             <div
               className="absolute inset-0"
@@ -291,16 +296,35 @@ export default function Hero() {
       <div className="relative z-10 mx-auto flex min-h-[84vh] max-w-5xl flex-col items-center justify-center gap-7 px-6 pb-16 pt-24 text-center text-white drop-shadow-[0_20px_45px_rgba(0,0,0,0.65)] lg:pt-36">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/20 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-white/85 backdrop-blur">
           <Sparkles className="h-4 w-4 text-[#f3a433]" />
-          Clean yard • Wellness insights included
+          Same price as standard scoopers • Wellness app included
         </div>
 
         <h1 className="max-w-4xl font-serif text-[clamp(3.1rem,6.2vw,6.1rem)] leading-[0.95] text-balance">
-          Poop pickup, handled.
+          Poop scooping, upgraded with wellness insights.
         </h1>
 
         <p className="max-w-3xl text-lg leading-relaxed text-white/88">
-          Clean yard + pet wellness insights—recaps after every visit so you can spot changes early without inspecting.
+          We handle dog waste removal on schedule and score each visit on color, consistency, and content. You get a clean, simple 3-point wellness recap for peace of mind - we do the inspection, you get the insight. Plus a free wellness app to manage visits, skips, and reschedules for the same price as standard scooping.
         </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-white/85">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/25 px-3 py-1.5">
+            <CheckCircle className="h-3.5 w-3.5 text-[#f3a433]" />
+            Same price as standard scoopers
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/25 px-3 py-1.5">
+            <CheckCircle className="h-3.5 w-3.5 text-[#f3a433]" />
+            Dog waste removal
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/25 px-3 py-1.5">
+            <CheckCircle className="h-3.5 w-3.5 text-[#f3a433]" />
+            3-point wellness score
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/25 px-3 py-1.5">
+            <CheckCircle className="h-3.5 w-3.5 text-[#f3a433]" />
+            Free app control
+          </span>
+        </div>
 
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Button
@@ -321,9 +345,13 @@ export default function Hero() {
           </Button>
         </div>
 
+        <div className="rounded-full border border-white/20 bg-black/30 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/80">
+          Why pay the same for cleanup only?
+        </div>
+
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/70">
-            Prefer to start with the free app?
+            Free wellness app included
           </p>
           <AppStoreButtons compact className="items-center justify-center" />
           <Link
@@ -341,11 +369,11 @@ export default function Hero() {
           </div>
           <div className="inline-flex items-center gap-2">
             <WandSparkles className="h-4 w-4" />
-            Tidy sweep, every zone
+            3-point stool recap each visit
           </div>
           <div className="inline-flex items-center gap-2">
             <Leaf className="h-4 w-4" />
-            Deodorize / haul‑away / compost add‑ons
+            Skip + reschedule from the app
           </div>
         </div>
 
@@ -357,7 +385,7 @@ export default function Hero() {
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.4em] text-white/70">What you get each visit</p>
               <h2 className="mt-2 font-serif text-[clamp(2rem,3.5vw,3.1rem)] leading-tight text-white">
-                Clean yard. Gate photo. Recap link.
+                Clean yard. Gate photo. Wellness recap included.
               </h2>
               <div className="mt-6 grid gap-6 md:grid-cols-3">
                 <div className="space-y-2">
@@ -378,10 +406,10 @@ export default function Hero() {
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">
-                    Pet wellness insights
+                    Wellness recap + app control
                   </p>
                   <p className="text-sm leading-relaxed text-white/75">
-                    Color • Consistency • Content notes delivered in your recap link.
+                    Color • Consistency • Content notes, plus easy skips and reschedules in the free app.
                   </p>
                 </div>
               </div>
