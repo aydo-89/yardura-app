@@ -18,13 +18,14 @@ export default async function AdminCustomersPage({
   if (!session?.user) {
     redirect("/signin?callbackUrl=/admin/customers");
   }
-  const orgId = (session.user as any)?.orgId ?? null;
+  // Default to "yardura" org - this supports multi-tenancy while keeping a sensible default
+  const orgId = (session.user as any)?.orgId || "yardura";
 
   const now = new Date();
 
   const customers = await prisma.customer.findMany({
     where: {
-      ...(orgId ? { orgId } : {}),
+      orgId,
       ...(query
         ? {
             OR: [

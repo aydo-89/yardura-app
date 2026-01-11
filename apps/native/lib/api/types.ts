@@ -64,6 +64,9 @@ export type DogSummary = {
   vetName?: string | null;
   vetPhone?: string | null;
   vetClinic?: string | null;
+  insuranceProvider?: string | null;
+  insurancePolicyNumber?: string | null;
+  insurancePhone?: string | null;
   photoUrl?: string | null;
 };
 
@@ -77,6 +80,61 @@ export type DogWeightEntry = {
   notes?: string | null;
 };
 
+export type VetDocumentAnalysis = {
+  patientInfo?: {
+    name?: string | null;
+    species?: string | null;
+    breed?: string | null;
+    age?: string | null;
+    weight?: string | null;
+    sex?: string | null;
+  };
+  visitInfo?: {
+    date?: string | null;
+    veterinarian?: string | null;
+    clinic?: string | null;
+    reason?: string | null;
+  };
+  diagnostics?: Array<{
+    system?: string | null;
+    finding: string;
+    severity?: string | null;
+    notes?: string | null;
+  }>;
+  problemList?: string[];
+  caseSummary?: string | null;
+  atHomeCare?: string[];
+  followUp?: {
+    instructions?: string | null;
+    nextAppointment?: string | null;
+    watchFor?: string[];
+  };
+  medications?: Array<{
+    name: string;
+    dosage?: string | null;
+    frequency?: string | null;
+    duration?: string | null;
+    notes?: string | null;
+  }>;
+  rawFindings?: string | null;
+};
+
+export type VetDocument = {
+  id: string;
+  dogId?: string | null;
+  documentUrl: string;
+  documentName: string;
+  documentType?: string | null;
+  visitDate?: string | null;
+  veterinarian?: string | null;
+  clinic?: string | null;
+  analysis?: VetDocumentAnalysis | null;
+  analysisStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  analysisError?: string | null;
+  createdAt: string;
+  dog?: { id: string; name: string } | null;
+};
+
 export type CustomerSummary = {
   customer: {
     id: string;
@@ -85,6 +143,7 @@ export type CustomerSummary = {
     state: string;
     zip: string;
   };
+  orgId: string;
   contact?: {
     email: string | null;
     phone: string | null;
@@ -331,6 +390,14 @@ export type ScooperVisitMedia = {
   stoolSampleId?: string | null;
   stoolSampleView?: string | null;
   url?: string | null;
+};
+
+/** Location snap result returned from media upload when GPS is corrected */
+export type LocationSnapResult = {
+  snapped: boolean;
+  wasInside: boolean;
+  correctionMeters: number | null;
+  status: 'inside' | 'snapped' | 'too_far' | 'no_parcel' | 'disabled' | 'error';
 };
 
 export type ScooperVisitInsight = {
@@ -846,6 +913,23 @@ export type WellnessFoodProduct = {
   portion?: string | null;
   notes?: string | null;
   imageUrl?: string | null;
+};
+
+// Cached pet food product from external sources (Chewy)
+export type PetFoodProductSearch = {
+  id: string;
+  chewyId?: string | null;
+  name: string;
+  brand: string;
+  type: 'FOOD' | 'TREAT' | 'SUPPLEMENT' | 'MEDICATION';
+  imageUrl?: string | null;
+  price?: number | null;
+  autoshipPrice?: number | null;
+  ingredients?: string | null;
+  lifestage?: string | null;
+  breedSize?: string | null;
+  specialDiets?: string[];
+  source: 'local' | 'chewy';
 };
 
 export type WellnessFoodSchedule = {

@@ -11,10 +11,10 @@ import type {
 } from '@/lib/api/types';
 
 export const TYPE_OPTIONS = [
-  { label: 'Food', value: 'FOOD' },
-  { label: 'Treat', value: 'TREAT' },
-  { label: 'Supplement', value: 'SUPPLEMENT' },
-  { label: 'Medication', value: 'MEDICATION' },
+  { label: 'Food', value: 'FOOD', examples: 'Kibble, wet food, raw diet, toppers' },
+  { label: 'Treat', value: 'TREAT', examples: 'Training treats, dental chews, bully sticks' },
+  { label: 'Supplement', value: 'SUPPLEMENT', examples: 'Probiotics, joint support, fish oil, vitamins' },
+  { label: 'Medication', value: 'MEDICATION', examples: 'Flea/tick, heartworm, prescriptions, pain relief' },
 ] as const;
 
 export type FoodType = (typeof TYPE_OPTIONS)[number]['value'];
@@ -612,7 +612,7 @@ export function useFoodLog({ token, filterDogId }: UseFoodLogOptions) {
   const scanFood = useCallback(
     async (
       mode: 'LABEL' | 'INGREDIENTS',
-      captureImage: () => Promise<{ uri: string; fileName?: string; mimeType?: string } | null>,
+      captureImage: () => Promise<{ uri: string; fileName?: string | null; mimeType?: string } | null>,
     ) => {
       if (!token) return null;
       const modeKey = mode === 'LABEL' ? 'label' : 'ingredients';

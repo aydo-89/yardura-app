@@ -17,6 +17,19 @@
         "buildType": "apk"
       }
     },
+    "simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://www.getinsightscoop.com",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCeIVXC9xY6hNMXoS_FAB0smDAe7ia_EOc",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "test_hvzStXcggKXdScuGiEzKsfqkgxb"
+      }
+    },
     "development-local": {
       "developmentClient": true,
       "distribution": "internal",

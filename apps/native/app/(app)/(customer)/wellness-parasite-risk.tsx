@@ -164,6 +164,18 @@ export default function WellnessParasiteRiskScreen() {
     });
   };
 
+  const handleLogMed = (kind: 'FLEA_TICK' | 'HEARTWORM') => {
+    const medName = kind === 'FLEA_TICK' ? 'Flea & tick prevention' : 'Heartworm prevention';
+    router.push({
+      pathname: '/(app)/(customer)/food-log' as any,
+      params: {
+        quickAdd: 'true',
+        quickAddType: 'MEDICATION',
+        quickAddName: medName,
+      },
+    });
+  };
+
   const handleSelectMonth = (month: number) => {
     setSelectedMonth(month);
   };
@@ -276,16 +288,28 @@ export default function WellnessParasiteRiskScreen() {
                   ? `High risk: ${formatMonthList(riskBuckets.fleasTicks.high)}`
                   : 'Low risk year-round in your area'}
               </Text>
-              <Pressable
-                onPress={() => handleAddReminder('FLEA_TICK')}
-                style={({ pressed }) => [
-                  styles.reminderButton,
-                  { backgroundColor: Colors.brand.coral, opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <FontAwesome name="plus" size={12} color="#FFFFFF" />
-                <Text style={styles.reminderButtonText}>Add Reminder</Text>
-              </Pressable>
+              <View style={styles.actionButtonRow}>
+                <Pressable
+                  onPress={() => handleLogMed('FLEA_TICK')}
+                  style={({ pressed }) => [
+                    styles.logMedButton,
+                    { borderColor: Colors.brand.coral, opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <FontAwesome name="medkit" size={12} color={Colors.brand.coral} />
+                  <Text style={[styles.logMedButtonText, { color: Colors.brand.coral }]}>Log Med</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleAddReminder('FLEA_TICK')}
+                  style={({ pressed }) => [
+                    styles.reminderButton,
+                    { backgroundColor: Colors.brand.coral, opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <FontAwesome name="bell" size={12} color="#FFFFFF" />
+                  <Text style={styles.reminderButtonText}>Set Reminder</Text>
+                </Pressable>
+              </View>
             </View>
 
             {/* Heartworm Section */}
@@ -299,16 +323,28 @@ export default function WellnessParasiteRiskScreen() {
                   ? `High risk: ${formatMonthList(riskBuckets.heartworm.high)}`
                   : 'Low risk year-round in your area'}
               </Text>
-              <Pressable
-                onPress={() => handleAddReminder('HEARTWORM')}
-                style={({ pressed }) => [
-                  styles.reminderButton,
-                  { backgroundColor: Colors.brand.gold, opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <FontAwesome name="plus" size={12} color="#FFFFFF" />
-                <Text style={styles.reminderButtonText}>Add Reminder</Text>
-              </Pressable>
+              <View style={styles.actionButtonRow}>
+                <Pressable
+                  onPress={() => handleLogMed('HEARTWORM')}
+                  style={({ pressed }) => [
+                    styles.logMedButton,
+                    { borderColor: Colors.brand.gold, opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <FontAwesome name="medkit" size={12} color={Colors.brand.gold} />
+                  <Text style={[styles.logMedButtonText, { color: Colors.brand.gold }]}>Log Med</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleAddReminder('HEARTWORM')}
+                  style={({ pressed }) => [
+                    styles.reminderButton,
+                    { backgroundColor: Colors.brand.gold, opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <FontAwesome name="bell" size={12} color="#FFFFFF" />
+                  <Text style={styles.reminderButtonText}>Set Reminder</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
         ) : null}
@@ -557,7 +593,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 22,
   },
-  reminderButton: {
+  actionButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+  logMedButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -565,7 +607,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    marginTop: 6,
+    borderWidth: 1.5,
+    backgroundColor: 'transparent',
+  },
+  logMedButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reminderButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
   },
   reminderButtonText: {
     fontSize: 14,

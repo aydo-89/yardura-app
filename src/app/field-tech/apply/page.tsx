@@ -215,9 +215,9 @@ const STATUS_META: Record<
     description: "Accepting interest while coverage builds—be first in when it flips live.",
   },
   DRAFT: {
-    label: "Draft",
-    badgeClass: "bg-slate-500/15 text-slate-600 border border-slate-500/40",
-    description: "Territory mapped, logistics still being dialed in.",
+    label: "Waitlist",
+    badgeClass: "bg-amber-500/15 text-amber-600 border border-amber-500/40",
+    description: "Accepting interest while coverage builds—be first in when it flips live.",
   },
   SUSPENDED: {
     label: "Paused",

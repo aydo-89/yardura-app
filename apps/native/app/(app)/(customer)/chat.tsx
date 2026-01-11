@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router, type Href } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import ChatBubble from '@/components/wellness/ChatBubble';
@@ -22,6 +22,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { apiRequest, ApiError } from '@/lib/api/client';
+import { logWarn } from '@/lib/logger';
 import type {
   CustomerSummary,
   DogSummary,
@@ -64,13 +65,14 @@ function TypingIndicator({ label, color }: { label: string; color: string }) {
 
 export default function WellnessChatScreen() {
   const { session } = useAuth();
+  const { question } = useLocalSearchParams<{ question?: string }>();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const [summary, setSummary] = useState<CustomerSummary | null>(null);
   const [dogs, setDogs] = useState<DogSummary[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(question ?? '');
   const [dogId, setDogId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +80,7 @@ export default function WellnessChatScreen() {
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestionCategory[] | null>(null);
   const [aiSuggestionsLoading, setAiSuggestionsLoading] = useState(false);
+  const [usedQuestions, setUsedQuestions] = useState<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const autoScrollRef = useRef(true);
@@ -130,11 +133,67 @@ export default function WellnessChatScreen() {
         setAiSuggestions(data.categories);
       }
     } catch (err) {
-      console.warn('load-ai-suggestions.failed', err);
+      logWarn('load-ai-suggestions.failed', err);
     } finally {
       setAiSuggestionsLoading(false);
     }
   }, [session?.token]);
+
+  // Regenerate only the used questions, keeping unused ones
+  const regenerateUsedQuestions = useCallback(async () => {
+    if (!session?.token || !aiSuggestions || usedQuestions.size === 0) return;
+    setAiSuggestionsLoading(true);
+    try {
+      const data = await apiRequest<{
+        isPremium: boolean;
+        categories: AISuggestionCategory[] | null;
+      }>('/api/mobile/customer/wellness-chat/suggestions', {
+        token: session.token,
+      });
+      if (data.isPremium && data.categories) {
+        // Merge: keep unused questions, replace used ones with new
+        const newCategories = aiSuggestions.map((oldCat) => {
+          const newCat = data.categories?.find((c) => c.category === oldCat.category);
+          if (!newCat) return oldCat;
+
+          // For each question in the old category, keep it if unused, otherwise get a replacement
+          let newQuestionIndex = 0;
+          const mergedQuestions = oldCat.questions.map((oldQ) => {
+            if (usedQuestions.has(oldQ)) {
+              // This question was used, try to get a replacement from new category
+              const replacement = newCat.questions[newQuestionIndex];
+              newQuestionIndex++;
+              return replacement ?? oldQ; // Fall back to old if no replacement available
+            }
+            return oldQ; // Keep unused question
+          });
+
+          return { ...oldCat, questions: mergedQuestions };
+        });
+        setAiSuggestions(newCategories);
+      }
+    } catch (err) {
+      logWarn('regenerate-suggestions.failed', err);
+    } finally {
+      setAiSuggestionsLoading(false);
+      setUsedQuestions(new Set()); // Clear used questions after regenerating
+    }
+  }, [session?.token, aiSuggestions, usedQuestions]);
+
+  // Track all quick questions for matching when sent
+  const allQuickQuestions = useMemo(() => {
+    if (!aiSuggestions) return new Set<string>();
+    const questions = new Set<string>();
+    aiSuggestions.forEach((cat) => {
+      cat.questions.forEach((q) => questions.add(q));
+    });
+    return questions;
+  }, [aiSuggestions]);
+
+  // Handle selecting a quick question - just populate input, don't mark as used yet
+  const handleQuestionSelect = useCallback((question: string) => {
+    setInput(question);
+  }, []);
 
   useEffect(() => {
     loadDogs();
@@ -212,6 +271,12 @@ export default function WellnessChatScreen() {
     if (!input.trim() || !session?.token || sending) return;
     setError(null);
     const content = input.trim();
+
+    // Track if this was a quick question when actually sent (not just clicked)
+    if (allQuickQuestions.has(content)) {
+      setUsedQuestions((prev) => new Set(prev).add(content));
+    }
+
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -420,9 +485,10 @@ export default function WellnessChatScreen() {
               dogs={dogs}
               summary={summary}
               selectedDogId={dogId}
-              onSelect={(text) => setInput(text)}
+              onSelect={handleQuestionSelect}
               onUpgrade={handleUpgrade}
               disabled={sending}
+              usedQuestions={usedQuestions}
             />
           )}
 
@@ -443,6 +509,8 @@ export default function WellnessChatScreen() {
                     setInput('');
                     setError(null);
                     setAnalysisPendingId(null);
+                    // Regenerate only used questions, keep unused ones
+                    regenerateUsedQuestions();
                   }}
                   style={({ pressed }) => [
                     styles.clearChatButton,

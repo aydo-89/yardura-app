@@ -176,7 +176,6 @@ interface ZIPSearchMapProps {
 const STATUS_LABELS: Array<{ value: ServiceTileStatus; label: string; color: string }> = [
   { value: "LIVE", label: "Live", color: "bg-emerald-500" },
   { value: "WAITLIST", label: "Waitlist", color: "bg-amber-400" },
-  { value: "DRAFT", label: "Draft", color: "bg-slate-400" },
   { value: "SUSPENDED", label: "Paused", color: "bg-red-500" },
 ];
 
@@ -531,8 +530,8 @@ const ZIPSearchMap = ({
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-indigo-500" />
-                      <span>Draft tile</span>
+                      <span className="h-3 w-3 rounded-full bg-amber-400" />
+                      <span>Waitlist tile (pre-launch)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded-full bg-emerald-500" />

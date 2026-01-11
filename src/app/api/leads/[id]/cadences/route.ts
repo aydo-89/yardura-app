@@ -36,11 +36,9 @@ export async function POST(
       return forbidden();
     }
 
-    const orgId = auth.orgId;
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = auth.orgId || "yardura";
     const userId = auth.userId;
-    if (!orgId || !userId) {
-      return NextResponse.json({ ok: false, error: "Organization not set" }, { status: 400 });
-    }
 
     const { id: leadId } = await params;
     if (!leadId) {

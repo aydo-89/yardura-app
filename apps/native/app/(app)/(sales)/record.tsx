@@ -24,7 +24,7 @@ import { dogPresenceOptions, encounterOptions, objectionOptions } from '@/lib/sa
 const MAX_DURATION_MS = 3 * 60 * 1000;
 const MIN_RECORDING_MS = 1200;
 const POLL_INTERVAL_MS = 2000;
-const POLL_MAX_ATTEMPTS = 60;
+const POLL_MAX_ATTEMPTS = 90;
 const TRANSCRIPTION_TIMEOUT_CODE = 'transcription_timeout';
 
 type RecorderState = 'idle' | 'recording' | 'processing' | 'complete';

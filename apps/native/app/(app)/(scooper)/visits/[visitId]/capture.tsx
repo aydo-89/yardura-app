@@ -101,11 +101,41 @@ export default function CaptureStepScreen() {
     analyzedCount,
     analysisGoal,
     uploadingType,
+    lastLocationSnap,
     uploadMedia,
     error,
     getNextStep,
     getPreviousStep,
   } = useVisitFlow();
+
+  // Track location snap feedback display
+  const [snapFeedback, setSnapFeedback] = useState<{
+    snapped: boolean;
+    correctionMeters: number | null;
+  } | null>(null);
+  const snapFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Show feedback when location is snapped
+  useEffect(() => {
+    if (lastLocationSnap?.snapped && lastLocationSnap.correctionMeters) {
+      setSnapFeedback({
+        snapped: true,
+        correctionMeters: lastLocationSnap.correctionMeters,
+      });
+      // Clear feedback after 3 seconds
+      if (snapFeedbackTimer.current) {
+        clearTimeout(snapFeedbackTimer.current);
+      }
+      snapFeedbackTimer.current = setTimeout(() => {
+        setSnapFeedback(null);
+      }, 3000);
+    }
+    return () => {
+      if (snapFeedbackTimer.current) {
+        clearTimeout(snapFeedbackTimer.current);
+      }
+    };
+  }, [lastLocationSnap]);
 
   useStepGuard('capture');
 
@@ -512,7 +542,7 @@ export default function CaptureStepScreen() {
             style={styles.mapLinkRow}
           >
             <Text style={[styles.mapLinkText, { color: overlayText }]}>
-              View poop map (optional)
+              View yard map (optional)
             </Text>
           </Pressable>
           {placementTarget ? (
@@ -579,6 +609,16 @@ export default function CaptureStepScreen() {
             <Text style={[styles.helperText, { color: overlayMuted }]}>
               Capture at least one deposit before continuing.
             </Text>
+          ) : null}
+
+          {/* Location snap feedback */}
+          {snapFeedback ? (
+            <View style={[styles.snapFeedback, { backgroundColor: `${Colors.brand.mint}15`, borderColor: Colors.brand.mint }]}>
+              <FontAwesome name="map-pin" size={12} color={Colors.brand.mint} />
+              <Text style={[styles.snapFeedbackText, { color: Colors.brand.mint }]}>
+                Location adjusted {snapFeedback.correctionMeters?.toFixed(1)}m to yard boundary
+              </Text>
+            </View>
           ) : null}
         </View>
 
@@ -899,6 +939,20 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 12,
     marginTop: 2,
+  },
+  snapFeedback: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 6,
+  },
+  snapFeedbackText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   panelFooterRow: {
     flexDirection: 'row',

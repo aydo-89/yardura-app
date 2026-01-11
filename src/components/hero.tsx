@@ -70,7 +70,6 @@ type HeroZipResult = {
 const TILE_STATUS_LABELS: Record<ServiceTileStatus, string> = {
   LIVE: "Live",
   WAITLIST: "Waitlist",
-  DRAFT: "In planning",
   SUSPENDED: "Temporarily paused",
 };
 

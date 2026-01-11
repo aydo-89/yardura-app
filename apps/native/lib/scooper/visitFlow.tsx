@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 
 import { ApiError, apiRequest, apiUpload } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import type { ScooperVisitDetail, ScooperVisitMedia } from '@/lib/api/types';
+import type { ScooperVisitDetail, ScooperVisitMedia, LocationSnapResult } from '@/lib/api/types';
 import { parseDateInput } from '@/lib/dates';
 import {
   buildDisposalCopy,
@@ -109,6 +109,11 @@ type UploadAsset = {
   type: string;
 };
 
+type MediaUploadResult = {
+  media: ScooperVisitMedia | null;
+  locationSnap: LocationSnapResult | null;
+};
+
 type VisitFlowContextValue = {
   visitId: string;
   visit: ScooperVisitDetail | null;
@@ -171,6 +176,7 @@ type VisitFlowContextValue = {
   summaryError: string | null;
   generateSummary: () => Promise<void>;
   uploadingType: string | null;
+  lastLocationSnap: LocationSnapResult | null;
   uploadMedia: (asset: UploadAsset, options: UploadOptions) => Promise<ScooperVisitMedia | null>;
   arrivalSending: boolean;
   sendArrival: (etaMinutes?: number, includePetReminder?: boolean) => Promise<void>;
@@ -398,6 +404,7 @@ export function VisitFlowProvider({ visitId, children }: { visitId: string; chil
   const [skipReasons, setSkipReasons] = useState<SkipReason[]>([]);
   const [skipSubmitting, setSkipSubmitting] = useState(false);
   const [handoffSubmitting, setHandoffSubmitting] = useState(false);
+  const [lastLocationSnap, setLastLocationSnap] = useState<LocationSnapResult | null>(null);
 
   const refreshVisit = useCallback(async () => {
     if (!session?.token || !visitId) return;
@@ -972,7 +979,10 @@ export function VisitFlowProvider({ visitId, children }: { visitId: string; chil
         if (options.stoolSampleId) {
           formData.append('stoolSampleId', options.stoolSampleId);
         }
-        const response = await apiUpload<{ media?: ScooperVisitMedia }>(
+        const response = await apiUpload<{
+          media?: ScooperVisitMedia;
+          locationSnap?: LocationSnapResult | null;
+        }>(
           `/api/field-tech/visits/${visitId}/media`,
           {
             token: session.token,
@@ -980,6 +990,13 @@ export function VisitFlowProvider({ visitId, children }: { visitId: string; chil
           },
         );
         await refreshVisit();
+
+        // Track location snap result for UI feedback
+        const snapResult = response?.locationSnap ?? null;
+        if (snapResult) {
+          setLastLocationSnap(snapResult);
+        }
+
         return response?.media ?? null;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to upload media.';
@@ -1204,6 +1221,7 @@ export function VisitFlowProvider({ visitId, children }: { visitId: string; chil
     summaryError,
     generateSummary,
     uploadingType,
+    lastLocationSnap,
     uploadMedia,
     deleteMedia,
     arrivalSending,

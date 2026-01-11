@@ -280,7 +280,7 @@ export default function CustomerReminders() {
   const multiDogLocked = summary?.wellnessAccess?.maxDogs === 1 && dogs.length > 1;
 
   const heroBackground =
-    colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
+    colorScheme === 'light' ? Colors.brand.graphite : '#1E293B';
 
   return (
     <Screen>

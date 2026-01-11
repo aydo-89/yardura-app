@@ -146,7 +146,7 @@ export default function MobileWellnessPoopMap({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-500">
-              Poop map
+              Yard map
             </p>
             <h2 className="text-lg font-semibold text-white">
               See patterns across your yard

@@ -33,6 +33,9 @@ type DogDraft = {
   vetName: string;
   vetPhone: string;
   vetClinic: string;
+  insuranceProvider: string;
+  insurancePolicyNumber: string;
+  insurancePhone: string;
 };
 
 type WeightDraft = {
@@ -54,6 +57,9 @@ const toDrafts = (dogs: DogSummary[]): Record<string, DogDraft> =>
       vetName: dog.vetName ?? '',
       vetPhone: dog.vetPhone ?? '',
       vetClinic: dog.vetClinic ?? '',
+      insuranceProvider: dog.insuranceProvider ?? '',
+      insurancePolicyNumber: dog.insurancePolicyNumber ?? '',
+      insurancePhone: dog.insurancePhone ?? '',
     };
     return acc;
   }, {} as Record<string, DogDraft>);
@@ -310,6 +316,9 @@ export default function WellnessDogsScreen() {
         vetName: draft.vetName.trim() ? draft.vetName.trim() : null,
         vetPhone: draft.vetPhone.trim() ? draft.vetPhone.trim() : null,
         vetClinic: draft.vetClinic.trim() ? draft.vetClinic.trim() : null,
+        insuranceProvider: draft.insuranceProvider.trim() ? draft.insuranceProvider.trim() : null,
+        insurancePolicyNumber: draft.insurancePolicyNumber.trim() ? draft.insurancePolicyNumber.trim() : null,
+        insurancePhone: draft.insurancePhone.trim() ? draft.insurancePhone.trim() : null,
       };
       await apiRequest('/api/mobile/customer/dogs', {
         method: 'PATCH',
@@ -722,6 +731,8 @@ export default function WellnessDogsScreen() {
                     value={draft?.dietNotes ?? ''}
                     onChangeText={(value) => handleDraftChange(dog.id, 'dietNotes', value)}
                   />
+
+                  <Text style={[styles.sectionTitle, { color: palette.text, marginTop: 12 }]}>Vet info</Text>
                   <TextInput
                     style={[styles.input, { borderColor: palette.border, color: palette.text }]}
                     placeholder="Vet name"
@@ -743,6 +754,30 @@ export default function WellnessDogsScreen() {
                     placeholderTextColor={palette.muted}
                     value={draft?.vetClinic ?? ''}
                     onChangeText={(value) => handleDraftChange(dog.id, 'vetClinic', value)}
+                  />
+
+                  <Text style={[styles.sectionTitle, { color: palette.text, marginTop: 12 }]}>Pet insurance</Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: palette.border, color: palette.text }]}
+                    placeholder="Insurance provider (e.g., Trupanion, Healthy Paws)"
+                    placeholderTextColor={palette.muted}
+                    value={draft?.insuranceProvider ?? ''}
+                    onChangeText={(value) => handleDraftChange(dog.id, 'insuranceProvider', value)}
+                  />
+                  <TextInput
+                    style={[styles.input, { borderColor: palette.border, color: palette.text }]}
+                    placeholder="Policy number"
+                    placeholderTextColor={palette.muted}
+                    value={draft?.insurancePolicyNumber ?? ''}
+                    onChangeText={(value) => handleDraftChange(dog.id, 'insurancePolicyNumber', value)}
+                  />
+                  <TextInput
+                    style={[styles.input, { borderColor: palette.border, color: palette.text }]}
+                    placeholder="Insurance phone"
+                    placeholderTextColor={palette.muted}
+                    keyboardType="phone-pad"
+                    value={draft?.insurancePhone ?? ''}
+                    onChangeText={(value) => handleDraftChange(dog.id, 'insurancePhone', value)}
                   />
                 </View>
               ) : null}

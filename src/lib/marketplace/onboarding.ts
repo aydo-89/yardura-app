@@ -9,6 +9,10 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { sortRoles } from "@/lib/auth/roles";
+import {
+  sendBackgroundCheckEmail,
+  sendCertificationStatusEmail,
+} from "@/lib/emails/scooper-status";
 
 export interface ScooperApplicantInput {
   orgId: string;
@@ -26,6 +30,7 @@ export interface ScooperApplicantInput {
   autoApprove?: boolean;
   homeBaseAddress?: string | null;
   homeBaseCity?: string | null;
+  homeBaseState?: string | null;
   homeBaseZip?: string | null;
   homeBaseLocation?: { lat: number; lng: number } | null;
   preferredTileSlugs?: string[] | null;
@@ -53,6 +58,7 @@ export async function upsertScooperApplicant(
     autoApprove,
     homeBaseAddress,
     homeBaseCity,
+    homeBaseState,
     homeBaseZip,
     homeBaseLocation,
     preferredTileSlugs,
@@ -84,6 +90,30 @@ export async function upsertScooperApplicant(
       orgId,
     },
   });
+
+  // Ensure Customer record exists for users who may have skipped setup
+  // This allows them to appear in the Customer admin panel
+  const existingCustomer = await prisma.customer.findFirst({
+    where: { userId: user.id },
+    select: { id: true },
+  });
+
+  if (!existingCustomer && homeBaseAddress && homeBaseCity && homeBaseZip && homeBaseState) {
+    // Create a Customer record using the scooper application address data
+    await prisma.customer.create({
+      data: {
+        orgId,
+        userId: user.id,
+        name,
+        email,
+        phone: phone ?? null,
+        addressLine1: homeBaseAddress,
+        city: homeBaseCity,
+        state: homeBaseState,
+        zip: homeBaseZip,
+      },
+    });
+  }
 
   const existingProfile = await prisma.scooperProfile.findUnique({
     where: { userId: user.id },
@@ -118,6 +148,10 @@ export async function upsertScooperApplicant(
 
   if (homeBaseCity) {
     metadata.homeBaseCity = homeBaseCity;
+  }
+
+  if (homeBaseState) {
+    metadata.homeBaseState = homeBaseState;
   }
 
   if (homeBaseAddress) {
@@ -247,11 +281,26 @@ export async function setScooperStatus(
   status: ScooperStatus,
   options?: { backgroundCheckStatus?: BackgroundCheckStatus },
 ) {
-  return prisma.scooperProfile.update({
+  // Get current profile to detect background check status change
+  const currentProfile = await prisma.scooperProfile.findUnique({
+    where: { id: scooperProfileId },
+    select: {
+      backgroundCheckStatus: true,
+      user: { select: { email: true, name: true } },
+    },
+  });
+
+  const updated = await prisma.scooperProfile.update({
     where: { id: scooperProfileId },
     data: {
       status,
       backgroundCheckStatus: options?.backgroundCheckStatus,
+      backgroundCheckCompletedAt:
+        options?.backgroundCheckStatus &&
+        options.backgroundCheckStatus !== BackgroundCheckStatus.PENDING &&
+        options.backgroundCheckStatus !== BackgroundCheckStatus.NOT_SUBMITTED
+          ? new Date()
+          : undefined,
       updatedAt: new Date(),
     },
     include: {
@@ -260,6 +309,32 @@ export async function setScooperStatus(
       availabilities: true,
     },
   });
+
+  // Send background check email if status is changing to PASSED or FAILED
+  if (
+    options?.backgroundCheckStatus &&
+    currentProfile?.backgroundCheckStatus !== options.backgroundCheckStatus &&
+    (options.backgroundCheckStatus === BackgroundCheckStatus.PASSED ||
+      options.backgroundCheckStatus === BackgroundCheckStatus.FAILED)
+  ) {
+    const userEmail = currentProfile?.user?.email ?? updated.user?.email;
+    const userName = currentProfile?.user?.name ?? updated.user?.name;
+
+    if (userEmail) {
+      sendBackgroundCheckEmail({
+        toEmail: userEmail,
+        toName: userName,
+        scooperName: userName ?? "Scooper",
+        status: options.backgroundCheckStatus,
+        completedAt: new Date(),
+        dashboardUrl: "https://app.getinsightscoop.com/scooper",
+      }).catch((err) => {
+        console.error("[setScooperStatus] Failed to send background check email:", err);
+      });
+    }
+  }
+
+  return updated;
 }
 
 export async function issueScooperCertification(options: {
@@ -281,7 +356,28 @@ export async function issueScooperCertification(options: {
     expiresAt,
   } = options;
 
-  return prisma.scooperCertification.upsert({
+  // Get current certification to detect status change
+  const currentCert = await prisma.scooperCertification.findUnique({
+    where: {
+      scooperId_type: {
+        scooperId: scooperProfileId,
+        type,
+      },
+    },
+    select: { status: true },
+  });
+
+  // Get scooper info for email
+  const scooperProfile = await prisma.scooperProfile.findUnique({
+    where: { id: scooperProfileId },
+    select: {
+      user: { select: { email: true, name: true } },
+    },
+  });
+
+  const issuedAt = status === CertificationStatus.ACTIVE ? new Date() : null;
+
+  const updated = await prisma.scooperCertification.upsert({
     where: {
       scooperId_type: {
         scooperId: scooperProfileId,
@@ -293,7 +389,7 @@ export async function issueScooperCertification(options: {
       issuedById,
       evidenceUrl: evidenceUrl ?? undefined,
       expiresAt: expiresAt ?? undefined,
-      issuedAt: status === CertificationStatus.ACTIVE ? new Date() : undefined,
+      issuedAt: issuedAt ?? undefined,
     },
     create: {
       orgId,
@@ -303,9 +399,33 @@ export async function issueScooperCertification(options: {
       issuedById,
       evidenceUrl: evidenceUrl ?? undefined,
       expiresAt: expiresAt ?? undefined,
-      issuedAt: status === CertificationStatus.ACTIVE ? new Date() : null,
+      issuedAt,
     },
   });
+
+  // Send certification email if status is changing to ACTIVE, REVOKED, or EXPIRED
+  const shouldNotify =
+    currentCert?.status !== status &&
+    (status === CertificationStatus.ACTIVE ||
+      status === CertificationStatus.REVOKED ||
+      status === CertificationStatus.EXPIRED);
+
+  if (shouldNotify && scooperProfile?.user?.email) {
+    sendCertificationStatusEmail({
+      toEmail: scooperProfile.user.email,
+      toName: scooperProfile.user.name,
+      scooperName: scooperProfile.user.name ?? "Scooper",
+      certificationType: type,
+      status: status as "ACTIVE" | "REVOKED" | "EXPIRED",
+      issuedAt: issuedAt,
+      expiresAt: expiresAt ?? null,
+      dashboardUrl: "https://app.getinsightscoop.com/scooper",
+    }).catch((err) => {
+      console.error("[issueScooperCertification] Failed to send certification email:", err);
+    });
+  }
+
+  return updated;
 }
 
 export async function getScooperSummaryByUserId(userId: string) {

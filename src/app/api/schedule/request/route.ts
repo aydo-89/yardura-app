@@ -13,7 +13,7 @@ import {
   resolvePreferredTimeWindowLabel,
   getPreferredTimeWindowStart,
 } from "@/lib/time-window";
-import { constructZonedDate } from "@/lib/timezone";
+import { constructZonedDate, SERVICE_TIME_ZONE, getZonedWeekday } from "@/lib/timezone";
 
 const BILLING_PREFERENCE_VALUES: BillingPreference[] = [
   "monthly",
@@ -29,6 +29,7 @@ const schema = z
     action: z.enum(["reschedule", "skip"]),
     nextVisitAt: z.string().optional(),
     preferredWindow: z.string().optional(),
+    applyToFuture: z.boolean().optional(),
   })
   .refine((value) => value.visitId || value.jobId, {
     message: "visitId or jobId is required",
@@ -73,6 +74,45 @@ function toBillingPreference(value: unknown): BillingPreference | null {
   return BILLING_PREFERENCE_VALUES.includes(value as BillingPreference)
     ? (value as BillingPreference)
     : null;
+}
+
+/**
+ * Get the week boundaries (Sunday to Saturday) for a given date.
+ * Used to enforce reschedule limits within the same billing week.
+ */
+function getWeekBoundaries(date: Date): { weekStart: Date; weekEnd: Date } {
+  const dayOfWeek = getZonedWeekday(date, SERVICE_TIME_ZONE);
+
+  // Calculate Sunday of this week
+  const weekStart = new Date(date);
+  weekStart.setDate(date.getDate() - dayOfWeek);
+  weekStart.setHours(0, 0, 0, 0);
+
+  // Calculate Saturday of this week
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  return { weekStart, weekEnd };
+}
+
+/**
+ * Check if two dates are in the same week (Sunday to Saturday).
+ */
+function isSameWeek(date1: Date, date2: Date): boolean {
+  const week1 = getWeekBoundaries(date1);
+  const week2 = getWeekBoundaries(date2);
+  return week1.weekStart.getTime() === week2.weekStart.getTime();
+}
+
+/**
+ * Format a date as YYYY-MM-DD for API responses.
+ */
+function formatDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function parseRequestedDate(value: unknown): { date: Date; isDateOnly: boolean } | null {
@@ -201,6 +241,29 @@ export async function POST(req: NextRequest) {
             { status: 400 },
           );
         }
+
+        // Enforce week boundary restriction for reschedules
+        const originalDate = visit.scheduledDate;
+        const newDate = parsedDate.date;
+
+        if (!isSameWeek(originalDate, newDate)) {
+          const { weekStart, weekEnd } = getWeekBoundaries(originalDate);
+          return NextResponse.json(
+            {
+              error: "reschedule_outside_week",
+              message:
+                "Reschedules must be within the same week as the original visit. Please skip this visit instead if you need a different week.",
+              weekBoundary: {
+                start: formatDateKey(weekStart),
+                end: formatDateKey(weekEnd),
+                originalDate: formatDateKey(originalDate),
+                requestedDate: formatDateKey(newDate),
+              },
+            },
+            { status: 400 },
+          );
+        }
+
         const normalizedWindowSlug = normalizePreferredTimeWindowSlug(
           data.preferredWindow ?? visit.preferredTimeWindowSlug ?? null,
         );
@@ -242,6 +305,50 @@ export async function POST(req: NextRequest) {
               preferredTimeWindowSlug: normalizedWindowSlug ?? visit.preferredTimeWindowSlug ?? null,
             },
           });
+
+          // If applyToFuture is true, update all future visits to the same day of the week
+          if (data.applyToFuture) {
+            const newDayOfWeek = getZonedWeekday(scheduledDate, SERVICE_TIME_ZONE);
+
+            // Find all future scheduled visits for this job (excluding the current visit)
+            const futureVisits = await prisma.serviceVisit.findMany({
+              where: {
+                jobId: visit.jobId,
+                id: { not: visit.id },
+                status: ServiceStatus.SCHEDULED,
+                scheduledDate: { gt: scheduledDate },
+              },
+              orderBy: { scheduledDate: "asc" },
+            });
+
+            // Update each future visit to the same day of the week
+            for (const futureVisit of futureVisits) {
+              const visitDate = futureVisit.scheduledDate;
+              const currentDayOfWeek = getZonedWeekday(visitDate, SERVICE_TIME_ZONE);
+              const dayDiff = newDayOfWeek - currentDayOfWeek;
+
+              // Calculate new date by moving to the target day of week
+              const newDate = new Date(visitDate);
+              newDate.setDate(visitDate.getDate() + dayDiff);
+
+              // Preserve the original time or use window start time
+              if (normalizedWindowSlug) {
+                const windowStart = getPreferredTimeWindowStart(normalizedWindowSlug);
+                if (windowStart) {
+                  newDate.setHours(windowStart.hour, windowStart.minute, 0, 0);
+                }
+              }
+
+              await prisma.serviceVisit.update({
+                where: { id: futureVisit.id },
+                data: {
+                  scheduledDate: newDate,
+                  preferredTimeWindow: preferredWindowLabel ?? futureVisit.preferredTimeWindow ?? null,
+                  preferredTimeWindowSlug: normalizedWindowSlug ?? futureVisit.preferredTimeWindowSlug ?? null,
+                },
+              });
+            }
+          }
 
           const refreshedPlan = await getPlanByJobId(visit.jobId);
           planRecord = refreshedPlan ?? null;

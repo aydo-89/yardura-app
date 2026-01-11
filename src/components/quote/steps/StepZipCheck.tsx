@@ -56,7 +56,11 @@ interface ValidationResult {
 }
 
 const TILE_STATUS_CONFIG: Record<string, { label: string; colorClass: string; show: boolean }> = {
-  DRAFT: { label: "Draft", colorClass: "", show: false }, // Don't show draft - treat as unavailable
+  DRAFT: {
+    label: "Waitlist", // DRAFT treated as Waitlist in UI
+    colorClass: "border-brand-gold/60 bg-brand-gold/15 text-brand-gold dark:border-brand-gold/50 dark:bg-brand-gold/20 dark:text-brand-gold",
+    show: true
+  },
   WAITLIST: { 
     label: "Waitlist", 
     colorClass: "border-brand-gold/60 bg-brand-gold/15 text-brand-gold dark:border-brand-gold/50 dark:bg-brand-gold/20 dark:text-brand-gold",

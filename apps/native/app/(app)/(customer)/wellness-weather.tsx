@@ -232,13 +232,13 @@ export default function WellnessWeatherScreen() {
                   <Text style={[styles.forecastLabel, { color: palette.muted }]}>Next 6 Hours</Text>
                   <View style={styles.forecastRange}>
                     <View style={styles.forecastTemp}>
-                      <FontAwesome name="arrow-up" size={10} color={Colors.brand.coral} />
+                      <Text style={[styles.forecastTempLabel, { color: Colors.brand.coral }]}>High</Text>
                       <Text style={[styles.forecastValue, { color: palette.text }]}>
                         {typeof data.weather.next6High === 'number' ? `${Math.round(data.weather.next6High)}°` : '—'}
                       </Text>
                     </View>
                     <View style={styles.forecastTemp}>
-                      <FontAwesome name="arrow-down" size={10} color="#6CB4EE" />
+                      <Text style={[styles.forecastTempLabel, { color: '#6CB4EE' }]}>Low</Text>
                       <Text style={[styles.forecastValue, { color: palette.text }]}>
                         {typeof data.weather.next6Low === 'number' ? `${Math.round(data.weather.next6Low)}°` : '—'}
                       </Text>
@@ -250,13 +250,13 @@ export default function WellnessWeatherScreen() {
                   <Text style={[styles.forecastLabel, { color: palette.muted }]}>Today</Text>
                   <View style={styles.forecastRange}>
                     <View style={styles.forecastTemp}>
-                      <FontAwesome name="arrow-up" size={10} color={Colors.brand.coral} />
+                      <Text style={[styles.forecastTempLabel, { color: Colors.brand.coral }]}>High</Text>
                       <Text style={[styles.forecastValue, { color: palette.text }]}>
                         {typeof data.weather.dailyHigh === 'number' ? `${Math.round(data.weather.dailyHigh)}°` : '—'}
                       </Text>
                     </View>
                     <View style={styles.forecastTemp}>
-                      <FontAwesome name="arrow-down" size={10} color="#6CB4EE" />
+                      <Text style={[styles.forecastTempLabel, { color: '#6CB4EE' }]}>Low</Text>
                       <Text style={[styles.forecastValue, { color: palette.text }]}>
                         {typeof data.weather.dailyLow === 'number' ? `${Math.round(data.weather.dailyLow)}°` : '—'}
                       </Text>
@@ -275,7 +275,7 @@ export default function WellnessWeatherScreen() {
                 <Text style={[styles.cardTitle, { color: palette.text }]}>Walk Tips</Text>
               </View>
               <View style={styles.tipsList}>
-                {currentTemp !== null && currentTemp >= 80 && (
+                {currentTemp != null && currentTemp >= 80 && (
                   <>
                     <View style={styles.tipItem}>
                       <FontAwesome name="tint" size={12} color={palette.tint} />
@@ -291,7 +291,7 @@ export default function WellnessWeatherScreen() {
                     </View>
                   </>
                 )}
-                {currentTemp !== null && currentTemp <= 40 && (
+                {currentTemp != null && currentTemp <= 40 && (
                   <>
                     <View style={styles.tipItem}>
                       <FontAwesome name="clock-o" size={12} color={palette.tint} />
@@ -303,7 +303,7 @@ export default function WellnessWeatherScreen() {
                     </View>
                   </>
                 )}
-                {currentTemp !== null && currentTemp > 40 && currentTemp < 80 && (
+                {currentTemp != null && currentTemp > 40 && currentTemp < 80 && (
                   <>
                     <View style={styles.tipItem}>
                       <FontAwesome name="check" size={12} color={Colors.brand.mint} />
@@ -327,6 +327,13 @@ export default function WellnessWeatherScreen() {
                 </Text>
               </Pressable>
             )}
+
+            {/* Medical Disclaimer */}
+            <View style={[styles.disclaimerCard, { backgroundColor: `${palette.muted}08`, borderColor: palette.border }]}>
+              <Text style={[styles.disclaimerText, { color: palette.muted }]}>
+                Weather safety recommendations are general guidelines only. Every dog is different—factors like breed, age, health conditions, and coat type affect heat and cold tolerance. When in doubt, consult your veterinarian.
+              </Text>
+            </View>
           </>
         ) : null}
       </ScrollView>
@@ -521,12 +528,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   forecastTemp: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+  },
+  forecastTempLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   forecastValue: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
   },
   tipsList: {
@@ -551,5 +563,16 @@ const styles = StyleSheet.create({
   },
   refreshText: {
     fontSize: 12,
+  },
+  disclaimerCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 8,
+  },
+  disclaimerText: {
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: 'center',
   },
 });

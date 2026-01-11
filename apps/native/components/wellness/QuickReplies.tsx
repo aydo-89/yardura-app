@@ -38,6 +38,7 @@ type QuickRepliesProps = {
   onSelect: (text: string) => void;
   onUpgrade?: () => void;
   disabled?: boolean;
+  usedQuestions?: Set<string>;
 };
 
 const ICON_COLORS: Record<string, string> = {
@@ -159,6 +160,7 @@ export default function QuickReplies({
   onSelect,
   onUpgrade,
   disabled = false,
+  usedQuestions = new Set(),
 }: QuickRepliesProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
@@ -264,34 +266,43 @@ export default function QuickReplies({
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
             >
-              {category.questions.map((question, qIndex) => (
-                <Pressable
-                  key={qIndex}
-                  style={({ pressed }) => [
-                    styles.chip,
-                    {
-                      backgroundColor: pressed ? `${iconColor}15` : palette.card,
-                      borderColor: pressed ? iconColor : palette.border,
-                    },
-                    disabled && styles.chipDisabled,
-                  ]}
-                  onPress={() => onSelect(question)}
-                  disabled={disabled}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      { color: disabled ? palette.muted : palette.text },
+              {category.questions.map((question, qIndex) => {
+                const isUsed = usedQuestions.has(question);
+                return (
+                  <Pressable
+                    key={qIndex}
+                    style={({ pressed }) => [
+                      styles.chip,
+                      {
+                        backgroundColor: pressed ? `${iconColor}15` : isUsed ? `${palette.muted}08` : palette.card,
+                        borderColor: pressed ? iconColor : isUsed ? `${palette.muted}40` : palette.border,
+                      },
+                      disabled && styles.chipDisabled,
+                      isUsed && styles.chipUsed,
                     ]}
-                    numberOfLines={2}
+                    onPress={() => onSelect(question)}
+                    disabled={disabled}
                   >
-                    {question}
-                  </Text>
-                  <View style={[styles.chipArrow, { backgroundColor: `${iconColor}15` }]}>
-                    <FontAwesome name="arrow-right" size={10} color={iconColor} />
-                  </View>
-                </Pressable>
-              ))}
+                    {isUsed && (
+                      <View style={[styles.usedBadge, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                        <FontAwesome name="check" size={8} color={Colors.brand.mint} />
+                      </View>
+                    )}
+                    <Text
+                      style={[
+                        styles.chipText,
+                        { color: disabled || isUsed ? palette.muted : palette.text },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {question}
+                    </Text>
+                    <View style={[styles.chipArrow, { backgroundColor: isUsed ? `${palette.muted}15` : `${iconColor}15` }]}>
+                      <FontAwesome name="arrow-right" size={10} color={isUsed ? palette.muted : iconColor} />
+                    </View>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </View>
         );
@@ -430,6 +441,9 @@ const styles = StyleSheet.create({
   chipDisabled: {
     opacity: 0.6,
   },
+  chipUsed: {
+    opacity: 0.7,
+  },
   chipText: {
     flex: 1,
     fontSize: 13,
@@ -441,5 +455,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  usedBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -4,
   },
 });

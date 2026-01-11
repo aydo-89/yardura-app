@@ -75,7 +75,7 @@ export default function CustomerWellness() {
   };
 
   const heroBackground =
-    colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
+    colorScheme === 'light' ? Colors.brand.graphite : '#1E293B';
 
   // Hero component - reused as header in different contexts
   const heroHeader = useMemo(

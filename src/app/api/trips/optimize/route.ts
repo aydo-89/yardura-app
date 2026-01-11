@@ -43,10 +43,8 @@ export async function POST(req: NextRequest) {
       return forbidden();
     }
 
-    const orgId = (session.user as any)?.orgId;
-    if (!orgId) {
-      return NextResponse.json({ ok: false, error: 'Organization not set' }, { status: 400 });
-    }
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = (session.user as any)?.orgId || "yardura";
 
     const json = await req.json();
     const parsed = optimizeSchema.parse(json);

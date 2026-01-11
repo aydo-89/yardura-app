@@ -269,16 +269,19 @@ export default function ReleaseSheet({
             {/* STEP 1: Scope Selection */}
             {step === 'scope' ? (
               <View style={styles.stepContent}>
-                <Text style={[styles.stepLabel, { color: palette.muted }]}>
+                <Text style={[styles.stepLabel, { color: palette.text }]}>
                   What do you want to release?
+                </Text>
+                <Text style={[styles.stepHint, { color: palette.muted }]}>
+                  Tap an option to continue
                 </Text>
 
                 <Pressable
                   onPress={() => handleScopeSelect('visit')}
                   style={({ pressed }) => [
                     styles.scopeCard,
-                    { borderColor: palette.border, backgroundColor: palette.background },
-                    pressed && { opacity: 0.8 },
+                    { borderColor: palette.tint, backgroundColor: palette.background },
+                    pressed && { opacity: 0.8, backgroundColor: `${palette.tint}10` },
                   ]}
                 >
                   <View style={[styles.scopeIcon, { backgroundColor: `${palette.tint}15` }]}>
@@ -292,7 +295,9 @@ export default function ReleaseSheet({
                       Release just this scheduled stop
                     </Text>
                   </View>
-                  <FontAwesome name="chevron-right" size={14} color={palette.muted} />
+                  <View style={[styles.scopeArrow, { backgroundColor: `${palette.tint}15` }]}>
+                    <FontAwesome name="chevron-right" size={12} color={palette.tint} />
+                  </View>
                 </Pressable>
 
                 {canReleaseJob ? (
@@ -300,8 +305,8 @@ export default function ReleaseSheet({
                     onPress={() => handleScopeSelect('job')}
                     style={({ pressed }) => [
                       styles.scopeCard,
-                      { borderColor: palette.border, backgroundColor: palette.background },
-                      pressed && { opacity: 0.8 },
+                      { borderColor: Colors.brand.mint, backgroundColor: palette.background },
+                      pressed && { opacity: 0.8, backgroundColor: `${Colors.brand.mint}10` },
                     ]}
                   >
                     <View style={[styles.scopeIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
@@ -315,7 +320,9 @@ export default function ReleaseSheet({
                         Release all upcoming visits from this route
                       </Text>
                     </View>
-                    <FontAwesome name="chevron-right" size={14} color={palette.muted} />
+                    <View style={[styles.scopeArrow, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                      <FontAwesome name="chevron-right" size={12} color={Colors.brand.mint} />
+                    </View>
                   </Pressable>
                 ) : (
                   <View style={[styles.infoBox, { backgroundColor: palette.background }]}>
@@ -517,7 +524,8 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '85%',
+    minHeight: 520,
+    maxHeight: '92%',
   },
   handleContainer: {
     alignItems: 'center',
@@ -586,17 +594,22 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   stepLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  stepHint: {
+    fontSize: 13,
+    marginBottom: 12,
   },
   scopeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 16,
+    borderWidth: 2,
+    borderRadius: 16,
+    padding: 18,
+    minHeight: 80,
   },
   scopeIcon: {
     width: 44,
@@ -615,6 +628,13 @@ const styles = StyleSheet.create({
   },
   scopeDescription: {
     fontSize: 13,
+  },
+  scopeArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   infoBox: {
     flexDirection: 'row',

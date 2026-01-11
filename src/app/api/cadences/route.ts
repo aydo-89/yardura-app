@@ -47,10 +47,8 @@ export async function GET(req: NextRequest) {
       return forbidden();
     }
 
-    const orgId = auth.orgId;
-    if (!orgId) {
-      return NextResponse.json({ ok: false, error: "Organization not set" }, { status: 400 });
-    }
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = auth.orgId || "yardura";
 
     const cadences = await prisma.cadence.findMany({
       where: { orgId },
@@ -86,11 +84,9 @@ export async function POST(req: NextRequest) {
       return forbidden();
     }
 
-    const orgId = auth.orgId;
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = auth.orgId || "yardura";
     const userId = auth.userId;
-    if (!orgId || !userId) {
-      return NextResponse.json({ ok: false, error: "Organization not set" }, { status: 400 });
-    }
 
     const json = await req.json();
     const parsed = createCadenceSchema.parse(json);

@@ -490,23 +490,57 @@ export default function ScooperHome() {
           </View>
         </View>
 
+        {/* Prominent Check-in Required Banner */}
+        {checkInRequired && (
+          <Pressable
+            onPress={() => router.push('/(app)/(scooper)/daily-check')}
+            style={({ pressed }) => [
+              styles.checkInBanner,
+              { backgroundColor: palette.danger },
+              pressed && { opacity: 0.9 },
+            ]}
+          >
+            <View style={styles.checkInBannerContent}>
+              <View style={styles.checkInBannerIcon}>
+                <FontAwesome name="exclamation-circle" size={24} color="#FFFFFF" />
+              </View>
+              <View style={styles.checkInBannerText}>
+                <Text style={styles.checkInBannerTitle}>Daily Check-in Required</Text>
+                <Text style={styles.checkInBannerSubtitle}>
+                  Complete your check-in to unlock today's stops
+                </Text>
+              </View>
+            </View>
+            <View style={styles.checkInBannerAction}>
+              <Text style={styles.checkInBannerActionText}>Check In Now</Text>
+              <FontAwesome name="chevron-right" size={12} color="#FFFFFF" />
+            </View>
+          </Pressable>
+        )}
+
         {/* Stats Row - Stops, Miles, Payout */}
         <View style={styles.statsRow}>
           <Pressable
             onPress={() => router.push('/(app)/(scooper)/daily-check')}
             style={({ pressed }) => [
               styles.statCard,
-              { backgroundColor: palette.card, borderColor: cardBorder },
+              {
+                backgroundColor: palette.card,
+                borderColor: checkInRequired ? palette.danger : cardBorder,
+                borderWidth: checkInRequired ? 2 : 1,
+              },
               pressed && { opacity: 0.8 },
             ]}
           >
             <View style={[styles.statIcon, { backgroundColor: checkInComplete ? `${Colors.brand.mint}15` : `${palette.danger}15` }]}>
-              <FontAwesome name="check-circle" size={14} color={checkInComplete ? Colors.brand.mint : palette.danger} />
+              <FontAwesome name={checkInComplete ? "check-circle" : "exclamation-circle"} size={14} color={checkInComplete ? Colors.brand.mint : palette.danger} />
             </View>
             <Text style={[styles.statValue, { color: checkInComplete ? Colors.brand.mint : palette.danger }]}>
-              {checkInComplete ? 'Done' : 'Due'}
+              {checkInComplete ? 'Done' : 'Required'}
             </Text>
-            <Text style={[styles.statLabel, { color: palette.muted }]}>Check-in</Text>
+            <Text style={[styles.statLabel, { color: checkInComplete ? palette.muted : palette.danger }]}>
+              {checkInComplete ? 'Check-in' : 'Check-in!'}
+            </Text>
           </Pressable>
           <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: cardBorder }]}>
             <View style={[styles.statIcon, { backgroundColor: `${palette.tint}15` }]}>
@@ -611,46 +645,109 @@ export default function ScooperHome() {
               { backgroundColor: heroCardBackground, borderColor: cardBorder },
             ]}
           >
-            <Text style={[styles.heroKicker, { color: palette.muted }]}>Next stop</Text>
+            {/* Header row with badge and payout */}
+            <View style={styles.heroHeader}>
+              <View style={[styles.heroKickerBadge, { backgroundColor: `${palette.tint}15` }]}>
+                <FontAwesome name="map-marker" size={12} color={palette.tint} />
+                <Text style={[styles.heroKicker, { color: palette.tint }]}>Next stop</Text>
+              </View>
+              {resolveVisitPayoutCents(nextVisit) > 0 ? (
+                <View style={[styles.heroPayoutBadge, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                  <FontAwesome name="dollar" size={10} color={Colors.brand.mint} />
+                  <Text style={[styles.heroPayoutText, { color: Colors.brand.mint }]}>
+                    {formatCurrencyFromCents(resolveVisitPayoutCents(nextVisit))}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            {/* Customer name */}
             <Text style={[styles.heroTitle, { color: palette.text }]}>
               {nextVisit.customer?.name ?? 'Customer'}
             </Text>
-            <Text style={[styles.heroMeta, { color: palette.muted }]}>
-              {formatDayLabel(nextVisit.scheduledDate)} • {nextVisit.customer?.addressLine1 ?? 'Address on file'}
-              {nextVisit.customer?.city ? `, ${nextVisit.customer.city}` : ''}
-            </Text>
-            {formatDogSummary(nextVisit.customer?.dogs) ? (
-              <Text style={[styles.heroMeta, { color: palette.muted }]}>
-                {formatDogSummary(nextVisit.customer?.dogs)}
-              </Text>
-            ) : null}
-            <View style={styles.heroActions}>
-              <Button
-                title="Open next stop"
-                onPress={handleOpenNextStop}
-                variant="primary"
-                style={styles.primaryCta}
-                disabled={nextVisitBlocked}
-              />
-              {nextVisit.navigationUrl ? (
-                <Button
-                  title="Navigate"
-                  onPress={() => openNavigation(nextVisit.navigationUrl)}
-                  variant="secondary"
-                  style={styles.secondaryCta}
-                  disabled={nextVisitBlocked}
-                />
+
+            {/* Details grid */}
+            <View style={styles.heroDetailsGrid}>
+              <View style={styles.heroDetailItem}>
+                <FontAwesome name="calendar" size={12} color={palette.muted} />
+                <Text style={[styles.heroDetailText, { color: palette.muted }]}>
+                  {formatDayLabel(nextVisit.scheduledDate)}
+                </Text>
+              </View>
+              {nextVisit.customer?.addressLine1 ? (
+                <View style={styles.heroDetailItem}>
+                  <FontAwesome name="home" size={12} color={palette.muted} />
+                  <Text style={[styles.heroDetailText, { color: palette.muted }]} numberOfLines={1}>
+                    {nextVisit.customer.addressLine1}
+                    {nextVisit.customer.city ? `, ${nextVisit.customer.city}` : ''}
+                  </Text>
+                </View>
+              ) : null}
+              {formatDogSummary(nextVisit.customer?.dogs) ? (
+                <View style={styles.heroDetailItem}>
+                  <FontAwesome name="paw" size={12} color={palette.muted} />
+                  <Text style={[styles.heroDetailText, { color: palette.muted }]}>
+                    {formatDogSummary(nextVisit.customer?.dogs)}
+                  </Text>
+                </View>
+              ) : null}
+              {nextVisit.job?.frequency ? (
+                <View style={styles.heroDetailItem}>
+                  <FontAwesome name="repeat" size={11} color={palette.muted} />
+                  <Text style={[styles.heroDetailText, { color: palette.muted }]}>
+                    {formatFrequencyLabel(nextVisit.job.frequency)}
+                  </Text>
+                </View>
               ) : null}
             </View>
+
+            {/* Warning message */}
             {checkInBlocked ? (
-              <Text style={[styles.helperText, { color: palette.muted }]}>
-                Complete today&apos;s check-in to open your stops.
-              </Text>
+              <View style={[styles.heroAlert, { backgroundColor: `${palette.danger}10` }]}>
+                <FontAwesome name="exclamation-circle" size={14} color={palette.danger} />
+                <Text style={[styles.heroAlertText, { color: palette.danger }]}>
+                  Complete check-in to unlock
+                </Text>
+              </View>
             ) : !nextVisitIsToday ? (
-              <Text style={[styles.helperText, { color: palette.muted }]}>
-                You can open this visit on {formatDayLabel(nextVisit.scheduledDate)}.
-              </Text>
+              <View style={[styles.heroAlert, { backgroundColor: `${Colors.brand.gold}10` }]}>
+                <FontAwesome name="clock-o" size={14} color={Colors.brand.gold} />
+                <Text style={[styles.heroAlertText, { color: Colors.brand.gold }]}>
+                  Opens {formatDayLabel(nextVisit.scheduledDate)}
+                </Text>
+              </View>
             ) : null}
+
+            {/* Action buttons */}
+            <View style={styles.heroActions}>
+              <Pressable
+                onPress={handleOpenNextStop}
+                disabled={nextVisitBlocked}
+                style={({ pressed }) => [
+                  styles.heroPrimaryButton,
+                  { backgroundColor: nextVisitBlocked ? palette.muted : palette.tint },
+                  pressed && { opacity: 0.9 },
+                ]}
+              >
+                <FontAwesome name="play-circle" size={16} color="#FFFFFF" />
+                <Text style={styles.heroPrimaryButtonText}>Open Stop</Text>
+              </Pressable>
+              {nextVisit.navigationUrl ? (
+                <Pressable
+                  onPress={() => openNavigation(nextVisit.navigationUrl)}
+                  disabled={nextVisitBlocked}
+                  style={({ pressed }) => [
+                    styles.heroSecondaryButton,
+                    { borderColor: palette.border, backgroundColor: palette.background },
+                    pressed && { opacity: 0.8 },
+                    nextVisitBlocked && { opacity: 0.5 },
+                  ]}
+                >
+                  <FontAwesome name="location-arrow" size={14} color={palette.tint} />
+                  <Text style={[styles.heroSecondaryButtonText, { color: palette.tint }]}>Navigate</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
         ) : null}
 
@@ -763,7 +860,9 @@ export default function ScooperHome() {
           (activeTab === 'today'
             ? groupedVisits.filter((g) => g.label === 'Today')
             : groupedVisits
-          ).map((group) => {
+          ).map((group, groupIndex, filteredGroups) => {
+            // Add a separator before Upcoming when on week tab
+            const showUpcomingSeparator = activeTab === 'week' && group.label === 'Upcoming';
             const countLabel = `${group.visits.length} stop${group.visits.length === 1 ? '' : 's'}`;
             const groupPayoutCents = group.visits.reduce(
               (sum, visit) => sum + resolveVisitPayoutCents(visit),
@@ -776,6 +875,15 @@ export default function ScooperHome() {
             const collapsed = isSectionCollapsed(group.label);
             return (
               <View key={group.label} style={styles.section}>
+                {showUpcomingSeparator && (
+                  <View style={styles.upcomingSeparator}>
+                    <View style={[styles.upcomingSeparatorLine, { backgroundColor: palette.border }]} />
+                    <Text style={[styles.upcomingSeparatorText, { color: palette.muted }]}>
+                      Beyond this week
+                    </Text>
+                    <View style={[styles.upcomingSeparatorLine, { backgroundColor: palette.border }]} />
+                  </View>
+                )}
                 <View
                   style={[
                     styles.sectionShell,
@@ -1300,29 +1408,107 @@ const styles = StyleSheet.create({
   heroCard: {
     borderRadius: 22,
     borderWidth: 1,
-    padding: 18,
+    padding: 20,
     marginBottom: 16,
-    gap: 8,
+    gap: 12,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  heroKickerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
   heroKicker: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  heroTitle: {
-    fontSize: 20,
+  heroPayoutBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  heroPayoutText: {
+    fontSize: 14,
     fontWeight: '700',
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  heroDetailsGrid: {
+    gap: 8,
+  },
+  heroDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  heroDetailText: {
+    fontSize: 13,
+    flex: 1,
+  },
+  heroAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  heroAlertText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  heroActions: {
+    marginTop: 8,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  heroPrimaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  heroPrimaryButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  heroSecondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  heroSecondaryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   heroMeta: {
     fontSize: 13,
     lineHeight: 18,
-  },
-  heroActions: {
-    marginTop: 6,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -1515,6 +1701,23 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: 16,
+  },
+  upcomingSeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  upcomingSeparatorLine: {
+    flex: 1,
+    height: 1,
+  },
+  upcomingSeparatorText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   sectionShell: {
     borderRadius: 20,
@@ -1776,5 +1979,55 @@ const styles = StyleSheet.create({
   },
   releaseButton: {
     minWidth: 0,
+  },
+  checkInBanner: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  checkInBannerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  checkInBannerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkInBannerText: {
+    flex: 1,
+    gap: 2,
+  },
+  checkInBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  checkInBannerSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  checkInBannerAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  checkInBannerActionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

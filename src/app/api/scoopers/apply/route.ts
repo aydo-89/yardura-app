@@ -32,6 +32,7 @@ const applySchema = z.object({
   emergencyContactRelation: z.string().min(2).max(80).optional(),
   homeBaseAddress: z.string().min(4).max(200).optional(),
   homeBaseCity: z.string().min(2).max(80).optional(),
+  homeBaseState: z.string().min(2).max(2).optional(),
   homeBaseZip: z
     .string()
     .regex(/^\d{5}$/)
@@ -190,6 +191,7 @@ export async function POST(request: NextRequest) {
       autoApprove: data.autoApprove,
       homeBaseAddress: data.homeBaseAddress,
       homeBaseCity: data.homeBaseCity,
+      homeBaseState: data.homeBaseState,
       homeBaseZip: data.homeBaseZip,
       homeBaseLocation: data.location ? { lat: data.location.lat, lng: data.location.lng } : null,
       preferredTileSlugs: uniqueSlugs,

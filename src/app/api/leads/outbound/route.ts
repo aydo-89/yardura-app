@@ -111,14 +111,8 @@ export async function GET(req: NextRequest) {
 
     const role = auth.role;
     const userId = auth.userId;
-    const orgId = auth.orgId;
-
-    if (!orgId) {
-      return NextResponse.json(
-        { ok: false, error: "Organization not set" },
-        { status: 400 },
-      );
-    }
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = auth.orgId || "yardura";
 
     const { searchParams } = new URL(req.url);
     const limit = Math.min(
@@ -353,15 +347,9 @@ export async function POST(req: NextRequest) {
     }
 
     const role = auth.role;
-    const orgId = auth.orgId;
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = auth.orgId || "yardura";
     const sessionUserId = auth.userId;
-
-    if (!orgId) {
-      return NextResponse.json(
-        { ok: false, error: "Organization not set" },
-        { status: 400 },
-      );
-    }
 
     const json = await req.json();
     const parsed = createLeadSchema.parse(json);

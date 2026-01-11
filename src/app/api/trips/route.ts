@@ -81,14 +81,9 @@ export async function GET(req: NextRequest) {
       return forbidden();
     }
 
-    const orgId = (session.user as any)?.orgId;
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = (session.user as any)?.orgId || "yardura";
     const userId = (session.user as any)?.id;
-    if (!orgId) {
-      return NextResponse.json(
-        { ok: false, error: "Organization not set" },
-        { status: 400 },
-      );
-    }
 
     const { searchParams } = new URL(req.url);
     const ownerIdFilter = searchParams.get("ownerId") || undefined;
@@ -154,14 +149,9 @@ export async function POST(req: NextRequest) {
       return forbidden();
     }
 
-    const orgId = (session.user as any)?.orgId;
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = (session.user as any)?.orgId || "yardura";
     const sessionUserId = (session.user as any)?.id;
-    if (!orgId || !sessionUserId) {
-      return NextResponse.json(
-        { ok: false, error: "Organization not set" },
-        { status: 400 },
-      );
-    }
 
     const body = await req.json();
     const parsed = createTripSchema.parse(body);

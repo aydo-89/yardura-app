@@ -19,6 +19,7 @@ import Button from '@/components/ui/Button';
 import ChoiceChip from '@/components/ui/ChoiceChip';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 import Screen from '@/components/ui/Screen';
+import Switch from '@/components/ui/ThemedSwitch';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -29,14 +30,19 @@ import { isCustomerSetupRequired } from '@/lib/customer/setup';
 import { parseDateInput } from '@/lib/dates';
 import type { CustomerSummary, CustomerVisit } from '@/lib/api/types';
 
-type AvailabilityDay = {
-  date: string;
-  available: boolean;
-};
-
 type ArrivalWindow = 'morning' | 'afternoon' | 'flexible';
 
+type WeekDay = {
+  date: Date;
+  dateKey: string;
+  dayLabel: string;
+  isOriginalDate: boolean;
+  isToday: boolean;
+  isPast: boolean;
+};
+
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const toDateKey = (date: Date) => {
   const year = date.getFullYear();
@@ -73,6 +79,66 @@ const formatRelative = (value?: string | null) => {
   return null;
 };
 
+/**
+ * Get the week boundaries (Sunday to Saturday) for a given date.
+ */
+const getWeekBoundaries = (date: Date): { weekStart: Date; weekEnd: Date } => {
+  const dayOfWeek = date.getDay(); // 0 = Sunday
+
+  // Calculate Sunday of this week
+  const weekStart = new Date(date);
+  weekStart.setDate(date.getDate() - dayOfWeek);
+  weekStart.setHours(0, 0, 0, 0);
+
+  // Calculate Saturday of this week
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  return { weekStart, weekEnd };
+};
+
+/**
+ * Get all days in a week (Sunday to Saturday) for the given date.
+ */
+const getWeekDays = (referenceDate: Date, todayKey: string): WeekDay[] => {
+  const { weekStart } = getWeekBoundaries(referenceDate);
+  const originalKey = toDateKey(referenceDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const days: WeekDay[] = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + i);
+    const dateKey = toDateKey(date);
+    days.push({
+      date,
+      dateKey,
+      dayLabel: DAY_NAMES[i],
+      isOriginalDate: dateKey === originalKey,
+      isToday: dateKey === todayKey,
+      isPast: date < today,
+    });
+  }
+  return days;
+};
+
+/**
+ * Format a week range for display (e.g., "Jan 5 - Jan 11").
+ */
+const formatWeekRange = (weekStart: Date, weekEnd: Date): string => {
+  const startMonth = weekStart.toLocaleDateString('en-US', { month: 'short' });
+  const endMonth = weekEnd.toLocaleDateString('en-US', { month: 'short' });
+  const startDay = weekStart.getDate();
+  const endDay = weekEnd.getDate();
+
+  if (startMonth === endMonth) {
+    return `${startMonth} ${startDay} – ${endDay}`;
+  }
+  return `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+};
+
 const TIP_OPTIONS = [
   { label: 'No tip', value: 0 },
   { label: '$2', value: 200 },
@@ -90,7 +156,6 @@ export default function CustomerVisits() {
 
   const [visits, setVisits] = useState<CustomerVisit[]>([]);
   const [summary, setSummary] = useState<CustomerSummary | null>(null);
-  const [customerZip, setCustomerZip] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,10 +166,9 @@ export default function CustomerVisits() {
   const [activeVisit, setActiveVisit] = useState<CustomerVisit | null>(null);
 
   // Reschedule state
-  const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
-  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedWindow, setSelectedWindow] = useState<ArrivalWindow>('flexible');
+  const [applyToFuture, setApplyToFuture] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -115,6 +179,14 @@ export default function CustomerVisits() {
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   const contactCopy = useMemo(() => getContactCopy(summary?.contact), [summary?.contact]);
+
+  // For skip sheet redirect
+  const handleSwitchToSkip = useCallback(() => {
+    setRescheduleSheet(false);
+    setTimeout(() => {
+      setSkipSheet(true);
+    }, 300);
+  }, []);
 
   const maybeRedirectToSetup = useCallback((err: unknown) => {
     if (isCustomerSetupRequired(err)) {
@@ -137,7 +209,6 @@ export default function CustomerVisits() {
       ]);
       setVisits(visitsPayload.visits ?? []);
       setSummary(summaryPayload);
-      setCustomerZip(summaryPayload.customer?.zip ?? null);
     } catch (err) {
       if (maybeRedirectToSetup(err)) return;
       setError(err instanceof Error ? err.message : 'Unable to load visits.');
@@ -149,6 +220,19 @@ export default function CustomerVisits() {
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   const todayKey = toDateKey(new Date());
+
+  // Computed week days for reschedule (based on active visit)
+  const rescheduleWeekData = useMemo(() => {
+    if (!activeVisit?.scheduledDate) return null;
+    const visitDate = parseDateInput(activeVisit.scheduledDate);
+    if (Number.isNaN(visitDate.getTime())) return null;
+
+    const { weekStart, weekEnd } = getWeekBoundaries(visitDate);
+    const weekDays = getWeekDays(visitDate, todayKey);
+    const weekLabel = formatWeekRange(weekStart, weekEnd);
+
+    return { weekStart, weekEnd, weekDays, weekLabel };
+  }, [activeVisit?.scheduledDate, todayKey]);
 
   const upcomingVisits = useMemo(() => {
     return visits
@@ -170,49 +254,13 @@ export default function CustomerVisits() {
   const hasService = summary?.wellnessAccess?.hasActiveService ?? false;
   const showTimeline = hasService || visits.length > 0;
 
-  // Calendar data for reschedule
-  const availabilityMap = useMemo(() => new Map(availability.map((a) => [a.date, a])), [availability]);
-  const calendarDays = useMemo(() => {
-    if (availability.length === 0) return [];
-    const sorted = [...availability].map((e) => e.date).sort();
-    const first = parseDateInput(sorted[0]);
-    const last = parseDateInput(sorted[sorted.length - 1]);
-    const start = new Date(first);
-    start.setDate(start.getDate() - start.getDay());
-    const end = new Date(last);
-    end.setDate(end.getDate() + (6 - end.getDay()));
-    const days: Date[] = [];
-    const cursor = new Date(start);
-    while (cursor <= end) {
-      days.push(new Date(cursor));
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    return days;
-  }, [availability]);
-
-  const loadAvailability = useCallback(async () => {
-    if (!customerZip) return;
-    setAvailabilityLoading(true);
-    setActionError(null);
-    try {
-      const data = await apiRequest<{ availability: AvailabilityDay[] }>(
-        `/api/schedule/availability?zipCode=${encodeURIComponent(customerZip)}&days=30`,
-      );
-      setAvailability(data.availability ?? []);
-      const first = data.availability?.find((a) => a.available);
-      if (first) setSelectedDate(first.date);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Unable to load availability.');
-    } finally {
-      setAvailabilityLoading(false);
-    }
-  }, [customerZip]);
-
   const openReschedule = (visit: CustomerVisit) => {
     setActiveVisit(visit);
     setActionError(null);
+    setSelectedDate(null); // Reset selected date
+    setSelectedWindow('flexible');
+    setApplyToFuture(false);
     setRescheduleSheet(true);
-    if (availability.length === 0) loadAvailability();
   };
 
   const openSkip = (visit: CustomerVisit) => {
@@ -237,7 +285,13 @@ export default function CustomerVisits() {
       await apiRequest('/api/schedule/request', {
         method: 'POST',
         token: session?.token,
-        body: { visitId: activeVisit.id, action: 'reschedule', nextVisitAt: selectedDate, preferredWindow: selectedWindow },
+        body: {
+          visitId: activeVisit.id,
+          action: 'reschedule',
+          nextVisitAt: selectedDate,
+          preferredWindow: selectedWindow,
+          applyToFuture,
+        },
       });
       setRescheduleSheet(false);
       loadData();
@@ -285,7 +339,7 @@ export default function CustomerVisits() {
     }
   };
 
-  const heroBackground = colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
+  const heroBackground = colorScheme === 'light' ? Colors.brand.graphite : '#1E293B';
 
   return (
     <Screen>
@@ -475,7 +529,7 @@ export default function CustomerVisits() {
                 onPress={() => router.push('/(app)/(customer)/wellness-poop-map' as any)}
               >
                 <FontAwesome name="map-marker" size={16} color={palette.tint} />
-                <Text style={[styles.linkText, { color: palette.text }]}>View poop map</Text>
+                <Text style={[styles.linkText, { color: palette.text }]}>View yard map</Text>
                 <FontAwesome name="chevron-right" size={12} color={palette.muted} />
               </Pressable>
               {hasService && (
@@ -494,49 +548,83 @@ export default function CustomerVisits() {
       </ScrollView>
 
       {/* Reschedule sheet */}
-      <BottomSheet visible={rescheduleSheet} onClose={() => setRescheduleSheet(false)} snapPoints={[0.7]}>
+      <BottomSheet visible={rescheduleSheet} onClose={() => setRescheduleSheet(false)} snapPoints={[0.65]}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <Text style={[styles.sheetTitle, { color: palette.text }]}>Reschedule visit</Text>
-          <Text style={[styles.sheetSubtitle, { color: palette.muted }]}>
-            Pick a new date. {contactCopy.confirmLabel}
-          </Text>
 
-          {availabilityLoading ? (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator size="small" color={palette.tint} />
-              <Text style={[styles.loadingText, { color: palette.muted }]}>Loading...</Text>
+          {/* Week boundary info banner */}
+          <View style={[styles.weekBoundaryBanner, { backgroundColor: `${palette.tint}10`, borderColor: `${palette.tint}30` }]}>
+            <FontAwesome name="calendar" size={14} color={palette.tint} />
+            <View style={styles.weekBoundaryContent}>
+              <Text style={[styles.weekBoundaryTitle, { color: palette.text }]}>
+                Week of {rescheduleWeekData?.weekLabel ?? '—'}
+              </Text>
+              <Text style={[styles.weekBoundaryText, { color: palette.muted }]}>
+                Reschedules must stay within the same service week
+              </Text>
             </View>
-          ) : (
+          </View>
+
+          {/* Week day picker */}
+          {rescheduleWeekData && (
             <>
-              <View style={styles.calendarHeader}>
-                {DAY_LABELS.map((label) => (
-                  <Text key={label} style={[styles.calendarLabel, { color: palette.muted }]}>{label}</Text>
-                ))}
-              </View>
-              <View style={styles.calendarGrid}>
-                {calendarDays.map((date) => {
-                  const key = toDateKey(date);
-                  const entry = availabilityMap.get(key);
-                  const available = entry?.available ?? false;
-                  const isSelected = selectedDate === key;
-                  const isToday = key === todayKey;
+              <Text style={[styles.label, { color: palette.muted, marginTop: 16 }]}>Select a new date</Text>
+              <View style={styles.weekDayRow}>
+                {rescheduleWeekData.weekDays.map((day) => {
+                  const isSelected = selectedDate === day.dateKey;
+                  const isDisabled = day.isPast && !day.isToday;
+                  const isOriginal = day.isOriginalDate;
+
                   return (
                     <Pressable
-                      key={key}
-                      disabled={!available}
-                      onPress={() => setSelectedDate(key)}
+                      key={day.dateKey}
+                      disabled={isDisabled}
+                      onPress={() => setSelectedDate(day.dateKey)}
                       style={[
-                        styles.calendarCell,
+                        styles.weekDayCell,
                         {
-                          borderColor: isSelected ? palette.tint : isToday ? palette.accent : palette.border,
-                          backgroundColor: isSelected ? palette.tint : palette.background,
-                          opacity: available ? 1 : 0.3,
+                          borderColor: isSelected
+                            ? palette.tint
+                            : isOriginal
+                            ? Colors.brand.gold
+                            : palette.border,
+                          backgroundColor: isSelected
+                            ? palette.tint
+                            : isOriginal
+                            ? `${Colors.brand.gold}15`
+                            : palette.background,
+                          opacity: isDisabled ? 0.35 : 1,
+                          borderWidth: isOriginal && !isSelected ? 2 : 1,
                         },
                       ]}
                     >
-                      <Text style={{ color: isSelected ? '#FFF' : palette.text, fontWeight: '600' }}>
-                        {date.getDate()}
+                      <Text
+                        style={[
+                          styles.weekDayLabel,
+                          { color: isSelected ? '#FFF' : palette.muted },
+                        ]}
+                      >
+                        {day.dayLabel}
                       </Text>
+                      <Text
+                        style={[
+                          styles.weekDayDate,
+                          {
+                            color: isSelected ? '#FFF' : palette.text,
+                            fontWeight: isOriginal ? '800' : '600',
+                          },
+                        ]}
+                      >
+                        {day.date.getDate()}
+                      </Text>
+                      {isOriginal && !isSelected && (
+                        <View style={[styles.originalDot, { backgroundColor: Colors.brand.gold }]} />
+                      )}
+                      {day.isToday && !isOriginal && (
+                        <Text style={[styles.todayLabel, { color: isSelected ? '#FFF' : palette.muted }]}>
+                          Today
+                        </Text>
+                      )}
                     </Pressable>
                   );
                 })}
@@ -547,6 +635,24 @@ export default function CustomerVisits() {
                 <ChoiceChip label="Morning" selected={selectedWindow === 'morning'} onPress={() => setSelectedWindow('morning')} />
                 <ChoiceChip label="Afternoon" selected={selectedWindow === 'afternoon'} onPress={() => setSelectedWindow('afternoon')} />
                 <ChoiceChip label="Flexible" selected={selectedWindow === 'flexible'} onPress={() => setSelectedWindow('flexible')} />
+              </View>
+
+              {/* Apply to future visits toggle */}
+              <View style={[styles.futureToggleRow, { borderColor: palette.border, marginTop: 16 }]}>
+                <View style={styles.futureToggleCopy}>
+                  <Text style={[styles.futureToggleLabel, { color: palette.text }]}>
+                    Also update future visits
+                  </Text>
+                  <Text style={[styles.futureToggleHelper, { color: palette.muted }]}>
+                    Move all upcoming visits to this day of the week
+                  </Text>
+                </View>
+                <Switch
+                  value={applyToFuture}
+                  onValueChange={setApplyToFuture}
+                  trackColor={{ false: palette.border, true: Colors.brand.mint }}
+                  thumbColor="#FFFFFF"
+                />
               </View>
             </>
           )}
@@ -560,6 +666,14 @@ export default function CustomerVisits() {
               disabled={actionLoading || !selectedDate}
             />
           </View>
+
+          {/* Skip option */}
+          <Pressable style={styles.skipAlternative} onPress={handleSwitchToSkip}>
+            <Text style={[styles.skipAlternativeText, { color: palette.muted }]}>
+              Need a different week?{' '}
+              <Text style={{ color: palette.tint, fontWeight: '600' }}>Skip this visit instead</Text>
+            </Text>
+          </Pressable>
         </ScrollView>
       </BottomSheet>
 
@@ -857,4 +971,89 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   tipNote: { fontSize: 12, marginTop: 8 },
+  // Week boundary reschedule styles
+  weekBoundaryBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 4,
+  },
+  weekBoundaryContent: {
+    flex: 1,
+    gap: 2,
+  },
+  weekBoundaryTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  weekBoundaryText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  weekDayRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 16,
+  },
+  weekDayCell: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 72,
+  },
+  weekDayLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  weekDayDate: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  originalDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 4,
+  },
+  todayLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  skipAlternative: {
+    marginTop: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  skipAlternativeText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  futureToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderWidth: 1,
+    borderRadius: 12,
+    gap: 12,
+  },
+  futureToggleCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  futureToggleLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  futureToggleHelper: {
+    fontSize: 12,
+  },
 });

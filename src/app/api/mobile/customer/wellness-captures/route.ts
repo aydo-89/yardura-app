@@ -16,6 +16,7 @@ import {
   WELLNESS_REPORT_SCOPE,
   WELLNESS_SYMPTOMS,
 } from '@/lib/wellness/reports';
+import { snapToParcel, isCaptureAtHome, type SnapResult } from '@/lib/geo/parcelSnap';
 
 function getBearerToken(request: NextRequest): string | null {
   const header = request.headers.get('authorization');
@@ -167,6 +168,7 @@ export async function POST(request: NextRequest) {
   const lngEntry = formData?.get('lng');
   const accuracyEntry = formData?.get('accuracy');
   const consentEntry = formData?.get('consentToShare');
+  const captureContextEntry = formData?.get('captureContext'); // 'home' | 'walk' | undefined
 
   const dogs = await prisma.dog.findMany({
     where: { OR: [{ customerId: customer.id }, { userId }] },
@@ -285,6 +287,44 @@ export async function POST(request: NextRequest) {
       data: { latitude: gpsLat, longitude: gpsLng },
     });
   }
+
+  // Determine capture context (home vs walk) and apply parcel snapping for at-home captures
+  let snapResult: SnapResult | null = null;
+  let captureContext: 'home' | 'walk' | null = null;
+  const explicitContext = typeof captureContextEntry === 'string' ? captureContextEntry : null;
+
+  if (gpsLat !== null && gpsLng !== null && hasCustomerLocation) {
+    // Determine if capture is at home based on distance or explicit context
+    const isAtHome = explicitContext === 'home'
+      ? true
+      : explicitContext === 'walk'
+        ? false
+        : isCaptureAtHome(gpsLat, gpsLng, customer.latitude!, customer.longitude!, 100);
+
+    captureContext = isAtHome ? 'home' : 'walk';
+
+    // For at-home captures, snap to parcel boundary if outside
+    if (isAtHome) {
+      try {
+        snapResult = await snapToParcel(
+          gpsLat,
+          gpsLng,
+          customer.latitude!,
+          customer.longitude!,
+        );
+
+        if (snapResult.snapped) {
+          gpsLat = snapResult.lat;
+          gpsLng = snapResult.lng;
+          console.log(
+            `[wellness-captures] GPS snapped to parcel: ${snapResult.rawLat},${snapResult.rawLng} → ${snapResult.lat},${snapResult.lng} (${snapResult.correctionMeters}m)`,
+          );
+        }
+      } catch (error) {
+        console.warn('[wellness-captures] Parcel snap failed:', error);
+      }
+    }
+  }
   const consentToShare =
     typeof consentEntry === 'string'
       ? consentEntry === 'true'
@@ -296,6 +336,20 @@ export async function POST(request: NextRequest) {
   }
   if (customer.autoBlurWellnessPhotos) {
     metadataPayload.privacy = { autoBlur: true };
+  }
+  if (captureContext) {
+    metadataPayload.captureContext = captureContext;
+  }
+  if (snapResult && (snapResult.snapped || snapResult.status === 'too_far')) {
+    metadataPayload.locationSnap = {
+      rawLat: snapResult.rawLat,
+      rawLng: snapResult.rawLng,
+      snapped: snapResult.snapped,
+      wasInside: snapResult.wasInside,
+      correctionMeters: snapResult.correctionMeters,
+      status: snapResult.status,
+      parcelId: snapResult.parcel?.parcelId ?? null,
+    };
   }
 
   const capturedAt = new Date();
@@ -383,6 +437,16 @@ export async function POST(request: NextRequest) {
       scansDelta: 1,
     });
 
+    // Include location snap info in response for client feedback
+    const locationSnapResponse = snapResult
+      ? {
+          snapped: snapResult.snapped,
+          wasInside: snapResult.wasInside,
+          correctionMeters: snapResult.correctionMeters,
+          status: snapResult.status,
+        }
+      : null;
+
     return NextResponse.json({
       ok: true,
       data: {
@@ -406,6 +470,8 @@ export async function POST(request: NextRequest) {
           metadata: updated.metadata,
           imageUrl: await resolveStorageUrl(updated.storagePath),
         },
+        captureContext,
+        locationSnap: locationSnapResponse,
       },
     });
   } catch (error) {

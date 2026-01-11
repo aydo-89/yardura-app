@@ -107,7 +107,8 @@ export async function addOutboundTranscriptionJob(
   if (!queue) return null;
 
   const job = await queue.add("transcribe", payload, {
-    attempts: 1,
+    attempts: 3,
+    backoff: { type: "exponential", delay: 2000 },
     removeOnComplete: { count: 100 },
     removeOnFail: { count: 20 },
     ...options,

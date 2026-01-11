@@ -29,7 +29,7 @@ type WellnessOverviewProps = {
   checkInError: string | null;
   flaggedReadings: WellnessReading[];
   weatherAlert: WellnessWeatherAlert | null;
-  access: WellnessAccess;
+  access: WellnessAccess | null;
   isPremium: boolean;
   hasService: boolean;
   reportsCount: number;
@@ -130,7 +130,7 @@ export default function WellnessOverview({
           </View>
           <View style={[styles.metricItem, { borderColor: palette.border }]}>
             <Text style={[styles.metricValue, { color: palette.text }]}>{reportsCount}</Text>
-            <Text style={[styles.metricLabel, { color: palette.muted }]}>Reports</Text>
+            <Text style={[styles.metricLabel, { color: palette.muted }]}>Check-ins</Text>
           </View>
           <View style={[styles.metricItem, { borderColor: palette.border }]}>
             <Text style={[styles.metricValue, { color: palette.text }]}>{scansLabel}</Text>

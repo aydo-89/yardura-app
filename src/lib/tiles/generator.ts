@@ -42,7 +42,7 @@ export interface TileGenerationResult {
 }
 
 const DEFAULT_ORG_ID = "yardura";
-const DEFAULT_STATUS = "DRAFT";
+const DEFAULT_STATUS = "WAITLIST"; // New tiles start as Waitlist (was DRAFT)
 
 /**
  * Sync ZIPs to a tile using spatial intersection.

@@ -20,7 +20,7 @@ type ToolItem = {
 };
 
 type WellnessToolsProps = {
-  access: WellnessAccess;
+  access: WellnessAccess | null;
   isPremium: boolean;
   hasService: boolean;
 };
@@ -88,7 +88,7 @@ export default function WellnessTools({ access, isPremium, hasService }: Wellnes
     {
       id: 'poop-map',
       icon: 'map-marker',
-      label: 'Poop map',
+      label: 'Yard map',
       description: 'Track yard hotspots',
       route: '/(app)/(customer)/wellness-poop-map' as Href,
     },
@@ -105,6 +105,13 @@ export default function WellnessTools({ access, isPremium, hasService }: Wellnes
       label: 'Parasite risk',
       description: 'Seasonal flea, tick & heartworm',
       route: '/(app)/(customer)/wellness-parasite-risk' as Href,
+    },
+    {
+      id: 'vet-docs',
+      icon: 'folder-open',
+      label: 'Vet documents',
+      description: 'Upload and analyze vet records',
+      route: '/(app)/(customer)/wellness-vet-docs' as Href,
     },
     {
       id: 'reports',

@@ -10,6 +10,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Button from '@/components/ui/Button';
 import Colors from '@/constants/Colors';
+import AcceptOfferSheet from '@/components/scooper/AcceptOfferSheet';
 
 export type OfferData = {
   id: string;
@@ -167,6 +168,7 @@ export default function OfferCard({
 }: OfferCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [acceptScope, setAcceptScope] = useState<'visit' | 'job' | null>(null);
+  const [showAcceptSheet, setShowAcceptSheet] = useState(false);
 
   const cardBorder = colorScheme === 'dark' ? '#233045' : palette.border;
   const cardShadowStyle = colorScheme === 'dark' ? styles.cardShadowDark : styles.cardShadow;
@@ -184,18 +186,21 @@ export default function OfferCard({
   const isCoverage = Boolean(offer.jobId) && !offer.isRecurring && !offer.handoffType;
   const canAcceptRecurring = Boolean(offer.jobId && offer.isRecurring && onAcceptRecurring);
 
-  const handleAcceptVisit = useCallback(async () => {
-    setAcceptScope('visit');
-    await onAcceptVisit(offer.id);
-    setAcceptScope(null);
-  }, [offer.id, onAcceptVisit]);
+  const handleOpenAcceptSheet = useCallback(() => {
+    setShowAcceptSheet(true);
+  }, []);
 
-  const handleAcceptRecurring = useCallback(async () => {
-    if (!offer.jobId || !onAcceptRecurring) return;
-    setAcceptScope('job');
-    await onAcceptRecurring(offer.id, offer.jobId);
-    setAcceptScope(null);
-  }, [offer.id, offer.jobId, onAcceptRecurring]);
+  const handleAcceptFromSheet = useCallback(async (scope: 'visit' | 'ongoing') => {
+    if (scope === 'ongoing' && offer.jobId && onAcceptRecurring) {
+      setAcceptScope('job');
+      await onAcceptRecurring(offer.id, offer.jobId);
+      setAcceptScope(null);
+    } else {
+      setAcceptScope('visit');
+      await onAcceptVisit(offer.id);
+      setAcceptScope(null);
+    }
+  }, [offer.id, offer.jobId, onAcceptVisit, onAcceptRecurring]);
 
   const handleDecline = useCallback(async () => {
     if (!onDecline) return;
@@ -209,6 +214,7 @@ export default function OfferCard({
   const isActing = isAccepting || isDeclining || Boolean(acceptScope);
 
   return (
+    <>
     <Pressable
       onPress={toggleExpanded}
       style={({ pressed }) => [
@@ -396,19 +402,11 @@ export default function OfferCard({
             ) : (
               <>
                 <Button
-                  title="Accept visit"
-                  onPress={handleAcceptVisit}
-                  variant="primary"
+                  title="Accept"
+                  onPress={handleOpenAcceptSheet}
+                  variant="cta"
                   style={styles.actionButton}
                 />
-                {canAcceptRecurring ? (
-                  <Button
-                    title="Accept ongoing"
-                    onPress={handleAcceptRecurring}
-                    variant="cta"
-                    style={styles.actionButton}
-                  />
-                ) : null}
                 {offer.isDirectOffer && onDecline ? (
                   <Button
                     title="Decline"
@@ -430,7 +428,22 @@ export default function OfferCard({
           </Pressable>
         </View>
       ) : null}
+
     </Pressable>
+
+    {/* Accept Offer Sheet */}
+    <AcceptOfferSheet
+      visible={showAcceptSheet}
+      onClose={() => setShowAcceptSheet(false)}
+      onAccept={handleAcceptFromSheet}
+      customerName={offer.customer?.name ?? undefined}
+      frequency={offer.frequency}
+      payoutLabel={payoutLabel}
+      recurringEstimate={recurringEstimate}
+      dateLabel={dateLabel}
+      canAcceptOngoing={canAcceptRecurring}
+    />
+  </>
   );
 }
 

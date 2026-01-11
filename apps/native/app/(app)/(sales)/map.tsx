@@ -11,7 +11,7 @@ import {
 import MapView, { Marker, Polygon, PROVIDER_GOOGLE, type LatLng } from 'react-native-maps';
 import * as Location from 'expo-location';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import Screen from '@/components/ui/Screen';
 import Button from '@/components/ui/Button';
@@ -85,6 +85,7 @@ function resolveServiceAreaColors(status?: string | null, colorScheme?: string) 
 }
 
 export default function SalesMapScreen() {
+  const { leadId: initialLeadId } = useLocalSearchParams<{ leadId?: string }>();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
   const { session } = useAuth();
@@ -110,6 +111,24 @@ export default function SalesMapScreen() {
       setSelectedLead(null);
     }
   }, [filteredLeads, selectedLead]);
+
+  // Handle incoming leadId from "View on map" navigation
+  useEffect(() => {
+    if (!initialLeadId || filteredLeads.length === 0 || !mapReady) return;
+    const lead = filteredLeads.find((l) => l.id === initialLeadId);
+    if (lead) {
+      setSelectedLead(lead);
+      const coords = getLeadCoordinates(lead);
+      if (coords && mapRef.current) {
+        mapRef.current.animateToRegion({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+      }
+    }
+  }, [initialLeadId, filteredLeads, mapReady]);
 
   const leadsWithCoords = useMemo(
     () =>
@@ -376,6 +395,7 @@ export default function SalesMapScreen() {
           onPress={handleMapPress}
           showsUserLocation={Boolean(location)}
           showsMyLocationButton={Boolean(location)}
+          showsCompass={true}
         >
           {showServiceAreas
             ? serviceAreaPolygons.map((polygon, index) => {

@@ -197,6 +197,24 @@ export default function CustomerLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="service-signup"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="household"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="wellness-vet-docs"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

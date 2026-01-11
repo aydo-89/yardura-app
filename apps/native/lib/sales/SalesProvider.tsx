@@ -10,6 +10,7 @@ import {
 
 import { apiRequest } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { logWarn } from '@/lib/logger';
 import type {
   CadenceSummary,
   LeadOwner,
@@ -216,7 +217,7 @@ export function SalesProvider({ children }: { children: ReactNode }) {
       setTerritories(territoriesResult ?? []);
       setCadences(cadencesResult ?? []);
     } catch (err) {
-      console.warn('Unable to refresh sales lookups', err);
+      logWarn('sales.lookups.refresh.failed', err);
     }
   }, [token]);
 

@@ -28,6 +28,14 @@ export default function Index() {
     return <Redirect href="/(auth)/sign-in" />;
   }
 
+  // Check if this is a new user (no customer record and no scooper profile)
+  const isNewUser = !session.user.customerId && !session.user.scooperProfileId;
+
+  if (isNewUser) {
+    // New user - let them choose their path
+    return <Redirect href={'/(auth)/role-choice' as any} />;
+  }
+
   if (session.activeRole === 'TECH') {
     return <Redirect href="/(app)/(scooper)" />;
   }

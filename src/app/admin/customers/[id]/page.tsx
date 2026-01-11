@@ -36,7 +36,16 @@ export default async function CustomerDetailPage({
     redirect(`/signin?callbackUrl=/admin/customers/${id}`);
   }
 
-  const orgId = (session.user as any)?.orgId ?? undefined;
+  const sessionUser = session.user as any;
+  const orgId = sessionUser?.orgId ?? undefined;
+  
+  // God Mode users (OWNER role with yardura org) can see all customers
+  const isGodModeUser = 
+    sessionUser?.email === "ayden@yardura.com" ||
+    (sessionUser?.roles?.includes("OWNER") && orgId === "yardura");
+  
+  // Only apply orgId filter for non-God Mode users
+  const orgFilter = isGodModeUser ? {} : (orgId ? { orgId } : {});
 
   const now = new Date();
 
@@ -45,7 +54,7 @@ export default async function CustomerDetailPage({
     customerRecord = await prisma.customer.findFirst({
       where: {
         id,
-        ...(orgId ? { orgId } : {}),
+        ...orgFilter,
       },
       include: {
         dogs: {
@@ -115,7 +124,7 @@ export default async function CustomerDetailPage({
       customerRecord = await prisma.customer.findFirst({
         where: {
           id,
-          ...(orgId ? { orgId } : {}),
+          ...orgFilter,
         },
         include: {
           dogs: true,

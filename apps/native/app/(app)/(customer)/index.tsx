@@ -235,19 +235,34 @@ export default function CustomerHome() {
     }
   };
 
+  const handleQuickQuestionPress = (question: string) => {
+    router.push({
+      pathname: '/(app)/(customer)/chat',
+      params: { question },
+    } as any);
+  };
+
   const nextVisitLabel = formatDate(summary?.nextVisit?.scheduledDate);
 
   const wellnessStatus = useMemo(() => {
     if (!summary?.latestReport) {
-      return { label: 'Awaiting samples', tone: 'pending' } as const;
+      return { label: 'Awaiting samples', tone: 'pending', isStale: false } as const;
     }
+
+    // Check if the report is stale (older than 14 days)
+    const weekStart = parseDateInput(summary.latestReport.weekStart);
+    const daysSinceReport = Math.floor(
+      (Date.now() - weekStart.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const isStale = daysSinceReport > 14;
+
     if (summary.latestReport.noIssues) {
-      return { label: 'All clear', tone: 'good' } as const;
+      return { label: 'All clear', tone: 'good', isStale } as const;
     }
     const risk = assessSymptomRisk(summary.latestReport.symptomTags ?? []);
     const label = labelForSymptomRisk(risk.level);
     const tone = risk.level === 'vet_now' ? 'attention' : 'alert';
-    return { label, tone } as const;
+    return { label, tone, isStale } as const;
   }, [summary?.latestReport]);
 
   const statusColor = useMemo(() => {
@@ -257,8 +272,9 @@ export default function CustomerHome() {
     return palette.border;
   }, [palette, wellnessStatus.tone]);
 
+  // Use a slightly lighter background in dark mode for better contrast with the app background
   const heroBackground =
-    colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
+    colorScheme === 'light' ? Colors.brand.graphite : '#1E293B';
 
   const visibleDogs = dogs.slice(0, MAX_DOGS_DISPLAY);
 
@@ -291,6 +307,17 @@ export default function CustomerHome() {
     };
   }, [palette.danger, weather]);
 
+  // Sample quick questions for preview card
+  const sampleQuestions = useMemo(() => {
+    const firstDog = dogs[0];
+    const dogName = firstDog?.name ?? 'my dog';
+    return [
+      `Why might ${dogName}'s stool be soft?`,
+      `What should I feed ${dogName}?`,
+      `Signs of dehydration?`,
+    ];
+  }, [dogs]);
+
   // Quick actions - primary (always shown) and secondary (expandable)
   const primaryActions = [
     {
@@ -305,9 +332,6 @@ export default function CustomerHome() {
       title: 'Ask AI',
       route: '/(app)/(customer)/chat' as Href,
     },
-  ];
-
-  const secondaryActions = [
     {
       key: 'food',
       icon: 'cutlery' as const,
@@ -320,6 +344,15 @@ export default function CustomerHome() {
       title: 'Walks',
       route: '/(app)/(customer)/wellness-walks' as Href,
     },
+  ];
+
+  const secondaryActions = [
+    {
+      key: 'yard-map',
+      icon: 'map' as const,
+      title: 'Yard map',
+      route: '/(app)/(customer)/wellness-poop-map' as Href,
+    },
     {
       key: 'reminders',
       icon: 'bell' as const,
@@ -327,10 +360,16 @@ export default function CustomerHome() {
       route: '/(app)/(customer)/reminders' as Href,
     },
     {
-      key: 'wellness',
-      icon: 'heart' as const,
-      title: 'Wellness',
-      route: '/(app)/(customer)/wellness' as Href,
+      key: 'parasite-map',
+      icon: 'bug' as const,
+      title: 'Parasite risk',
+      route: '/(app)/(customer)/wellness-parasite-risk' as Href,
+    },
+    {
+      key: 'reports',
+      icon: 'file-text-o' as const,
+      title: 'Report settings',
+      route: '/(app)/(customer)/report-settings' as Href,
     },
   ];
 
@@ -388,8 +427,11 @@ export default function CustomerHome() {
               </View>
             ) : null}
             <View style={styles.statusItem}>
-              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-              <Text style={styles.statusText}>{wellnessStatus.label}</Text>
+              <View style={[styles.statusDot, { backgroundColor: wellnessStatus.isStale ? palette.muted : statusColor }]} />
+              <Text style={styles.statusText}>
+                {wellnessStatus.label}
+                {wellnessStatus.isStale ? ' (outdated)' : ''}
+              </Text>
             </View>
             {locationLabel ? (
               <View style={styles.statusItem}>
@@ -536,8 +578,14 @@ export default function CustomerHome() {
           ) : (
             <View style={styles.statsGrid}>
               <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                <Text style={[styles.statLabel, { color: palette.muted }]}>Dogs</Text>
-                <Text style={[styles.statValue, { color: palette.text }]}>{dogs.length}</Text>
+                <Text style={[styles.statLabel, { color: palette.muted }]}>
+                  {dogs.length === 1 ? 'Dog' : 'Dogs'} ({dogs.length})
+                </Text>
+                <Text style={[styles.statValue, { color: palette.text }]} numberOfLines={1}>
+                  {dogs.length > 0
+                    ? dogs.slice(0, 2).map((d) => d.name).join(', ') + (dogs.length > 2 ? '...' : '')
+                    : 'None'}
+                </Text>
               </View>
               {hasService ? (
                 <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
@@ -553,9 +601,16 @@ export default function CustomerHome() {
                 </View>
               )}
               <View style={[styles.statCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
-                <Text style={[styles.statLabel, { color: palette.muted }]}>Wellness</Text>
+                <View style={styles.statLabelRow}>
+                  <Text style={[styles.statLabel, { color: palette.muted }]}>Wellness</Text>
+                  {wellnessStatus.isStale ? (
+                    <View style={[styles.staleBadge, { backgroundColor: `${palette.muted}20` }]}>
+                      <Text style={[styles.staleBadgeText, { color: palette.muted }]}>Outdated</Text>
+                    </View>
+                  ) : null}
+                </View>
                 <View style={styles.statValueRow}>
-                  <View style={[styles.miniDot, { backgroundColor: statusColor }]} />
+                  <View style={[styles.miniDot, { backgroundColor: wellnessStatus.isStale ? palette.muted : statusColor }]} />
                   <Text style={[styles.statValue, { color: palette.text }]}>{wellnessStatus.label}</Text>
                 </View>
               </View>
@@ -569,26 +624,77 @@ export default function CustomerHome() {
           )}
         </View>
 
+        {/* Quick Questions Preview Card */}
+        <Pressable
+          onPress={() => router.push('/(app)/(customer)/chat' as Href)}
+          style={[styles.quickQuestionsCard, { backgroundColor: palette.card, borderColor: palette.border }]}
+        >
+          <View style={styles.quickQuestionsHeader}>
+            <View style={[styles.quickQuestionsIcon, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="comments" size={16} color={palette.tint} />
+            </View>
+            <View style={styles.quickQuestionsHeaderText}>
+              <Text style={[styles.quickQuestionsTitle, { color: palette.text }]}>Ask AI</Text>
+              <Text style={[styles.quickQuestionsSubtitle, { color: palette.muted }]}>
+                Tap a question or ask your own
+              </Text>
+            </View>
+            <FontAwesome name="chevron-right" size={14} color={palette.muted} />
+          </View>
+          <View style={styles.quickQuestionsChips}>
+            {sampleQuestions.slice(0, 2).map((question, index) => (
+              <Pressable
+                key={index}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleQuickQuestionPress(question);
+                }}
+                style={({ pressed }) => [
+                  styles.quickQuestionChip,
+                  { backgroundColor: pressed ? `${palette.tint}10` : palette.background, borderColor: palette.border },
+                ]}
+              >
+                <Text style={[styles.quickQuestionText, { color: palette.text }]} numberOfLines={1}>
+                  {question}
+                </Text>
+                <FontAwesome name="arrow-right" size={10} color={palette.muted} />
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+
         {/* Check-in card for completed state or errors */}
         {!showCheckInPrompt && hasDogs ? (
-          <View style={[styles.checkInCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+          <View style={[styles.checkInCard, { backgroundColor: `${Colors.brand.mint}08`, borderColor: Colors.brand.mint }]}>
             <View style={styles.checkInHeader}>
-              <View>
-                <Text style={[styles.checkInTitle, { color: palette.text }]}>Weekly check-in</Text>
+              <View style={[styles.checkInIconWrap, { backgroundColor: `${Colors.brand.mint}20` }]}>
+                <FontAwesome name="check-circle" size={20} color={Colors.brand.mint} />
+              </View>
+              <View style={styles.checkInHeaderText}>
+                <View style={styles.checkInTitleRow}>
+                  <Text style={[styles.checkInTitle, { color: palette.text }]}>Weekly check-in</Text>
+                  <View style={[styles.checkInCompleteBadge, { backgroundColor: `${Colors.brand.mint}20` }]}>
+                    <Text style={[styles.checkInCompleteText, { color: Colors.brand.mint }]}>Complete</Text>
+                  </View>
+                </View>
                 <Text style={[styles.checkInMeta, { color: palette.muted }]}>
-                  {checkInWeekLabel}
+                  {checkInWeekLabel} · All {checkInStatus.totalDogs} {checkInStatus.totalDogs === 1 ? 'dog' : 'dogs'} submitted
                 </Text>
               </View>
-              <View style={[styles.checkInStatusDot, { backgroundColor: Colors.brand.mint }]} />
             </View>
             {checkInError ? (
               <Text style={[styles.errorText, { color: palette.danger }]}>{checkInError}</Text>
             ) : (
-              <Button
-                title="Edit this week's check-in"
+              <Pressable
                 onPress={handleCheckInPress}
-                variant="ghost"
-              />
+                style={({ pressed }) => [
+                  styles.checkInEditLink,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <FontAwesome name="pencil" size={12} color={palette.tint} />
+                <Text style={[styles.checkInEditText, { color: palette.tint }]}>Edit responses</Text>
+              </Pressable>
             )}
           </View>
         ) : null}
@@ -805,19 +911,20 @@ const styles = StyleSheet.create({
   },
   primaryActions: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 10,
   },
   primaryAction: {
-    flex: 1,
+    width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: 16,
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
   },
   primaryActionText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -903,6 +1010,72 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
+  statLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  staleBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  staleBadgeText: {
+    fontSize: 9,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  quickQuestionsCard: {
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+  },
+  quickQuestionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  quickQuestionsIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickQuestionsHeaderText: {
+    flex: 1,
+    gap: 2,
+  },
+  quickQuestionsTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  quickQuestionsSubtitle: {
+    fontSize: 12,
+  },
+  quickQuestionsChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickQuestionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    minWidth: '45%',
+  },
+  quickQuestionText: {
+    flex: 1,
+    fontSize: 13,
+  },
   checkInCard: {
     marginTop: 20,
     borderRadius: 16,
@@ -913,15 +1086,39 @@ const styles = StyleSheet.create({
   checkInHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
+  },
+  checkInHeaderText: {
+    flex: 1,
+    gap: 2,
   },
   checkInTitle: {
     fontSize: 16,
     fontWeight: '600',
   },
+  checkInCompleteBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  checkInCompleteText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   checkInMeta: {
     fontSize: 13,
     marginTop: 2,
+  },
+  checkInEditLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  checkInEditText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   checkInStatusDot: {
     width: 10,

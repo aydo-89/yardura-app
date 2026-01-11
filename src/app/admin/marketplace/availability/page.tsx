@@ -360,7 +360,7 @@ function ServiceAreaExplorer({
     const normalized = status.toUpperCase();
     if (normalized === "LIVE") return "Live";
     if (normalized === "WAITLIST") return "Waitlist";
-    if (normalized === "DRAFT") return "Draft";
+    if (normalized === "DRAFT") return "Waitlist"; // DRAFT treated as Waitlist in UI
     return status;
   };
 

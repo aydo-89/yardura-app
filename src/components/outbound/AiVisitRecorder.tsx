@@ -76,7 +76,8 @@ function normalizeMimeType(raw?: string | null): { mime: string; extension: stri
 }
 
 const TRANSCRIPTION_JOB_POLL_INTERVAL_MS = 2000;
-const TRANSCRIPTION_JOB_MAX_ATTEMPTS = 60;
+const TRANSCRIPTION_JOB_MAX_ATTEMPTS = 90;
+const MIN_RECORDING_MS = 1200;
 
 async function pollTranscriptionJob(jobId: string): Promise<AiVisitResult> {
   const pollUrl = `/api/outbound/transcribe?jobId=${encodeURIComponent(jobId)}`;
@@ -138,10 +139,12 @@ export function AiVisitRecorder({
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
+  const elapsedMsRef = useRef<number>(0);
 
   const resetState = useCallback(() => {
     setRecorderState("idle");
     setElapsedMs(0);
+    elapsedMsRef.current = 0;
     setError(null);
     setResult(null);
     setTranscriptPreview("");
@@ -200,6 +203,13 @@ export function AiVisitRecorder({
         const { mime, extension } = normalizeMimeType(firstChunkType);
         const blob = new Blob(chunksRef.current, { type: mime });
         chunksRef.current = [];
+
+        if (elapsedMsRef.current < MIN_RECORDING_MS) {
+          setRecorderState("idle");
+          setError("Recording too short. Try speaking for a few seconds.");
+          return;
+        }
+
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
         setRecorderState("processing");
@@ -211,6 +221,7 @@ export function AiVisitRecorder({
       timerRef.current = window.setInterval(() => {
         setElapsedMs((prev) => {
           const next = prev + 250;
+          elapsedMsRef.current = next;
           if (next >= MAX_DURATION_MS) {
             stopRecordingInternal();
           }

@@ -175,6 +175,7 @@ export async function GET(request: NextRequest) {
     ok: true,
     data: {
       customer,
+      orgId: customer.orgId,
       petsCount,
       nextVisit: nextVisit
         ? {

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
 
 import { apiRequest, apiUpload } from '@/lib/api/client';
-import type { ScooperVisitMedia } from '@/lib/api/types';
+import type { ScooperVisitMedia, LocationSnapResult } from '@/lib/api/types';
 
 const SANITATION_VIDEO_NOTE = 'SANITATION_VIDEO' as const;
 const SANITATION_SHOES_NOTE = 'SANITATION_SHOES' as const;
@@ -109,12 +109,18 @@ type UseVisitMediaOptions = {
   onRefresh: () => Promise<void>;
 };
 
+type UploadResult = {
+  media: ScooperVisitMedia | null;
+  locationSnap: LocationSnapResult | null;
+};
+
 type UseVisitMediaResult = {
   categories: MediaCategories;
   sanitationCaptured: boolean;
   uploadingType: string | null;
   uploadError: string | null;
-  uploadMedia: (asset: UploadAsset, options: UploadOptions) => Promise<ScooperVisitMedia | null>;
+  lastLocationSnap: LocationSnapResult | null;
+  uploadMedia: (asset: UploadAsset, options: UploadOptions) => Promise<UploadResult>;
   deleteMedia: (mediaId: string) => Promise<void>;
 };
 
@@ -126,6 +132,7 @@ export function useVisitMedia({
 }: UseVisitMediaOptions): UseVisitMediaResult {
   const [uploadingType, setUploadingType] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [lastLocationSnap, setLastLocationSnap] = useState<LocationSnapResult | null>(null);
 
   const categories = useMemo(() => categorizeMedia(media), [media]);
   const sanitationCaptured = useMemo(
@@ -134,8 +141,8 @@ export function useVisitMedia({
   );
 
   const uploadMedia = useCallback(
-    async (asset: UploadAsset, options: UploadOptions): Promise<ScooperVisitMedia | null> => {
-      if (!token || !visitId) return null;
+    async (asset: UploadAsset, options: UploadOptions): Promise<UploadResult> => {
+      if (!token || !visitId) return { media: null, locationSnap: null };
       setUploadingType(options.assetType);
       setUploadError(null);
       try {
@@ -189,7 +196,10 @@ export function useVisitMedia({
           formData.append('stoolSampleId', options.stoolSampleId);
         }
 
-        const response = await apiUpload<{ media?: ScooperVisitMedia }>(
+        const response = await apiUpload<{
+          media?: ScooperVisitMedia;
+          locationSnap?: LocationSnapResult | null;
+        }>(
           `/api/field-tech/visits/${visitId}/media`,
           {
             token,
@@ -197,11 +207,21 @@ export function useVisitMedia({
           },
         );
         await onRefresh();
-        return response?.media ?? null;
+
+        // Track location snap result for UI feedback
+        const snapResult = response?.locationSnap ?? null;
+        if (snapResult) {
+          setLastLocationSnap(snapResult);
+        }
+
+        return {
+          media: response?.media ?? null,
+          locationSnap: snapResult,
+        };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to upload media.';
         setUploadError(message);
-        return null;
+        return { media: null, locationSnap: null };
       } finally {
         setUploadingType(null);
       }
@@ -232,6 +252,7 @@ export function useVisitMedia({
     sanitationCaptured,
     uploadingType,
     uploadError,
+    lastLocationSnap,
     uploadMedia,
     deleteMedia,
   };

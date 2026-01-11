@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 
 import { apiRequest } from '@/lib/api/client';
+import { logWarn } from '@/lib/logger';
 import { getItem, setItem } from '@/lib/storage';
 
 const TOKEN_STORAGE_KEY = 'insightscoop_push_token';
@@ -23,7 +24,7 @@ let Notifications: typeof import('expo-notifications') | null = null;
 
 function getNotifications() {
   if (isExpoGo) {
-    console.warn('[push] Push notifications are not available in Expo Go. Use a development build.');
+    logWarn('push', 'Push notifications are not available in Expo Go. Use a development build.');
     return null;
   }
   if (!Notifications) {
@@ -31,7 +32,7 @@ function getNotifications() {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       Notifications = require('expo-notifications');
     } catch (e) {
-      console.warn('[push] expo-notifications not available:', e);
+      logWarn('push.expo-notifications.unavailable', e);
       return null;
     }
   }
@@ -70,64 +71,66 @@ const ensureAndroidChannel = async () => {
 };
 
 export async function ensurePushRegistration(authToken: string): Promise<void> {
-  console.log('🔔 [PUSH] Starting push registration...');
+  if (__DEV__) console.log('[PUSH] Starting push registration...');
 
   if (!authToken) {
-    console.log('🔔 [PUSH] No auth token, skipping');
+    if (__DEV__) console.log('[PUSH] No auth token, skipping');
     return;
   }
   if (Platform.OS === 'web') {
-    console.log('🔔 [PUSH] Web platform, skipping');
+    if (__DEV__) console.log('[PUSH] Web platform, skipping');
     return;
   }
   if (!Device.isDevice) {
-    console.log('🔔 [PUSH] Not a physical device, skipping');
+    if (__DEV__) console.log('[PUSH] Not a physical device, skipping');
     return;
   }
 
   const notifs = getNotifications();
   if (!notifs) {
-    console.log('🔔 [PUSH] Notifications module not available');
+    if (__DEV__) console.log('[PUSH] Notifications module not available');
     return;
   }
 
   try {
-    console.log('🔔 [PUSH] Checking permissions...');
+    if (__DEV__) console.log('[PUSH] Checking permissions...');
     const permission = await notifs.getPermissionsAsync();
     let status = permission.status;
-    console.log('🔔 [PUSH] Current permission status:', status);
+    if (__DEV__) console.log('[PUSH] Current permission status:', status);
 
     if (status !== 'granted') {
-      console.log('🔔 [PUSH] Requesting permission...');
+      if (__DEV__) console.log('[PUSH] Requesting permission...');
       const requested = await notifs.requestPermissionsAsync();
       status = requested.status;
-      console.log('🔔 [PUSH] New permission status:', status);
+      if (__DEV__) console.log('[PUSH] New permission status:', status);
     }
     if (status !== 'granted') {
-      console.log('🔔 [PUSH] Permission denied, cannot register');
+      if (__DEV__) console.log('[PUSH] Permission denied, cannot register');
       return;
     }
 
     await ensureAndroidChannel();
 
     const projectId = resolveProjectId();
-    console.log('🔔 [PUSH] Project ID:', projectId);
+    if (__DEV__) console.log('[PUSH] Project ID:', projectId);
 
     const tokenResult = await notifs.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined,
     );
     const pushToken = tokenResult.data;
 
-    console.log('');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔔 PUSH TOKEN (copy this for testing):');
-    console.log(pushToken);
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('');
+    if (__DEV__) {
+      console.log('');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('PUSH TOKEN (copy this for testing):');
+      console.log(pushToken);
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('');
+    }
 
     const storedToken = await getItem(TOKEN_STORAGE_KEY);
     if (storedToken === pushToken) {
-      console.log('🔔 [PUSH] Token already registered, skipping API call');
+      if (__DEV__) console.log('[PUSH] Token already registered, skipping API call');
       return;
     }
 
@@ -139,7 +142,7 @@ export async function ensurePushRegistration(authToken: string): Promise<void> {
       provider: 'EXPO',
     };
 
-    console.log('🔔 [PUSH] Registering token with server...');
+    if (__DEV__) console.log('[PUSH] Registering token with server...');
     await apiRequest('/api/mobile/push/register', {
       method: 'POST',
       token: authToken,
@@ -147,8 +150,8 @@ export async function ensurePushRegistration(authToken: string): Promise<void> {
     });
 
     await setItem(TOKEN_STORAGE_KEY, pushToken);
-    console.log('🔔 [PUSH] ✅ Token registered successfully!');
+    if (__DEV__) console.log('[PUSH] Token registered successfully!');
   } catch (error) {
-    console.log('🔔 [PUSH] ❌ Registration failed:', error);
+    if (__DEV__) console.log('[PUSH] Registration failed:', error);
   }
 }

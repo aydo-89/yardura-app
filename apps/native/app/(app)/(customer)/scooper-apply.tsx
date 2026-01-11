@@ -19,6 +19,7 @@ import { router } from 'expo-router';
 import Button from '@/components/ui/Button';
 import ChoiceChip from '@/components/ui/ChoiceChip';
 import Screen from '@/components/ui/Screen';
+import StatePicker from '@/components/ui/StatePicker';
 import Switch from '@/components/ui/ThemedSwitch';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -197,6 +198,7 @@ export default function ScooperApplyScreen() {
 
   const [homeAddress, setHomeAddress] = useState('');
   const [homeCity, setHomeCity] = useState('');
+  const [homeState, setHomeState] = useState('');
   const [homeZip, setHomeZip] = useState('');
   const [homeLocation, setHomeLocation] = useState<LatLng | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -221,6 +223,9 @@ export default function ScooperApplyScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showLiveTiles, setShowLiveTiles] = useState(true);
+  const [showWaitlistTiles, setShowWaitlistTiles] = useState(false);
+  const [showTileNames, setShowTileNames] = useState(false);
 
   const loadTiles = useCallback(async () => {
     setTilesLoading(true);
@@ -265,17 +270,13 @@ export default function ScooperApplyScreen() {
     });
   }, [tiles]);
 
+  const DEFAULT_RADIUS_MILES = 25; // Show tiles within 25 miles by default
+
   const tileRows = useMemo(() => {
     const query = tileSearch.trim().toLowerCase();
+    const isSearching = query.length > 0;
+
     return tiles
-      .filter((tile) => {
-        if (!query) return true;
-        return (
-          tile.name.toLowerCase().includes(query) ||
-          tile.cities.some((city) => city.toLowerCase().includes(query)) ||
-          tile.zips.some((zip) => zip.includes(query))
-        );
-      })
       .map((tile) => {
         const selection = tileSelections[tile.slug] ?? buildDefaultSelection(tile);
         const distanceMiles =
@@ -287,6 +288,27 @@ export default function ScooperApplyScreen() {
           selection,
           distanceMiles,
         };
+      })
+      .filter(({ tile, distanceMiles }) => {
+        // When searching, match by name/city/zip regardless of distance
+        if (isSearching) {
+          return (
+            tile.name.toLowerCase().includes(query) ||
+            tile.cities.some((city) => city.toLowerCase().includes(query)) ||
+            tile.zips.some((zip) => zip.includes(query))
+          );
+        }
+        // When not searching, limit to nearby tiles (within default radius)
+        // If no home location set, show all tiles
+        if (!homeLocation || distanceMiles === null) return true;
+        return distanceMiles <= DEFAULT_RADIUS_MILES;
+      })
+      .sort((a, b) => {
+        // Sort by distance (nearest first), nulls last
+        if (a.distanceMiles === null && b.distanceMiles === null) return 0;
+        if (a.distanceMiles === null) return 1;
+        if (b.distanceMiles === null) return -1;
+        return a.distanceMiles - b.distanceMiles;
       });
   }, [homeLocation, tileSearch, tileSelections, tiles]);
 
@@ -295,6 +317,18 @@ export default function ScooperApplyScreen() {
       Object.values(tileSelections).filter((selection) => selection.selected),
     [tileSelections],
   );
+
+  // Filter tiles shown on map based on status toggles
+  const mapFilteredTiles = useMemo(() => {
+    return tiles.filter((tile) => {
+      // Always show selected tiles
+      if (tileSelections[tile.slug]?.selected) return true;
+      // Filter by status
+      if (tile.status === 'LIVE') return showLiveTiles;
+      if (tile.status === 'WAITLIST' || tile.status === 'DRAFT') return showWaitlistTiles;
+      return showWaitlistTiles;
+    });
+  }, [tiles, tileSelections, showLiveTiles, showWaitlistTiles]);
 
   const progressPct = Math.round(((stepIndex + 1) / STEPS.length) * 100);
 
@@ -382,7 +416,7 @@ export default function ScooperApplyScreen() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setLocationError('Location permission is required to use current position.');
+        setLocationError('Location access denied. Please enable location in Settings to use this feature.');
         return;
       }
       const current = await Location.getCurrentPositionAsync({});
@@ -391,8 +425,15 @@ export default function ScooperApplyScreen() {
         longitude: current.coords.longitude,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to read current location.';
-      setLocationError(message);
+      // Check for specific permission/authorization errors
+      const errMessage = err instanceof Error ? err.message : '';
+      if (errMessage.includes('Not authorized') || errMessage.includes('permission')) {
+        setLocationError('Location access not authorized. Please enable location permissions in your device Settings.');
+      } else if (errMessage.includes('timeout') || errMessage.includes('unavailable')) {
+        setLocationError('Unable to get your location. Please try again or enter your address manually.');
+      } else {
+        setLocationError('Could not access location. Please enter your address manually.');
+      }
     } finally {
       setLocationLoading(false);
     }
@@ -410,15 +451,25 @@ export default function ScooperApplyScreen() {
     setLocationLoading(true);
     setLocationError(null);
     try {
+      // Request location permission first (required for geocoding on some platforms)
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationError('Location permission required for address lookup. Please enable in Settings.');
+        return;
+      }
       const results = await Location.geocodeAsync(address);
       if (!results.length) {
-        setLocationError('We could not find that address.');
+        setLocationError('We could not find that address. Please check and try again.');
         return;
       }
       setHomeLocation({ latitude: results[0].latitude, longitude: results[0].longitude });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to locate that address.';
-      setLocationError(message);
+      const errMessage = err instanceof Error ? err.message : '';
+      if (errMessage.includes('Not authorized') || errMessage.includes('permission')) {
+        setLocationError('Location access required for address lookup. Please enable in Settings.');
+      } else {
+        setLocationError('Could not look up that address. Please check the address and try again.');
+      }
     } finally {
       setLocationLoading(false);
     }
@@ -473,6 +524,16 @@ export default function ScooperApplyScreen() {
       if (!name.trim() || !email.trim()) {
         return 'Name and email are required.';
       }
+      // Validate ZIP code format if provided
+      const zip = homeZip.trim();
+      if (zip && !/^\d{5}$/.test(zip)) {
+        return 'ZIP code must be exactly 5 digits (e.g., 12345).';
+      }
+      // Validate state format if provided
+      const state = homeState.trim().toUpperCase();
+      if (state && state.length !== 2) {
+        return 'State must be 2-letter abbreviation (e.g., CA, TX).';
+      }
     }
     if (index === 1) {
       if (selectedTiles.length === 0) {
@@ -509,22 +570,35 @@ export default function ScooperApplyScreen() {
   };
 
   const handleSubmit = async () => {
-    const validation = validateStep(3);
-    if (validation) {
-      setError(validation);
-      return;
+    // Validate all steps before submission
+    for (let i = 0; i <= 3; i++) {
+      const validation = validateStep(i);
+      if (validation) {
+        setError(validation);
+        return;
+      }
     }
     setSubmitting(true);
     setError(null);
     try {
       const licenseState = driversLicenseState.trim().toUpperCase();
       const licenseLast4 = driversLicenseLast4.trim();
+
+      // Sanitize ZIP code - only send if exactly 5 digits
+      const sanitizedZip = homeZip.trim();
+      const validZip = /^\d{5}$/.test(sanitizedZip) ? sanitizedZip : undefined;
+
+      // Sanitize state - only send if exactly 2 chars
+      const sanitizedState = homeState.trim().toUpperCase();
+      const validState = sanitizedState.length === 2 ? sanitizedState : undefined;
+
       const mappedAvailability = selectedTiles.flatMap((entry) =>
         entry.weekdays.map((weekday) => ({
           tileSlug: entry.slug,
           weekday,
           window: entry.window,
-          maxStops: entry.maxStops.trim() ? Number(entry.maxStops) : undefined,
+          // maxStops now regulated by tier, use default if not set
+          maxStops: entry.maxStops?.trim() ? Number(entry.maxStops) : undefined,
         })),
       );
 
@@ -538,7 +612,8 @@ export default function ScooperApplyScreen() {
           insuranceProofUrl: insuranceProofUrl.trim() || undefined,
           homeBaseAddress: homeAddress.trim() || undefined,
           homeBaseCity: homeCity.trim() || undefined,
-          homeBaseZip: homeZip.trim() || undefined,
+          homeBaseState: validState,
+          homeBaseZip: validZip,
           location: homeLocation
             ? { lat: homeLocation.latitude, lng: homeLocation.longitude }
             : undefined,
@@ -552,16 +627,43 @@ export default function ScooperApplyScreen() {
           canLift,
           backgroundConsent,
           termsConsent,
-          driversLicenseState: licenseState || undefined,
-          driversLicenseLast4: licenseLast4.length === 4 ? licenseLast4 : undefined,
+          driversLicenseState: licenseState.length === 2 ? licenseState : undefined,
+          driversLicenseLast4: /^\d{4}$/.test(licenseLast4) ? licenseLast4 : undefined,
           emergencyContactName: emergencyContactName.trim() || undefined,
           emergencyContactPhone: emergencyContactPhone.trim() || undefined,
           emergencyContactRelation: emergencyContactRelation.trim() || undefined,
         },
       });
       setSuccess(true);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to submit application.';
+    } catch (err: unknown) {
+      // Extract detailed error message from ApiError
+      let message = 'Unable to submit application.';
+      if (err instanceof Error) {
+        message = err.message;
+        // Check for ApiError with details payload
+        if ('details' in err) {
+          const payload = (err as { details?: unknown }).details;
+          if (payload && typeof payload === 'object') {
+            // API returns { error: "validation_error", details: { fieldErrors, formErrors } }
+            const nested = (payload as { details?: unknown }).details;
+            if (nested && typeof nested === 'object') {
+              const { fieldErrors, formErrors } = nested as {
+                fieldErrors?: Record<string, string[]>;
+                formErrors?: string[];
+              };
+              if (formErrors?.length) {
+                message = formErrors[0];
+              } else if (fieldErrors) {
+                const firstField = Object.entries(fieldErrors)[0];
+                if (firstField) {
+                  const [field, errors] = firstField;
+                  message = `${field}: ${errors?.[0] ?? 'Invalid value'}`;
+                }
+              }
+            }
+          }
+        }
+      }
       setError(message);
     } finally {
       setSubmitting(false);
@@ -663,36 +765,81 @@ export default function ScooperApplyScreen() {
                   <TextInput
                     placeholder="City"
                     placeholderTextColor={palette.muted}
-                    style={[styles.input, styles.inlineInput, { color: palette.text, borderColor: palette.border }]}
+                    style={[styles.input, styles.inlineInputFlex, { color: palette.text, borderColor: palette.border }]}
                     value={homeCity}
                     onChangeText={setHomeCity}
                   />
+                  <StatePicker value={homeState} onSelect={setHomeState} />
                   <TextInput
                     placeholder="Zip"
                     placeholderTextColor={palette.muted}
-                    style={[styles.input, styles.inlineInput, { color: palette.text, borderColor: palette.border }]}
+                    style={[styles.input, styles.inlineInputSmall, { color: palette.text, borderColor: palette.border }]}
                     value={homeZip}
                     onChangeText={setHomeZip}
                     keyboardType="number-pad"
                     maxLength={5}
                   />
                 </View>
-                <View style={styles.inlineRow}>
-                  <Button
-                    title={locationLoading ? 'Locating...' : 'Use current location'}
+                <View style={styles.locationButtonsColumn}>
+                  <Pressable
                     onPress={handleUseCurrentLocation}
-                    variant="secondary"
-                    style={styles.halfButton}
-                  />
-                  <Button
-                    title="Find on map"
+                    disabled={locationLoading}
+                    style={[
+                      styles.locationButtonWide,
+                      { backgroundColor: palette.card, borderColor: palette.border },
+                      locationLoading && styles.locationButtonDisabled,
+                    ]}
+                  >
+                    <View style={[styles.locationButtonIcon, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                      <FontAwesome
+                        name={locationLoading ? 'spinner' : 'crosshairs'}
+                        size={18}
+                        color={Colors.brand.mint}
+                      />
+                    </View>
+                    <View style={styles.locationButtonText}>
+                      <Text style={[styles.locationButtonTitle, { color: palette.text }]}>
+                        {locationLoading ? 'Locating...' : 'Use my current location'}
+                      </Text>
+                      <Text style={[styles.locationButtonSubtitle, { color: palette.muted }]}>
+                        Detect via GPS
+                      </Text>
+                    </View>
+                    <FontAwesome name="chevron-right" size={12} color={palette.muted} />
+                  </Pressable>
+
+                  <Pressable
                     onPress={handleGeocodeHomeBase}
-                    variant="secondary"
-                    style={styles.halfButton}
-                  />
+                    disabled={locationLoading || (!homeAddress.trim() && !homeCity.trim() && !homeZip.trim())}
+                    style={[
+                      styles.locationButtonWide,
+                      { backgroundColor: palette.card, borderColor: palette.border },
+                      (locationLoading || (!homeAddress.trim() && !homeCity.trim() && !homeZip.trim())) && styles.locationButtonDisabled,
+                    ]}
+                  >
+                    <View style={[styles.locationButtonIcon, { backgroundColor: `${palette.tint}15` }]}>
+                      <FontAwesome name="search" size={18} color={palette.tint} />
+                    </View>
+                    <View style={styles.locationButtonText}>
+                      <Text style={[styles.locationButtonTitle, { color: palette.text }]}>
+                        Look up entered address
+                      </Text>
+                      <Text style={[styles.locationButtonSubtitle, { color: palette.muted }]}>
+                        Find coordinates from address above
+                      </Text>
+                    </View>
+                    <FontAwesome name="chevron-right" size={12} color={palette.muted} />
+                  </Pressable>
                 </View>
                 {locationError ? (
-                  <Text style={[styles.helperText, { color: palette.danger }]}>{locationError}</Text>
+                  <View style={styles.locationErrorContainer}>
+                    <Text style={[styles.helperText, { color: palette.danger }]}>{locationError}</Text>
+                    {locationError.includes('Settings') ? (
+                      <Pressable onPress={() => Linking.openSettings()}>
+                        <Text style={[styles.linkText, { color: palette.tint }]}>Open Settings</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
                 ) : null}
               </View>
 
@@ -715,6 +862,47 @@ export default function ScooperApplyScreen() {
                     ))}
                   </View>
                 </View>
+                <View style={styles.mapFiltersRow}>
+                  <Pressable
+                    onPress={() => setShowLiveTiles(!showLiveTiles)}
+                    style={[
+                      styles.filterChip,
+                      { borderColor: showLiveTiles ? Colors.brand.mint : palette.border },
+                      showLiveTiles && { backgroundColor: `${Colors.brand.mint}15` },
+                    ]}
+                  >
+                    <View style={[styles.filterDot, { backgroundColor: Colors.brand.mint }]} />
+                    <Text style={[styles.filterChipText, { color: showLiveTiles ? Colors.brand.mint : palette.muted }]}>
+                      Live
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setShowWaitlistTiles(!showWaitlistTiles)}
+                    style={[
+                      styles.filterChip,
+                      { borderColor: showWaitlistTiles ? Colors.brand.gold : palette.border },
+                      showWaitlistTiles && { backgroundColor: `${Colors.brand.gold}15` },
+                    ]}
+                  >
+                    <View style={[styles.filterDot, { backgroundColor: Colors.brand.gold }]} />
+                    <Text style={[styles.filterChipText, { color: showWaitlistTiles ? Colors.brand.gold : palette.muted }]}>
+                      Waitlist
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setShowTileNames(!showTileNames)}
+                    style={[
+                      styles.filterChip,
+                      { borderColor: showTileNames ? palette.tint : palette.border },
+                      showTileNames && { backgroundColor: `${palette.tint}15` },
+                    ]}
+                  >
+                    <FontAwesome name="tag" size={10} color={showTileNames ? palette.tint : palette.muted} />
+                    <Text style={[styles.filterChipText, { color: showTileNames ? palette.tint : palette.muted }]}>
+                      Names
+                    </Text>
+                  </Pressable>
+                </View>
                 <View style={styles.mapWrapper}>
                   <MapView
                     ref={mapRef}
@@ -723,8 +911,9 @@ export default function ScooperApplyScreen() {
                     mapType={Platform.OS === 'ios' ? (colorScheme === 'dark' ? 'mutedStandard' : 'standard') : 'standard'}
                     customMapStyle={colorScheme === 'dark' ? DARK_MAP_STYLE : []}
                     initialRegion={mapRegion}
+                    showsCompass={true}
                   >
-                    {tiles.map((tile) => {
+                    {mapFilteredTiles.map((tile) => {
                       const selection = tileSelections[tile.slug];
                       const baseColor = resolveStatusTone(tile.status);
                       const fillColor = selection?.selected
@@ -736,12 +925,28 @@ export default function ScooperApplyScreen() {
                           coordinates={polygon}
                           strokeColor={baseColor}
                           fillColor={fillColor}
-                          strokeWidth={selection?.selected ? 2 : 1}
+                          strokeWidth={Platform.OS === 'android' ? (selection?.selected ? 3 : 2) : (selection?.selected ? 2 : 1)}
                           tappable
                           onPress={() => handleToggleTile(tile.slug)}
                         />
                       ));
                     })}
+                    {showTileNames && mapFilteredTiles.map((tile) =>
+                      tile.center ? (
+                        <Marker
+                          key={`label-${tile.slug}`}
+                          coordinate={{ latitude: tile.center.latitude, longitude: tile.center.longitude }}
+                          anchor={{ x: 0.5, y: 0.5 }}
+                          tracksViewChanges={false}
+                        >
+                          <View style={[styles.tileLabel, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                            <Text style={[styles.tileLabelText, { color: palette.text }]} numberOfLines={1}>
+                              {tile.name}
+                            </Text>
+                          </View>
+                        </Marker>
+                      ) : null
+                    )}
                     {homeLocation ? (
                       <Marker coordinate={homeLocation} title="Home base" />
                     ) : null}
@@ -843,14 +1048,6 @@ export default function ScooperApplyScreen() {
                             />
                           ))}
                         </View>
-                        <TextInput
-                          placeholder="Max stops (optional)"
-                          placeholderTextColor={palette.muted}
-                          style={[styles.input, { color: palette.text, borderColor: palette.border }]}
-                          value={tile.maxStops}
-                          onChangeText={(value) => handleMaxStopsChange(tile.slug, value)}
-                          keyboardType="number-pad"
-                        />
                       </View>
                     ) : null}
                   </View>
@@ -1126,6 +1323,12 @@ const styles = StyleSheet.create({
   inlineInput: {
     flex: 1,
   },
+  inlineInputFlex: {
+    flex: 2,
+  },
+  inlineInputSmall: {
+    width: 70,
+  },
   halfButton: {
     flex: 1,
   },
@@ -1294,5 +1497,92 @@ const styles = StyleSheet.create({
   successBody: {
     fontSize: 13,
     textAlign: 'center',
+  },
+  locationButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  locationButtonsColumn: {
+    flexDirection: 'column',
+    gap: 10,
+  },
+  locationButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  locationButtonWide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  locationButtonDisabled: {
+    opacity: 0.5,
+  },
+  locationErrorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  locationButtonIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationButtonText: {
+    flex: 1,
+    gap: 2,
+  },
+  locationButtonTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  locationButtonSubtitle: {
+    fontSize: 11,
+  },
+  mapFiltersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  filterDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tileLabel: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    maxWidth: 120,
+  },
+  tileLabelText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

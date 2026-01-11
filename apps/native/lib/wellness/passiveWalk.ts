@@ -2,7 +2,9 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Location from 'expo-location';
 
+import { logWarn } from '@/lib/logger';
 import { getJson, removeItem, setJson } from '@/lib/storage';
+import { getWalkPreferences, isNearHome, type WalkPreferences } from './walkPreferences';
 
 export const PASSIVE_WALK_TASK = 'insightscoop-passive-walk';
 const PASSIVE_WALK_STATE_KEY = 'insightscoop_passive_walk_state';
@@ -66,7 +68,7 @@ const getTaskManager = () => {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       TaskManager = require('expo-task-manager');
     } catch (error) {
-      console.warn('[walk-passive] TaskManager unavailable', error);
+      logWarn('walk-passive.TaskManager.unavailable', error);
       return null;
     }
   }
@@ -81,7 +83,7 @@ const getNotifications = () => {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       Notifications = require('expo-notifications');
     } catch (error) {
-      console.warn('[walk-passive] Notifications unavailable', error);
+      logWarn('walk-passive.Notifications.unavailable', error);
       return null;
     }
   }
@@ -227,14 +229,32 @@ const scheduleNotification = async (pending: PassiveWalkPending) => {
 const processLocations = async (
   locations: Location.LocationObject[],
   state: PassiveWalkState,
-): Promise<{ session: PassiveWalkSession | null; pending: PassiveWalkPending | null; notifiedAt?: string | null }> => {
+  preferences: WalkPreferences,
+): Promise<{ session: PassiveWalkSession | null; pending: PassiveWalkPending | null; notifiedAt?: string | null; skipped?: boolean }> => {
   let session = state.session ?? null;
   let pending: PassiveWalkPending | null = null;
+
+  // Check if tracking is disabled
+  if (preferences.mode === 'disabled') {
+    return { session: null, pending: null, skipped: true };
+  }
 
   for (const location of locations) {
     const coords = location.coords;
     if (!coords) continue;
     if (coords.accuracy != null && coords.accuracy > MAX_ACCURACY_METERS) continue;
+
+    // Check "near home" mode - skip locations that are not near home
+    if (preferences.mode === 'near_home' && preferences.homeLocation) {
+      const currentPos = { latitude: coords.latitude, longitude: coords.longitude };
+      if (!isNearHome(currentPos, preferences)) {
+        // Not near home - clear any existing session and skip
+        if (session) {
+          session = null;
+        }
+        continue;
+      }
+    }
 
     const point: WalkPoint = {
       lat: coords.latitude,
@@ -300,7 +320,7 @@ const definePassiveWalkTask = () => {
 
   taskManager.defineTask(PASSIVE_WALK_TASK, async ({ data, error }) => {
     if (error) {
-      console.warn('[walk-passive] task error', error);
+      logWarn('walk-passive.task.error', error);
       return;
     }
     const payload = data as { locations?: Location.LocationObject[] } | null;
@@ -313,10 +333,18 @@ const definePassiveWalkTask = () => {
       };
     if (!state.enabled) return;
 
+    // Get walk preferences to check tracking mode
+    const preferences = await getWalkPreferences();
+    if (preferences.mode === 'disabled') return;
+
     const pendingExisting = await getJson<PassiveWalkPending>(PASSIVE_WALK_PENDING_KEY);
     if (pendingExisting) return;
 
-    const { session, pending } = await processLocations(locations, state);
+    const { session, pending, skipped } = await processLocations(locations, state, preferences);
+
+    // If skipped due to preferences, don't update state
+    if (skipped) return;
+
     const nextState: PassiveWalkState = {
       enabled: true,
       session,
@@ -326,7 +354,8 @@ const definePassiveWalkTask = () => {
     if (pending) {
       const lastNotifiedAt = state.lastNotifiedAt ? new Date(state.lastNotifiedAt).getTime() : 0;
       const now = Date.now();
-      if (!lastNotifiedAt || now - lastNotifiedAt > NOTIFY_COOLDOWN_MS) {
+      const shouldNotify = preferences.showNotifications && (!lastNotifiedAt || now - lastNotifiedAt > NOTIFY_COOLDOWN_MS);
+      if (shouldNotify) {
         await setJson(PASSIVE_WALK_PENDING_KEY, pending);
         await scheduleNotification(pending);
         nextState.lastNotifiedAt = new Date().toISOString();

@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { ApiError, apiRequest } from '@/lib/api/client';
+import { logWarn } from '@/lib/logger';
 import { setJson } from '@/lib/storage';
 import { parseDateInput } from '@/lib/dates';
 import { isHaulAwayMode } from '@/lib/scooper/disposal';
@@ -57,13 +58,13 @@ export function isSameLocalDay(value?: string | null, compareDate: Date = new Da
 }
 
 function parseCheckDate(value: string) {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return parseDateInput(value);
+  // Always extract just the date portion and parse at noon local time
+  // to avoid timezone edge cases where midnight UTC becomes the previous day
+  const datePartMatch = /^(\d{4}-\d{2}-\d{2})/.exec(value);
+  if (datePartMatch) {
+    return parseDateInput(datePartMatch[1]);
   }
-  const direct = new Date(value);
-  if (!Number.isNaN(direct.getTime())) {
-    return direct;
-  }
+  // Fallback for non-standard formats
   return parseDateInput(value);
 }
 
@@ -304,7 +305,7 @@ export function useRoutePlan(): UseRoutePlanReturn {
           { token: session.token },
         );
       } catch (todayError) {
-        console.warn('[scooper.route] Unable to load today route plan', todayError);
+        logWarn('scooper.route.today.failed', todayError);
       }
       const normalizedToday = todayData?.visits?.length ? todayData : null;
       setRoutePlan(data);

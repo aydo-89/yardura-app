@@ -150,7 +150,8 @@ export default function WellnessUpgradeScreen() {
   };
 
   const openScooping = () => {
-    Linking.openURL('https://www.getinsightscoop.com/quote?businessId=yardura').catch(() => null);
+    // Navigate to in-app service signup flow
+    router.push('/(app)/(customer)/service-signup' as any);
   };
 
   return (

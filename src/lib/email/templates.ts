@@ -1605,3 +1605,287 @@ export function buildCustomerEmailReportEmail(
 
   return { html, text };
 }
+
+// =============================================================================
+// Scooper Background Check & Certification Status Emails
+// =============================================================================
+
+export interface BackgroundCheckEmailOptions {
+  toName?: string | null;
+  status: "PASSED" | "FAILED";
+  scooperName: string;
+  completedAt: Date;
+  dashboardUrl?: string;
+  failureReason?: string | null;
+}
+
+export function buildBackgroundCheckEmail(
+  options: BackgroundCheckEmailOptions,
+): ActionEmailResult {
+  const { toName, status, scooperName, completedAt, dashboardUrl, failureReason } = options;
+  const greeting = deriveGreetingName(toName, undefined);
+  const completedDate = format(completedAt, "MMMM d, yyyy");
+
+  const isPassed = status === "PASSED";
+
+  const bodyHtml = isPassed
+    ? `
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Hi ${greeting},</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Great news! Your background check has been completed and approved. You're one step closer to earning with InsightScoop.</p>
+    <div style="margin:0 0 24px;padding:18px;border:1px solid rgba(25,180,163,0.25);border-radius:18px;background-color:#F0FDFA;">
+      ${renderKeyValueTable([
+        { label: "Scooper", value: escapeHtml(scooperName), emphasis: true },
+        { label: "Status", value: "Passed ✓" },
+        { label: "Completed", value: escapeHtml(completedDate) },
+      ])}
+    </div>
+    <div style="margin:0 0 24px;padding:18px;border:1px solid rgba(255,194,77,0.35);border-radius:18px;background-color:#FFF8E7;">
+      <h3 style="margin:0 0 10px;color:${BRAND.ink};font-size:16px;">What happens next</h3>
+      ${renderList([
+        "Your certification status will be updated shortly.",
+        "Once fully certified, you'll receive route assignments.",
+        "Earnings and job opportunities unlock in the app.",
+      ])}
+    </div>
+    ${dashboardUrl ? renderPrimaryButton("View your dashboard", dashboardUrl) : ""}
+  `
+    : `
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Hi ${greeting},</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Unfortunately, your background check did not pass our requirements at this time.</p>
+    <div style="margin:0 0 24px;padding:18px;border:1px solid rgba(243,100,91,0.25);border-radius:18px;background-color:#FEF2F2;">
+      ${renderKeyValueTable([
+        { label: "Scooper", value: escapeHtml(scooperName), emphasis: true },
+        { label: "Status", value: "Not passed" },
+        { label: "Reviewed", value: escapeHtml(completedDate) },
+        ...(failureReason ? [{ label: "Notes", value: escapeHtml(failureReason) }] : []),
+      ])}
+    </div>
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${BRAND.subdued};">If you believe this is an error or have questions about the decision, please reply to this email and our team will review your case.</p>
+  `;
+
+  const html = renderEmailLayout({
+    previewText: isPassed
+      ? "Your background check passed! You're cleared to scoop."
+      : "Update on your InsightScoop background check",
+    heroEyebrow: "Background check update",
+    heroTitle: isPassed ? "You're cleared!" : "Background check update",
+    heroSubtitle: isPassed
+      ? "Your background check has been approved."
+      : "We have an update on your application.",
+    heroAccent: isPassed ? "mint" : "coral",
+    bodyHtml,
+  });
+
+  const text = isPassed
+    ? [
+        `Hi ${greeting},`,
+        "",
+        "Great news! Your background check has been completed and approved.",
+        "",
+        `Scooper: ${scooperName}`,
+        "Status: Passed",
+        `Completed: ${completedDate}`,
+        "",
+        "What happens next:",
+        "- Your certification status will be updated shortly.",
+        "- Once fully certified, you'll receive route assignments.",
+        "- Earnings and job opportunities unlock in the app.",
+        "",
+        dashboardUrl ? `View dashboard: ${dashboardUrl}` : "",
+        "",
+        "— The InsightScoop Team",
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : [
+        `Hi ${greeting},`,
+        "",
+        "Unfortunately, your background check did not pass our requirements at this time.",
+        "",
+        `Scooper: ${scooperName}`,
+        "Status: Not passed",
+        `Reviewed: ${completedDate}`,
+        failureReason ? `Notes: ${failureReason}` : "",
+        "",
+        "If you believe this is an error, please reply to this email.",
+        "",
+        "— The InsightScoop Team",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+  return { html, text };
+}
+
+export interface CertificationStatusEmailOptions {
+  toName?: string | null;
+  scooperName: string;
+  certificationType: string;
+  status: "ACTIVE" | "REVOKED" | "EXPIRED";
+  issuedAt?: Date | null;
+  expiresAt?: Date | null;
+  dashboardUrl?: string;
+  revocationReason?: string | null;
+}
+
+export function buildCertificationStatusEmail(
+  options: CertificationStatusEmailOptions,
+): ActionEmailResult {
+  const {
+    toName,
+    scooperName,
+    certificationType,
+    status,
+    issuedAt,
+    expiresAt,
+    dashboardUrl,
+    revocationReason,
+  } = options;
+  const greeting = deriveGreetingName(toName, undefined);
+  const issuedDate = issuedAt ? format(issuedAt, "MMMM d, yyyy") : null;
+  const expiresDate = expiresAt ? format(expiresAt, "MMMM d, yyyy") : null;
+
+  const certTypeName = certificationType
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  let bodyHtml: string;
+  let previewText: string;
+  let heroTitle: string;
+  let heroSubtitle: string;
+  let heroAccent: HeroAccent;
+
+  if (status === "ACTIVE") {
+    previewText = `You're certified! ${certTypeName} certification is now active.`;
+    heroTitle = "You're certified!";
+    heroSubtitle = `Your ${certTypeName} certification is now active.`;
+    heroAccent = "mint";
+    bodyHtml = `
+      <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Hi ${greeting},</p>
+      <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Congratulations! Your ${certTypeName} certification has been approved and is now active. You're ready to start earning with InsightScoop!</p>
+      <div style="margin:0 0 24px;padding:18px;border:1px solid rgba(25,180,163,0.25);border-radius:18px;background-color:#F0FDFA;">
+        ${renderKeyValueTable([
+          { label: "Scooper", value: escapeHtml(scooperName), emphasis: true },
+          { label: "Certification", value: escapeHtml(certTypeName) },
+          { label: "Status", value: "Active ✓" },
+          ...(issuedDate ? [{ label: "Issued", value: escapeHtml(issuedDate) }] : []),
+          ...(expiresDate ? [{ label: "Expires", value: escapeHtml(expiresDate) }] : []),
+        ])}
+      </div>
+      <div style="margin:0 0 24px;padding:18px;border:1px solid rgba(255,194,77,0.35);border-radius:18px;background-color:#FFF8E7;">
+        <h3 style="margin:0 0 10px;color:${BRAND.ink};font-size:16px;">You're ready to scoop!</h3>
+        ${renderList([
+          "Open the app to view available routes.",
+          "Accept jobs that fit your schedule.",
+          "Complete visits and start earning.",
+        ])}
+      </div>
+      ${dashboardUrl ? renderPrimaryButton("View available routes", dashboardUrl) : ""}
+    `;
+  } else if (status === "REVOKED") {
+    previewText = `Your ${certTypeName} certification has been revoked.`;
+    heroTitle = "Certification update";
+    heroSubtitle = `Your ${certTypeName} certification status has changed.`;
+    heroAccent = "coral";
+    bodyHtml = `
+      <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Hi ${greeting},</p>
+      <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">We're writing to inform you that your ${certTypeName} certification has been revoked.</p>
+      <div style="margin:0 0 24px;padding:18px;border:1px solid rgba(243,100,91,0.25);border-radius:18px;background-color:#FEF2F2;">
+        ${renderKeyValueTable([
+          { label: "Scooper", value: escapeHtml(scooperName), emphasis: true },
+          { label: "Certification", value: escapeHtml(certTypeName) },
+          { label: "Status", value: "Revoked" },
+          ...(revocationReason ? [{ label: "Reason", value: escapeHtml(revocationReason) }] : []),
+        ])}
+      </div>
+      <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${BRAND.subdued};">This means you will not be able to accept new routes until the issue is resolved. If you have questions or believe this was in error, please reply to this email.</p>
+    `;
+  } else {
+    // EXPIRED
+    previewText = `Your ${certTypeName} certification has expired.`;
+    heroTitle = "Certification expired";
+    heroSubtitle = `Your ${certTypeName} certification needs renewal.`;
+    heroAccent = "gold";
+    bodyHtml = `
+      <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Hi ${greeting},</p>
+      <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${BRAND.subdued};">Your ${certTypeName} certification has expired and needs to be renewed to continue scooping.</p>
+      <div style="margin:0 0 24px;padding:18px;border:1px solid rgba(255,194,77,0.35);border-radius:18px;background-color:#FFF8E7;">
+        ${renderKeyValueTable([
+          { label: "Scooper", value: escapeHtml(scooperName), emphasis: true },
+          { label: "Certification", value: escapeHtml(certTypeName) },
+          { label: "Status", value: "Expired" },
+          ...(expiresDate ? [{ label: "Expired on", value: escapeHtml(expiresDate) }] : []),
+        ])}
+      </div>
+      <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${BRAND.subdued};">To continue earning with InsightScoop, please complete the renewal process. Reply to this email if you need assistance.</p>
+      ${dashboardUrl ? renderPrimaryButton("Start renewal", dashboardUrl) : ""}
+    `;
+  }
+
+  const html = renderEmailLayout({
+    previewText,
+    heroEyebrow: "Certification update",
+    heroTitle,
+    heroSubtitle,
+    heroAccent,
+    bodyHtml,
+  });
+
+  let textLines: string[];
+  if (status === "ACTIVE") {
+    textLines = [
+      `Hi ${greeting},`,
+      "",
+      `Congratulations! Your ${certTypeName} certification is now active.`,
+      "",
+      `Scooper: ${scooperName}`,
+      `Certification: ${certTypeName}`,
+      "Status: Active",
+      issuedDate ? `Issued: ${issuedDate}` : "",
+      expiresDate ? `Expires: ${expiresDate}` : "",
+      "",
+      "You're ready to scoop! Open the app to view available routes.",
+      "",
+      dashboardUrl ? `View routes: ${dashboardUrl}` : "",
+      "",
+      "— The InsightScoop Team",
+    ];
+  } else if (status === "REVOKED") {
+    textLines = [
+      `Hi ${greeting},`,
+      "",
+      `Your ${certTypeName} certification has been revoked.`,
+      "",
+      `Scooper: ${scooperName}`,
+      `Certification: ${certTypeName}`,
+      "Status: Revoked",
+      revocationReason ? `Reason: ${revocationReason}` : "",
+      "",
+      "Reply to this email if you have questions.",
+      "",
+      "— The InsightScoop Team",
+    ];
+  } else {
+    textLines = [
+      `Hi ${greeting},`,
+      "",
+      `Your ${certTypeName} certification has expired.`,
+      "",
+      `Scooper: ${scooperName}`,
+      `Certification: ${certTypeName}`,
+      "Status: Expired",
+      expiresDate ? `Expired on: ${expiresDate}` : "",
+      "",
+      "Please complete the renewal process to continue earning.",
+      "",
+      dashboardUrl ? `Start renewal: ${dashboardUrl}` : "",
+      "",
+      "— The InsightScoop Team",
+    ];
+  }
+
+  const text = textLines.filter(Boolean).join("\n");
+
+  return { html, text };
+}

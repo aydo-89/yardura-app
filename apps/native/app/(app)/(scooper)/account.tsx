@@ -705,27 +705,30 @@ export default function ScooperAccount() {
             ) : (
               <>
                 <Text style={[styles.standingMainStat, { color: palette.text }]}>{strikeLabel}</Text>
+                <Text style={[styles.helperText, { color: palette.muted, marginBottom: 8 }]}>
+                  Release limits (used / allowed per period)
+                </Text>
                 <View style={styles.standingLimits}>
                   <View style={[styles.limitItem, { backgroundColor: palette.background }]}>
-                    <FontAwesome name="clock-o" size={12} color={palette.muted} />
-                    <Text style={[styles.limitLabel, { color: palette.muted }]}>Late</Text>
+                    <FontAwesome name="clock-o" size={14} color={palette.muted} />
                     <Text style={[styles.limitValue, { color: palette.text }]}>
                       {strikeSummary?.lateReleaseCount ?? 0}/{strikeSummary?.lateReleaseLimit ?? 0}
                     </Text>
+                    <Text style={[styles.limitLabel, { color: palette.muted }]}>Late release</Text>
                   </View>
                   <View style={[styles.limitItem, { backgroundColor: palette.background }]}>
-                    <FontAwesome name="forward" size={12} color={palette.muted} />
-                    <Text style={[styles.limitLabel, { color: palette.muted }]}>Early</Text>
+                    <FontAwesome name="forward" size={14} color={palette.muted} />
                     <Text style={[styles.limitValue, { color: palette.text }]}>
                       {strikeSummary?.earlyReleaseCount ?? 0}/{strikeSummary?.earlyReleaseLimit ?? 0}
                     </Text>
+                    <Text style={[styles.limitLabel, { color: palette.muted }]}>Early release</Text>
                   </View>
                   <View style={[styles.limitItem, { backgroundColor: palette.background }]}>
-                    <FontAwesome name="briefcase" size={12} color={palette.muted} />
-                    <Text style={[styles.limitLabel, { color: palette.muted }]}>Jobs</Text>
+                    <FontAwesome name="briefcase" size={14} color={palette.muted} />
                     <Text style={[styles.limitValue, { color: palette.text }]}>
                       {strikeSummary?.jobReleaseCount ?? 0}/{strikeSummary?.jobReleaseLimit ?? 0}
                     </Text>
+                    <Text style={[styles.limitLabel, { color: palette.muted }]}>Job release</Text>
                   </View>
                 </View>
                 {strikeWindowLabel ? (
@@ -1153,20 +1156,19 @@ const styles = StyleSheet.create({
   },
   limitItem: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
   },
   limitLabel: {
-    fontSize: 11,
-    flex: 1,
+    fontSize: 10,
+    textAlign: 'center',
   },
   limitValue: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   standingAction: {
     flexDirection: 'row',

@@ -21,6 +21,8 @@ type WalkStatsCardProps = {
   onPause: () => void;
   onResume: () => void;
   onFinish: () => void;
+  disabled?: boolean;
+  disabledMessage?: string;
 };
 
 export default function WalkStatsCard({
@@ -36,6 +38,8 @@ export default function WalkStatsCard({
   onPause,
   onResume,
   onFinish,
+  disabled,
+  disabledMessage,
 }: WalkStatsCardProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
@@ -104,9 +108,13 @@ export default function WalkStatsCard({
       {/* Action buttons */}
       <View style={styles.actions}>
         {isIdle && (
-          <Pressable style={[styles.startButton, { backgroundColor: palette.tint }]} onPress={onStart}>
+          <Pressable
+            style={[styles.startButton, { backgroundColor: disabled ? palette.muted : palette.tint }]}
+            onPress={onStart}
+            disabled={disabled}
+          >
             <FontAwesome name="play" size={16} color="#FFFFFF" />
-            <Text style={styles.startButtonText}>Start walk</Text>
+            <Text style={styles.startButtonText}>{disabled ? 'Limit reached' : 'Start walk'}</Text>
           </Pressable>
         )}
 
@@ -142,8 +150,10 @@ export default function WalkStatsCard({
 
       {/* Helper text */}
       {isIdle && (
-        <Text style={[styles.helperText, { color: palette.muted }]}>
-          Keep the app open while tracking for the most accurate route.
+        <Text style={[styles.helperText, { color: disabled ? palette.danger : palette.muted }]}>
+          {disabled && disabledMessage
+            ? disabledMessage
+            : 'Keep the app open while tracking for the most accurate route.'}
         </Text>
       )}
     </View>

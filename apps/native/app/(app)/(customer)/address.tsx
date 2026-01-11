@@ -107,7 +107,7 @@ export default function CustomerAddressScreen() {
             <Button title="Back" variant="ghost" onPress={() => router.back()} />
           </View>
           <Text style={[styles.subtitle, { color: palette.muted }]}>
-            Add your home address to power the poop map, weather alerts, and service scheduling.
+            Add your home address to power the yard map, weather alerts, and service scheduling.
           </Text>
 
           <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
@@ -193,7 +193,7 @@ export default function CustomerAddressScreen() {
                 />
                 {saved ? (
                   <Text style={[styles.successText, { color: palette.tint }]}>
-                    Address saved. Your poop map will update shortly.
+                    Address saved. Your yard map will update shortly.
                   </Text>
                 ) : null}
               </>

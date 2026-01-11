@@ -346,7 +346,7 @@ export default function WellnessPoopMapScreen() {
             <FontAwesome name="map-marker" size={28} color="#fff" />
           </View>
           <View style={styles.heroContent}>
-            <Text style={styles.heroTitle}>Poop Map</Text>
+            <Text style={styles.heroTitle}>Yard Map</Text>
             <Text style={styles.heroSubtitle}>
               Track yard patterns from owner captures and scooper visits
             </Text>
@@ -456,6 +456,7 @@ export default function WellnessPoopMapScreen() {
               customMapStyle={colorScheme === 'dark' ? DARK_MAP_STYLE : []}
               onMapReady={() => setMapReady(true)}
               onPress={() => setSelectedPointId(null)}
+              showsCompass={true}
             >
               {parcelPolygons.map((polygon, index) => (
                 <Polygon

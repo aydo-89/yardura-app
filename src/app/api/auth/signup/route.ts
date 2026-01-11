@@ -47,22 +47,14 @@ export async function POST(request: NextRequest) {
 
     const emailPrefix = normalizedEmail.split("@")[0];
 
-    // Create a personal organization for the user
-    const organization = await prisma.org.create({
-      data: {
-        name: `${name || emailPrefix}'s Yardura Service`,
-        slug: `${emailPrefix}-${Date.now()}`.toLowerCase(),
-      },
-    });
-
-    // Create the user account with organization association
+    // Create the user account with default yardura organization
     const user = await prisma.user.create({
       data: {
         name: name || emailPrefix, // Use email prefix if no name provided
         email: normalizedEmail,
         role: UserRole.CUSTOMER,
         roles: [UserRole.CUSTOMER],
-        orgId: organization.id,
+        orgId: "yardura", // Default to yardura org for multi-tenancy
         accounts: {
           create: {
             type: "credentials",

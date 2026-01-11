@@ -38,12 +38,13 @@ export default async function JobDetailPage({
     redirect(`/signin?callbackUrl=/admin/jobs/${jobId}`);
   }
 
-  const orgId = (session.user as any)?.orgId ?? null;
+  // Default to "yardura" org - supports multi-tenancy while keeping a sensible default
+  const orgId = (session.user as any)?.orgId || "yardura";
 
   const job = await prisma.job.findFirst({
     where: {
       id: jobId,
-      ...(orgId ? { orgId } : {}),
+      orgId,
     },
     include: {
       customer: {

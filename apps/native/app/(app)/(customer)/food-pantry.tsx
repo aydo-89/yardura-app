@@ -191,7 +191,7 @@ export default function FoodPantryScreen() {
   const placeholders = useMemo(() => getPlaceholders(editType), [editType]);
 
   const heroBackground =
-    colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
+    colorScheme === 'light' ? Colors.brand.graphite : '#1E293B';
 
   return (
     <Screen>
@@ -361,6 +361,9 @@ export default function FoodPantryScreen() {
                 />
               ))}
             </View>
+            <Text style={[styles.typeHint, { color: palette.muted }]}>
+              {TYPE_OPTIONS.find((o) => o.value === editType)?.examples}
+            </Text>
           </View>
 
           {/* Dog */}
@@ -749,6 +752,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 10,
+  },
+  typeHint: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: -4,
   },
   input: {
     borderWidth: 1,

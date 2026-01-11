@@ -14,6 +14,7 @@ import Colors from '@/constants/Colors';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { getJson } from '@/lib/storage';
 import { ThemePreferenceProvider } from '@/lib/theme/ThemePreferenceProvider';
+import { requestTrackingPermission } from '@/lib/tracking/att';
 import { syncPassiveWalkDetection } from '@/lib/wellness/passiveWalk';
 
 export {
@@ -118,6 +119,17 @@ function RootLayoutNav() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
     syncPassiveWalkDetection().catch(() => null);
+  }, []);
+
+  // Request App Tracking Transparency permission on iOS (required for App Store)
+  // This should be called after splash screen is hidden
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    // Slight delay to ensure app is fully rendered before showing ATT prompt
+    const timeout = setTimeout(() => {
+      requestTrackingPermission().catch(() => null);
+    }, 1000);
+    return () => clearTimeout(timeout);
   }, []);
 
   useEffect(() => {

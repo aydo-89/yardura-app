@@ -73,6 +73,9 @@ export async function GET(request: NextRequest) {
       vetName: true,
       vetPhone: true,
       vetClinic: true,
+      insuranceProvider: true,
+      insurancePolicyNumber: true,
+      insurancePhone: true,
       customerId: true,
       photoUrl: true,
     },
@@ -116,6 +119,9 @@ const dogSchema = z.object({
   vetName: z.string().trim().max(200).nullable().optional(),
   vetPhone: z.string().trim().max(50).nullable().optional(),
   vetClinic: z.string().trim().max(200).nullable().optional(),
+  insuranceProvider: z.string().trim().max(200).nullable().optional(),
+  insurancePolicyNumber: z.string().trim().max(100).nullable().optional(),
+  insurancePhone: z.string().trim().max(50).nullable().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -201,6 +207,9 @@ export async function POST(request: NextRequest) {
       vetName: parsed.data.vetName ?? null,
       vetPhone: parsed.data.vetPhone ?? null,
       vetClinic: parsed.data.vetClinic ?? null,
+      insuranceProvider: parsed.data.insuranceProvider ?? null,
+      insurancePolicyNumber: parsed.data.insurancePolicyNumber ?? null,
+      insurancePhone: parsed.data.insurancePhone ?? null,
       userId,
       customerId: customer.id,
     },
@@ -216,6 +225,9 @@ export async function POST(request: NextRequest) {
       vetName: true,
       vetPhone: true,
       vetClinic: true,
+      insuranceProvider: true,
+      insurancePolicyNumber: true,
+      insurancePhone: true,
       photoUrl: true,
     },
   });
@@ -240,6 +252,9 @@ const updateSchema = z.object({
   vetName: z.string().trim().max(200).nullable().optional(),
   vetPhone: z.string().trim().max(50).nullable().optional(),
   vetClinic: z.string().trim().max(200).nullable().optional(),
+  insuranceProvider: z.string().trim().max(200).nullable().optional(),
+  insurancePolicyNumber: z.string().trim().max(100).nullable().optional(),
+  insurancePhone: z.string().trim().max(50).nullable().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -315,6 +330,9 @@ export async function PATCH(request: NextRequest) {
       vetName: parsed.data.vetName ?? undefined,
       vetPhone: parsed.data.vetPhone ?? undefined,
       vetClinic: parsed.data.vetClinic ?? undefined,
+      insuranceProvider: parsed.data.insuranceProvider ?? undefined,
+      insurancePolicyNumber: parsed.data.insurancePolicyNumber ?? undefined,
+      insurancePhone: parsed.data.insurancePhone ?? undefined,
       customerId: customer.id,
     },
     select: {
@@ -329,6 +347,9 @@ export async function PATCH(request: NextRequest) {
       vetName: true,
       vetPhone: true,
       vetClinic: true,
+      insuranceProvider: true,
+      insurancePolicyNumber: true,
+      insurancePhone: true,
       photoUrl: true,
     },
   });

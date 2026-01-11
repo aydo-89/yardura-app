@@ -16,6 +16,7 @@ import MapView, { Marker, Polygon, PROVIDER_GOOGLE, type LatLng } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as Device from 'expo-device';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import Button from '@/components/ui/Button';
 import Screen from '@/components/ui/Screen';
@@ -103,9 +104,19 @@ const WEEKDAY_LABELS: Record<number, string> = {
 const STATUS_LABELS: Record<ServiceTileStatus, string> = {
   LIVE: 'Live',
   WAITLIST: 'Waitlist',
-  DRAFT: 'Draft',
+  DRAFT: 'Waitlist', // DRAFT treated as Waitlist in UI
   SUSPENDED: 'Paused',
 };
+
+const STATUS_COLORS: Record<ServiceTileStatus, string> = {
+  LIVE: Colors.brand.mint,
+  WAITLIST: Colors.brand.gold,
+  DRAFT: Colors.brand.gold, // DRAFT uses same color as Waitlist
+  SUSPENDED: '#EF4444',
+};
+
+const MAX_DISTANCE_MILES = 25;
+const METERS_PER_MILE = 1609.34;
 
 const DEFAULT_WEEKDAYS = ALL_WEEKDAYS;
 const FALLBACK_REGION = {
@@ -223,6 +234,9 @@ export default function ScooperAvailability() {
   const [isMapExpanded, setMapExpanded] = useState(false);
   const [fullMapReady, setFullMapReady] = useState(false);
   const fullMapRef = useRef<MapView | null>(null);
+  const [showLiveTiles, setShowLiveTiles] = useState(true);
+  const [showWaitlistTiles, setShowWaitlistTiles] = useState(true);
+  const [showTileNames, setShowTileNames] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!session?.token) return;
@@ -580,13 +594,27 @@ export default function ScooperAvailability() {
         };
       const distance =
         location && tile.center ? haversineMeters(location, tile.center) : null;
+      const distanceMiles = distance !== null ? distance / METERS_PER_MILE : null;
       return {
         tile,
         selection,
         distance,
+        distanceMiles,
       };
     });
-    rows.sort((a, b) => {
+
+    // Filter by distance when location is available
+    const filtered = location
+      ? rows.filter((row) => {
+          // Always show selected tiles
+          if (row.selection?.selected) return true;
+          // Filter unselected tiles by distance
+          return row.distanceMiles !== null && row.distanceMiles <= MAX_DISTANCE_MILES;
+        })
+      : rows;
+
+    // Sort: selected first, then by distance
+    filtered.sort((a, b) => {
       if (a.selection?.selected && !b.selection?.selected) return -1;
       if (!a.selection?.selected && b.selection?.selected) return 1;
       if (a.distance === null || b.distance === null) {
@@ -594,8 +622,21 @@ export default function ScooperAvailability() {
       }
       return a.distance - b.distance;
     });
-    return rows;
+
+    return filtered;
   }, [tiles, selections, location]);
+
+  // Group tiles by status for section headers
+  const groupedTiles = useMemo(() => {
+    const selected = tileRows.filter((row) => row.selection?.selected);
+    const live = tileRows.filter((row) => !row.selection?.selected && row.tile.status === 'LIVE');
+    const waitlist = tileRows.filter((row) => !row.selection?.selected && row.tile.status === 'WAITLIST');
+    const other = tileRows.filter(
+      (row) => !row.selection?.selected && row.tile.status !== 'LIVE' && row.tile.status !== 'WAITLIST'
+    );
+
+    return { selected, live, waitlist, other };
+  }, [tileRows]);
 
   const mapPadding = useMemo(
     () => ({
@@ -647,6 +688,18 @@ export default function ScooperAvailability() {
   const focusedFillColor =
     colorScheme === 'light' ? 'rgba(25, 180, 163, 0.22)' : 'rgba(243, 100, 91, 0.24)';
 
+  // Filter tiles shown on map based on status toggles
+  const mapFilteredTiles = useMemo(() => {
+    return tiles.filter((tile) => {
+      // Always show selected tiles
+      if (selections[tile.slug]?.selected) return true;
+      // Filter by status
+      if (tile.status === 'LIVE') return showLiveTiles;
+      if (tile.status === 'WAITLIST' || tile.status === 'DRAFT') return showWaitlistTiles;
+      return showWaitlistTiles; // Other statuses follow waitlist toggle
+    });
+  }, [tiles, selections, showLiveTiles, showWaitlistTiles]);
+
   const renderMap = () => {
     if (Platform.OS === 'web') {
       return (
@@ -670,8 +723,9 @@ export default function ScooperAvailability() {
         onLayout={handleMapLayout}
         showsUserLocation={Boolean(location)}
         showsMyLocationButton={Boolean(location)}
+        showsCompass={true}
       >
-        {tiles.map((tile) =>
+        {mapFilteredTiles.map((tile) =>
           tile.polygons.map((polygon, index) => {
             const isFocused = focusedSlug === tile.slug;
             const isSelected = selections[tile.slug]?.selected;
@@ -691,17 +745,125 @@ export default function ScooperAvailability() {
                 coordinates={polygon}
                 strokeColor={strokeColor}
                 fillColor={fillColor}
-                strokeWidth={2}
+                strokeWidth={Platform.OS === 'android' ? 3 : 2}
                 tappable
                 onPress={() => focusTile(tile.slug)}
               />
             );
           }),
         )}
+        {showTileNames && mapFilteredTiles.map((tile) =>
+          tile.center ? (
+            <Marker
+              key={`label-${tile.slug}`}
+              coordinate={{ latitude: tile.center.latitude, longitude: tile.center.longitude }}
+              anchor={{ x: 0.5, y: 0.5 }}
+              tracksViewChanges={false}
+            >
+              <View style={[styles.tileLabel, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                <Text style={[styles.tileLabelText, { color: palette.text }]} numberOfLines={1}>
+                  {tile.name}
+                </Text>
+              </View>
+            </Marker>
+          ) : null
+        )}
         {location ? (
           <Marker coordinate={location} title="You" pinColor={palette.accent} />
         ) : null}
       </MapView>
+    );
+  };
+
+  const renderTileCard = ({ tile, selection, distanceMiles }: typeof tileRows[0]) => {
+    const isSelected = selection?.selected ?? false;
+    const isFocused = focusedSlug === tile.slug;
+    const distanceLabel = distanceMiles !== null ? `${distanceMiles.toFixed(1)} mi` : null;
+    const cityLabel = tile.cities.length > 0 ? tile.cities.slice(0, 2).join(', ') : 'Service area';
+    const defaultMaxStops = tile.status === 'LIVE' ? 20 : 10;
+    const weekdayLabel = selection ? formatWeekdaySummary(selection.weekdays) : null;
+    const windowLabel = selection ? formatWindowSummary(selection.window) : null;
+    const isFullWeek = selection ? isFullWeekSelection(selection.weekdays) : false;
+    const isFullSchedule =
+      isSelected &&
+      isFullWeek &&
+      selection?.window === 'FULL' &&
+      (selection?.maxStops ?? defaultMaxStops) === defaultMaxStops;
+    const hasCustomSchedule = isSelected && !isFullSchedule;
+    const scheduleSummary = !isSelected
+      ? 'Turn on to receive offers'
+      : isFullSchedule
+        ? 'All offers enabled'
+        : `${weekdayLabel ?? 'Selected days'} • ${windowLabel ?? 'Window'}`;
+    const statusColor = STATUS_COLORS[tile.status];
+
+    return (
+      <View
+        key={tile.slug}
+        style={[
+          styles.tileCard,
+          isFocused ? styles.cardFocused : null,
+          {
+            backgroundColor: palette.card,
+            borderColor: isFocused ? palette.accent : palette.border,
+          },
+        ]}
+      >
+        <View style={styles.tileHeader}>
+          <View style={styles.tileHeaderRow}>
+            <Pressable
+              onPress={() => focusTile(tile.slug, { scroll: true })}
+              style={styles.tileHeaderCopy}
+            >
+              <Text style={[styles.tileName, { color: palette.text }]}>{tile.name}</Text>
+              <View style={styles.tileBadges}>
+                <View style={[styles.statusBadge, { backgroundColor: `${statusColor}15` }]}>
+                  <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                  <Text style={[styles.statusBadgeText, { color: statusColor }]}>
+                    {STATUS_LABELS[tile.status]}
+                  </Text>
+                </View>
+                {distanceLabel ? (
+                  <View style={[styles.distanceBadge, { backgroundColor: `${palette.muted}15` }]}>
+                    <FontAwesome name="map-marker" size={10} color={palette.muted} />
+                    <Text style={[styles.distanceBadgeText, { color: palette.muted }]}>
+                      {distanceLabel}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </Pressable>
+            <Button
+              title={isSelected ? 'On' : 'Off'}
+              onPress={() => toggleTile(tile.slug, !isSelected)}
+              variant={isSelected ? 'primary' : 'secondary'}
+              style={styles.toggleButton}
+            />
+          </View>
+          <Text style={[styles.tileCity, { color: palette.muted }]}>{cityLabel}</Text>
+          <View style={styles.tileActionsRow}>
+            <Pressable
+              onPress={() => focusTile(tile.slug, { scroll: true })}
+              style={[styles.viewOnMapButton, { borderColor: palette.border }]}
+            >
+              <FontAwesome name="map-o" size={12} color={palette.tint} />
+              <Text style={[styles.viewOnMapText, { color: palette.tint }]}>Map</Text>
+            </Pressable>
+            {isSelected ? (
+              <Pressable
+                onPress={() => openScheduleSheet(tile.slug)}
+                style={[styles.scheduleButton, { borderColor: palette.border }]}
+              >
+                <FontAwesome name="calendar" size={12} color={palette.text} />
+                <Text style={[styles.scheduleButtonText, { color: palette.text }]}>
+                  {hasCustomSchedule ? 'Edit' : 'Schedule'}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+          <Text style={[styles.tileSummaryText, { color: palette.muted }]}>{scheduleSummary}</Text>
+        </View>
+      </View>
     );
   };
 
@@ -743,6 +905,47 @@ export default function ScooperAvailability() {
                 labelStyle={styles.mapHeaderCtaLabel}
               />
             </View>
+          </View>
+          <View style={styles.mapFiltersRow}>
+            <Pressable
+              onPress={() => setShowLiveTiles(!showLiveTiles)}
+              style={[
+                styles.filterChip,
+                { borderColor: showLiveTiles ? Colors.brand.mint : palette.border },
+                showLiveTiles && { backgroundColor: `${Colors.brand.mint}15` },
+              ]}
+            >
+              <View style={[styles.filterDot, { backgroundColor: Colors.brand.mint }]} />
+              <Text style={[styles.filterChipText, { color: showLiveTiles ? Colors.brand.mint : palette.muted }]}>
+                Live
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowWaitlistTiles(!showWaitlistTiles)}
+              style={[
+                styles.filterChip,
+                { borderColor: showWaitlistTiles ? Colors.brand.gold : palette.border },
+                showWaitlistTiles && { backgroundColor: `${Colors.brand.gold}15` },
+              ]}
+            >
+              <View style={[styles.filterDot, { backgroundColor: Colors.brand.gold }]} />
+              <Text style={[styles.filterChipText, { color: showWaitlistTiles ? Colors.brand.gold : palette.muted }]}>
+                Waitlist
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowTileNames(!showTileNames)}
+              style={[
+                styles.filterChip,
+                { borderColor: showTileNames ? palette.tint : palette.border },
+                showTileNames && { backgroundColor: `${palette.tint}15` },
+              ]}
+            >
+              <FontAwesome name="tag" size={10} color={showTileNames ? palette.tint : palette.muted} />
+              <Text style={[styles.filterChipText, { color: showTileNames ? palette.tint : palette.muted }]}>
+                Names
+              </Text>
+            </Pressable>
           </View>
           <View style={styles.mapContainer} onLayout={handleMapLayout}>
             {renderMap()}
@@ -795,106 +998,92 @@ export default function ScooperAvailability() {
 
         {tileRows.length === 0 && !loading ? (
           <View style={[styles.card, styles.cardShadow, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <Text style={[styles.cardTitle, { color: palette.text }]}>No tiles yet</Text>
-            <Text style={[styles.cardBody, { color: palette.muted }]}>
-              New service areas will appear once operations publishes tiles for your region.
+            <View style={styles.emptyStateIconWrap}>
+              <FontAwesome name="map-o" size={32} color={palette.muted} />
+            </View>
+            <Text style={[styles.cardTitle, { color: palette.text, textAlign: 'center' }]}>
+              {location ? 'No tiles nearby' : 'No tiles yet'}
+            </Text>
+            <Text style={[styles.cardBody, { color: palette.muted, textAlign: 'center' }]}>
+              {location
+                ? `No service areas within ${MAX_DISTANCE_MILES} miles of your location. More tiles may be added soon.`
+                : 'New service areas will appear once operations publishes tiles for your region.'}
             </Text>
           </View>
         ) : (
-          tileRows.map(({ tile, selection, distance }) => {
-            const isSelected = selection?.selected ?? false;
-            const isFocused = focusedSlug === tile.slug;
-            const distanceMiles =
-              distance !== null ? `${(distance / 1609.34).toFixed(1)} mi away` : null;
-            const cityLabel =
-              tile.cities.length > 0 ? tile.cities.slice(0, 2).join(', ') : 'Service area';
-            const defaultMaxStops = tile.status === 'LIVE' ? 20 : 10;
-            const weekdayLabel = selection ? formatWeekdaySummary(selection.weekdays) : null;
-            const windowLabel = selection ? formatWindowSummary(selection.window) : null;
-            const isFullWeek = selection ? isFullWeekSelection(selection.weekdays) : false;
-            const isFullSchedule =
-              isSelected &&
-              isFullWeek &&
-              selection?.window === 'FULL' &&
-              (selection?.maxStops ?? defaultMaxStops) === defaultMaxStops;
-            const hasCustomSchedule = isSelected && !isFullSchedule;
-            const scheduleSummary = !isSelected
-              ? 'Off • Turn on to receive offers from this tile.'
-              : isFullSchedule
-                ? 'All offers enabled'
-                : `${weekdayLabel ?? 'Selected days'} • ${windowLabel ?? 'Window set'}${selection?.maxStops ? ` • Max ${selection.maxStops} stops/day` : ''}`;
-            return (
-              <View
-                key={tile.slug}
-                style={[
-                  styles.card,
-                  styles.cardShadow,
-                  isFocused ? styles.cardFocused : null,
-                  {
-                    backgroundColor: palette.card,
-                    borderColor: isFocused ? palette.accent : palette.border,
-                  },
-                ]}
-              >
-                <View style={styles.tileHeader}>
-                  <View style={styles.tileHeaderRow}>
-                    <Pressable
-                      onPress={() => focusTile(tile.slug, { scroll: true })}
-                      style={styles.tileHeaderCopy}
-                    >
-                      <View style={styles.tileTitleRow}>
-                        <Text style={[styles.cardTitle, { color: palette.text }]}>
-                          {tile.name}
-                        </Text>
-                        <View style={[styles.statusPill, { borderColor: palette.border }]}>
-                          <Text style={[styles.statusText, { color: palette.muted }]}>
-                            {STATUS_LABELS[tile.status]}
-                          </Text>
-                        </View>
-                      </View>
-                    </Pressable>
-                    <Button
-                      title={isSelected ? 'On' : 'Off'}
-                      onPress={() => toggleTile(tile.slug, !isSelected)}
-                      variant={isSelected ? 'primary' : 'secondary'}
-                      style={styles.toggleButton}
-                    />
+          <>
+            {/* Your Active Tiles */}
+            {groupedTiles.selected.length > 0 ? (
+              <View style={styles.sectionContainer}>
+                <View style={styles.sectionHeader}>
+                  <View style={[styles.sectionIconWrap, { backgroundColor: `${palette.tint}15` }]}>
+                    <FontAwesome name="check-circle" size={16} color={palette.tint} />
                   </View>
-                  <View style={styles.tileMetaRow}>
-                    <Text style={[styles.cardBody, { color: palette.muted }]}>{cityLabel}</Text>
-                    {distanceMiles ? (
-                      <Text style={[styles.cardMeta, { color: palette.muted }]}>
-                        {distanceMiles}
-                      </Text>
-                    ) : null}
+                  <View style={styles.sectionHeaderText}>
+                    <Text style={[styles.sectionTitle, { color: palette.text }]}>Your Active Tiles</Text>
+                    <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
+                      {groupedTiles.selected.length} tile{groupedTiles.selected.length !== 1 ? 's' : ''} enabled
+                    </Text>
                   </View>
-                  <View style={styles.tileActionsRow}>
-                    <Pressable
-                      onPress={() => focusTile(tile.slug, { scroll: true })}
-                      style={[styles.viewOnMapButton, { borderColor: palette.border }]}
-                    >
-                      <Text style={[styles.viewOnMapText, { color: palette.tint }]}>
-                        View on map
-                      </Text>
-                    </Pressable>
-                    {isSelected ? (
-                      <Pressable
-                        onPress={() => openScheduleSheet(tile.slug)}
-                        style={[styles.scheduleButton, { borderColor: palette.border }]}
-                      >
-                        <Text style={[styles.scheduleButtonText, { color: palette.text }]}>
-                          {hasCustomSchedule ? 'Edit schedule' : 'Set schedule'}
-                        </Text>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                  <Text style={[styles.tileSummaryText, { color: palette.muted }]}>
-                    {scheduleSummary}
-                  </Text>
                 </View>
+                {groupedTiles.selected.map((row) => renderTileCard(row))}
               </View>
-            );
-          })
+            ) : null}
+
+            {/* Live Tiles */}
+            {groupedTiles.live.length > 0 ? (
+              <View style={styles.sectionContainer}>
+                <View style={styles.sectionHeader}>
+                  <View style={[styles.sectionIconWrap, { backgroundColor: `${Colors.brand.mint}15` }]}>
+                    <FontAwesome name="bolt" size={16} color={Colors.brand.mint} />
+                  </View>
+                  <View style={styles.sectionHeaderText}>
+                    <Text style={[styles.sectionTitle, { color: palette.text }]}>Live in Your Area</Text>
+                    <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
+                      Active tiles accepting offers now
+                    </Text>
+                  </View>
+                </View>
+                {groupedTiles.live.map((row) => renderTileCard(row))}
+              </View>
+            ) : null}
+
+            {/* Waitlist Tiles */}
+            {groupedTiles.waitlist.length > 0 ? (
+              <View style={styles.sectionContainer}>
+                <View style={styles.sectionHeader}>
+                  <View style={[styles.sectionIconWrap, { backgroundColor: `${Colors.brand.gold}15` }]}>
+                    <FontAwesome name="clock-o" size={16} color={Colors.brand.gold} />
+                  </View>
+                  <View style={styles.sectionHeaderText}>
+                    <Text style={[styles.sectionTitle, { color: palette.text }]}>Waitlist</Text>
+                    <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
+                      Coming soon to your area
+                    </Text>
+                  </View>
+                </View>
+                {groupedTiles.waitlist.map((row) => renderTileCard(row))}
+              </View>
+            ) : null}
+
+            {/* Other Tiles (Draft/Suspended) */}
+            {groupedTiles.other.length > 0 ? (
+              <View style={styles.sectionContainer}>
+                <View style={styles.sectionHeader}>
+                  <View style={[styles.sectionIconWrap, { backgroundColor: `${palette.muted}15` }]}>
+                    <FontAwesome name="map" size={16} color={palette.muted} />
+                  </View>
+                  <View style={styles.sectionHeaderText}>
+                    <Text style={[styles.sectionTitle, { color: palette.text }]}>Other Areas</Text>
+                    <Text style={[styles.sectionSubtitle, { color: palette.muted }]}>
+                      Not currently active
+                    </Text>
+                  </View>
+                </View>
+                {groupedTiles.other.map((row) => renderTileCard(row))}
+              </View>
+            ) : null}
+          </>
         )}
 
         {saveMessage ? (
@@ -924,13 +1113,60 @@ export default function ScooperAvailability() {
               { paddingTop: Math.max(insets.top, 12) },
             ]}
           >
-            <View>
+            <Pressable
+              onPress={() => setMapExpanded(false)}
+              style={[styles.closeButton, { backgroundColor: palette.card, borderColor: palette.border }]}
+            >
+              <FontAwesome name="times" size={16} color={palette.text} />
+            </Pressable>
+            <View style={styles.fullMapHeaderCenter}>
               <Text style={[styles.cardTitle, { color: palette.text }]}>Coverage map</Text>
               <Text style={[styles.cardBody, { color: palette.muted }]}>
                 Pan and zoom to explore your service tiles.
               </Text>
             </View>
             <Button title="Done" variant="ghost" onPress={() => setMapExpanded(false)} />
+          </View>
+          <View style={styles.fullMapFilters}>
+            <Pressable
+              onPress={() => setShowLiveTiles(!showLiveTiles)}
+              style={[
+                styles.filterChip,
+                { borderColor: showLiveTiles ? Colors.brand.mint : palette.border },
+                showLiveTiles && { backgroundColor: `${Colors.brand.mint}15` },
+              ]}
+            >
+              <View style={[styles.filterDot, { backgroundColor: Colors.brand.mint }]} />
+              <Text style={[styles.filterChipText, { color: showLiveTiles ? Colors.brand.mint : palette.muted }]}>
+                Live
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowWaitlistTiles(!showWaitlistTiles)}
+              style={[
+                styles.filterChip,
+                { borderColor: showWaitlistTiles ? Colors.brand.gold : palette.border },
+                showWaitlistTiles && { backgroundColor: `${Colors.brand.gold}15` },
+              ]}
+            >
+              <View style={[styles.filterDot, { backgroundColor: Colors.brand.gold }]} />
+              <Text style={[styles.filterChipText, { color: showWaitlistTiles ? Colors.brand.gold : palette.muted }]}>
+                Waitlist
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowTileNames(!showTileNames)}
+              style={[
+                styles.filterChip,
+                { borderColor: showTileNames ? palette.tint : palette.border },
+                showTileNames && { backgroundColor: `${palette.tint}15` },
+              ]}
+            >
+              <FontAwesome name="tag" size={10} color={showTileNames ? palette.tint : palette.muted} />
+              <Text style={[styles.filterChipText, { color: showTileNames ? palette.tint : palette.muted }]}>
+                Names
+              </Text>
+            </Pressable>
           </View>
           <View style={styles.fullMapBody}>
             <MapView
@@ -943,8 +1179,9 @@ export default function ScooperAvailability() {
               onMapReady={handleFullMapReady}
               showsUserLocation={Boolean(location)}
               showsMyLocationButton={Boolean(location)}
+              showsCompass={true}
             >
-              {tiles.map((tile) =>
+              {mapFilteredTiles.map((tile) =>
                 tile.polygons.map((polygon, index) => {
                   const isFocused = focusedSlug === tile.slug;
                   const isSelected = selections[tile.slug]?.selected;
@@ -964,12 +1201,28 @@ export default function ScooperAvailability() {
                       coordinates={polygon}
                       strokeColor={strokeColor}
                       fillColor={fillColor}
-                      strokeWidth={2}
+                      strokeWidth={Platform.OS === 'android' ? 3 : 2}
                       tappable
                       onPress={() => focusTile(tile.slug)}
                     />
                   );
                 }),
+              )}
+              {showTileNames && mapFilteredTiles.map((tile) =>
+                tile.center ? (
+                  <Marker
+                    key={`full-label-${tile.slug}`}
+                    coordinate={{ latitude: tile.center.latitude, longitude: tile.center.longitude }}
+                    anchor={{ x: 0.5, y: 0.5 }}
+                    tracksViewChanges={false}
+                  >
+                    <View style={[styles.tileLabel, { backgroundColor: palette.card, borderColor: palette.border }]}>
+                      <Text style={[styles.tileLabelText, { color: palette.text }]} numberOfLines={1}>
+                        {tile.name}
+                      </Text>
+                    </View>
+                  </Marker>
+                ) : null
               )}
               {location ? (
                 <Marker coordinate={location} title="You" pinColor={palette.accent} />
@@ -1144,6 +1397,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   viewOnMapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 10,
@@ -1154,6 +1410,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scheduleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 10,
@@ -1194,5 +1453,141 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 12,
+  },
+  // New section styles
+  sectionContainer: {
+    marginBottom: 8,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  sectionIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeaderText: {
+    flex: 1,
+    gap: 2,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+  },
+  // Tile card styles
+  tileCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    gap: 8,
+  },
+  tileName: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  tileCity: {
+    fontSize: 13,
+  },
+  tileBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  distanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  distanceBadgeText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  emptyStateIconWrap: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  mapFiltersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  filterDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tileLabel: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    maxWidth: 120,
+  },
+  tileLabelText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullMapHeaderCenter: {
+    flex: 1,
+  },
+  fullMapFilters: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
 });

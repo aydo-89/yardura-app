@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Screen from '@/components/ui/Screen';
 import WalkMapView from '@/components/wellness/WalkMapView';
 import WalkStatsCard from '@/components/wellness/WalkStatsCard';
+import WalkTrackingSettings from '@/components/wellness/WalkTrackingSettings';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -56,6 +57,17 @@ export default function WellnessWalksScreen() {
   const hasAccess = Boolean(access);
   const isPremium =
     access?.tier === 'PREMIUM' || access?.source === 'SERVICE_PROMO' || access?.hasActiveService;
+
+  // Free users get limited walks per week
+  const FREE_WALKS_PER_WEEK = 4;
+  const freeWalksRemaining = useMemo(() => {
+    if (isPremium) return null;
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thisWeekWalks = walks.filter((w) => new Date(w.startedAt) >= weekAgo);
+    return Math.max(0, FREE_WALKS_PER_WEEK - thisWeekWalks.length);
+  }, [isPremium, walks]);
+  const canTrackWalk = isPremium || (freeWalksRemaining ?? 0) > 0;
 
   const selectedWalk = useMemo(
     () => walks.find((walk) => walk.id === selectedWalkId) ?? walks[0] ?? null,
@@ -153,10 +165,12 @@ export default function WellnessWalksScreen() {
   }, [session?.token]);
 
   const loadWalks = useCallback(async () => {
-    if (!session?.token || !isPremium) return;
+    if (!session?.token) return;
     setLoading(true);
     try {
-      const data = await apiRequest<{ walks: WellnessWalk[] }>('/api/mobile/customer/walks?limit=20', {
+      // Free users get limited history (10), premium get full (20)
+      const limit = isPremium ? 20 : 10;
+      const data = await apiRequest<{ walks: WellnessWalk[] }>(`/api/mobile/customer/walks?limit=${limit}`, {
         token: session.token,
       });
       setWalks(data.walks ?? []);
@@ -193,10 +207,8 @@ export default function WellnessWalksScreen() {
   );
 
   useEffect(() => {
-    if (isPremium) {
-      loadWalks();
-    }
-  }, [isPremium, loadWalks]);
+    loadWalks();
+  }, [loadWalks]);
 
   useEffect(() => {
     if (!hasAccess) return;
@@ -359,23 +371,29 @@ export default function WellnessWalksScreen() {
           </View>
         </View>
 
-        {!isPremium ? (
-          // Premium gate
-          <View style={[styles.premiumGate, { backgroundColor: palette.card, borderColor: palette.border }]}>
-            <View style={[styles.premiumIcon, { backgroundColor: `${Colors.brand.gold}15` }]}>
-              <FontAwesome name="star" size={28} color={Colors.brand.gold} />
+        {/* Free tier upgrade banner */}
+        {!isPremium && (
+          <Pressable
+            onPress={() => router.push('/(app)/(customer)/wellness-upgrade' as any)}
+            style={[styles.upgradeBanner, { backgroundColor: `${Colors.brand.gold}08`, borderColor: Colors.brand.gold }]}
+          >
+            <View style={[styles.upgradeBannerIcon, { backgroundColor: `${Colors.brand.gold}15` }]}>
+              <FontAwesome name="star" size={16} color={Colors.brand.gold} />
             </View>
-            <Text style={[styles.premiumTitle, { color: palette.text }]}>Premium Feature</Text>
-            <Text style={[styles.premiumSubtitle, { color: palette.muted }]}>
-              Upgrade to unlock GPS walk tracking, route history, and distance stats.
-            </Text>
-            <Button
-              title="Upgrade to Premium"
-              onPress={() => router.push('/(app)/(customer)/wellness-upgrade' as any)}
-            />
-          </View>
-        ) : (
-          <>
+            <View style={styles.upgradeBannerText}>
+              <Text style={[styles.upgradeBannerTitle, { color: palette.text }]}>
+                {freeWalksRemaining} of {FREE_WALKS_PER_WEEK} free walks left
+              </Text>
+              <Text style={[styles.upgradeBannerSubtitle, { color: palette.muted }]}>
+                Upgrade for unlimited walks + auto-detect
+              </Text>
+            </View>
+            <FontAwesome name="chevron-right" size={14} color={Colors.brand.gold} />
+          </Pressable>
+        )}
+
+        {/* Main content - available to all users */}
+        <>
             {/* Weekly Summary */}
             <View style={[styles.summaryCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
               <View style={styles.summaryHeader}>
@@ -406,8 +424,8 @@ export default function WellnessWalksScreen() {
               </View>
             </View>
 
-            {/* Pending passive walk detection */}
-            {pendingWalk && (
+            {/* Pending passive walk detection - Premium only */}
+            {isPremium && pendingWalk && (
               <View style={[styles.pendingCard, { backgroundColor: `${Colors.brand.gold}08`, borderColor: Colors.brand.gold }]}>
                 <View style={styles.pendingHeader}>
                   <View style={[styles.pendingIcon, { backgroundColor: `${Colors.brand.gold}15` }]}>
@@ -483,26 +501,39 @@ export default function WellnessWalksScreen() {
               </View>
             )}
 
-            {/* Passive walk detection toggle */}
-            <Pressable
-              onPress={() => handlePassiveToggle(!passiveEnabled)}
-              style={[styles.passiveToggleCard, { backgroundColor: palette.card, borderColor: palette.border }]}
-            >
-              <View style={[styles.passiveIcon, { backgroundColor: passiveEnabled ? `${Colors.brand.mint}15` : `${palette.muted}15` }]}>
-                <FontAwesome name="magic" size={16} color={passiveEnabled ? Colors.brand.mint : palette.muted} />
-              </View>
-              <View style={styles.passiveContent}>
-                <Text style={[styles.passiveTitle, { color: palette.text }]}>Auto-detect walks</Text>
-                <Text style={[styles.passiveDescription, { color: palette.muted }]}>
-                  Detects walking pace and prompts to confirm
-                </Text>
-              </View>
-              <View style={[styles.toggleIndicator, { backgroundColor: passiveEnabled ? Colors.brand.mint : palette.border }]}>
-                <View style={[styles.toggleDot, { transform: [{ translateX: passiveEnabled ? 14 : 0 }] }]} />
-              </View>
-            </Pressable>
-            {passiveError && !pendingWalk && (
-              <Text style={[styles.errorText, { color: palette.danger }]}>{passiveError}</Text>
+            {/* Passive walk detection toggle - Premium only */}
+            {isPremium && (
+              <>
+                <Pressable
+                  onPress={() => handlePassiveToggle(!passiveEnabled)}
+                  style={[styles.passiveToggleCard, { backgroundColor: palette.card, borderColor: palette.border }]}
+                >
+                  <View style={[styles.passiveIcon, { backgroundColor: passiveEnabled ? `${Colors.brand.mint}15` : `${palette.muted}15` }]}>
+                    <FontAwesome name="magic" size={16} color={passiveEnabled ? Colors.brand.mint : palette.muted} />
+                  </View>
+                  <View style={styles.passiveContent}>
+                    <Text style={[styles.passiveTitle, { color: palette.text }]}>Auto-detect walks</Text>
+                    <Text style={[styles.passiveDescription, { color: palette.muted }]}>
+                      Detects walking pace and prompts to confirm
+                    </Text>
+                  </View>
+                  <View style={[styles.toggleIndicator, { backgroundColor: passiveEnabled ? Colors.brand.mint : palette.border }]}>
+                    <View style={[styles.toggleDot, { transform: [{ translateX: passiveEnabled ? 14 : 0 }] }]} />
+                  </View>
+                </Pressable>
+                {passiveError && !pendingWalk && (
+                  <Text style={[styles.errorText, { color: palette.danger }]}>{passiveError}</Text>
+                )}
+              </>
+            )}
+
+            {/* Walk Tracking Settings - Premium only */}
+            {isPremium && passiveEnabled && (
+              <WalkTrackingSettings
+                colorScheme={colorScheme}
+                palette={palette}
+                isPremium={isPremium}
+              />
             )}
 
             {/* Walk stats and controls using extracted component */}
@@ -519,6 +550,8 @@ export default function WellnessWalksScreen() {
               onPause={tracking.pause}
               onResume={tracking.resume}
               onFinish={handleFinish}
+              disabled={!canTrackWalk}
+              disabledMessage="You've used all your free walks this week. Upgrade for unlimited tracking."
             />
 
             {/* Route map using extracted component */}
@@ -626,7 +659,6 @@ export default function WellnessWalksScreen() {
               </View>
             )}
           </>
-        )}
       </ScrollView>
     </Screen>
   );
@@ -940,6 +972,32 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   errorText: {
+    fontSize: 12,
+  },
+  upgradeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+  },
+  upgradeBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  upgradeBannerText: {
+    flex: 1,
+    gap: 2,
+  },
+  upgradeBannerTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  upgradeBannerSubtitle: {
     fontSize: 12,
   },
 });

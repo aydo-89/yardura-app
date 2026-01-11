@@ -47,7 +47,7 @@ const buildDueStatus = (dueDate: Date, now: Date) => {
   return { label: formatShortDate(dueDate), overdue: false, urgent: false };
 };
 
-const formatFrequency = (days: number | null) => {
+const formatFrequency = (days: number | null | undefined) => {
   if (!days) return 'One-time';
   if (days === 1) return 'Daily';
   if (days === 7) return 'Weekly';

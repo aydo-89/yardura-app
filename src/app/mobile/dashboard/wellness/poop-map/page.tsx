@@ -127,7 +127,7 @@ export default async function MobileWellnessPoopMapPage() {
           Back to wellness
         </Link>
         <div>
-          <h1 className="text-2xl font-semibold text-white">Poop map</h1>
+          <h1 className="text-2xl font-semibold text-white">Yard map</h1>
           <p className="text-sm text-slate-400">
             Visualize stool capture locations to keep a consistent routine.
           </p>

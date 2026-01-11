@@ -22,6 +22,7 @@ import {
   SCOOPER_REWARD_EVENT_POINTS,
   SCOOPER_VISIT_POINTS_CAP,
 } from "@/lib/field-tech/rewardEvents";
+import { snapToParcel, type SnapResult } from "@/lib/geo/parcelSnap";
 
 const mediaSchema = z
   .object({
@@ -79,6 +80,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       status: true,
       customerId: true,
       scheduledDate: true,
+      customer: {
+        select: {
+          latitude: true,
+          longitude: true,
+        },
+      },
     },
   });
 
@@ -86,7 +93,45 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // For stool samples (INSIGHTSCOOP), validate and snap GPS to parcel boundary
+  // Scoopers are ALWAYS on the property, so any point outside is GPS error
+  let snapResult: SnapResult | null = null;
+  let finalGpsLat = parsed.data.gpsLat;
+  let finalGpsLng = parsed.data.gpsLng;
+
   const isInsightScoop = parsed.data.assetType === VisitMediaType.INSIGHTSCOOP;
+  const hasGps = parsed.data.gpsLat !== undefined && parsed.data.gpsLng !== undefined;
+  const hasHomeCoords =
+    typeof visit.customer?.latitude === "number" &&
+    typeof visit.customer?.longitude === "number";
+
+  if (isInsightScoop && hasGps && hasHomeCoords) {
+    try {
+      snapResult = await snapToParcel(
+        parsed.data.gpsLat!,
+        parsed.data.gpsLng!,
+        visit.customer!.latitude!,
+        visit.customer!.longitude!,
+      );
+
+      // Use snapped coordinates if snapping was applied
+      if (snapResult.snapped) {
+        finalGpsLat = snapResult.lat;
+        finalGpsLng = snapResult.lng;
+        console.log(
+          `[field-tech/media] GPS snapped to parcel: ${snapResult.rawLat},${snapResult.rawLng} → ${snapResult.lat},${snapResult.lng} (${snapResult.correctionMeters}m)`,
+        );
+      } else if (snapResult.status === "too_far") {
+        // Point is too far from parcel - log warning but still save raw coordinates
+        console.warn(
+          `[field-tech/media] GPS too far from parcel (${snapResult.correctionMeters}m): ${parsed.data.gpsLat},${parsed.data.gpsLng}`,
+        );
+      }
+    } catch (error) {
+      console.warn("[field-tech/media] Parcel snap failed:", error);
+    }
+  }
+
   let stoolSampleId = parsed.data.stoolSampleId;
   if (isInsightScoop && !stoolSampleId) {
     if (parsed.data.stoolSampleView === "CROSS_SECTION") {
@@ -127,13 +172,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       capturedAt: parsed.data.capturedAt
         ? new Date(parsed.data.capturedAt)
         : undefined,
-      gpsLat: parsed.data.gpsLat,
-      gpsLng: parsed.data.gpsLng,
+      gpsLat: finalGpsLat,
+      gpsLng: finalGpsLng,
       gpsAccuracy: parsed.data.gpsAccuracy,
       notes: parsed.data.notes,
       stoolSampleId,
       stoolSampleView: parsed.data.stoolSampleView,
     });
+
+    // Store snapping metadata if GPS was corrected
+    if (snapResult && (snapResult.snapped || snapResult.status === "too_far")) {
+      try {
+        await prisma.serviceVisitMedia.update({
+          where: { id: record.id },
+          data: {
+            locationMetadata: {
+              rawLat: snapResult.rawLat,
+              rawLng: snapResult.rawLng,
+              rawAccuracy: parsed.data.gpsAccuracy ?? null,
+              snapped: snapResult.snapped,
+              wasInside: snapResult.wasInside,
+              correctionMeters: snapResult.correctionMeters,
+              snapStatus: snapResult.status,
+              parcelId: snapResult.parcel?.parcelId ?? null,
+              parcelSource: snapResult.parcel?.source ?? null,
+              correctedAt: new Date().toISOString(),
+            },
+          },
+        });
+      } catch (error) {
+        console.warn("[field-tech/media] Failed to save snap metadata:", error);
+      }
+    }
 
     if (record.gpsLat !== null && record.gpsLng !== null) {
       try {
@@ -144,10 +214,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           locationSource: "capture_gps",
         });
         if (weatherSnapshot) {
+          // Merge weather with existing locationMetadata (snap info)
+          const current = await prisma.serviceVisitMedia.findUnique({
+            where: { id: record.id },
+            select: { locationMetadata: true },
+          });
+          const existingMeta =
+            current?.locationMetadata && typeof current.locationMetadata === "object"
+              ? (current.locationMetadata as Record<string, unknown>)
+              : {};
           await prisma.serviceVisitMedia.update({
             where: { id: record.id },
             data: {
               locationMetadata: {
+                ...existingMeta,
                 weather: weatherSnapshot,
               },
             },
@@ -224,7 +304,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const refreshed = await prisma.serviceVisitMedia.findUnique({ where: { id: record.id } });
 
-    return NextResponse.json({ ok: true, media: refreshed ?? record });
+    // Include location snap info in response for client feedback
+    const locationSnap = snapResult
+      ? {
+          snapped: snapResult.snapped,
+          wasInside: snapResult.wasInside,
+          correctionMeters: snapResult.correctionMeters,
+          status: snapResult.status,
+        }
+      : null;
+
+    return NextResponse.json({
+      ok: true,
+      media: refreshed ?? record,
+      locationSnap,
+    });
   } catch (error) {
     if (error instanceof ServiceVisitMediaUnavailableError) {
       console.warn("Media storage unavailable", { visitId, userId, error });

@@ -191,3 +191,6 @@ infra/data/
 .tmp/
 *.ips
 deploy.sh
+
+# Client documents
+docs/*.pdf

@@ -1,8 +1,8 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +44,12 @@ import {
   Settings,
   Trash2,
   Search,
+  CheckSquare,
+  Square,
+  ExternalLink,
 } from "lucide-react";
+import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 interface User {
@@ -130,6 +135,34 @@ const ROLE_OPTIONS: Array<{ value: InternalRole; label: string }> = [
 const resolveRoles = (user: User) =>
   user.roles && user.roles.length > 0 ? user.roles : [user.role];
 
+const formatRoleName = (role: string) => {
+  const roleMap: Record<string, string> = {
+    ADMIN: "Admin",
+    OWNER: "Owner",
+    SALES_REP: "Sales Rep",
+    TECH: "Technician",
+    CUSTOMER: "Customer",
+  };
+  return roleMap[role] || role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const getRoleBadgeClass = (role: string) => {
+  switch (role) {
+    case "ADMIN":
+      return "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30";
+    case "OWNER":
+      return "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30";
+    case "SALES_REP":
+      return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30";
+    case "TECH":
+      return "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30";
+    case "CUSTOMER":
+      return "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-500/30";
+    default:
+      return "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-500/30";
+  }
+};
+
 const initialNewUser: {
   email: string;
   name: string;
@@ -173,11 +206,20 @@ const initialInviteUser: {
 export default function GodModePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTab = searchParams?.get("tab") || "users";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [users, setUsers] = useState<User[]>([]);
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [freePetOwners, setFreePetOwners] = useState<FreePetOwner[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [customersLoading, setCustomersLoading] = useState(true);
+
+  // Multi-select state
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set());
+  const [selectedFreePetOwnerIds, setSelectedFreePetOwnerIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [freePetOwnersLoading, setFreePetOwnersLoading] = useState(true);
   const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
   const [rolesTarget, setRolesTarget] = useState<User | null>(null);
@@ -591,6 +633,137 @@ export default function GodModePage() {
     });
   }, [freePetOwners, freePetOwnerSearchTerm]);
 
+  // Handle tab change and persist to URL
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", value);
+    window.history.replaceState({}, "", url.toString());
+  }, []);
+
+  // Toggle selection for a single item
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
+  const toggleCustomerSelection = (customerId: string) => {
+    setSelectedCustomerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(customerId)) {
+        next.delete(customerId);
+      } else {
+        next.add(customerId);
+      }
+      return next;
+    });
+  };
+
+  const toggleFreePetOwnerSelection = (ownerId: string) => {
+    setSelectedFreePetOwnerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(ownerId)) {
+        next.delete(ownerId);
+      } else {
+        next.add(ownerId);
+      }
+      return next;
+    });
+  };
+
+  // Select/deselect all in current view
+  const toggleAllUsers = () => {
+    const selectableUsers = internalUsers.filter((u) => u.email !== OWNER_EMAIL);
+    if (selectedUserIds.size === selectableUsers.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(selectableUsers.map((u) => u.id)));
+    }
+  };
+
+  const toggleAllCustomers = () => {
+    if (selectedCustomerIds.size === filteredCustomers.length) {
+      setSelectedCustomerIds(new Set());
+    } else {
+      setSelectedCustomerIds(new Set(filteredCustomers.map((c) => c.id)));
+    }
+  };
+
+  const toggleAllFreePetOwners = () => {
+    if (selectedFreePetOwnerIds.size === filteredFreePetOwners.length) {
+      setSelectedFreePetOwnerIds(new Set());
+    } else {
+      setSelectedFreePetOwnerIds(new Set(filteredFreePetOwners.map((o) => o.id)));
+    }
+  };
+
+  // Bulk delete function
+  const bulkDelete = async (type: "users" | "customers" | "free-pet-owners") => {
+    let ids: string[] = [];
+    let label = "";
+
+    if (type === "users") {
+      ids = Array.from(selectedUserIds);
+      label = `${ids.length} user${ids.length !== 1 ? "s" : ""}`;
+    } else if (type === "customers") {
+      ids = Array.from(selectedCustomerIds);
+      label = `${ids.length} customer${ids.length !== 1 ? "s" : ""}`;
+    } else if (type === "free-pet-owners") {
+      ids = Array.from(selectedFreePetOwnerIds);
+      label = `${ids.length} free pet owner${ids.length !== 1 ? "s" : ""}`;
+    }
+
+    if (ids.length === 0) {
+      toast.error("No items selected");
+      return;
+    }
+
+    if (!confirm(`Delete ${label}? This action cannot be undone!`)) {
+      return;
+    }
+
+    setBulkDeleting(true);
+    try {
+      const response = await fetch("/api/admin/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, ids }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(`Deleted ${result.deleted} item${result.deleted !== 1 ? "s" : ""}${result.failed > 0 ? ` (${result.failed} failed)` : ""}`);
+
+        // Clear selections and refresh
+        if (type === "users") {
+          setSelectedUserIds(new Set());
+          fetchUsers();
+        } else if (type === "customers") {
+          setSelectedCustomerIds(new Set());
+          fetchCustomers();
+        } else if (type === "free-pet-owners") {
+          setSelectedFreePetOwnerIds(new Set());
+          fetchFreePetOwners();
+        }
+      } else {
+        toast.error(result.error || "Bulk delete failed");
+      }
+    } catch (error) {
+      console.error("Bulk delete error:", error);
+      toast.error("Bulk delete failed");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   if (status === "loading" || usersLoading || customersLoading || freePetOwnersLoading) {
     return (
       <div className="admin-surface flex min-h-screen items-center justify-center">
@@ -705,25 +878,34 @@ export default function GodModePage() {
       </header>
 
       <main className="container mx-auto space-y-8 px-6 pb-24 pt-12">
-        <Tabs defaultValue="users" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="admin-pill-tabs w-full justify-start">
             <TabsTrigger
               value="users"
               className="admin-pill-tab flex-1"
             >
               Users
+              {selectedUserIds.size > 0 && (
+                <Badge variant="secondary" className="ml-2">{selectedUserIds.size}</Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger
               value="customers"
               className="admin-pill-tab flex-1"
             >
               Customers
+              {selectedCustomerIds.size > 0 && (
+                <Badge variant="secondary" className="ml-2">{selectedCustomerIds.size}</Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger
               value="free-owners"
               className="admin-pill-tab flex-1"
             >
               Free Pet Owners
+              {selectedFreePetOwnerIds.size > 0 && (
+                <Badge variant="secondary" className="ml-2">{selectedFreePetOwnerIds.size}</Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -735,6 +917,17 @@ export default function GodModePage() {
                   <CardDescription>Manage internal accounts and access across the platform.</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {selectedUserIds.size > 0 && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => bulkDelete("users")}
+                      disabled={bulkDeleting}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete {selectedUserIds.size} selected
+                    </Button>
+                  )}
                   <Button variant="outline" onClick={() => setCreateDialogOpen(true)}>
                     Create user
                   </Button>
@@ -756,6 +949,13 @@ export default function GodModePage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedUserIds.size > 0 && selectedUserIds.size === internalUsers.filter((u) => u.email !== OWNER_EMAIL).length}
+                            onCheckedChange={toggleAllUsers}
+                            aria-label="Select all users"
+                          />
+                        </TableHead>
                         <TableHead>User</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Activity</TableHead>
@@ -766,7 +966,18 @@ export default function GodModePage() {
                     <TableBody>
                       {internalUsers.length ? (
                         internalUsers.map((user) => (
-                          <TableRow key={user.id}>
+                          <TableRow key={user.id} className={selectedUserIds.has(user.id) ? "bg-slate-50 dark:bg-slate-800/50" : ""}>
+                            <TableCell>
+                              {user.email !== OWNER_EMAIL ? (
+                                <Checkbox
+                                  checked={selectedUserIds.has(user.id)}
+                                  onCheckedChange={() => toggleUserSelection(user.id)}
+                                  aria-label={`Select ${user.name || user.email}`}
+                                />
+                              ) : (
+                                <div className="w-4" />
+                              )}
+                            </TableCell>
                             <TableCell>
                               <div className="font-medium text-slate-900 dark:text-slate-100">{user.name || user.email}</div>
                               <div className="text-xs text-slate-500 dark:text-slate-400">{user.email}</div>
@@ -774,12 +985,12 @@ export default function GodModePage() {
                             <TableCell>
                               <div className="flex flex-wrap items-center gap-2">
                                 {resolveRoles(user).map((role) => (
-                                  <Badge
+                                  <span
                                     key={`${user.id}-${role}`}
-                                    variant={role === "ADMIN" || role === "OWNER" ? "default" : "secondary"}
+                                    className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${getRoleBadgeClass(role)}`}
                                   >
-                                    {role}
-                                  </Badge>
+                                    {formatRoleName(role)}
+                                  </span>
                                 ))}
                                 {user.orgId ? <Badge variant="outline">{user.orgId}</Badge> : null}
                               </div>
@@ -797,6 +1008,16 @@ export default function GodModePage() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  asChild
+                                >
+                                  <Link href={`/admin/users/${user.id}`}>
+                                    <ExternalLink className="mr-1 h-3 w-3" />
+                                    View
+                                  </Link>
+                                </Button>
                                 {!resolveRoles(user).includes("ADMIN") ? (
                                   <Button
                                     size="sm"
@@ -837,7 +1058,7 @@ export default function GodModePage() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={5} className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                          <TableCell colSpan={6} className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                             No users found.
                           </TableCell>
                         </TableRow>
@@ -864,6 +1085,17 @@ export default function GodModePage() {
                   </CardDescription>
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[20rem] sm:flex-row sm:items-center">
+                  {selectedCustomerIds.size > 0 && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => bulkDelete("customers")}
+                      disabled={bulkDeleting}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete {selectedCustomerIds.size}
+                    </Button>
+                  )}
                   <div className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm focus-within:border-slate-400 dark:border-slate-700 dark:bg-slate-900">
                     <Search className="h-4 w-4 text-slate-400 dark:text-slate-500" aria-hidden="true" />
                     <Input
@@ -888,6 +1120,13 @@ export default function GodModePage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedCustomerIds.size > 0 && selectedCustomerIds.size === filteredCustomers.length}
+                            onCheckedChange={toggleAllCustomers}
+                            aria-label="Select all customers"
+                          />
+                        </TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Subscriptions</TableHead>
@@ -906,7 +1145,14 @@ export default function GodModePage() {
                           );
 
                           return (
-                            <TableRow key={customer.id}>
+                            <TableRow key={customer.id} className={selectedCustomerIds.has(customer.id) ? "bg-slate-50 dark:bg-slate-800/50" : ""}>
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedCustomerIds.has(customer.id)}
+                                  onCheckedChange={() => toggleCustomerSelection(customer.id)}
+                                  aria-label={`Select ${customer.name || customer.email || customer.id}`}
+                                />
+                              </TableCell>
                               <TableCell>
                                 <div className="font-medium text-slate-900 dark:text-slate-100">
                                   {customer.name || "Untitled"}
@@ -940,28 +1186,40 @@ export default function GodModePage() {
                                 {new Date(customer.createdAt).toLocaleDateString()}
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="gap-2"
-                                  onClick={() =>
-                                    deleteCustomer(
-                                      customer.id,
-                                      customer.name || customer.email || customer.id,
-                                    )
-                                  }
-                                  disabled={deletingCustomerId === customer.id}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  {deletingCustomerId === customer.id ? "Deleting…" : "Delete"}
-                                </Button>
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    asChild
+                                  >
+                                    <Link href={`/admin/customers/${customer.id}`}>
+                                      <ExternalLink className="mr-1 h-3 w-3" />
+                                      View
+                                    </Link>
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="gap-2"
+                                    onClick={() =>
+                                      deleteCustomer(
+                                        customer.id,
+                                        customer.name || customer.email || customer.id,
+                                      )
+                                    }
+                                    disabled={deletingCustomerId === customer.id}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    {deletingCustomerId === customer.id ? "Deleting…" : "Delete"}
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
                         })
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                          <TableCell colSpan={7} className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                             {customerSearchTerm.trim()
                               ? "No customers matched your search."
                               : "No customers available."}
@@ -990,6 +1248,17 @@ export default function GodModePage() {
                   </CardDescription>
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[20rem] sm:flex-row sm:items-center">
+                  {selectedFreePetOwnerIds.size > 0 && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => bulkDelete("free-pet-owners")}
+                      disabled={bulkDeleting}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete {selectedFreePetOwnerIds.size}
+                    </Button>
+                  )}
                   <div className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm focus-within:border-slate-400 dark:border-slate-700 dark:bg-slate-900">
                     <Search className="h-4 w-4 text-slate-400 dark:text-slate-500" aria-hidden="true" />
                     <Input
@@ -1014,18 +1283,33 @@ export default function GodModePage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedFreePetOwnerIds.size > 0 && selectedFreePetOwnerIds.size === filteredFreePetOwners.length}
+                            onCheckedChange={toggleAllFreePetOwners}
+                            aria-label="Select all free pet owners"
+                          />
+                        </TableHead>
                         <TableHead>Owner</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead>Pets</TableHead>
                         <TableHead>Activity</TableHead>
                         <TableHead>This Month</TableHead>
                         <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredFreePetOwners.length ? (
                         filteredFreePetOwners.map((owner) => (
-                          <TableRow key={owner.id}>
+                          <TableRow key={owner.id} className={selectedFreePetOwnerIds.has(owner.id) ? "bg-slate-50 dark:bg-slate-800/50" : ""}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedFreePetOwnerIds.has(owner.id)}
+                                onCheckedChange={() => toggleFreePetOwnerSelection(owner.id)}
+                                aria-label={`Select ${owner.name || owner.email || owner.id}`}
+                              />
+                            </TableCell>
                             <TableCell>
                               <div className="font-medium text-slate-900 dark:text-slate-100">
                                 {owner.name || owner.user?.name || "Untitled"}
@@ -1080,11 +1364,36 @@ export default function GodModePage() {
                             <TableCell className="text-xs text-slate-500 dark:text-slate-400">
                               {new Date(owner.createdAt).toLocaleDateString()}
                             </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  asChild
+                                >
+                                  <Link href={`/admin/customers/${owner.id}`}>
+                                    <ExternalLink className="mr-1 h-3 w-3" />
+                                    View
+                                  </Link>
+                                </Button>
+                                {owner.user?.id ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    asChild
+                                  >
+                                    <Link href={`/admin/users/${owner.user.id}`}>
+                                      User
+                                    </Link>
+                                  </Button>
+                                ) : null}
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                          <TableCell colSpan={8} className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                             {freePetOwnerSearchTerm.trim()
                               ? "No free pet owners matched your search."
                               : "No free pet owners found."}

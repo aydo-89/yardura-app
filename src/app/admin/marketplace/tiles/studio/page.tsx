@@ -106,7 +106,7 @@ const PUBLISHED_STATUS_COLORS: Record<string, { fill: string; stroke: string }> 
   LIVE: { fill: "#22c55e", stroke: "#15803d" },
   WAITLIST: { fill: "#facc15", stroke: "#b45309" },
   SUSPENDED: { fill: "#f97316", stroke: "#c2410c" },
-  DRAFT: { fill: "#64748b", stroke: "#475569" },
+  DRAFT: { fill: "#facc15", stroke: "#b45309" }, // DRAFT uses same colors as Waitlist
 };
 
 const OSM_FALLBACK_STYLE: StyleSpecification = {
@@ -1287,9 +1287,6 @@ export default function TileStudioPage() {
     serviceAreas.forEach((area) => {
       if (!area.tileGeometry?.geometry) return;
       const status = area.tile.status;
-      if (status === "DRAFT") {
-        return;
-      }
       const feature: GeoJSON.Feature = {
         type: "Feature",
         geometry: area.tileGeometry.geometry as GeoJSON.Geometry,
@@ -1350,7 +1347,7 @@ export default function TileStudioPage() {
     });
 
     const labelFeatures: GeoJSON.Feature[] = serviceAreas
-      .filter((area) => area.tileGeometry?.geometry && area.tile.status !== "DRAFT")
+      .filter((area) => area.tileGeometry?.geometry)
       .map((area) => ({
         type: "Feature",
         geometry: area.tileGeometry!.geometry as GeoJSON.Geometry,
@@ -2121,7 +2118,7 @@ export default function TileStudioPage() {
     try {
       await deleteDraftTileApi(tileId);
 
-      toast.success("Draft tile deleted");
+      toast.success("Unpublished tile deleted");
     setDraftTiles((prev: DraftTile[]) => prev.filter((tile) => tile.tileId !== tileId));
         if (selectedDraftTileId === tileId) {
           setSelectedDraftTileId(null);
@@ -3641,7 +3638,7 @@ export default function TileStudioPage() {
                   >
                     {showAllDrafts
                       ? "Show paged view"
-                      : `Show all drafts (${totalDraftCount})`}
+                      : `Show all unpublished (${totalDraftCount})`}
                   </Button>
                   {!showAllDrafts && totalDraftPages > 1 ? (
                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">

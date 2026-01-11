@@ -1,5 +1,6 @@
 import { router, type Href } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -248,34 +249,44 @@ export default function CustomerAccount() {
     };
   }, [maybeRedirectToSetup, session?.token]);
 
-  useEffect(() => {
+  const reportPrefsMountedRef = useRef(true);
+
+  const loadReportPrefs = useCallback(async () => {
     if (!session?.token) return;
-    let mounted = true;
-    const loadReportPrefs = async () => {
-      setReportPrefsLoading(true);
-      setReportPrefsError(null);
-      try {
-        const data = await apiRequest<CustomerEmailReportPreferences>(
-          '/api/mobile/customer/report-preferences',
-          { token: session.token },
-        );
-        if (!mounted) return;
-        setReportPrefs(data);
-        setReportDayOfMonthInput(String(data.dayOfMonth ?? 1));
-      } catch (err) {
-        if (!mounted || maybeRedirectToSetup(err)) return;
-        const message =
-          err instanceof Error ? err.message : 'Unable to load report settings.';
-        setReportPrefsError(message);
-      } finally {
-        if (mounted) setReportPrefsLoading(false);
-      }
-    };
+    setReportPrefsLoading(true);
+    setReportPrefsError(null);
+    try {
+      const data = await apiRequest<CustomerEmailReportPreferences>(
+        '/api/mobile/customer/report-preferences',
+        { token: session.token },
+      );
+      if (!reportPrefsMountedRef.current) return;
+      setReportPrefs(data);
+      setReportDayOfMonthInput(String(data.dayOfMonth ?? 1));
+    } catch (err) {
+      if (!reportPrefsMountedRef.current || maybeRedirectToSetup(err)) return;
+      const message =
+        err instanceof Error ? err.message : 'Unable to load report settings.';
+      setReportPrefsError(message);
+    } finally {
+      if (reportPrefsMountedRef.current) setReportPrefsLoading(false);
+    }
+  }, [maybeRedirectToSetup, session?.token]);
+
+  useEffect(() => {
+    reportPrefsMountedRef.current = true;
     loadReportPrefs();
     return () => {
-      mounted = false;
+      reportPrefsMountedRef.current = false;
     };
-  }, [maybeRedirectToSetup, session?.token]);
+  }, [loadReportPrefs]);
+
+  // Refresh report preferences when screen gains focus (e.g., returning from report-settings)
+  useFocusEffect(
+    useCallback(() => {
+      loadReportPrefs();
+    }, [loadReportPrefs]),
+  );
 
   useEffect(() => {
     if (!session?.token) return;
@@ -923,7 +934,7 @@ export default function CustomerAccount() {
                   : 'No address on file'}
               </Text>
               <Text style={[styles.helperText, { color: palette.muted }]}>
-                Enables poop map, weather alerts, and scheduling
+                Enables yard map, weather alerts, and scheduling
               </Text>
             </View>
           </View>
@@ -964,32 +975,6 @@ export default function CustomerAccount() {
               })}
             </View>
           </CollapsibleSection>
-        ) : null}
-
-        {/* Scooper Apply Prompt */}
-        {summaryLoading ? (
-          <Text style={[styles.cardBody, { color: palette.muted }]}>Checking account status...</Text>
-        ) : summaryError ? (
-          <Text style={[styles.cardBody, { color: palette.danger }]}>{summaryError}</Text>
-        ) : showScooperApply ? (
-          <View style={[styles.rolePrompt, { borderColor: palette.border, backgroundColor: palette.card }]}>
-            <View style={styles.rolePromptHeader}>
-              <View style={[styles.settingItemIcon, { backgroundColor: `${palette.tint}15` }]}>
-                <FontAwesome name="truck" size={14} color={palette.tint} />
-              </View>
-              <View style={styles.settingItemCopy}>
-                <Text style={[styles.rolePromptTitle, { color: palette.text }]}>Become a scooper</Text>
-                <Text style={[styles.cardBody, { color: palette.muted }]}>
-                  Earn extra cash with flexible routes near home
-                </Text>
-              </View>
-            </View>
-            <Button
-              title="Apply to scoop"
-              onPress={() => router.push('/(app)/(customer)/scooper-apply' as Href)}
-              variant="cta"
-            />
-          </View>
         ) : null}
 
         {/* Notifications */}
@@ -1190,6 +1175,104 @@ export default function CustomerAccount() {
           )}
           {prefsError ? <Text style={[styles.helperText, { color: palette.danger }]}>{prefsError}</Text> : null}
         </CollapsibleSection>
+
+        {/* Household Access */}
+        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+          <Pressable
+            style={[styles.settingItem, { backgroundColor: palette.background }]}
+            onPress={() => router.push('/(app)/(customer)/household' as Href)}
+          >
+            <View style={[styles.settingItemIcon, { backgroundColor: `${palette.accent}15` }]}>
+              <FontAwesome name="users" size={14} color={palette.accent} />
+            </View>
+            <View style={styles.settingItemCopy}>
+              <Text style={[styles.settingLabel, { color: palette.text }]}>Household access</Text>
+              <Text style={[styles.helperText, { color: palette.muted }]}>
+                Invite family members or dog sitters to view pet info
+              </Text>
+            </View>
+            <FontAwesome name="chevron-right" size={12} color={palette.muted} />
+          </Pressable>
+        </View>
+
+        {/* Legal & About */}
+        <CollapsibleSection title="Legal & About" subtitle="Privacy, terms, and app info">
+          <Pressable
+            style={[styles.settingItem, { backgroundColor: palette.background }]}
+            onPress={() => Linking.openURL('https://www.getinsightscoop.com/privacy')}
+          >
+            <View style={[styles.settingItemIcon, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="shield" size={14} color={palette.tint} />
+            </View>
+            <View style={styles.settingItemCopy}>
+              <Text style={[styles.settingLabel, { color: palette.text }]}>Privacy Policy</Text>
+              <Text style={[styles.helperText, { color: palette.muted }]}>
+                How we collect and use your data
+              </Text>
+            </View>
+            <FontAwesome name="external-link" size={12} color={palette.muted} />
+          </Pressable>
+
+          <Pressable
+            style={[styles.settingItem, { backgroundColor: palette.background }]}
+            onPress={() => Linking.openURL('https://www.getinsightscoop.com/terms')}
+          >
+            <View style={[styles.settingItemIcon, { backgroundColor: `${palette.tint}15` }]}>
+              <FontAwesome name="file-text-o" size={14} color={palette.tint} />
+            </View>
+            <View style={styles.settingItemCopy}>
+              <Text style={[styles.settingLabel, { color: palette.text }]}>Terms of Service</Text>
+              <Text style={[styles.helperText, { color: palette.muted }]}>
+                Usage terms and conditions
+              </Text>
+            </View>
+            <FontAwesome name="external-link" size={12} color={palette.muted} />
+          </Pressable>
+
+          <View style={[styles.legalDisclaimer, { backgroundColor: `${Colors.brand.gold}10`, borderColor: `${Colors.brand.gold}30` }]}>
+            <View style={styles.legalDisclaimerHeader}>
+              <FontAwesome name="info-circle" size={14} color={Colors.brand.gold} />
+              <Text style={[styles.legalDisclaimerTitle, { color: palette.text }]}>Health Disclaimer</Text>
+            </View>
+            <Text style={[styles.legalDisclaimerText, { color: palette.muted }]}>
+              InsightScoop provides wellness insights for informational purposes only. Our AI analysis is not a substitute for professional veterinary advice, diagnosis, or treatment. Always consult your veterinarian for health concerns.
+            </Text>
+          </View>
+
+          <View style={[styles.settingItem, { backgroundColor: palette.background }]}>
+            <View style={[styles.settingItemIcon, { backgroundColor: `${palette.muted}15` }]}>
+              <FontAwesome name="info" size={14} color={palette.muted} />
+            </View>
+            <View style={styles.settingItemCopy}>
+              <Text style={[styles.settingLabel, { color: palette.text }]}>App Version</Text>
+              <Text style={[styles.helperText, { color: palette.muted }]}>
+                v0.1.0
+              </Text>
+            </View>
+          </View>
+        </CollapsibleSection>
+
+        {/* Scooper Apply Prompt - shown near bottom for free pet owners */}
+        {showScooperApply ? (
+          <View style={[styles.rolePrompt, { borderColor: palette.border, backgroundColor: palette.card }]}>
+            <View style={styles.rolePromptHeader}>
+              <View style={[styles.settingItemIcon, { backgroundColor: `${palette.tint}15` }]}>
+                <FontAwesome name="truck" size={14} color={palette.tint} />
+              </View>
+              <View style={styles.settingItemCopy}>
+                <Text style={[styles.rolePromptTitle, { color: palette.text }]}>Become a scooper</Text>
+                <Text style={[styles.cardBody, { color: palette.muted }]}>
+                  Earn extra cash with flexible routes near home
+                </Text>
+              </View>
+            </View>
+            <Button
+              title="Apply to scoop"
+              onPress={() => router.push('/(app)/(customer)/scooper-apply' as Href)}
+              variant="cta"
+            />
+          </View>
+        ) : null}
 
         <View style={styles.actions}>
           <Button title="Sign out" onPress={handleSignOut} variant="secondary" />
@@ -1908,5 +1991,24 @@ const styles = StyleSheet.create({
   },
   modalActions: {
     gap: 10,
+  },
+  legalDisclaimer: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+  },
+  legalDisclaimerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legalDisclaimerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  legalDisclaimerText: {
+    fontSize: 12,
+    lineHeight: 18,
   },
 });

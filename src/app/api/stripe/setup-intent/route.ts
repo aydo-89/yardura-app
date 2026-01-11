@@ -353,7 +353,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create SetupIntent for payment method collection without forcing a new customer
+    // Create SetupIntent for payment method collection
+    // Note: mandate_data is only valid with confirm: true, so we omit it here
+    // The client will confirm the SetupIntent with the payment method
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId ?? undefined,
       payment_method_types: ["card"],

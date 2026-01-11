@@ -20,8 +20,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const isPreview = buildProfile === 'preview';
   const isDev = buildProfile === 'development' || buildProfile === 'development-local';
   const appName = config.name ?? 'InsightScoop';
-  const packageSuffix = isPreview ? 'preview' : isDev ? 'dev' : null;
-  const displaySuffix = isPreview ? 'Preview' : isDev ? 'Dev' : null;
+  // Only use separate bundle IDs for development builds, not preview
+  const packageSuffix = isDev ? 'dev' : null;
+  const displaySuffix = isDev ? 'Dev' : null;
   const resolvedName = displaySuffix ? `${appName} ${displaySuffix}` : appName;
   const baseAndroidPackage = config.android?.package ?? 'com.yardura.insightscoop';
   const baseIosBundle = config.ios?.bundleIdentifier ?? 'com.yardura.insightscoop';

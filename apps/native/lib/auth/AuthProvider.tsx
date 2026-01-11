@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 import { apiRequest } from '@/lib/api/client';
 import { getJson, removeItem, setJson } from '@/lib/storage';
@@ -15,6 +16,8 @@ type AuthContextValue = {
   session: AuthSession | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<AuthSession>;
+  signInWithApple: () => Promise<AuthSession>;
+  isAppleAuthAvailable: boolean;
   signOut: () => Promise<void>;
   setActiveRole: (role: AppUserRole) => Promise<void>;
 };
@@ -33,8 +36,16 @@ function resolveActiveRole(
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAppleAuthAvailable, setIsAppleAuthAvailable] = useState(false);
   const purchasesConfigured = useRef(false);
   const revenueCatUserId = useRef<string | null>(null);
+
+  // Check Apple Sign In availability on mount
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setIsAppleAuthAvailable).catch(() => setIsAppleAuthAvailable(false));
+    }
+  }, []);
 
   const persistSession = useCallback(async (next: AuthSession | null) => {
     if (!next) {
@@ -107,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       Platform.OS === 'ios' ? REVENUECAT_API_KEYS.ios : REVENUECAT_API_KEYS.android;
     if (!apiKey) return;
     if (!__DEV__ && apiKey.startsWith('test_')) {
-      console.warn('RevenueCat test key ignored in release builds.');
+      // Test keys are silently ignored in release builds
       return;
     }
 
@@ -160,6 +171,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [persistSession],
   );
 
+  const signInWithApple = useCallback(async () => {
+    if (Platform.OS !== 'ios') {
+      throw new Error('Apple Sign In is only available on iOS');
+    }
+
+    // Request Apple credentials
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    // Apple only returns name/email on first sign in, so we need to handle both cases
+    const fullName = credential.fullName
+      ? `${credential.fullName.givenName ?? ''} ${credential.fullName.familyName ?? ''}`.trim()
+      : null;
+
+    // Send to backend for verification and user creation/login
+    const payload = await apiRequest<AuthLoginResponse>(
+      '/api/mobile/auth/apple',
+      {
+        method: 'POST',
+        body: {
+          identityToken: credential.identityToken,
+          authorizationCode: credential.authorizationCode,
+          email: credential.email,
+          fullName,
+          user: credential.user, // Apple user ID (stable across sessions)
+        },
+      },
+    );
+
+    const roles = payload.roles ?? [];
+    const activeRole = resolveActiveRole(roles, payload.activeRole);
+    const next: AuthSession = {
+      token: payload.token,
+      user: payload.user,
+      roles,
+      activeRole,
+    };
+    setSession(next);
+    await persistSession(next);
+    return next;
+  }, [persistSession]);
+
   const signOut = useCallback(async () => {
     setSession(null);
     await removeItem(AUTH_STORAGE_KEY);
@@ -176,8 +233,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ session, loading, signIn, signOut, setActiveRole }),
-    [session, loading, signIn, signOut, setActiveRole],
+    () => ({ session, loading, signIn, signInWithApple, isAppleAuthAvailable, signOut, setActiveRole }),
+    [session, loading, signIn, signInWithApple, isAppleAuthAvailable, signOut, setActiveRole],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

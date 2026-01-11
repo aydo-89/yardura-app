@@ -43,14 +43,6 @@ function buildWaitlistCopy(tile: ZipEligibilityResult["tile"], eligible: boolean
   };
 }
 
-function buildDraftCopy(tile: ZipEligibilityResult["tile"]): TileMessaging {
-  return {
-    headline: "You're right on the edge of our current routes.",
-    detail: tile?.advisoryReasons?.[0] ?? "Drop your info and we'll flag this tile for the next expansion sprint.",
-    advisories: tile?.advisoryReasons ?? [],
-  };
-}
-
 function buildSuspendedCopy(tile: ZipEligibilityResult["tile"]): TileMessaging {
   return {
     headline: "Coverage is temporarily paused in this tile.",
@@ -96,8 +88,6 @@ export function buildTileMessaging(result: ZipEligibilityResult): TileMessaging 
       return buildLiveCopy(result.estimatedDelivery, advisories);
     case "WAITLIST":
       return buildWaitlistCopy(tile, true);
-    case "DRAFT":
-      return buildDraftCopy(tile);
     case "SUSPENDED":
       return buildSuspendedCopy(tile);
     default:

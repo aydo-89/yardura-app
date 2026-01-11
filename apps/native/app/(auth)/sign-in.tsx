@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { router } from 'expo-router';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 import Button from '@/components/ui/Button';
 import Screen from '@/components/ui/Screen';
@@ -19,7 +20,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
 export default function SignInScreen() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithApple, isAppleAuthAvailable } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
   const [email, setEmail] = useState('');
@@ -27,6 +28,42 @@ export default function SignInScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [appleSubmitting, setAppleSubmitting] = useState(false);
+
+  const handleAppleSignIn = async () => {
+    setAppleSubmitting(true);
+    setError(null);
+    try {
+      const nextSession = await signInWithApple();
+
+      // Check if this is a new user (no customer record and no scooper profile)
+      const isNewUser = !nextSession.user.customerId && !nextSession.user.scooperProfileId;
+
+      if (isNewUser) {
+        // New user - let them choose their path
+        router.replace('/(auth)/role-choice' as any);
+        return;
+      }
+
+      // Existing user - route based on role
+      if (nextSession.activeRole === 'TECH') {
+        router.replace('/(app)/(scooper)');
+      } else if (nextSession.activeRole === 'SALES_REP') {
+        router.replace('/(app)/(sales)');
+      } else {
+        router.replace('/(app)/(customer)');
+      }
+    } catch (err: any) {
+      // Don't show error if user cancelled
+      if (err?.code === 'ERR_REQUEST_CANCELED') {
+        return;
+      }
+      const message = err instanceof Error ? err.message : 'Apple Sign In failed.';
+      setError(message);
+    } finally {
+      setAppleSubmitting(false);
+    }
+  };
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -37,6 +74,17 @@ export default function SignInScreen() {
     setError(null);
     try {
       const nextSession = await signIn(email.trim(), password);
+
+      // Check if this is a new user (no customer record and no scooper profile)
+      const isNewUser = !nextSession.user.customerId && !nextSession.user.scooperProfileId;
+
+      if (isNewUser) {
+        // New user - let them choose their path
+        router.replace('/(auth)/role-choice' as any);
+        return;
+      }
+
+      // Existing user - route based on role
       if (nextSession.activeRole === 'TECH') {
         router.replace('/(app)/(scooper)');
       } else if (nextSession.activeRole === 'SALES_REP') {
@@ -112,11 +160,37 @@ export default function SignInScreen() {
           <Button
             title={submitting ? 'Signing in...' : 'Sign in'}
             onPress={handleSignIn}
-            disabled={submitting}
+            disabled={submitting || appleSubmitting}
           />
           {submitting ? (
             <ActivityIndicator style={styles.spinner} color={palette.tint} />
           ) : null}
+
+          {/* Apple Sign In - Required for App Store compliance */}
+          {Platform.OS === 'ios' && isAppleAuthAvailable ? (
+            <>
+              <View style={styles.divider}>
+                <View style={[styles.dividerLine, { backgroundColor: palette.border }]} />
+                <Text style={[styles.dividerText, { color: palette.muted }]}>or</Text>
+                <View style={[styles.dividerLine, { backgroundColor: palette.border }]} />
+              </View>
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={
+                  colorScheme === 'dark'
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={12}
+                style={styles.appleButton}
+                onPress={handleAppleSignIn}
+              />
+              {appleSubmitting ? (
+                <ActivityIndicator style={styles.spinner} color={palette.tint} />
+              ) : null}
+            </>
+          ) : null}
+
           <Pressable onPress={() => router.push('/(auth)/sign-up' as any)}>
             <Text style={[styles.link, { color: palette.tint }]}>
               New here? Create an account
@@ -193,5 +267,23 @@ const styles = StyleSheet.create({
   },
   spinner: {
     marginTop: 12,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginVertical: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  appleButton: {
+    width: '100%',
+    height: 48,
   },
 });

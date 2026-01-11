@@ -168,7 +168,7 @@ export default function CaptureResultCard({
               <View style={styles.locationInfo}>
                 <FontAwesome name="map-marker" size={14} color={palette.muted} />
                 <Text style={[styles.locationText, { color: palette.muted }]}>
-                  Location saved to poop map
+                  Location saved to yard map
                 </Text>
               </View>
               <Text style={[styles.locationAction, { color: palette.tint }]}>Adjust</Text>

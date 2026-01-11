@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { router, type Href } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -31,8 +31,18 @@ export default function FoodLogScreen() {
   const { session } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const params = useLocalSearchParams<{
+    quickAdd?: string;
+    quickAddType?: string;
+    quickAddName?: string;
+  }>();
 
   const [entrySheetOpen, setEntrySheetOpen] = useState(false);
+  const [quickAddSheetOpen, setQuickAddSheetOpen] = useState(false);
+  const [quickAddData, setQuickAddData] = useState<{
+    type: 'FOOD' | 'TREAT' | 'SUPPLEMENT' | 'MEDICATION';
+    productName: string;
+  } | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<WellnessFoodProduct | null>(null);
   const [detailLog, setDetailLog] = useState<WellnessFoodLog | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
@@ -62,6 +72,36 @@ export default function FoodLogScreen() {
       loadData();
     }, [loadData]),
   );
+
+  // Handle quickAdd navigation from parasite risk screen
+  useEffect(() => {
+    if (params.quickAdd === 'true' && params.quickAddType && params.quickAddName) {
+      const type = params.quickAddType as 'FOOD' | 'TREAT' | 'SUPPLEMENT' | 'MEDICATION';
+      setQuickAddData({ type, productName: params.quickAddName });
+      setQuickAddSheetOpen(true);
+    }
+  }, [params.quickAdd, params.quickAddType, params.quickAddName]);
+
+  const handleQuickAddSubmit = async () => {
+    if (!quickAddData) return;
+    const log = await createLog({
+      type: quickAddData.type,
+      productName: quickAddData.productName,
+      loggedAt: new Date(),
+    });
+    if (log) {
+      setQuickAddSheetOpen(false);
+      setQuickAddData(null);
+      // Clear params after logging
+      router.setParams({ quickAdd: undefined, quickAddType: undefined, quickAddName: undefined });
+    }
+  };
+
+  const handleQuickAddClose = () => {
+    setQuickAddSheetOpen(false);
+    setQuickAddData(null);
+    router.setParams({ quickAdd: undefined, quickAddType: undefined, quickAddName: undefined });
+  };
 
   // Filter today's logs
   const todaysLogs = useMemo(() => {
@@ -149,7 +189,7 @@ export default function FoodLogScreen() {
   }, [detailLog?.ingredients]);
 
   const heroBackground =
-    colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
+    colorScheme === 'light' ? Colors.brand.graphite : '#1E293B';
 
   const getTypeIcon = (type: string): keyof typeof FontAwesome.glyphMap => {
     switch (type) {
@@ -759,6 +799,32 @@ export default function FoodLogScreen() {
           </ScrollView>
         )}
       </BottomSheet>
+
+      {/* Quick Add Med Sheet (from parasite risk navigation) */}
+      <BottomSheet visible={quickAddSheetOpen} onClose={handleQuickAddClose} snapPoints={[0.4]}>
+        {quickAddData && (
+          <View style={styles.quickAddSheet}>
+            <View style={[styles.quickAddIcon, { backgroundColor: `${palette.danger}15` }]}>
+              <FontAwesome name="medkit" size={28} color={palette.danger} />
+            </View>
+            <Text style={[styles.quickAddTitle, { color: palette.text }]}>
+              Log {quickAddData.productName}
+            </Text>
+            <Text style={[styles.quickAddSubtitle, { color: palette.muted }]}>
+              Log that you gave your pet their {quickAddData.productName.toLowerCase()} today.
+            </Text>
+            <Button
+              title={saving ? 'Logging...' : 'Log Now'}
+              onPress={handleQuickAddSubmit}
+              disabled={saving}
+              style={styles.quickAddButton}
+            />
+            <Pressable onPress={handleQuickAddClose} style={styles.quickAddCancel}>
+              <Text style={[styles.quickAddCancelText, { color: palette.muted }]}>Cancel</Text>
+            </Pressable>
+          </View>
+        )}
+      </BottomSheet>
     </Screen>
   );
 }
@@ -1344,5 +1410,37 @@ const styles = StyleSheet.create({
   wellnessInsightNote: {
     fontSize: 11,
     marginTop: 2,
+  },
+  quickAddSheet: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    gap: 16,
+  },
+  quickAddIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickAddTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  quickAddSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  quickAddButton: {
+    width: '100%',
+    marginTop: 8,
+  },
+  quickAddCancel: {
+    paddingVertical: 8,
+  },
+  quickAddCancelText: {
+    fontSize: 14,
   },
 });

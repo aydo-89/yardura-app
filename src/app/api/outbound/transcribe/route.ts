@@ -119,10 +119,24 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("/api/outbound/transcribe error", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("/api/outbound/transcribe error:", message, error);
+
+    // Provide more specific error messages
+    let userMessage = "Failed to process recording.";
+    if (message.includes("Unable to transcribe")) {
+      userMessage = "Unable to transcribe audio. Please try speaking more clearly or for longer.";
+    } else if (message.includes("OpenAI") || message.includes("API key")) {
+      userMessage = "Transcription service temporarily unavailable. Please try again.";
+    } else if (message.includes("model")) {
+      userMessage = "Transcription configuration error. Please contact support.";
+    }
+
     return jsonResponse(500, {
       ok: false,
-      error: "Failed to process recording.",
+      error: "transcription_failed",
+      message: userMessage,
+      details: process.env.NODE_ENV === "development" ? message : undefined,
     });
   }
 }

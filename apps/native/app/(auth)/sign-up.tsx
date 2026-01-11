@@ -56,7 +56,13 @@ export default function SignUpScreen() {
         },
       });
       const nextSession = await signIn(email.trim(), password);
-      if (nextSession.activeRole === 'TECH') {
+
+      // New users should choose their path (pet owner or scooper)
+      const isNewUser = !nextSession.user.customerId && !nextSession.user.scooperProfileId;
+
+      if (isNewUser) {
+        router.replace('/(auth)/role-choice' as any);
+      } else if (nextSession.activeRole === 'TECH') {
         router.replace('/(app)/(scooper)');
       } else if (nextSession.activeRole === 'SALES_REP') {
         router.replace('/(app)/(sales)');

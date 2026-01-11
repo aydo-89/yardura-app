@@ -22,7 +22,7 @@ import { createPlaceholderSubscription } from "@/lib/billing/stripe-subscription
 import { enqueueOfferPublishing } from "@/lib/jobs/marketplaceOfferPublisher";
 import { getSiteUrl } from "@/lib/env";
 import bcrypt from "bcryptjs";
-import { computeIntroCredits } from "@/lib/billing/introCredits";
+// computeIntroCredits logic is now inline in seedIntroCredits for better charge/credit control
 import { resolveTileByZipCode, resolveTileSlugForCity } from "@/lib/marketplace/tile-map";
 import { getTileRepository } from "@/lib/tiles/repository";
 
@@ -163,31 +163,149 @@ async function seedIntroCredits(options: {
   }
 
   const initialCleanCents = normalizeCents(initialCleanAmountCents);
-
   const perVisitCents = normalizeCents(perVisitAmountCents);
+  const freq = normalizedFrequency.toLowerCase();
 
-  const { credits } = computeIntroCredits({
-    normalizedFrequency,
-    initialCleanCents,
-    perVisitCents,
-  });
+  // Determine what charges and credits to create based on frequency
+  // The ledger should show BOTH:
+  // 1. CHARGE entries (positive) for what the customer owes
+  // 2. CREDIT entries (negative) for the promotional discounts
+
+  interface LedgerItem {
+    type: "charge" | "credit";
+    amountCents: number;
+    description: string;
+    reason: string;
+    visits?: number;
+  }
+
+  const ledgerItems: LedgerItem[] = [];
+
+  // Always create a charge for the initial clean (what the customer would owe)
+  if (initialCleanCents > 0) {
+    ledgerItems.push({
+      type: "charge",
+      amountCents: initialCleanCents,
+      description: "Initial clean",
+      reason: "initial-clean-charge",
+    });
+  }
+
+  // Create charges and credits based on frequency
+  if (freq === "monthly") {
+    // Monthly frequency: 50% off initial clean (customer pays half)
+    if (initialCleanCents > 0) {
+      ledgerItems.push({
+        type: "credit",
+        amountCents: Math.round(initialCleanCents / 2),
+        description: "50% off initial clean",
+        reason: "initial-clean-half",
+      });
+    }
+  } else if (freq === "twice-weekly") {
+    // Twice-weekly: Initial clean + 1 follow-up visit covered
+    if (initialCleanCents > 0) {
+      ledgerItems.push({
+        type: "credit",
+        amountCents: initialCleanCents,
+        description: "Initial clean covered",
+        reason: "initial-clean-full",
+      });
+    }
+    // Charge and credit for 1 follow-up visit
+    if (perVisitCents > 0) {
+      ledgerItems.push({
+        type: "charge",
+        amountCents: perVisitCents,
+        description: "First follow-up visit",
+        reason: "follow-up-visit-charge",
+        visits: 1,
+      });
+      ledgerItems.push({
+        type: "credit",
+        amountCents: perVisitCents,
+        description: "First follow-up visit covered",
+        reason: "follow-up-visits",
+        visits: 1,
+      });
+    }
+  } else if (freq === "daily") {
+    // Daily: Initial clean + 4 weekday follow-up visits covered
+    if (initialCleanCents > 0) {
+      ledgerItems.push({
+        type: "credit",
+        amountCents: initialCleanCents,
+        description: "Initial clean covered",
+        reason: "initial-clean-full",
+      });
+    }
+    // Charge and credit for 4 follow-up visits
+    if (perVisitCents > 0) {
+      const followUpTotal = perVisitCents * 4;
+      ledgerItems.push({
+        type: "charge",
+        amountCents: followUpTotal,
+        description: "First week coverage (4 weekday visits)",
+        reason: "follow-up-visit-charge",
+        visits: 4,
+      });
+      ledgerItems.push({
+        type: "credit",
+        amountCents: followUpTotal,
+        description: "First week coverage (4 weekday visits)",
+        reason: "follow-up-visits",
+        visits: 4,
+      });
+    }
+  } else if (
+    freq === "weekly" ||
+    freq === "biweekly" ||
+    freq === "bi-weekly" ||
+    freq === "every-other-week"
+  ) {
+    // Weekly/Biweekly: Initial clean fully covered
+    if (initialCleanCents > 0) {
+      ledgerItems.push({
+        type: "credit",
+        amountCents: initialCleanCents,
+        description: "Initial clean covered",
+        reason: "initial-clean-full",
+      });
+    }
+  }
 
   try {
+    // Create all ledger entries (charges and credits)
     await Promise.all(
-      credits.map((credit) =>
-        createCreditEntry({
-          orgId,
-          jobId,
-          customerId,
-          amountCents: credit.amountCents,
-          description: credit.label,
-          metadata: {
-            source: "promo-credit",
-            reason: credit.reason,
-            ...(credit.visits ? { visits: credit.visits } : {}),
-          },
-        }),
-      ),
+      ledgerItems.map((item) => {
+        if (item.type === "charge") {
+          return createChargeEntry({
+            orgId,
+            jobId,
+            customerId,
+            amountCents: item.amountCents,
+            description: item.description,
+            metadata: {
+              source: "promo-credit",
+              reason: item.reason,
+              ...(item.visits ? { visits: item.visits } : {}),
+            },
+          });
+        } else {
+          return createCreditEntry({
+            orgId,
+            jobId,
+            customerId,
+            amountCents: item.amountCents,
+            description: item.description,
+            metadata: {
+              source: "promo-credit",
+              reason: item.reason,
+              ...(item.visits ? { visits: item.visits } : {}),
+            },
+          });
+        }
+      }),
     );
   } catch (error) {
     if (
@@ -670,6 +788,70 @@ async function handleOnboardingComplete(request: NextRequest): Promise<NextRespo
     if (!stripeCustomerId) {
       return NextResponse.json(
         { error: "Unable to link customer profile." },
+        { status: 400 },
+      );
+    }
+
+    // ============================================================
+    // CARD VALIDATION: Perform $1 authorization hold to verify card
+    // ============================================================
+    // This catches invalid/expired cards or cards with no available credit
+    // before we proceed with account creation
+    console.log("[API] Validating card with authorization hold...");
+    try {
+      const authHold = await stripe.paymentIntents.create({
+        amount: 100, // $1.00 in cents
+        currency: "usd",
+        customer: stripeCustomerId,
+        payment_method: paymentMethodId,
+        capture_method: "manual", // Don't actually capture, just authorize
+        confirm: true,
+        off_session: true,
+        description: "Card validation - authorization hold (will be released)",
+        metadata: {
+          type: "card-validation",
+          leadId: leadId,
+        },
+      });
+
+      // Immediately cancel the authorization to release the hold
+      if (authHold.status === "requires_capture") {
+        await stripe.paymentIntents.cancel(authHold.id);
+        console.log("[API] Card validation successful, auth hold released");
+      } else if (authHold.status === "succeeded") {
+        // In rare cases it might auto-capture, refund it
+        await stripe.refunds.create({ payment_intent: authHold.id });
+        console.log("[API] Card validation: unexpected capture, refunded");
+      } else {
+        console.warn("[API] Card validation: unexpected status", authHold.status);
+      }
+    } catch (cardValidationError: any) {
+      console.error("[API] Card validation failed:", cardValidationError);
+
+      // Provide user-friendly error messages based on the error type
+      const errorCode = cardValidationError?.code || cardValidationError?.decline_code;
+      let userMessage = "Your card could not be validated. Please check your card details and try again.";
+
+      if (errorCode === "card_declined" || errorCode === "generic_decline") {
+        userMessage = "Your card was declined. Please try a different card or contact your bank.";
+      } else if (errorCode === "insufficient_funds") {
+        userMessage = "Your card has insufficient funds. Please try a different card.";
+      } else if (errorCode === "expired_card") {
+        userMessage = "Your card has expired. Please use a different card.";
+      } else if (errorCode === "incorrect_cvc") {
+        userMessage = "The CVC code is incorrect. Please check and try again.";
+      } else if (errorCode === "processing_error") {
+        userMessage = "There was an issue processing your card. Please try again.";
+      } else if (errorCode === "invalid_account") {
+        userMessage = "This card cannot be used for recurring payments. Please try a different card.";
+      }
+
+      return NextResponse.json(
+        {
+          error: "card_validation_failed",
+          message: userMessage,
+          code: errorCode,
+        },
         { status: 400 },
       );
     }
@@ -1281,6 +1463,100 @@ async function handleOnboardingComplete(request: NextRequest): Promise<NextRespo
       initialCleanAmountCents,
     });
 
+    // ============================================================
+    // UPFRONT CHARGE: For monthly frequency, charge 50% of initial clean immediately
+    // ============================================================
+    // Monthly customers owe 50% of the initial clean (they get 50% off, not 100% free)
+    // We charge this upfront to:
+    // 1. Confirm the card can actually be charged (not just authorized)
+    // 2. Collect what's owed immediately rather than waiting for invoice cycle
+    let upfrontPaymentId: string | null = null;
+    const isMonthlyFrequency = normalizedLeadFrequency === "monthly";
+
+    if (isMonthlyFrequency && initialCleanAmountCents > 0) {
+      const upfrontAmountCents = Math.round(initialCleanAmountCents / 2); // 50% of initial clean
+
+      if (upfrontAmountCents >= 50) { // Stripe minimum is $0.50
+        console.log("[API] Charging monthly customer upfront:", upfrontAmountCents, "cents");
+
+        try {
+          const upfrontPayment = await stripe.paymentIntents.create({
+            amount: upfrontAmountCents,
+            currency: "usd",
+            customer: stripeCustomerId,
+            payment_method: paymentMethodId,
+            confirm: true,
+            off_session: true,
+            description: "Initial clean deposit (50% of initial cleaning fee)",
+            metadata: {
+              type: "upfront-initial-clean",
+              leadId: leadId,
+              jobId: job.id,
+              customerId: customer.id,
+              initialCleanAmountCents: String(initialCleanAmountCents),
+              discountPercentage: "50",
+            },
+          });
+
+          if (upfrontPayment.status === "succeeded") {
+            upfrontPaymentId = upfrontPayment.id;
+            console.log("[API] Upfront payment successful:", upfrontPaymentId);
+
+            // Mark the intro credit ledger entries as APPLIED since they've been paid
+            try {
+              await prisma.customerBillingLedgerEntry.updateMany({
+                where: {
+                  jobId: job.id,
+                  status: "PENDING",
+                  metadata: {
+                    path: ["source"],
+                    equals: "promo-credit",
+                  },
+                },
+                data: {
+                  status: "APPLIED",
+                  appliedAt: new Date(),
+                  stripeInvoiceId: upfrontPayment.id, // Store payment ID for reference
+                },
+              });
+              console.log("[API] Ledger entries marked as APPLIED");
+            } catch (ledgerUpdateError) {
+              // Non-fatal: the payment went through, ledger update is just bookkeeping
+              console.warn("[API] Failed to update ledger entries:", ledgerUpdateError);
+            }
+          } else {
+            console.warn("[API] Upfront payment status:", upfrontPayment.status);
+          }
+        } catch (upfrontError: any) {
+          console.error("[API] Upfront charge failed:", upfrontError);
+
+          // For upfront payment failures, we could either:
+          // 1. Fail the entire onboarding (strict)
+          // 2. Continue and let the invoice system handle it later (lenient)
+          // We'll be lenient but log the issue
+          const errorCode = upfrontError?.code || upfrontError?.decline_code;
+          console.error("[API] Upfront charge error code:", errorCode, "- will retry via invoice system");
+
+          // If it's a definitive card failure, we should stop
+          if (
+            errorCode === "card_declined" ||
+            errorCode === "insufficient_funds" ||
+            errorCode === "expired_card"
+          ) {
+            return NextResponse.json(
+              {
+                error: "payment_failed",
+                message: "We couldn't process your initial payment. Please try a different card.",
+                code: errorCode,
+              },
+              { status: 400 },
+            );
+          }
+          // For other errors (network issues, etc.), continue and let invoice system retry
+        }
+      }
+    }
+
     const visitMetadata = (() => {
       const base: Record<string, unknown> = {};
       if (normalizedTimeWindowLabel) {
@@ -1582,6 +1858,14 @@ async function handleOnboardingComplete(request: NextRequest): Promise<NextRespo
       firstVisitTimeWindow: resolvedTimeWindowLabel ?? null,
       firstVisitTimeWindowSlug: normalizedTimeWindowSlug ?? null,
       serviceAddress: `${lead.address}, ${lead.city}, ${lead.zipCode}`,
+      // Include upfront payment info if applicable (monthly frequency customers)
+      upfrontPayment: upfrontPaymentId
+        ? {
+            paymentId: upfrontPaymentId,
+            amountCents: Math.round(initialCleanAmountCents / 2),
+            description: "Initial clean deposit (50%)",
+          }
+        : null,
     });
   } catch (error) {
     console.error("Onboarding completion error:", error);

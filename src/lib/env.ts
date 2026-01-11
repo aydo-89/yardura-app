@@ -21,6 +21,9 @@ const envSchema = z.object({
   // OpenAI
   OPENAI_API_KEY: z.string().optional(),
 
+  // Unwrangle (Chewy product data API)
+  UNWRANGLE_API_KEY: z.string().optional(),
+
   // Stripe (optional for client-side)
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),

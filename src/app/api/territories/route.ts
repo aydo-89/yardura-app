@@ -54,13 +54,8 @@ export async function GET(req: NextRequest) {
       return forbidden();
     }
 
-    const orgId = auth.orgId;
-    if (!orgId) {
-      return NextResponse.json(
-        { ok: false, error: "Organization not set" },
-        { status: 400 },
-      );
-    }
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = auth.orgId || "yardura";
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") || undefined;
@@ -129,13 +124,8 @@ export async function POST(req: NextRequest) {
       return forbidden();
     }
 
-    const orgId = auth.orgId;
-    if (!orgId) {
-      return NextResponse.json(
-        { ok: false, error: "Organization not set" },
-        { status: 400 },
-      );
-    }
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = auth.orgId || "yardura";
 
     const json = await req.json();
     const parsed = territorySchema.parse(json);

@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
           placeId: config.placeId,
           tileCount: config.suggestedTileCount,
           orgId,
-          status: "DRAFT",
+          status: "WAITLIST", // New tiles start as Waitlist
           createdBy: session?.user?.email ?? "county-generator",
           generationMode: "cluster" as const,
           city: config.cityName,

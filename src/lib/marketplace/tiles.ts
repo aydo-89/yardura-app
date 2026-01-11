@@ -139,9 +139,9 @@ function buildReadiness(entry: TileWithContext, options: BuildReadinessOptions =
     );
   }
 
-  // For DRAFT/WAITLIST tiles: use waitlist signups as demand metric (MVD)
+  // For WAITLIST tiles: use waitlist signups as demand metric (MVD)
   // For LIVE tiles: use actual customer counts
-  const isPreLaunch = entry.tile.status === "DRAFT" || entry.tile.status === "WAITLIST";
+  const isPreLaunch = entry.tile.status === "WAITLIST";
   
   if (isPreLaunch) {
     // MVD: Show waitlist progress
@@ -248,8 +248,8 @@ export async function listTileReadiness(orgId: string): Promise<TileReadiness[]>
 }
 
 export function summarizeTileReadiness(readiness: TileReadiness) {
-  const isPreLaunch = readiness.tile.status === "DRAFT" || readiness.tile.status === "WAITLIST";
-  
+  const isPreLaunch = readiness.tile.status === "WAITLIST";
+
   return {
     tileId: readiness.tile.id,
     tileSlug: readiness.tile.slug,
@@ -258,7 +258,7 @@ export function summarizeTileReadiness(readiness: TileReadiness) {
     goLiveDate: readiness.tile.goLiveDate,
     // For LIVE tiles: activation based on customers
     activationEligible: readiness.activationEligible,
-    // For DRAFT/WAITLIST tiles: MVD based on waitlist signups
+    // For WAITLIST tiles: MVD based on waitlist signups
     waitlistMvdEligible: readiness.waitlistMvdEligible,
     // Use appropriate eligibility based on tile status
     launchReady: isPreLaunch ? readiness.waitlistMvdEligible : readiness.activationEligible,

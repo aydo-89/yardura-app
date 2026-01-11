@@ -258,7 +258,7 @@ export default function MobileWellnessScreen({
               <MapPin className="h-5 w-5" aria-hidden />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">Poop map</p>
+              <p className="text-sm font-semibold text-white">Yard map</p>
               <p className="text-xs text-slate-400">
                 Visualize capture spots and schedule coaching.
               </p>

@@ -69,13 +69,8 @@ export async function GET(req: NextRequest) {
       return forbidden();
     }
 
-    const orgId = auth.orgId;
-    if (!orgId) {
-      return NextResponse.json(
-        { ok: false, error: "Organization not set" },
-        { status: 400 },
-      );
-    }
+    // Default to "yardura" org for multi-tenancy while keeping a sensible default
+    const orgId = auth.orgId || "yardura";
 
     const usePostgisTiles = process.env.ENABLE_POSTGIS_TILES === "true";
     const tileRepository = usePostgisTiles ? getTileRepository() : null;

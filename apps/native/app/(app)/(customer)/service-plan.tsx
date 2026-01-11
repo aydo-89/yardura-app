@@ -34,9 +34,8 @@ const FREQUENCY_OPTIONS = [
 ] as const;
 
 const DEODORIZE_OPTIONS = [
-  { value: 'none', label: 'None', description: 'No deodorizing', icon: 'times-circle' as const },
-  { value: 'first-visit', label: 'First only', description: 'Deodorize on first visit', icon: 'star-o' as const },
-  { value: 'each-visit', label: 'Every visit', description: 'Fresh scent always', icon: 'star' as const },
+  { value: 'none', label: 'No', description: 'No deodorizing', icon: 'times-circle' as const },
+  { value: 'each-visit', label: 'Yes', description: 'Enzyme spray every visit', icon: 'check-circle' as const },
 ] as const;
 
 const DIVERT_OPTIONS = [

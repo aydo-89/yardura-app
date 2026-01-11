@@ -331,7 +331,7 @@ export default function ScooperPoopMapScreen() {
             <Pressable onPress={() => router.back()}>
               <Text style={[styles.backText, { color: palette.tint }]}>Back</Text>
             </Pressable>
-            <Text style={[styles.kicker, { color: palette.muted }]}>Poop map</Text>
+            <Text style={[styles.kicker, { color: palette.muted }]}>Yard map</Text>
           </View>
         <Text style={[styles.title, { color: palette.text }]}>Most active spots</Text>
         <Text style={[styles.subtitle, { color: palette.muted }]}>

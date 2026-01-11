@@ -4,7 +4,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -74,7 +73,8 @@ export default function TileScheduleSheet({
   const insets = useSafeAreaInsets();
   const [weekdays, setWeekdays] = useState<number[]>(schedule.weekdays);
   const [window, setWindow] = useState<AvailabilityWindow>(schedule.window);
-  const [maxStops, setMaxStops] = useState<string>(String(schedule.maxStops));
+  // Max stops is now regulated by scooper tier, use schedule value directly
+  const maxStops = schedule.maxStops;
 
   const translateY = useSharedValue(300);
   const cardBorder = colorScheme === 'dark' ? '#233045' : palette.border;
@@ -83,7 +83,6 @@ export default function TileScheduleSheet({
     if (visible) {
       setWeekdays(schedule.weekdays);
       setWindow(schedule.window);
-      setMaxStops(String(schedule.maxStops));
       translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
     } else {
       translateY.value = withSpring(300, { damping: 20, stiffness: 200 });
@@ -104,17 +103,11 @@ export default function TileScheduleSheet({
     setWeekdays(preset.weekdays);
   }, []);
 
-  const handleMaxStopsChange = useCallback((value: string) => {
-    const cleaned = value.replace(/[^0-9]/g, '');
-    setMaxStops(cleaned);
-  }, []);
-
   const handleSave = useCallback(() => {
-    const parsedMaxStops = Math.max(1, Math.min(60, Number.parseInt(maxStops, 10) || 10));
     onSave({
       weekdays,
       window,
-      maxStops: parsedMaxStops,
+      maxStops, // Use existing value from tier
     });
   }, [weekdays, window, maxStops, onSave]);
 
@@ -252,42 +245,7 @@ export default function TileScheduleSheet({
               </View>
             </View>
 
-            {/* Max Stops */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionLabel, { color: palette.muted }]}>
-                Max stops per day
-              </Text>
-              <View style={styles.maxStopsRow}>
-                <Pressable
-                  onPress={() => {
-                    const current = Number.parseInt(maxStops, 10) || 10;
-                    setMaxStops(String(Math.max(1, current - 1)));
-                  }}
-                  style={[styles.stepButton, { borderColor: cardBorder }]}
-                >
-                  <FontAwesome name="minus" size={12} color={palette.text} />
-                </Pressable>
-                <TextInput
-                  value={maxStops}
-                  onChangeText={handleMaxStopsChange}
-                  keyboardType="number-pad"
-                  style={[
-                    styles.maxStopsInput,
-                    { color: palette.text, borderColor: cardBorder },
-                  ]}
-                  maxLength={2}
-                />
-                <Pressable
-                  onPress={() => {
-                    const current = Number.parseInt(maxStops, 10) || 10;
-                    setMaxStops(String(Math.min(60, current + 1)));
-                  }}
-                  style={[styles.stepButton, { borderColor: cardBorder }]}
-                >
-                  <FontAwesome name="plus" size={12} color={palette.text} />
-                </Pressable>
-              </View>
-            </View>
+            {/* Max stops is now regulated by scooper tier, no user input needed */}
 
             {/* Actions */}
             <View style={styles.actions}>
@@ -412,28 +370,6 @@ const styles = StyleSheet.create({
   windowChipText: {
     fontSize: 13,
     fontWeight: '600',
-  },
-  maxStopsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  stepButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  maxStopsInput: {
-    width: 60,
-    height: 44,
-    borderWidth: 1,
-    borderRadius: 10,
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: '700',
   },
   actions: {
     paddingTop: 16,

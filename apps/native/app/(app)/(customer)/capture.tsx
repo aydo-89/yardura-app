@@ -499,19 +499,14 @@ export default function OwnerCaptureScreen() {
                 (status === 'capturing' || status === 'uploading') && styles.actionButtonDisabled,
               ]}
             >
-              <View style={styles.actionButtonIcon}>
-                <FontAwesome
-                  name={status === 'capturing' ? 'spinner' : 'camera'}
-                  size={18}
-                  color="#FFFFFF"
-                />
-              </View>
-              <View style={styles.actionButtonText}>
-                <Text style={styles.actionButtonTitle}>
-                  {status === 'capturing' ? 'Opening...' : 'Capture'}
-                </Text>
-                <Text style={styles.actionButtonSubtitle}>Take photo</Text>
-              </View>
+              <FontAwesome
+                name={status === 'capturing' ? 'spinner' : 'camera'}
+                size={18}
+                color="#FFFFFF"
+              />
+              <Text style={styles.actionButtonTitle}>
+                {status === 'capturing' ? 'Wait...' : 'Capture'}
+              </Text>
             </Pressable>
 
             <Pressable
@@ -528,21 +523,14 @@ export default function OwnerCaptureScreen() {
                 (!isReadyToAnalyze || status === 'uploading') && styles.actionButtonDisabled,
               ]}
             >
-              <View style={[styles.actionButtonIcon, { backgroundColor: isReadyToAnalyze ? 'rgba(255,255,255,0.2)' : `${palette.muted}20` }]}>
-                <FontAwesome
-                  name={status === 'uploading' ? 'spinner' : 'search'}
-                  size={18}
-                  color={isReadyToAnalyze ? '#FFFFFF' : palette.muted}
-                />
-              </View>
-              <View style={styles.actionButtonText}>
-                <Text style={[styles.actionButtonTitle, { color: isReadyToAnalyze ? '#FFFFFF' : palette.muted }]}>
-                  {status === 'uploading' ? 'Analyzing...' : 'Analyze'}
-                </Text>
-                <Text style={[styles.actionButtonSubtitle, { color: isReadyToAnalyze ? 'rgba(255,255,255,0.8)' : palette.muted }]}>
-                  {isReadyToAnalyze ? 'Run AI scan' : 'Capture first'}
-                </Text>
-              </View>
+              <FontAwesome
+                name={status === 'uploading' ? 'spinner' : 'search'}
+                size={18}
+                color={isReadyToAnalyze ? '#FFFFFF' : palette.muted}
+              />
+              <Text style={[styles.actionButtonTitle, { color: isReadyToAnalyze ? '#FFFFFF' : palette.muted }]}>
+                {status === 'uploading' ? 'Scanning...' : 'Analyze'}
+              </Text>
             </Pressable>
           </View>
 
@@ -830,33 +818,19 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 14,
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 14,
   },
   actionButtonDisabled: {
     opacity: 0.5,
   },
-  actionButtonIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionButtonText: {
-    flex: 1,
-    gap: 2,
-  },
   actionButtonTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  actionButtonSubtitle: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
   },
   statusCard: {
     flexDirection: 'row',

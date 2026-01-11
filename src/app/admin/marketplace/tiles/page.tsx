@@ -337,7 +337,7 @@ type ServiceAreaMetricsResponse = {
 };
 
 const STATUS_LABELS: Record<ServiceAreaStatus, string> = {
-  DRAFT: "Draft",
+  DRAFT: "Waitlist", // DRAFT treated as Waitlist in UI
   WAITLIST: "Waitlist",
   LIVE: "Live",
   SUSPENDED: "Suspended",
@@ -346,7 +346,7 @@ const STATUS_LABELS: Record<ServiceAreaStatus, string> = {
 const STATUS_BADGE_CLASSES: Record<ServiceAreaStatus, string> = {
   LIVE: "bg-brand-mint/10 text-brand-mint dark:bg-brand-mint/20 dark:text-brand-mint",
   WAITLIST: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200",
-  DRAFT: "bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300",
+  DRAFT: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200", // DRAFT uses same style as Waitlist
   SUSPENDED: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200",
 };
 

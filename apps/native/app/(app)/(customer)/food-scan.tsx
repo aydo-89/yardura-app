@@ -40,6 +40,7 @@ export default function FoodScanScreen() {
   const [ingredients, setIngredients] = useState('');
   const [labelAsset, setLabelAsset] = useState<ScanAsset | null>(null);
   const [showInsights, setShowInsights] = useState(false);
+  const [ingredientScanAttempted, setIngredientScanAttempted] = useState(false);
 
   const {
     access,
@@ -122,11 +123,19 @@ export default function FoodScanScreen() {
       setLabelAsset(asset);
       if (scan.brand) setBrand((prev) => prev.trim() || scan.brand || '');
       if (scan.productName) setProductName((prev) => prev.trim() || scan.productName || '');
-      if (scan.ingredients) setIngredients((prev) => prev.trim() || scan.ingredients || '');
+      if (scan.ingredients) {
+        setIngredients((prev) => prev.trim() || scan.ingredients || '');
+      }
+      // Mark that we attempted to scan ingredients (from label)
+      setIngredientScanAttempted(true);
       const scanType = normalizeScanType(scan.type);
       if (scanType) setType(scanType);
     } else {
-      if (scan.ingredients) setIngredients((prev) => prev.trim() || scan.ingredients || '');
+      // Mark that we attempted to scan ingredients
+      setIngredientScanAttempted(true);
+      if (scan.ingredients) {
+        setIngredients((prev) => prev.trim() || scan.ingredients || '');
+      }
     }
   };
 
@@ -155,11 +164,12 @@ export default function FoodScanScreen() {
     setIngredients('');
     setLabelAsset(null);
     setShowInsights(false);
+    setIngredientScanAttempted(false);
     clearMessages();
   };
 
   const heroBackground =
-    colorScheme === 'light' ? Colors.brand.graphite : Colors.brand.slate950;
+    colorScheme === 'light' ? Colors.brand.graphite : '#1E293B';
 
   return (
     <Screen>
@@ -276,6 +286,9 @@ export default function FoodScanScreen() {
               />
             ))}
           </View>
+          <Text style={[styles.typeHint, { color: palette.muted }]}>
+            {TYPE_OPTIONS.find((o) => o.value === type)?.examples}
+          </Text>
         </View>
 
         {/* Manual entry */}
@@ -308,6 +321,29 @@ export default function FoodScanScreen() {
             multiline
           />
         </View>
+
+        {/* Wellness score - N/A state when scan attempted but no ingredients found */}
+        {ingredientScanAttempted && !ingredientsReady && (
+          <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <View style={styles.scoreHeader}>
+              <View style={styles.scoreMeta}>
+                <Text style={[styles.sectionTitle, { color: palette.text }]}>Wellness score</Text>
+                <Text style={[styles.helper, { color: palette.muted }]}>
+                  No ingredients detected from scan
+                </Text>
+              </View>
+              <View style={[styles.scoreBadge, { backgroundColor: palette.muted }]}>
+                <Text style={styles.scoreValue}>N/A</Text>
+              </View>
+            </View>
+            <View style={styles.naHelpBox}>
+              <FontAwesome name="info-circle" size={14} color={palette.muted} />
+              <Text style={[styles.naHelpText, { color: palette.muted }]}>
+                Try scanning the ingredient panel directly, or paste ingredients manually in the field above.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Wellness score */}
         {ingredientsReady && (
@@ -617,6 +653,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  typeHint: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 8,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -757,6 +798,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.04)',
   },
   noInsightsText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  naHelpBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 12,
+  },
+  naHelpText: {
     flex: 1,
     fontSize: 13,
     lineHeight: 18,

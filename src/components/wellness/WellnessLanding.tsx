@@ -133,7 +133,7 @@ const TOOLKIT_FEATURES = [
   },
   {
     icon: MapPin,
-    title: "Poop map",
+    title: "Yard map",
     copy: "Heatmap and pin views to spot yard hot spots and frequency shifts.",
     accent: "mint",
   },
@@ -937,7 +937,7 @@ export default function WellnessLanding() {
                   "AI stool analysis with 3C recap + watch/monitor/vet now",
                   "Context-aware AI chat",
                   "Food log, meds, and stool library tools",
-                  "Poop map, parasite risk, and weather safety alerts",
+                  "Yard map, parasite risk, and weather safety alerts",
                   "PDF vet report",
                   "Privacy-first storage with auto-blur",
                 ].map((item) => (

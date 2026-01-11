@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { ensureStripeCustomerId } from "@/lib/stripe/customer";
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const session = await safeGetServerSession(authOptions as any);
     if (!session?.user?.email) {
@@ -31,11 +31,27 @@ export async function POST(_request: NextRequest) {
       );
     }
 
+    // Get client IP and user agent for mandate verification
+    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || request.headers.get("x-real-ip")
+      || "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+
     const setupIntent = await stripe.setupIntents.create({
       customer: stripeCustomerId,
       usage: "off_session",
       automatic_payment_methods: {
         enabled: true,
+      },
+      // Mandate data provides stronger card verification and fraud protection
+      mandate_data: {
+        customer_acceptance: {
+          type: "online",
+          online: {
+            ip_address: clientIp,
+            user_agent: userAgent,
+          },
+        },
       },
     });
 

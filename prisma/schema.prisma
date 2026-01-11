@@ -62,6 +62,9 @@ model User {
   stripeConnectAccountId String?
   pushNotificationsEnabled Boolean @default(true)
 
+  // OAuth provider IDs for Sign in with Apple/Google
+  appleId          String?   @unique
+
   // Sales rep specific fields
   salesRepId     String? // ID of the sales rep who signed them up
   commissionRate Float? // Commission rate for this sales rep
@@ -112,6 +115,7 @@ model User {
   withdrawalRequests          ScooperWithdrawalRequest[] @relation("ScooperWithdrawalScooper")
   withdrawalReviews           ScooperWithdrawalRequest[] @relation("ScooperWithdrawalReviewer")
   pushTokens                  UserPushToken[]
+  householdMemberships        HouseholdMember[]
 }
 
 model VerificationToken {
@@ -157,6 +161,9 @@ model Dog {
   vetName   String?
   vetPhone  String?
   vetClinic String?
+  insuranceProvider     String?
+  insurancePolicyNumber String?
+  insurancePhone        String?
   photoUrl  String?
   userId    String
   createdAt DateTime @default(now())
@@ -181,6 +188,7 @@ model Dog {
   foodProducts CustomerFoodProduct[]
   foodSchedules CustomerFoodSchedule[]
   weightEntries DogWeightEntry[]
+  vetDocuments CustomerVetDocument[]
 }
 
 // Service visits
@@ -463,6 +471,7 @@ model Org {
   customerFoodProducts     CustomerFoodProduct[]
   customerFoodSchedules    CustomerFoodSchedule[]
   dogWeightEntries         DogWeightEntry[]
+  customerVetDocuments     CustomerVetDocument[]
 
   // unique on slug already declared at field level
 }
@@ -547,6 +556,46 @@ model Customer {
   foodSchedules CustomerFoodSchedule[]
   billingPlans  CustomerBillingPlan[]       @relation("CustomerBillingPlans")
   billingLedger CustomerBillingLedgerEntry[] @relation("CustomerBillingLedger")
+  householdMembers HouseholdMember[]
+  vetDocuments CustomerVetDocument[]
+}
+
+// Household member / temporary access for dog sitters, family members, etc.
+model HouseholdMember {
+  id           String                @id @default(cuid())
+  customerId   String
+  customer     Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  userId       String?               // Linked user account if they've signed up
+  user         User?                 @relation(fields: [userId], references: [id])
+  name         String
+  email        String
+  role         HouseholdMemberRole   @default(FAMILY_MEMBER)
+  status       HouseholdMemberStatus @default(PENDING)
+  inviteToken  String?               @unique
+  expiresAt    DateTime?             // Null = permanent, otherwise temporary access
+  lastAccessAt DateTime?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@unique([customerId, email])
+  @@index([customerId])
+  @@index([userId])
+  @@index([inviteToken])
+}
+
+enum HouseholdMemberRole {
+  FAMILY_MEMBER    // Lives in household, permanent access
+  DOG_SITTER       // Temporary caretaker
+  DOG_WALKER       // Regular walker
+  HOUSE_SITTER     // Temporary while owner is away
+  EMERGENCY_CONTACT // Can view but limited actions
+}
+
+enum HouseholdMemberStatus {
+  PENDING   // Invite sent, not yet accepted
+  ACTIVE    // Accepted and has access
+  EXPIRED   // Access period ended
+  REVOKED   // Manually removed by owner
 }
 
 model CustomerWellnessPlan {
@@ -786,6 +835,36 @@ model CustomerFoodSchedule {
   @@index([productId])
 }
 
+// Cached pet food products from external sources (e.g., Chewy via Unwrangle)
+model PetFoodProduct {
+  id            String    @id @default(cuid())
+  chewyId       String?   @unique
+  chewyUrl      String?
+  name          String
+  brand         String
+  type          String    @default("FOOD")  // FOOD, TREAT, SUPPLEMENT, MEDICATION
+  ingredients   String?   @db.Text
+  imageUrl      String?
+  price         Float?
+  autoshipPrice Float?
+  rating        Float?
+  reviewCount   Int?
+  inStock       Boolean   @default(true)
+  lifestage     String?   // Puppy, Adult, Senior, All Lifestages
+  breedSize     String?   // Small, Medium, Large, All Breeds
+  specialDiets  String[]  @default([])
+  description   String?   @db.Text
+  searchCount   Int       @default(0)
+  lastFetchedAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([brand])
+  @@index([type])
+  @@index([name])
+  @@index([searchCount])
+}
+
 model CustomerEmailReportPreference {
   id             String                     @id @default(cuid())
   orgId          String
@@ -872,7 +951,6 @@ enum DeodorizeMode {
 }
 
 enum ServiceTileStatus {
-  DRAFT
   WAITLIST
   LIVE
   SUSPENDED
@@ -2169,6 +2247,34 @@ model CustomerWellnessEmbedding {
   @@index([sourceType])
 }
 
+// Vet document uploads and AI analysis
+model CustomerVetDocument {
+  id              String   @id @default(cuid())
+  orgId           String
+  customerId      String
+  dogId           String?
+  documentUrl     String
+  documentName    String
+  documentType    String?  // e.g., "ultrasound", "surgery", "bloodwork", "general"
+  visitDate       DateTime?
+  veterinarian    String?
+  clinic          String?
+  // AI-extracted data stored as JSON
+  analysis        Json?    // { problemList, diagnostics, caseSummary, atHomeCare, followUp, etc. }
+  analysisStatus  String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  analysisError   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dog      Dog?     @relation(fields: [dogId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, createdAt])
+  @@index([orgId])
+  @@index([dogId])
+}
+
 // ======================================
 // Visit Communications (SMS/Email)
 // ======================================
@@ -2366,7 +2472,7 @@ model ServiceTile {
   territory            Territory?        @relation(fields: [territoryId], references: [id])
   slug                 String
   name                 String
-  status               ServiceTileStatus @default(DRAFT)
+  status               ServiceTileStatus @default(WAITLIST)
   goLiveDate           DateTime?
   minCertifiedScoopers Int               @default(0)
   minCustomerUnits     Int               @default(0)

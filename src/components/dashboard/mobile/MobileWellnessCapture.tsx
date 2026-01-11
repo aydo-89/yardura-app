@@ -615,7 +615,7 @@ export default function MobileWellnessCapture({
         <div>
           <h3 className="text-sm font-semibold text-white">Optional add-ons</h3>
           <p className="text-xs text-slate-400">
-            Add location for your poop map and confirm data-sharing preferences.
+            Add location for your yard map and confirm data-sharing preferences.
           </p>
         </div>
         <Link
