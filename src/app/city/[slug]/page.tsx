@@ -3,6 +3,7 @@ import {
   getCitySlugs,
   getNeighborhoodDetails,
   type CityData,
+  type CityStatus,
 } from "@/lib/cityData";
 import { INSIGHT_ARTICLES } from "@/data/insightsArticles";
 import AnimatedHeader from "@/components/site/AnimatedHeader";
@@ -169,10 +170,10 @@ export default async function CityPage({ params }: CityPageProps) {
           <div className="relative z-10 container mx-auto px-6 py-20 text-center space-y-6 drop-shadow-[0_20px_45px_rgba(0,0,0,0.35)] dark:drop-shadow-[0_20px_45px_rgba(0,0,0,0.65)]">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/20 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-white/90 backdrop-blur dark:border-white/20 dark:bg-black/40">
               <Sparkles className="h-4 w-4 text-[#f3a433]" />
-              {city.tagline ?? "AI-powered dog waste removal"}
+              {city.status === "WAITLIST" ? "Coming Soon" : (city.tagline ?? "AI-powered dog waste removal")}
             </div>
             <h1 className="font-serif text-[clamp(2.8rem,5vw,4.5rem)] leading-[1.05] text-white">
-              {city.displayName}, Minnesota
+              {city.displayName}, {city.state}
             </h1>
             <p className="mx-auto max-w-3xl text-lg text-white/90 leading-relaxed">
               {city.description}
@@ -181,40 +182,104 @@ export default async function CityPage({ params }: CityPageProps) {
             <div className="flex flex-wrap justify-center gap-4 text-xs font-semibold text-white/85">
               <div className="inline-flex items-center gap-2">
                 <Users className="h-4 w-4 text-[#f3a433]" />
-                {city.population.toLocaleString()} residents served
+                {city.status === "WAITLIST" ? `${city.population.toLocaleString()} potential customers` : `${city.population.toLocaleString()} residents served`}
               </div>
               <div className="inline-flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-[#f3a433]" />
-                {city.zipCodes.length} ZIP codes covered
+                {city.zipCodes.length} ZIP codes {city.status === "WAITLIST" ? "planned" : "covered"}
               </div>
               <div className="inline-flex items-center gap-2">
                 <Star className="h-4 w-4 text-[#f3a433]" />
-                {city.reviewSummary?.rating ? `${city.reviewSummary.rating.toFixed(1)}★ avg rating` : "AI wellness insights included"}
+                {city.status === "WAITLIST" ? "Join waitlist to launch faster" : (city.reviewSummary?.rating ? `${city.reviewSummary.rating.toFixed(1)}★ avg rating` : "AI wellness insights included")}
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-              <Button
-                asChild
-                className="h-12 rounded-full bg-[#f3a433] px-8 text-base font-semibold text-black shadow-[0_20px_45px_rgba(243,164,51,0.45)] hover:bg-[#f5b249]"
-              >
-                <Link href="/quote?businessId=yardura">
-                  Get a custom quote
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-12 rounded-full border-white/55 bg-white/90 px-6 text-base font-semibold text-[#1c1209] shadow-[0_12px_30px_rgba(0,0,0,0.2)] hover:bg-white dark:border-white dark:bg-transparent dark:text-white dark:hover:bg-white/15"
-                asChild
-              >
-                <a href="tel:1-877-417-YARD">
-                  <Phone className="mr-2 h-4 w-4" /> Call {city.localBusiness.phone}
-                </a>
-              </Button>
-            </div>
+            {city.status === "WAITLIST" ? (
+              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+                <Button
+                  asChild
+                  className="h-12 rounded-full bg-[#f3a433] px-8 text-base font-semibold text-black shadow-[0_20px_45px_rgba(243,164,51,0.45)] hover:bg-[#f5b249]"
+                >
+                  <Link href={`/city#search`}>
+                    Join the Waitlist
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-full border-white/55 bg-white/90 px-6 text-base font-semibold text-[#1c1209] shadow-[0_12px_30px_rgba(0,0,0,0.2)] hover:bg-white dark:border-white dark:bg-transparent dark:text-white dark:hover:bg-white/15"
+                  asChild
+                >
+                  <Link href="/scooper">
+                    <Users className="mr-2 h-4 w-4" /> Become a Scooper
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+                <Button
+                  asChild
+                  className="h-12 rounded-full bg-[#f3a433] px-8 text-base font-semibold text-black shadow-[0_20px_45px_rgba(243,164,51,0.45)] hover:bg-[#f5b249]"
+                >
+                  <Link href="/quote?businessId=yardura">
+                    Get a custom quote
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-full border-white/55 bg-white/90 px-6 text-base font-semibold text-[#1c1209] shadow-[0_12px_30px_rgba(0,0,0,0.2)] hover:bg-white dark:border-white dark:bg-transparent dark:text-white dark:hover:bg-white/15"
+                  asChild
+                >
+                  <a href="tel:1-877-417-YARD">
+                    <Phone className="mr-2 h-4 w-4" /> Call {city.localBusiness.phone}
+                  </a>
+                </Button>
+              </div>
+            )}
           </div>
         </section>
+
+        {/* Waitlist Banner for Expansion Cities */}
+        {city.status === "WAITLIST" && (
+          <section className="bg-gradient-to-r from-amber-50 via-white to-amber-50 dark:from-amber-900/20 dark:via-slate-900 dark:to-amber-900/20 border-y border-amber-200 dark:border-amber-800/30">
+            <div className="container mx-auto px-6 py-10">
+              <div className="mx-auto max-w-3xl text-center space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 dark:bg-amber-900/40 px-4 py-2 text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  <Clock className="h-4 w-4" />
+                  Coming Soon to {city.displayName}
+                </div>
+                <h2 className="font-serif text-2xl md:text-3xl text-slate-900 dark:text-white">
+                  Help us launch in {city.displayName}!
+                </h2>
+                <p className="text-slate-600 dark:text-white/80">
+                  We expand to cities with the most demand. Join the waitlist to help bring InsightScoop to your neighborhood—the more signups, the faster we launch!
+                </p>
+                <div className="flex flex-col sm:flex-row justify-center gap-4 pt-2">
+                  <Button
+                    asChild
+                    className="h-12 rounded-full bg-[#f3a433] px-8 text-base font-semibold text-black shadow-lg hover:bg-[#f5b249]"
+                  >
+                    <Link href="/city#search">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Join the {city.displayName} Waitlist
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="h-12 rounded-full border-slate-300 dark:border-white/20"
+                  >
+                    <Link href="/scooper">
+                      <Users className="mr-2 h-4 w-4" />
+                      Become a Scooper — earn $20-30/hr
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="container mx-auto px-6 py-16 space-y-16">
 
@@ -242,7 +307,7 @@ export default async function CityPage({ params }: CityPageProps) {
               </CardHeader>
               <CardContent className="grid gap-4 text-left">
                 {(city.insightHighlights ?? [
-                  "Every pickup is logged automatically—no fumbling with phones in Minnesota winters.",
+                  "Every pickup is logged automatically—digital tracking that works in any weather.",
                   "Our AI captures and analyzes stool samples each visit, giving you actionable health insights to share with your vet.",
                   "Required gate, proof-of-gear, and sanitation photos keep HOA boards and property managers confident in weekly service.",
                 ]).map((highlight, index) => (
