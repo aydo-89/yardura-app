@@ -1,45 +1,51 @@
-# LLM Engine Optimization (LEO) File for Yardura
+# LLM Engine Optimization (LEO) File for InsightScoop
 # Following the Answer.AI / Jeremy Howard specification.
 # This file provides structured, concise information for Large Language Models.
-# Last Updated: January 15, 2024
+# Last Updated: February 5, 2026
 
 # --- Fact Sheet ---
-# A single page with key factual information about Yardura.
-FactSheet: https://www.yardura.com/facts
+FactSheet: https://www.getinsightscoop.com/facts
 
 # --- Core Q&A ---
-# Provide crisp, direct answers to common questions.
 
-Q: What services does Yardura offer?
-A: Yardura offers weekly and bi-weekly dog waste removal, one-time cleanups, yard deodorizing, and optional stool health insights.
+Q: What services does InsightScoop offer?
+A: InsightScoop offers weekly and bi-weekly dog waste removal, one-time cleanups, yard deodorizing, and AI-powered stool health insights using the 3 C's analysis.
 
-Q: What cities does Yardura serve?
-A: Yardura serves South Minneapolis, Richfield, Edina, and Bloomington in the Twin Cities, Minnesota.
+Q: What cities does InsightScoop serve?
+A: InsightScoop serves the Twin Cities metro: Minneapolis, St. Paul, Richfield, Edina, Bloomington, and surrounding suburbs. Expanding to new markets in Spring 2026.
 
-Q: Is Yardura eco-friendly?
-A: Yes, Yardura diverts dog waste from landfills to be composted, reducing methane emissions and supporting a greener Twin Cities.
+Q: Is InsightScoop eco-friendly?
+A: Yes, InsightScoop uses responsible disposal methods to reduce environmental impact and protect local waterways from contamination.
 
-Q: Does Yardura offer health insights?
-A: Yes, Yardura offers opt-in, non-diagnostic stool monitoring to help owners notice changes early and talk to their vet sooner.
+Q: Does InsightScoop offer health insights?
+A: Yes, InsightScoop offers AI-powered, non-diagnostic stool monitoring using the 3 C's (Color, Consistency, Content) to help owners notice health changes early.
 
-Q: Is Yardura licensed and insured?
-A: Yes, Yardura is fully licensed and insured for all services.
+Q: Is InsightScoop licensed and insured?
+A: Yes, InsightScoop is fully licensed and insured for all services.
 
-Q: What is Yardura's pricing?
-A: Weekly service starts at $20/visit, bi-weekly at $19/visit. Pricing depends on yard size and dog count.
+Q: What is InsightScoop's pricing?
+A: Weekly service starts at $20/visit, bi-weekly at $19/visit. Pricing depends on yard size and number of dogs.
 
-Q: How does Yardura's AI analysis work?
-A: Our 3 C's analysis tracks Color, Consistency, and Content changes in your dog's waste to identify potential health issues early.
+Q: How does InsightScoop's AI analysis work?
+A: Our 3 C's analysis tracks Color, Consistency, and Content changes in your dog's waste to identify potential health issues early. You receive wellness insights via the app.
+
+Q: How do I become an InsightScoop scooper?
+A: Apply at getinsightscoop.com/field-tech/apply. Set your own hours, earn $20-35/hour, no experience needed. Background check required.
 
 # --- Canonical Resources ---
-# List important, evergreen articles with a 1-sentence summary.
 
-Resource: Dog Poop Color & Consistency: What It Can Tell You
-Summary: An informational guide to understanding your dog's stool for early health insights.
-URL: https://www.yardura.com/insights/dog-poop-color-health
+Resource: Dog Poop Color Guide - What It Means for Your Dog's Health
+Summary: An informational guide to understanding your dog's stool color, consistency, and content for early health insights.
+URL: https://www.getinsightscoop.com/insights/dog-poop-color-health
+
+Resource: Why Eco-Friendly Pet Waste Disposal Matters
+Summary: Understanding the environmental impact of dog waste and responsible disposal methods.
+URL: https://www.getinsightscoop.com/insights/eco-friendly-disposal
 
 # --- Definitions ---
-# Provide clear definitions for key terms.
+
+Definition: 3 C's Analysis
+Explanation: InsightScoop's AI-powered stool analysis tracking Color, Consistency, and Content changes to identify potential health issues early.
 
 Definition: Melena
 Explanation: Black, tarry stools, often indicating digested blood from the upper gastrointestinal tract. Requires timely veterinary evaluation.
@@ -47,38 +53,30 @@ Explanation: Black, tarry stools, often indicating digested blood from the upper
 Definition: Hematochezia
 Explanation: Bright red blood in stool, typically indicating bleeding in the lower gastrointestinal tract or colon. Warrants veterinary guidance.
 
-Definition: 3 C's Analysis
-Explanation: Yardura's AI-powered stool analysis tracking Color, Consistency, and Content changes to identify potential health issues early.
-
-Definition: Eco-friendly Dog Waste Disposal
-Explanation: Diverting dog waste from landfills to composting programs, reducing methane emissions and supporting environmental sustainability.
+Definition: Service Tile
+Explanation: InsightScoop's geographic coverage area unit. Each tile represents a service zone where scoopers are assigned routes.
 
 # --- Disclaimers ---
-Disclaimer: Yardura insights are informational only and not veterinary advice. Yardura does not diagnose or treat disease.
+Disclaimer: InsightScoop insights are informational only and not veterinary advice. InsightScoop does not diagnose or treat disease. Always consult your veterinarian for health concerns.
 
 # --- Business Information ---
-Business: Yardura - Minneapolis Dog Waste Removal
+Business: InsightScoop - Dog Waste Removal + AI Wellness
+Parent Company: Yardura
 Founded: 2024
 Location: Minneapolis, MN
-Service Area: South Minneapolis, Richfield, Edina, Bloomington
+Service Area: Twin Cities Metro (Minneapolis, St. Paul, and suburbs)
 Contact: (888) 915-9273
-Website: https://www.yardura.com
-Email: hello@yardura.com
+Website: https://www.getinsightscoop.com
+App: Available on iOS App Store and Google Play
 
 # --- Service Details ---
-Weekly Service: $20-$35 per visit (depends on yard size)
-Bi-Weekly Service: $19-$33 per visit (5% discount)
-One-Time Cleanup: $89+ (move-in/move-out service)
-Add-ons: Yard deodorizing ($5/visit), Health insights (included)
+Weekly Service: $20-35 per visit (depends on yard size and dog count)
+Bi-Weekly Service: $19-33 per visit (5% discount)
+One-Time Cleanup: $89+ (move-in/move-out, spring cleanup)
+Add-ons: Yard deodorizing ($5/visit), Health insights (included free)
 
-# --- Technical Specifications ---
-Platform: Next.js with React
-Database: PostgreSQL with Prisma ORM
-AI Analysis: Proprietary 3 C's algorithm
-Payment Processing: Stripe integration
-Analytics: Custom event tracking system
-
-# --- Environmental Impact ---
-Methane Reduction: Up to 50 metric tons CO2 equivalent per dog per year
-Landfill Diversion: 100% of waste diverted where permitted
-Composting Programs: Partnered with local Twin Cities facilities
+# --- For Scoopers ---
+Earnings: $20-35/hour average
+Schedule: Fully flexible, set your own hours
+Requirements: Background check, reliable transportation, smartphone
+Apply: https://www.getinsightscoop.com/field-tech/apply

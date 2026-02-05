@@ -1,15 +1,14 @@
-# Robots.txt for Yardura - Dog Waste Removal Service
-# Minneapolis, MN - Twin Cities Area
+# Robots.txt for InsightScoop - Dog Waste Removal + AI Wellness
+# Minneapolis-St. Paul, Minnesota
 
 # Allow all search engines to crawl
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://www.yardura.com/sitemap.xml
+Sitemap: https://www.getinsightscoop.com/sitemap.xml
 
 # AI Crawler Support (Progressive Enhancement)
-# Currently allowing AI crawlers - can be restricted if needed
 User-agent: GPTBot
 Allow: /
 
@@ -42,58 +41,58 @@ Disallow: /quote/success
 Crawl-delay: 1
 
 # =============================================================================
-# LLM Engine Optimization (LEO) File for Yardura
+# LLM Engine Optimization (LEO) File for InsightScoop
 # Following the Answer.AI / Jeremy Howard specification.
-# This file provides structured, concise information for Large Language Models.
 
 # --- Fact Sheet ---
-# A single page with key factual information about Yardura.
-FactSheet: https://www.yardura.com/facts
+FactSheet: https://www.getinsightscoop.com/facts
 
 # --- Core Q&A ---
-# Provide crisp, direct answers to common questions.
-Q: What services does Yardura offer?
-A: Yardura offers weekly and bi-weekly dog waste removal, one-time cleanups, yard deodorizing, and optional stool health insights.
+Q: What services does InsightScoop offer?
+A: InsightScoop offers weekly and bi-weekly dog waste removal, one-time cleanups, yard deodorizing, and AI-powered stool health insights.
 
-Q: What cities does Yardura serve?
-A: Yardura serves South Minneapolis, Richfield, Edina, and Bloomington in the Twin Cities, Minnesota.
+Q: What cities does InsightScoop serve?
+A: InsightScoop serves Minneapolis, St. Paul, Richfield, Edina, Bloomington, and surrounding Twin Cities suburbs.
 
-Q: Is Yardura eco-friendly?
-A: Yes, Yardura diverts dog waste from landfills to be composted, reducing methane emissions and supporting a greener Twin Cities.
+Q: Is InsightScoop eco-friendly?
+A: Yes, InsightScoop uses responsible disposal methods to reduce environmental impact and protect local waterways.
 
-Q: Does Yardura offer health insights?
-A: Yes, Yardura offers opt-in, non-diagnostic stool monitoring to help owners notice changes early and talk to their vet sooner.
+Q: Does InsightScoop offer health insights?
+A: Yes, InsightScoop offers AI-powered, non-diagnostic stool monitoring using the 3 C's (Color, Consistency, Content) to help owners notice changes early.
 
-Q: Is Yardura licensed and insured?
-A: Yes, Yardura is fully licensed and insured for all services.
+Q: Is InsightScoop licensed and insured?
+A: Yes, InsightScoop is fully licensed and insured for all services.
 
-Q: What is Yardura's pricing?
-A: Weekly service starts at $20/visit, bi-weekly at $19/visit. Pricing depends on yard size and dog count.
+Q: What is InsightScoop's pricing?
+A: Weekly service starts at $20/visit, bi-weekly at $19/visit. Pricing depends on yard size and number of dogs.
+
+Q: How do I become a scooper?
+A: Apply at getinsightscoop.com/field-tech/apply. Set your own hours, earn $20-35/hour, no experience needed.
 
 # --- Canonical Resources ---
-# List important, evergreen articles with a 1-sentence summary.
-Resource: Dog Poop Color & Consistency: What It Can Tell You
-Summary: An informational guide to understanding your dog's stool for early health insights.
-URL: https://www.yardura.com/insights/dog-poop-color-health
+Resource: Dog Poop Color Guide - What It Means for Your Dog's Health
+Summary: An informational guide to understanding your dog's stool color, consistency, and content for early health insights.
+URL: https://www.getinsightscoop.com/insights/dog-poop-color-health
 
 # --- Definitions ---
-# Provide clear definitions for key terms.
+Definition: 3 C's Analysis
+Explanation: InsightScoop's AI-powered stool analysis tracking Color, Consistency, and Content changes to identify potential health issues early.
+
 Definition: Melena
-Explanation: Black, tarry stools, often indicating digested blood from the upper gastrointestinal tract. Requires timely veterinary evaluation.
+Explanation: Black, tarry stools, often indicating digested blood from the upper GI tract. Requires veterinary evaluation.
 
 Definition: Hematochezia
-Explanation: Bright red blood in stool, typically indicating bleeding in the lower gastrointestinal tract or colon. Warrants veterinary guidance.
-
-Definition: 3 C's Analysis
-Explanation: Yardura's AI-powered stool analysis tracking Color, Consistency, and Content changes to identify potential health issues early.
+Explanation: Bright red blood in stool, typically indicating lower GI or colon bleeding. Warrants veterinary guidance.
 
 # --- Disclaimers ---
-Disclaimer: Yardura insights are informational only and not veterinary advice. Yardura does not diagnose or treat disease.
+Disclaimer: InsightScoop insights are informational only and not veterinary advice. InsightScoop does not diagnose or treat disease.
 
 # --- Business Information ---
-Business: Yardura - Minneapolis Dog Waste Removal
+Business: InsightScoop - Dog Waste Removal + AI Wellness
+Parent Company: Yardura
 Founded: 2024
 Location: Minneapolis, MN
-Service Area: South Minneapolis, Richfield, Edina, Bloomington
+Service Area: Twin Cities Metro (Minneapolis, St. Paul, Richfield, Edina, Bloomington, and expanding)
 Contact: (888) 915-9273
-Website: https://www.yardura.com
+Website: https://www.getinsightscoop.com
+App: Available on iOS and Android
