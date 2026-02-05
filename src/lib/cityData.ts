@@ -2234,6 +2234,745 @@ export const CITY_DATA: Record<string, CityData> = {
       ],
     },
   },
+
+  // ============================================
+  // EXPANSION MARKETS (WAITLIST)
+  // ============================================
+
+  indianapolis: {
+    name: "indianapolis",
+    displayName: "Indianapolis",
+    state: "IN",
+    status: "WAITLIST" as CityStatus,
+    population: 887642,
+    description:
+      "InsightScoop is expanding to Indianapolis! Join our waitlist for AI-powered stool monitoring and professional dog waste removal across Broad Ripple, Carmel, Fishers, and beyond.",
+    tagline: "From the Canal Walk to Carmel's trails—InsightScoop is bringing AI-backed yard care to Indy.",
+    geo: {
+      latitude: 39.7684,
+      longitude: -86.1581,
+    },
+    zipCodes: [
+      "46202", "46203", "46204", "46205", "46208", "46220", "46225", "46226",
+      "46227", "46228", "46240", "46250", "46260", "46268", "46280", "46032",
+      "46033", "46037", "46038", "46062", "46074", "46077"
+    ],
+    neighborhoods: [
+      "Broad Ripple",
+      "Meridian-Kessler",
+      "Carmel",
+      "Fishers",
+      "Noblesville",
+      "Zionsville",
+      "Fountain Square",
+      "Geist"
+    ],
+    neighborhoodsDetailed: [
+      {
+        slug: "broad-ripple",
+        name: "Broad Ripple",
+        description:
+          "Indy's most dog-friendly neighborhood with the famous Broad Ripple Dog Park. InsightScoop will keep yards pristine while AI monitoring watches for health changes common in social, active pups.",
+        insightFocus: [
+          "Monitor for parasites after dog park visits",
+          "Track diet changes from brewery patio snacks",
+        ],
+        localTips: [
+          "Schedule post-weekend pickups after busy park days",
+          "Pair service with patio season deodorizing",
+        ],
+        seo: {
+          title: "InsightScoop Dog Waste Removal – Broad Ripple Indianapolis",
+          description:
+            "Join the waitlist for InsightScoop in Broad Ripple. AI-powered stool monitoring and professional poop pickup coming soon to Indy's most dog-friendly neighborhood.",
+          keywords: [
+            "Broad Ripple dog waste removal",
+            "Indianapolis poop scooping",
+            "Broad Ripple pet service",
+          ],
+        },
+      },
+      {
+        slug: "carmel",
+        name: "Carmel",
+        description:
+          "Carmel's manicured subdivisions and Monon Trail access make it perfect for InsightScoop's premium service. HOA-ready proof photos and AI wellness insights for active families.",
+        insightFocus: [
+          "HOA compliance documentation",
+          "Hydration monitoring for trail-active dogs",
+        ],
+        localTips: [
+          "Coordinate service around lawn care schedules",
+          "Add pre-event sweeps before backyard parties",
+        ],
+      },
+      {
+        slug: "fishers",
+        name: "Fishers",
+        description:
+          "Fast-growing Fishers families need reliable service. InsightScoop's Bluetooth logging and AI stool insights keep yards guest-ready for busy tech workers and young families.",
+        insightFocus: [
+          "AI tracking for food-sensitive pups",
+          "Quick-turn service for busy families",
+        ],
+        localTips: [
+          "Enable SMS alerts for service completion",
+          "Bundle with seasonal deep clean packages",
+        ],
+      },
+    ],
+    serviceAreas: ["Indianapolis", "Broad Ripple", "Carmel", "Fishers", "Noblesville", "Zionsville", "Westfield"],
+    stats: [
+      { label: "Dog parks in metro", value: "25+" },
+      { label: "Households with dogs", value: "47%" },
+      { label: "Expected launch", value: "Spring 2026" },
+    ],
+    insightHighlights: [
+      "Central Indiana's humid summers make parasite monitoring essential—InsightScoop's AI catches issues early.",
+      "Monon Trail access means active dogs need hydration tracking and post-exercise stool analysis.",
+      "HOA-heavy suburbs like Carmel and Fishers demand the proof photos InsightScoop provides.",
+    ],
+    faqs: [
+      {
+        question: "When will InsightScoop launch in Indianapolis?",
+        answer:
+          "We're targeting Spring 2026. Join the waitlist to lock in founding member pricing and be first to know when we go live.",
+      },
+      {
+        question: "What areas will you serve first?",
+        answer:
+          "We're launching in Broad Ripple, Meridian-Kessler, Carmel, and Fishers first, then expanding to Noblesville, Zionsville, and surrounding areas.",
+      },
+      {
+        question: "Do you offer service in Hamilton County?",
+        answer:
+          "Yes! Carmel, Fishers, Noblesville, Westfield, and Zionsville are all on our launch list for Hamilton County.",
+      },
+    ],
+    outboundLinks: [
+      {
+        label: "Indy Parks Dog Parks",
+        url: "https://www.indy.gov/activity/dog-parks",
+        description: "Find off-leash parks across Marion County.",
+      },
+      {
+        label: "Monon Trail Guide",
+        url: "https://www.indyculturaltrail.org/monon-trail/",
+        description: "Popular trail for dog walks from Broad Ripple to Carmel.",
+      },
+    ],
+    reviewSummary: {
+      rating: 0,
+      count: 0,
+    },
+    nearbyCities: ["carmel", "fishers", "noblesville", "zionsville"],
+    localBusiness: {
+      name: "InsightScoop Indianapolis",
+      address: "Indianapolis, IN 46220",
+      phone: "1-877-417-YARD",
+    },
+    seo: {
+      title: "InsightScoop Dog Waste Removal Coming to Indianapolis, IN",
+      description:
+        "Join the waitlist for InsightScoop's Indianapolis launch! AI-powered stool monitoring and professional poop pickup coming to Broad Ripple, Carmel, Fishers, and beyond.",
+      keywords: [
+        "Indianapolis dog waste removal",
+        "Indy poop scooping service",
+        "Carmel pet waste cleanup",
+        "Fishers dog poop pickup",
+        "Broad Ripple dog service",
+      ],
+    },
+  },
+
+  "raleigh-durham": {
+    name: "raleigh-durham",
+    displayName: "Raleigh-Durham",
+    state: "NC",
+    status: "WAITLIST" as CityStatus,
+    population: 474069,
+    description:
+      "InsightScoop is expanding to the Triangle! Join our waitlist for AI-powered stool monitoring and professional dog waste removal across Raleigh, Durham, Cary, and Chapel Hill.",
+    tagline: "Research Triangle innovation meets InsightScoop AI—keeping Triangle yards spotless and pups healthy.",
+    geo: {
+      latitude: 35.7796,
+      longitude: -78.6382,
+    },
+    zipCodes: [
+      "27601", "27603", "27604", "27605", "27606", "27607", "27608", "27609",
+      "27610", "27612", "27613", "27614", "27615", "27616", "27617",
+      "27701", "27703", "27704", "27705", "27707", "27712", "27713",
+      "27511", "27513", "27518", "27519", "27539"
+    ],
+    neighborhoods: [
+      "North Hills",
+      "Downtown Raleigh",
+      "Cary",
+      "Durham",
+      "Chapel Hill",
+      "Apex",
+      "Morrisville",
+      "Wake Forest"
+    ],
+    neighborhoodsDetailed: [
+      {
+        slug: "north-hills",
+        name: "North Hills & Midtown",
+        description:
+          "Raleigh's walkable Midtown is packed with dog-friendly patios and apartments. InsightScoop's AI monitoring keeps urban yards clean while tracking health changes in social city pups.",
+        insightFocus: [
+          "Urban yard efficiency",
+          "Diet monitoring for patio-snacking pups",
+        ],
+        localTips: [
+          "Schedule around busy restaurant delivery windows",
+          "Add deodorizer for shared courtyards",
+        ],
+        seo: {
+          title: "InsightScoop Dog Waste Removal – North Hills Raleigh",
+          description:
+            "Join the waitlist for InsightScoop in North Hills and Midtown Raleigh. AI stool monitoring and professional poop pickup for urban dog parents.",
+          keywords: [
+            "North Hills dog waste removal",
+            "Midtown Raleigh poop scooping",
+            "Raleigh pet service",
+          ],
+        },
+      },
+      {
+        slug: "cary",
+        name: "Cary",
+        description:
+          "Family-friendly Cary loves its greenways and dog parks. InsightScoop's proof photos satisfy HOA requirements while AI wellness tracking catches health issues early.",
+        insightFocus: [
+          "Greenway-adjacent parasite monitoring",
+          "HOA compliance documentation",
+        ],
+        localTips: [
+          "Coordinate with lawn services on timing",
+          "Pre-schedule seasonal deep cleans",
+        ],
+      },
+      {
+        slug: "durham",
+        name: "Durham",
+        description:
+          "Durham's dog-loving culture—from Duke Park to downtown breweries—makes InsightScoop a perfect fit. AI-powered stool insights for health-conscious pet parents.",
+        insightFocus: [
+          "Monitor for dietary changes",
+          "Track hydration during humid summers",
+        ],
+        localTips: [
+          "Schedule post-weekend cleanups after brewery visits",
+          "Enable AI alerts for senior dogs",
+        ],
+      },
+    ],
+    serviceAreas: ["Raleigh", "Durham", "Cary", "Chapel Hill", "Apex", "Morrisville", "Wake Forest", "Holly Springs"],
+    stats: [
+      { label: "Greenway miles", value: "180+" },
+      { label: "Dog-friendly breweries", value: "40+" },
+      { label: "Expected launch", value: "Spring 2026" },
+    ],
+    insightHighlights: [
+      "Triangle's humid climate increases parasite risk—InsightScoop's AI monitoring catches issues before symptoms appear.",
+      "Tech-savvy Triangle families expect data-driven pet care, and InsightScoop delivers with AI stool analysis.",
+      "Greenway-connected neighborhoods mean active dogs who benefit from hydration and post-exercise monitoring.",
+    ],
+    faqs: [
+      {
+        question: "When will InsightScoop launch in the Triangle?",
+        answer:
+          "We're targeting Spring 2026 for Raleigh-Durham. Join the waitlist to get founding member pricing.",
+      },
+      {
+        question: "Will you serve Chapel Hill and Carrboro?",
+        answer:
+          "Yes! Chapel Hill, Carrboro, and the surrounding Orange County areas are on our expansion roadmap.",
+      },
+      {
+        question: "Do you integrate with local vets?",
+        answer:
+          "We export AI stool insights that you can share with any Triangle vet. We're also building partnerships with local practices.",
+      },
+    ],
+    outboundLinks: [
+      {
+        label: "Raleigh Greenway Map",
+        url: "https://raleighnc.gov/greenways",
+        description: "Trail system connecting Triangle neighborhoods.",
+      },
+      {
+        label: "Triangle Dog Parks Guide",
+        url: "https://www.visitraleigh.com/plan-a-trip/visitraleigh-insider-blog/post/dog-friendly-raleigh/",
+        description: "Off-leash parks and dog-friendly spots.",
+      },
+    ],
+    reviewSummary: {
+      rating: 0,
+      count: 0,
+    },
+    nearbyCities: ["cary", "durham", "chapel-hill", "apex"],
+    localBusiness: {
+      name: "InsightScoop Raleigh-Durham",
+      address: "Raleigh, NC 27601",
+      phone: "1-877-417-YARD",
+    },
+    seo: {
+      title: "InsightScoop Dog Waste Removal Coming to Raleigh-Durham, NC",
+      description:
+        "Join the waitlist for InsightScoop in the Research Triangle! AI stool monitoring and poop pickup coming to Raleigh, Durham, Cary, and Chapel Hill.",
+      keywords: [
+        "Raleigh dog waste removal",
+        "Durham poop scooping",
+        "Cary pet waste cleanup",
+        "Triangle dog service",
+        "Chapel Hill dog poop pickup",
+      ],
+    },
+  },
+
+  austin: {
+    name: "austin",
+    displayName: "Austin",
+    state: "TX",
+    status: "WAITLIST" as CityStatus,
+    population: 978908,
+    description:
+      "InsightScoop is expanding to Austin! Join our waitlist for AI-powered stool monitoring and professional dog waste removal across Mueller, Hyde Park, South Austin, and beyond.",
+    tagline: "Keep Austin Weird, keep Austin yards clean—InsightScoop AI is coming to ATX.",
+    geo: {
+      latitude: 30.2672,
+      longitude: -97.7431,
+    },
+    zipCodes: [
+      "78701", "78702", "78703", "78704", "78705", "78721", "78722", "78723",
+      "78724", "78725", "78726", "78727", "78728", "78729", "78730", "78731",
+      "78732", "78733", "78734", "78735", "78736", "78737", "78738", "78739",
+      "78741", "78742", "78744", "78745", "78746", "78747", "78748", "78749",
+      "78750", "78751", "78752", "78753", "78754", "78756", "78757", "78758",
+      "78759"
+    ],
+    neighborhoods: [
+      "Mueller",
+      "Hyde Park",
+      "South Congress (SoCo)",
+      "Zilker",
+      "East Austin",
+      "Travis Heights",
+      "Circle C",
+      "Cedar Park"
+    ],
+    neighborhoodsDetailed: [
+      {
+        slug: "mueller",
+        name: "Mueller",
+        description:
+          "Austin's master-planned Mueller neighborhood is packed with dogs and community spaces. InsightScoop's AI monitoring and proof photos keep HOA-managed yards spotless.",
+        insightFocus: [
+          "HOA compliance for planned community",
+          "Heat stress monitoring during Texas summers",
+        ],
+        localTips: [
+          "Schedule early morning service to beat the heat",
+          "Coordinate with lawn crews on timing",
+        ],
+        seo: {
+          title: "InsightScoop Dog Waste Removal – Mueller Austin",
+          description:
+            "Join the waitlist for InsightScoop in Mueller. AI stool monitoring and poop pickup for Austin's most dog-friendly planned community.",
+          keywords: [
+            "Mueller dog waste removal",
+            "Austin poop scooping",
+            "Mueller pet service",
+          ],
+        },
+      },
+      {
+        slug: "zilker",
+        name: "Zilker & Barton Hills",
+        description:
+          "Zilker's off-leash park is legendary. InsightScoop helps monitor your pup's health after social park visits and keeps your yard ready for backyard hangs.",
+        insightFocus: [
+          "Post-dog park health monitoring",
+          "Hydration tracking during hot seasons",
+        ],
+        localTips: [
+          "Add post-weekend pickups after Zilker visits",
+          "Bundle with odor control for outdoor entertaining",
+        ],
+      },
+      {
+        slug: "south-austin",
+        name: "South Austin & SoCo",
+        description:
+          "South Austin's eclectic vibe includes tons of dog-friendly patios and food trucks. InsightScoop keeps yards clean while monitoring diet changes from all those treats.",
+        insightFocus: [
+          "Track dietary changes from patio snacks",
+          "Urban yard quick-service",
+        ],
+        localTips: [
+          "Schedule around food truck rally schedules",
+          "Request patio deodorizing before guests arrive",
+        ],
+      },
+    ],
+    serviceAreas: ["Austin", "Mueller", "Hyde Park", "Zilker", "South Austin", "Cedar Park", "Round Rock", "Pflugerville"],
+    stats: [
+      { label: "Off-leash dog parks", value: "12" },
+      { label: "Dog-friendly patios", value: "100+" },
+      { label: "Expected launch", value: "Spring 2026" },
+    ],
+    insightHighlights: [
+      "Texas heat demands hydration monitoring—InsightScoop's AI tracks dehydration indicators in stool.",
+      "Austin's active dog culture means more exposure to parasites at parks; our AI catches issues early.",
+      "Proof photos and documentation satisfy HOAs in planned communities like Mueller and Circle C.",
+    ],
+    faqs: [
+      {
+        question: "When will InsightScoop launch in Austin?",
+        answer:
+          "We're targeting Spring 2026. Join the waitlist to lock in founding member pricing and early access.",
+      },
+      {
+        question: "Do you service Round Rock and Cedar Park?",
+        answer:
+          "Yes! Our Austin metro launch includes Round Rock, Cedar Park, Pflugerville, and surrounding areas.",
+      },
+      {
+        question: "How does InsightScoop handle Texas heat?",
+        answer:
+          "Our techs work early mornings during summer, and our AI specifically monitors for heat and dehydration stress indicators.",
+      },
+    ],
+    outboundLinks: [
+      {
+        label: "Austin Parks Dog Off-Leash Areas",
+        url: "https://www.austintexas.gov/department/off-leash-areas",
+        description: "Official list of Austin's off-leash dog parks.",
+      },
+      {
+        label: "Dog-Friendly Austin Guide",
+        url: "https://www.austintexas.org/austin-insider-blog/post/dog-friendly-austin/",
+        description: "Visitor guide to dog-friendly spots.",
+      },
+    ],
+    reviewSummary: {
+      rating: 0,
+      count: 0,
+    },
+    nearbyCities: ["round-rock", "cedar-park", "pflugerville", "lakeway"],
+    localBusiness: {
+      name: "InsightScoop Austin",
+      address: "Austin, TX 78702",
+      phone: "1-877-417-YARD",
+    },
+    seo: {
+      title: "InsightScoop Dog Waste Removal Coming to Austin, TX",
+      description:
+        "Join the waitlist for InsightScoop in Austin! AI-powered stool monitoring and poop pickup coming to Mueller, Zilker, Hyde Park, and beyond.",
+      keywords: [
+        "Austin dog waste removal",
+        "ATX poop scooping",
+        "Mueller pet waste cleanup",
+        "Zilker dog service",
+        "South Austin dog poop pickup",
+      ],
+    },
+  },
+
+  "salt-lake-city": {
+    name: "salt-lake-city",
+    displayName: "Salt Lake City",
+    state: "UT",
+    status: "WAITLIST" as CityStatus,
+    population: 200133,
+    description:
+      "InsightScoop is expanding to Salt Lake City! Join our waitlist for AI-powered stool monitoring and professional dog waste removal across Sugar House, Cottonwood Heights, and the Wasatch Front.",
+    tagline: "Mountain adventures, valley living—InsightScoop keeps SLC yards spotless year-round.",
+    geo: {
+      latitude: 40.7608,
+      longitude: -111.891,
+    },
+    zipCodes: [
+      "84101", "84102", "84103", "84104", "84105", "84106", "84107", "84108",
+      "84109", "84111", "84112", "84113", "84115", "84116", "84117", "84118",
+      "84119", "84120", "84121", "84123", "84124", "84128", "84129"
+    ],
+    neighborhoods: [
+      "Sugar House",
+      "The Avenues",
+      "Cottonwood Heights",
+      "Millcreek",
+      "Holladay",
+      "Draper",
+      "Sandy",
+      "Park City"
+    ],
+    neighborhoodsDetailed: [
+      {
+        slug: "sugar-house",
+        name: "Sugar House",
+        description:
+          "SLC's beloved Sugar House is packed with dog-friendly shops and the famous Sugar House Park. InsightScoop keeps yards clean while monitoring for trail-active pups.",
+        insightFocus: [
+          "Post-hike health monitoring",
+          "Urban yard efficiency for walkable neighborhoods",
+        ],
+        localTips: [
+          "Schedule weekend pickups after busy park days",
+          "Add spring thaw cleanup for snowmelt surprises",
+        ],
+        seo: {
+          title: "InsightScoop Dog Waste Removal – Sugar House Salt Lake City",
+          description:
+            "Join the waitlist for InsightScoop in Sugar House. AI stool monitoring and poop pickup for SLC's most dog-friendly neighborhood.",
+          keywords: [
+            "Sugar House dog waste removal",
+            "Salt Lake City poop scooping",
+            "Sugar House pet service",
+          ],
+        },
+      },
+      {
+        slug: "cottonwood-heights",
+        name: "Cottonwood Heights",
+        description:
+          "Canyon access means active outdoor dogs. InsightScoop monitors for altitude and activity-related stool changes while keeping yards guest-ready.",
+        insightFocus: [
+          "Monitor hydration at altitude",
+          "Track post-canyon hike health",
+        ],
+        localTips: [
+          "Add post-hiking season deep clean",
+          "Request winter service for ski-season residents",
+        ],
+      },
+      {
+        slug: "millcreek",
+        name: "Millcreek",
+        description:
+          "Family-friendly Millcreek balances urban convenience with canyon access. InsightScoop's proof photos and AI monitoring satisfy both busy families and HOA requirements.",
+        insightFocus: [
+          "Family schedule flexibility",
+          "HOA-ready documentation",
+        ],
+        localTips: [
+          "Coordinate with school schedules for service timing",
+          "Bundle deodorizing for backyard play areas",
+        ],
+      },
+    ],
+    serviceAreas: ["Salt Lake City", "Sugar House", "Cottonwood Heights", "Millcreek", "Holladay", "Sandy", "Draper", "Murray"],
+    stats: [
+      { label: "Canyon access points", value: "4" },
+      { label: "Off-leash parks", value: "15+" },
+      { label: "Expected launch", value: "Spring 2026" },
+    ],
+    insightHighlights: [
+      "Altitude and dry climate affect hydration—InsightScoop's AI tracks dehydration indicators.",
+      "Canyon trails introduce wildlife-related health risks; our monitoring catches parasites early.",
+      "Spring thaw creates hidden waste; we offer seasonal deep-clean services.",
+    ],
+    faqs: [
+      {
+        question: "When will InsightScoop launch in Salt Lake City?",
+        answer:
+          "We're targeting Spring 2026. Join the waitlist for founding member pricing.",
+      },
+      {
+        question: "Do you service Park City?",
+        answer:
+          "Park City is on our expansion roadmap. Initially we're focusing on the Salt Lake Valley, then expanding to Summit County.",
+      },
+      {
+        question: "How do you handle Utah winters?",
+        answer:
+          "Our techs are equipped for winter service. We also offer spring thaw deep-cleans to catch everything the snow hid.",
+      },
+    ],
+    outboundLinks: [
+      {
+        label: "Salt Lake County Off-Leash Dog Parks",
+        url: "https://slco.org/parks-recreation/parks/dog-parks/",
+        description: "Official county dog park listings.",
+      },
+      {
+        label: "Utah Trail Dogs",
+        url: "https://www.alltrails.com/us/utah/dogs",
+        description: "Dog-friendly hiking trails along the Wasatch Front.",
+      },
+    ],
+    reviewSummary: {
+      rating: 0,
+      count: 0,
+    },
+    nearbyCities: ["sandy", "draper", "murray", "holladay"],
+    localBusiness: {
+      name: "InsightScoop Salt Lake City",
+      address: "Salt Lake City, UT 84105",
+      phone: "1-877-417-YARD",
+    },
+    seo: {
+      title: "InsightScoop Dog Waste Removal Coming to Salt Lake City, UT",
+      description:
+        "Join the waitlist for InsightScoop in Salt Lake City! AI-powered stool monitoring and poop pickup coming to Sugar House, Cottonwood Heights, and the Wasatch Front.",
+      keywords: [
+        "Salt Lake City dog waste removal",
+        "SLC poop scooping",
+        "Sugar House pet waste cleanup",
+        "Cottonwood Heights dog service",
+        "Utah dog poop pickup",
+      ],
+    },
+  },
+
+  tampa: {
+    name: "tampa",
+    displayName: "Tampa",
+    state: "FL",
+    status: "WAITLIST" as CityStatus,
+    population: 384959,
+    description:
+      "InsightScoop is expanding to Tampa! Join our waitlist for AI-powered stool monitoring and professional dog waste removal across South Tampa, Hyde Park, Westshore, and beyond.",
+    tagline: "Year-round outdoor living demands year-round yard care—InsightScoop is coming to Tampa Bay.",
+    geo: {
+      latitude: 27.9506,
+      longitude: -82.4572,
+    },
+    zipCodes: [
+      "33601", "33602", "33603", "33604", "33605", "33606", "33607", "33609",
+      "33610", "33611", "33612", "33613", "33614", "33615", "33616", "33617",
+      "33618", "33619", "33620", "33621", "33624", "33625", "33626", "33629",
+      "33634", "33635", "33647"
+    ],
+    neighborhoods: [
+      "Hyde Park",
+      "South Tampa",
+      "Seminole Heights",
+      "Westshore",
+      "Channelside",
+      "Davis Islands",
+      "Palma Ceia",
+      "Carrollwood"
+    ],
+    neighborhoodsDetailed: [
+      {
+        slug: "hyde-park",
+        name: "Hyde Park",
+        description:
+          "Tampa's iconic Hyde Park Village is famously dog-friendly. InsightScoop keeps yards pristine while AI monitors health in Florida's humid subtropical climate.",
+        insightFocus: [
+          "Humidity-related parasite monitoring",
+          "Heat stress indicators in stool",
+        ],
+        localTips: [
+          "Schedule early morning service to beat heat",
+          "Add weekly service during peak humidity months",
+        ],
+        seo: {
+          title: "InsightScoop Dog Waste Removal – Hyde Park Tampa",
+          description:
+            "Join the waitlist for InsightScoop in Hyde Park. AI stool monitoring and poop pickup for Tampa's most dog-friendly neighborhood.",
+          keywords: [
+            "Hyde Park dog waste removal",
+            "Tampa poop scooping",
+            "Hyde Park pet service",
+          ],
+        },
+      },
+      {
+        slug: "south-tampa",
+        name: "South Tampa",
+        description:
+          "Bayshore Boulevard and waterfront living mean active, social dogs. InsightScoop monitors for Florida-specific health issues while keeping upscale yards guest-ready.",
+        insightFocus: [
+          "Florida parasite monitoring",
+          "Hydration tracking in subtropical heat",
+        ],
+        localTips: [
+          "Coordinate around Bayshore dog walking schedules",
+          "Add hurricane season prep cleanups",
+        ],
+      },
+      {
+        slug: "seminole-heights",
+        name: "Seminole Heights",
+        description:
+          "Seminole Heights' craft brewery scene is seriously dog-friendly. InsightScoop tracks diet changes from all those patio treats while keeping bungalow yards spotless.",
+        insightFocus: [
+          "Track dietary changes from brewery visits",
+          "Urban efficiency for compact yards",
+        ],
+        localTips: [
+          "Schedule post-weekend pickups after brewery crawls",
+          "Bundle deodorizer for outdoor entertaining",
+        ],
+      },
+    ],
+    serviceAreas: ["Tampa", "Hyde Park", "South Tampa", "Seminole Heights", "Westshore", "St. Petersburg", "Brandon", "Wesley Chapel"],
+    stats: [
+      { label: "Dog-friendly patios", value: "200+" },
+      { label: "Fenced dog parks", value: "20+" },
+      { label: "Expected launch", value: "Spring 2026" },
+    ],
+    insightHighlights: [
+      "Florida's humidity creates year-round parasite risk—InsightScoop's AI catches issues before they become problems.",
+      "Year-round outdoor living means year-round service needs; we're built for Florida's climate.",
+      "Heat stress is real for Florida dogs; our stool analysis tracks hydration and health indicators.",
+    ],
+    faqs: [
+      {
+        question: "When will InsightScoop launch in Tampa?",
+        answer:
+          "We're targeting Spring 2026 for Tampa Bay. Join the waitlist for founding member pricing.",
+      },
+      {
+        question: "Do you service St. Petersburg?",
+        answer:
+          "Yes! Our Tampa Bay launch includes St. Pete, Clearwater, and Pinellas County along with Hillsborough County.",
+      },
+      {
+        question: "How does InsightScoop handle Florida's climate?",
+        answer:
+          "Our AI is trained on subtropical stool patterns and specifically watches for heat, humidity, and parasite indicators common in Florida.",
+      },
+    ],
+    outboundLinks: [
+      {
+        label: "Tampa Parks Dog Parks",
+        url: "https://www.tampa.gov/parks-recreation/programs/bark-parks",
+        description: "Official Tampa bark park listings.",
+      },
+      {
+        label: "Dog-Friendly Tampa Bay",
+        url: "https://www.visittampabay.com/blog/archive/post/dog-friendly-tampa-bay/",
+        description: "Visitor guide to pet-friendly spots.",
+      },
+    ],
+    reviewSummary: {
+      rating: 0,
+      count: 0,
+    },
+    nearbyCities: ["st-petersburg", "clearwater", "brandon", "wesley-chapel"],
+    localBusiness: {
+      name: "InsightScoop Tampa",
+      address: "Tampa, FL 33606",
+      phone: "1-877-417-YARD",
+    },
+    seo: {
+      title: "InsightScoop Dog Waste Removal Coming to Tampa, FL",
+      description:
+        "Join the waitlist for InsightScoop in Tampa Bay! AI-powered stool monitoring and poop pickup coming to Hyde Park, South Tampa, Seminole Heights, and beyond.",
+      keywords: [
+        "Tampa dog waste removal",
+        "Tampa Bay poop scooping",
+        "Hyde Park pet waste cleanup",
+        "South Tampa dog service",
+        "Florida dog poop pickup",
+      ],
+    },
+  },
 };
 
 export const getCityData = (citySlug: string): CityData | null => {
