@@ -38,15 +38,15 @@ interface NeighborhoodPageProps {
 const defaultNeighborhoodFaqs = (name: string, city: string) => [
   {
     question: `How often should InsightScoop visit ${name} in ${city}?`,
-    answer: `Weekly InsightScoop visits keep ${name} yards guest-ready. Many neighbors add a Friday sweep or Bluetooth quick-log pickup during patio season.`,
+    answer: `Weekly InsightScoop visits keep ${name} yards guest-ready. Many neighbors add a Friday sweep or quick mid-week pickup during patio season.`,
   },
   {
-    question: `What does the AI InsightCamera look for in ${name}?`,
+    question: `What does InsightScoop.s AI look for in ${name}?`,
     answer: `We analyze stool color, consistency, and content, flagging hydration dips, parasites, or diet changes so you can loop in your vet without guessing.`,
   },
   {
     question: `Do you capture proof-of-service photos in ${name}?`,
-    answer: `Yes. Every visit ends with proof of gear, locked gate confirmation, and sanitation photos so HOA boards and landlords see the audit trail.`,
+    answer: `Yes. Every visit ends with proof photos, locked gate confirmation, and sanitation photos so HOA boards and landlords see the audit trail.`,
   },
 ];
 
@@ -76,7 +76,7 @@ export async function generateMetadata({ params }: NeighborhoodPageProps) {
   if (!data) {
     return {
       title: "Neighborhood Not Found | InsightScoop",
-      description: "The requested neighborhood playbook could not be found.",
+      description: "The requested Neighborhood Guide could not be found.",
     };
   }
 
@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: NeighborhoodPageProps) {
   const title = detail.seo?.title ?? `${detail.name} Dog Waste Removal | InsightScoop ${city.displayName}`;
   const description =
     detail.seo?.description ??
-    `InsightScoop keeps ${detail.name} yards in ${city.displayName} clean with AI stool monitoring, Bluetooth logging, and proof-of-service photos.`;
+    `InsightScoop keeps ${detail.name} yards in ${city.displayName} clean with AI stool monitoring, automated logging, and proof-of-service photos.`;
 
   return {
     title,
@@ -140,7 +140,7 @@ export default async function NeighborhoodPage({ params }: NeighborhoodPageProps
 
           <section className="space-y-6">
             <Badge variant="outline" className="w-fit rounded-full px-4 py-1 text-xs uppercase tracking-[0.2em] border-slate-300 text-slate-700">
-              Neighborhood playbook
+              Neighborhood Guide
             </Badge>
             <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
               InsightScoop in {detail.name}, {city.displayName}
@@ -242,7 +242,7 @@ export default async function NeighborhoodPage({ params }: NeighborhoodPageProps
           <section className="rounded-3xl border border-brand-200 bg-gradient-to-br from-brand-50 to-brand-100/80 p-8 text-center shadow-xl">
             <h3 className="text-2xl font-black text-slate-900">Ready for concierge-level weekly visits?</h3>
             <p className="mx-auto mt-3 max-w-2xl text-base text-slate-700">
-              Pair InsightScoop's Bluetooth logging and AI stool insights with neighborhood-tailored schedules so your block stays spotless year-round.
+              Pair InsightScoop's automated logging and AI stool insights with neighborhood-tailored schedules so your block stays spotless year-round.
             </p>
             <div className="mt-5 flex flex-col sm:flex-row justify-center gap-4">
               <Link href="/quote?businessId=yardura">

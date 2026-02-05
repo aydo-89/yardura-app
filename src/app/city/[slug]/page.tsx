@@ -60,15 +60,15 @@ const fallbackStats = (city: CityData) => [
 const defaultFaqs = (cityName: string) => [
   {
     question: `How often does InsightScoop clean yards in ${cityName}?`,
-    answer: `Weekly service keeps most ${cityName} yards guest-ready. Busy multi-dog homes can add a mid-week InsightScoop pass or Bluetooth quick-log visit so nothing piles up.`,
+    answer: `Weekly service keeps most ${cityName} yards guest-ready. Busy multi-dog homes can add a mid-week visit so nothing piles up.`,
   },
   {
     question: `Does InsightScoop bring AI stool analysis to ${cityName}?`,
-    answer: `Yes. Every InsightScoop technician captures stool images in our InsightCamera, scores them for color, consistency, and content, and notes trends so you can loop in your vet when it matters.`,
+    answer: `Yes. Every InsightScoop technician captures stool images, scores them for color, consistency, and content, and notes trends so you can loop in your vet when it matters.`,
   },
   {
     question: `Can I request proof photos and gated entry logs in ${cityName}?`,
-    answer: `Absolutely. Each visit ends with proof-of-service photos, locked gate confirmation, and Bluetooth-logged timestamps so property managers and pet parents have a clean audit trail.`,
+    answer: `Absolutely. Each visit ends with proof-of-service photos, locked gate confirmation, and timestamped logs so property managers and pet parents have a clean audit trail.`,
   },
 ];
 
@@ -225,7 +225,7 @@ export default async function CityPage({ params }: CityPageProps) {
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-white/70">{stat.label}</p>
                   <p className="text-2xl font-serif font-semibold text-slate-900 dark:text-white">{stat.value}</p>
                   <p className="text-sm text-slate-600 leading-relaxed dark:text-white/75">
-                    InsightScoop technicians log Bluetooth pickups and AI stool summaries each visit.
+                    InsightScoop technicians log pickups and capture AI stool summaries each visit.
                   </p>
                 </CardContent>
               </Card>
@@ -242,8 +242,8 @@ export default async function CityPage({ params }: CityPageProps) {
               </CardHeader>
               <CardContent className="grid gap-4 text-left">
                 {(city.insightHighlights ?? [
-                  "Bluetooth shutter support means techs log every pickup without pulling out a phone in Minnesota winters.",
-                  "InsightCamera overlays coach techs to capture at least three AI-ready samples per visit for actionable vet insights.",
+                  "Every pickup is logged automatically—no fumbling with phones in Minnesota winters.",
+                  "Our AI captures and analyzes stool samples each visit, giving you actionable health insights to share with your vet.",
                   "Required gate, proof-of-gear, and sanitation photos keep HOA boards and property managers confident in weekly service.",
                 ]).map((highlight, index) => (
                   <div key={index} className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
@@ -282,7 +282,7 @@ export default async function CityPage({ params }: CityPageProps) {
           <section className="space-y-6">
             <div className="flex items-center gap-3">
               <Compass className="h-6 w-6 text-brand-accent" />
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white">Neighborhood playbooks</h2>
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white">Explore Neighborhoods</h2>
             </div>
             <p className="max-w-3xl text-slate-700 dark:text-slate-300">
               Tailor InsightScoop to the way your block lives—lakefront backyards, river-adjacent trails, or historic alley access. Choose a neighborhood to see tailored tips and AI monitoring focus areas.
@@ -356,7 +356,7 @@ export default async function CityPage({ params }: CityPageProps) {
                       href={`/city/${city.name}/${neighborhood.slug}`}
                       className="inline-flex items-center gap-2 text-sm font-semibold text-brand-deep hover:text-brand-coral transition-colors dark:text-brand-300 dark:hover:text-brand-coral"
                     >
-                      View neighborhood playbook
+                      View Neighborhood Guide
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </CardContent>
@@ -465,12 +465,12 @@ export default async function CityPage({ params }: CityPageProps) {
               Ready for an InsightScoop walkthrough?
             </h3>
             <p className="mx-auto mt-3 max-w-2xl text-base text-slate-700 dark:text-slate-300">
-              We build repeatable visit flows—Bluetooth quick logs, AI InsightCamera sessions, proof-of-sanitization photos—so your household gets a concierge-level experience every single time.
+              We build repeatable visit flows—automated logging, AI health analysis, proof-of-sanitization photos—so your household gets a concierge-level experience every single time.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
               <Link href="/quote?businessId=yardura">
                 <Button size="lg" className="rounded-2xl px-8 py-6 text-lg shadow-lg hover:shadow-xl bg-brand-coral hover:bg-brand-coral/90 text-white">
-                  Book your InsightScoop onboarding
+                  Schedule your first visit
                 </Button>
               </Link>
               <a
