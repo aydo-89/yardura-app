@@ -8,6 +8,13 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: "spring-dog-poop-cleanup",
+    title: "Spring Dog Waste Cleanup: How to Handle the Winter Poop Pile-Up",
+    description: "The spring thaw reveals months of frozen dog waste. Learn why professional cleanup matters and what your dog's winter stool reveals about their health.",
+    date: "February 8, 2026",
+    readTime: "10 min read",
+  },
+  {
     slug: "dog-poop-color-guide",
     title: "What Your Dog's Poop Color Means: A Complete Health Guide",
     description: "Learn what your dog's poop color reveals about their health. Our veterinary-informed guide covers brown, black, red, yellow, green, and white dog stool.",

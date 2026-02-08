@@ -8,6 +8,171 @@ const posts: Record<string, {
   date: string;
   content: string;
 }> = {
+  "spring-dog-poop-cleanup": {
+    title: "Spring Dog Waste Cleanup: How to Handle the Winter Poop Pile-Up",
+    description: "The spring thaw reveals months of frozen dog waste. Learn why professional cleanup matters and what your dog's winter stool reveals about their health.",
+    date: "February 8, 2026",
+    content: `Every dog owner in the Midwest knows the ritual. November hits, the snow starts falling, and somewhere around the third blizzard, you stop going out to pick up after your dog.
+
+It's buried. It's frozen. It's fine.
+
+Then March arrives. The temperatures creep above freezing. And suddenly, your backyard looks like an archaeological dig site of everything your dog ate since Thanksgiving.
+
+Welcome to the Great Thaw.
+
+## The Winter Accumulation Problem
+
+Let's be honest about what happens between November and March in places like Minneapolis, Indianapolis, Salt Lake City, and other cold-weather cities.
+
+**Average accumulation for a medium-sized dog over 4 months:**
+- 3-4 deposits per day × 120 days = 360-480 piles
+- Approximately 45-60 pounds of waste
+
+That's not a typo. Your 50-pound Lab produces roughly their own body weight in waste over a single winter.
+
+Most of it is buried under snow. Some of it got picked up when the weather was nice. But a significant portion is frozen in place, waiting for the spring thaw to release it back into your yard—and your life.
+
+## Why the Spring Thaw Is Actually Dangerous
+
+Here's what most dog owners don't realize: frozen dog waste isn't just gross. It's a health hazard that gets worse the longer it sits.
+
+### Parasites Survive the Cold
+
+Many intestinal parasites—including roundworms, hookworms, and giardia—can survive freezing temperatures. Their eggs or cysts remain dormant in frozen feces, waiting for warmer temperatures to become active again.
+
+When spring hits:
+- Parasites reactivate
+- Your dog sniffs and investigates their old deposits
+- Reinfection becomes possible
+- Children playing in the yard face exposure risk
+
+### Bacterial Bloom
+
+As temperatures rise, bacteria that were dormant in frozen waste begin multiplying rapidly. The combination of warmth and moisture creates ideal conditions for pathogens like E. coli and Salmonella.
+
+### Lawn Damage Compounds
+
+Dog waste is highly acidic and nitrogen-rich. Frozen waste that sits all winter creates concentrated "burn spots" that kill grass in patches. By the time you clean up in spring, the damage is already done.
+
+## The Hidden Health Data in Winter Stool
+
+Here's something interesting that most people miss: the poop that accumulates over winter tells a story about your dog's health through the cold months.
+
+At InsightScoop, when we do spring cleanups, we're not just removing waste. We're looking for patterns.
+
+### What Winter Stool Reveals
+
+**Dietary changes:** Holiday table scraps, different treats, new food brands—they all show up in stool consistency and color.
+
+**Seasonal stress:** Holidays, houseguests, schedule changes, and reduced exercise affect digestion. Loose stool or mucus can indicate stress.
+
+**Indoor air quality:** Dogs spend more time inside during winter. Dehydration (harder, drier stool) is common when indoor heating reduces humidity.
+
+**Weight fluctuations:** Less exercise plus more treats equals digestive changes. We often see consistency shifts that correlate with winter weight gain.
+
+**Hidden illnesses:** Some dogs develop issues during winter that go unnoticed because owners aren't inspecting stool as closely. Parasites, infections, and dietary sensitivities can accumulate.
+
+## DIY Spring Cleanup: What You're Getting Into
+
+If you're going to tackle the spring thaw yourself, here's what you're facing:
+
+### Equipment Needed
+- Heavy-duty bags (not the flimsy ones—they'll tear)
+- A flat-edged shovel (better than a pooper scooper for frozen/thawed waste)
+- Gloves (plural—you'll go through several pairs)
+- A mask (the smell is concentrated after months of freeze-thaw)
+- Enzyme-based yard treatment for the grass
+
+### Time Investment
+For a medium-sized yard with one dog:
+- Initial cleanup: 2-4 hours
+- Follow-up (stuff you missed): 1-2 hours
+- Lawn treatment: 1 hour
+
+For multiple dogs, multiply accordingly.
+
+### The Texture Problem
+
+Freshly thawed dog waste has a unique and unpleasant texture. It's not frozen solid. It's not fresh and formed. It's somewhere in between—soft, fragmented, and often mixed with dead grass and leaves.
+
+Some of it will crumble. Some will smear. None of it is pleasant to handle.
+
+## When to Start Spring Cleanup
+
+**Too early:** Ground still frozen, waste still embedded in ice. You'll tear up grass trying to remove it.
+
+**Too late:** Everything has fully thawed and begun decomposing. The smell is worse, parasites are active, and lawn damage is locked in.
+
+**Just right:** First consistent week of above-freezing temperatures. Waste has softened but hasn't started breaking down. Usually late February to mid-March in most Midwest cities.
+
+## What Professional Cleanup Looks Like
+
+A professional spring cleanup service does several things you probably won't do yourself:
+
+### Systematic Coverage
+We grid the yard and work section by section. Nothing gets missed because we're not relying on visual scanning alone.
+
+### Health Assessment
+At InsightScoop, we use our 3C Framework—Color, Consistency, and Contents—to assess what we find. If we spot anything concerning (unusual colors, parasites, blood), we alert you immediately.
+
+### Proper Disposal
+Dog waste is classified as a pollutant by the EPA. We bag and remove it properly, taking it off your property entirely.
+
+### Volume Tracking
+We track how much we remove. For regular customers, this helps establish a baseline for monitoring changes in your dog's health and output.
+
+## The Real Cost Calculation
+
+Let's do the math on spring cleanup:
+
+**DIY Approach:**
+- 4-6 hours of unpleasant work
+- $30-50 in supplies
+- Missed spots that continue causing problems
+- No health insights
+- Your Saturday is gone
+
+**Professional Cleanup:**
+- $50-100 depending on yard size and accumulation
+- 30-45 minutes of professional work
+- Comprehensive coverage
+- Health monitoring included (with InsightScoop)
+- Your Saturday is yours
+
+For most people, the time-value equation favors professional service. But beyond time, the health monitoring aspect is what actually matters.
+
+## Setting Up for Next Winter
+
+The best time to start regular service is right after spring cleanup. Here's why:
+
+**Baseline establishment:** We learn what normal looks like for your dog.
+
+**Weekly maintenance:** Waste never accumulates. Problems get caught early.
+
+**Winter continuation:** Unlike DIY, professional service continues through winter. We come weekly even when there's snow, so spring never becomes a crisis.
+
+**Health tracking:** Over months, we build a picture of your dog's digestive patterns. Seasonal changes, dietary impacts, stress responses—we see it all.
+
+## Cities We Serve
+
+InsightScoop currently operates in the Twin Cities (Minneapolis-St. Paul) and is expanding to:
+
+- **Indianapolis** — Launching spring 2026
+- **Salt Lake City** — Coming soon
+- **Raleigh-Durham** — Coming soon
+- **Austin** — Coming soon
+- **Tampa** — Coming soon
+
+If you're in one of these areas and want to get on the early access list, reach out through our contact page.
+
+## The Bottom Line
+
+The spring thaw reveals more than just accumulated waste. It reveals how your dog's health has been tracking through the winter—and whether there are issues you've missed.
+
+You can spend a Saturday afternoon in the muck, or you can let professionals handle it while gaining actual health insights about your dog.
+
+The choice is yours. But spring is coming, and so is everything your dog left behind since November.`,
+  },
   "dog-poop-color-guide": {
     title: "What Your Dog's Poop Color Means: A Complete Health Guide",
     description: "Learn what your dog's poop color reveals about their health.",
